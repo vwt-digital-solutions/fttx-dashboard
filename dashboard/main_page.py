@@ -96,8 +96,8 @@ def get_body():
                                                 'value': 'Dongen'},
                                         ],
                                         id='checklist_filters',
-                                        value=['Brielle'],
-                                        multi=True,
+                                        value='Brielle',
+                                        # multi=True,
                                     ),
                                 ],
                                 id="filter_container",
@@ -489,7 +489,7 @@ def download_excel():
 # HELPER FUNCTIES
 @cache.memoize()
 def data_from_DB(filter_selectie):
-    df = pd.read_csv(config.files[filter_selectie[0]], sep=';', encoding='latin-1')
+    df = pd.read_csv(config.files[filter_selectie], sep=';', encoding='latin-1')
     # db = firestore.Client()
     # p_ref = db.collection('Projecten_7')
     # inkoop_ref = db.collection('Inkooporders_5')
