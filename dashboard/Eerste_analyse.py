@@ -8,10 +8,10 @@ sns.set()
 
 # %%
 p_path = './Plaatjes/'
-files = [config.brielle,
-         config.dongen,
-         config.helvoirt,
-         config.nijmegen]
+files = [config.files['Brielle'],
+         config.files['Dongen'],
+         config.files['Helvoirt'],
+         config.files['Nijmegen']]
 
 fn_date = []
 df_l = []
