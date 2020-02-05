@@ -1,6 +1,6 @@
-# ITH Dashboard
+# FTTx Dashboard
 
-This is the repository of ITH Dashboard. It contains a Dash dashboard with accompanying files. To get started, first make a copy of export.sh.template and fill in the environment variables needed.
+This is the repository of FTTx Dashboard. It contains a Dash dashboard with accompanying files. To get started, first make a copy of export.sh.template and fill in the environment variables needed.
 
 ```
 mv export.sh.template export.sh
@@ -21,5 +21,5 @@ pip install -r requirements.txt
 To run the Dash application, use the following command, including live reload.
 
 ```
-gunicorn --pythonpath app.py app:server --reload --workers=3
+gunicorn --pythonpath index.py index:app.server --reload --workers=3
 ```
