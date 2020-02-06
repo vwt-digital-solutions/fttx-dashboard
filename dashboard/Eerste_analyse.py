@@ -84,7 +84,7 @@ for i in range(0, 4):
     axs[x_s[i], y_s[i]].set_title(plt_t, fontsize=14)
 
 fig.legend(labels_ov, loc=10, fontsize=14)
-plt.savefig(p_path + 'Alle Projecten' + '.png', facecolor='w')
+# plt.savefig(p_path + 'Alle Projecten' + '.png', facecolor='w')
 
 # %% bar chart specifiek voor HAS,  Brielle
 df = df_l[0]
@@ -159,7 +159,7 @@ ax.tick_params(axis='both', which='minor', labelsize=14)
 
 plt_t = 'Foutmeldingen per opleverstatus voor fase HAS'
 ax.set_title(plt_t, fontsize=14)
-plt.savefig(p_path + plt_t + '.png', facecolor='w')
+# plt.savefig(p_path + plt_t + '.png', facecolor='w')
 
 # %%
 # fig, axs = plt.subplots(2, 2, figsize=[15, 15])
@@ -204,7 +204,7 @@ for ax in axs.flat:
     ax.set(xlabel='Maand')
 
 fig.suptitle('Overzicht schouwingen per project 2019')
-plt.savefig(p_path + 'Alle Projecten schouwingen' + '.png', facecolor='w')
+# plt.savefig(p_path + 'Alle Projecten schouwingen' + '.png', facecolor='w')
 
 # %%
 df = df_l[0].append(df_l[1]).append(df_l[2]).append(df_l[3])
@@ -214,7 +214,7 @@ axs.hist(df['SchouwDatum'].dropna().dt.month)
 axs.set_title('Alle projecten schouwingen 2019')
 axs.set(xlabel='Maand')
 
-plt.savefig(p_path + 'Alle Projecten schouwingen in 1' + '.png', facecolor='w')
+# plt.savefig(p_path + 'Alle Projecten schouwingen in 1' + '.png', facecolor='w')
 
 # %%
 df = df_l[0]
@@ -236,7 +236,7 @@ for ax in axs.flat:
     ax.tick_params(axis='both', which='minor', labelsize=16)
 
 fig.suptitle('Overzicht opleveringen per project 2019', fontsize=20)
-plt.savefig(p_path + 'Alle Projecten opleveringen' + '.png', facecolor='w')
+# plt.savefig(p_path + 'Alle Projecten opleveringen' + '.png', facecolor='w')
 
 # %%
 df = df_l[0].append(df_l[1]).append(df_l[2]).append(df_l[3])
@@ -247,7 +247,7 @@ axs.hist(df['Opleverdatum'].dropna().dt.month)
 axs.set_title('Alle projecten opleveringen 2019')
 axs.set(xlabel='Maand')
 
-plt.savefig(p_path + 'Alle Projecten opleveringen in 1' + '.png', facecolor='w')
+# plt.savefig(p_path + 'Alle Projecten opleveringen in 1' + '.png', facecolor='w')
 
 # %%
 df = df_l[0].append(df_l[1]).append(df_l[2]).append(df_l[3])
@@ -261,7 +261,7 @@ axs.hist(s1 + s2)
 axs.set_title('Alle projecten schouwingen & opleveringen 2019')
 axs.set(xlabel='Maand')
 
-plt.savefig(p_path + 'Alle Projecten schouwingen en opleveringen in 1' + '.png', facecolor='w')
+# plt.savefig(p_path + 'Alle Projecten schouwingen en opleveringen in 1' + '.png', facecolor='w')
 
 
 # %%
