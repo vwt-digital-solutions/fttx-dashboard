@@ -86,7 +86,7 @@ for i in range(0, 4):
 fig.legend(labels_ov, loc=10, fontsize=14)
 plt.savefig(p_path + 'Alle Projecten' + '.png', facecolor='w')
 
-# %% bar chart specifiek voor HAS, Brielle
+# %% bar chart specifiek voor HAS,  Brielle
 df = df_l[0]
 df_detail = df[df['HasApp_Status'] != 'VOLTOOID'][
     ['Sleutel', 'Opleverdatum', 'Opleverstatus', 'RedenNA', 'Toelichting status']].sort_values(by=['Opleverdatum'])
