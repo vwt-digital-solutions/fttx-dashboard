@@ -41,7 +41,6 @@ for fn in files:
 
     df_detail = df[df['HasApp_Status'] != 'VOLTOOID'][
         ['Sleutel', 'Opleverdatum', 'Opleverstatus', 'RedenNA', 'Toelichting status']].sort_values(by=['Opleverdatum'])
-    df_detail.to_excel('Voorbeeld_tabel_redenen_' + project[-1] + '.xlsx')
 
     print('Totaal aantal woningen in' + project[-1] + ': ' + str(aantal_woningen[-1]))
     print(' ')
