@@ -364,6 +364,7 @@ def make_barplot(filter_selectie):
     bar, stats, geo_plot = generate_graph(df)
     return [bar]
 
+
 @app.callback(
     [Output("geo_plot", "figure"),
      ],
@@ -377,7 +378,7 @@ def make_geoplot(filter_selectie, clickData):
     df_l = data_from_DB()
     df = df_l[filter_selectie]
     if clickData is not None:
-        df = df[(df['Opleverstatus'] == int(clickData['points'][0]['x'][1:])) & 
+        df = df[(df['Opleverstatus'] == int(clickData['points'][0]['x'][1:])) &
                 (df['schouwAkkoord'] == int(clickData['points'][0]['curveNumber']))]
     if df.empty:
         raise PreventUpdate
@@ -514,7 +515,7 @@ def generate_graph(df):
         map_layout = dict(
             autosize=True,
             automargin=True,
-            margin=dict(l=30, r=30, b=20, t=40),
+            margin=dict(r=30, b=20, t=40),
             hovermode="closest",
             plot_bgcolor="#F9F9F9",
             paper_bgcolor="#F9F9F9",
@@ -543,7 +544,7 @@ def processed_data(df):
     for key in df_detail['Opleverstatus'].unique():
         if key != 2:
             status_0 += [len(df_detail[(df_detail['Opleverstatus'] == key) & (df_detail['schouwAkkoord'] == 0)])]
-            status_1 += [len(df_detail[(df_detail['Opleverstatus'] == key) & (df_detail['schouwAkkoord'] == 1)])]    
+            status_1 += [len(df_detail[(df_detail['Opleverstatus'] == key) & (df_detail['schouwAkkoord'] == 1)])]
     bar['0'] = status_0
     bar['1'] = status_1
 
@@ -587,14 +588,14 @@ def from_rd(x: int, y: int) -> tuple:
     Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
     Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607, 0.01199, -0.00256, 0.00128, 0.00022,
            -0.00022, 0.00026]
-    # Coefficients for the conversion from WGS84 to RD
-    Rp = [0, 1, 2, 0, 1, 3, 1, 0, 2]
-    Rq = [1, 1, 1, 3, 0, 1, 3, 2, 3]
-    Rpq = [190094.945, -11832.228, -114.221, -32.391, -0.705, -2.340, -0.608, -0.008, 0.148]
+    # # Coefficients for the conversion from WGS84 to RD
+    # Rp = [0, 1, 2, 0, 1, 3, 1, 0, 2]
+    # Rq = [1, 1, 1, 3, 0, 1, 3, 2, 3]
+    # Rpq = [190094.945, -11832.228, -114.221, -32.391, -0.705, -2.340, -0.608, -0.008, 0.148]
 
-    Sp = [1, 0, 2, 1, 3, 0, 2, 1, 0, 1]
-    Sq = [0, 2, 0, 2, 0, 1, 2, 1, 4, 4]
-    Spq = [309056.544, 3638.893, 73.077, -157.984, 59.788, 0.433, -6.439, -0.032, 0.092, -0.054]
+    # Sp = [1, 0, 2, 1, 3, 0, 2, 1, 0, 1]
+    # Sq = [0, 2, 0, 2, 0, 1, 2, 1, 4, 4]
+    # Spq = [309056.544, 3638.893, 73.077, -157.984, 59.788, 0.433, -6.439, -0.032, 0.092, -0.054]
     """
     Converts RD coordinates into WGS84 coordinates
     """
