@@ -1,6 +1,6 @@
 plotly==4.2.1
 pandas==0.24.2
-dash==1.0.0
+dash==1.6.1
 gunicorn==19.9.0
 Flask==1.1.1
 Flask-Dance==2.2.0
@@ -13,3 +13,5 @@ google-cloud-storage==1.16.1
 google-cloud-firestore==1.6.0
 dash-bootstrap-components==0.6.2
 xlsxwriter==1.1.8
+numpy==1.16.4
+dash_daq==0.3.1
