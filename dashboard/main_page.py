@@ -1,19 +1,19 @@
-import flask
-import io
+# import flask
+# import io
 import config
-import datetime as dt
+# import datetime as dt
 import pandas as pd
 import dash_core_components as dcc
 import plotly.graph_objs as go
 import dash_daq as daq
 # import dash_bootstrap_components as dbc
 import dash_html_components as html
-# import dash_table
-from flask import send_file
+import dash_table
+# from flask import send_file
 # from google.cloud import firestore
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
-# from elements import table_styles
+from elements import table_styles
 from app import app, cache
 
 # layout graphs
@@ -60,10 +60,6 @@ def get_body():
                                         "Analyse OHW VWT FTTx",
                                         style={"margin-bottom": "0px"},
                                     ),
-                                    # html.H5(
-                                    #     "FTTx",
-                                    #     style={"margin-top": "0px"}
-                                    # ),
                                     html.P(),
                                     html.P("(Laatste update: 05-02-2020)")
                                 ],
@@ -84,7 +80,6 @@ def get_body():
                         [
                             html.Div(
                                 [
-                                    # html.P("Filters:"),
                                     dcc.Dropdown(
                                         options=[
                                             {'label': 'Brielle',
@@ -98,7 +93,6 @@ def get_body():
                                         ],
                                         id='checklist_filters',
                                         value='Brielle',
-                                        # multi=True,
                                     ),
                                 ],
                                 id="filter_container",
@@ -159,59 +153,18 @@ def get_body():
                     ),
                 ],
             ),
-            # html.Div(
-            #     [
-            #         html.Div(
-            #             [
-            #                 html.H5(
-            #                     "Totaal overzicht OHW analyse:",
-            #                     style={"margin-top": "0px"}
-            #                 ),
-            #             ],
-            #             id='uitleg_1',
-            #             className="pretty_container_title columns",
-            #         ),
-            #     ],
-            #     className="container-display",
-            # ),
-            # html.Div(
-            #     [
-            #         html.Div(
-            #             [
-            #                 html.Div(
-            #                     [
-            #                         html.H6(id="info_globaal_0"),
-            #                         html.P("Aantal woningen in project")
-            #                     ],
-            #                     id="info_globaal_container0",
-            #                     className="pretty_container 3 columns",
-            #                 ),
-            #                 html.Div(
-            #                     [
-            #                         html.H6(id="info_globaal_1"),
-            #                         html.P("-")
-            #                     ],
-            #                     id="info_globaal_container1",
-            #                     className="pretty_container 3 columns",
-            #                 ),
-            #                 html.Div(
-            #                     [
-            #                         html.H6(id="info_globaal_2"),
-            #                         html.P("-")
-            #                     ],
-            #                     id="info_globaal_container2",
-            #                     className="pretty_container 3 columns",
-            #                 ),
-            #             ],
-            #             id="info-container1",
-            #             className="container-display",
-            #         ),
-            #     ],
-            # ),
             html.Div(
                 [
                     html.Div(
-                            [dcc.Graph(id="OHW_globaal_graph")],
+                            [dcc.Graph(id="Bar_1")],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Bar_2")],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Bar_3")],
                             className="pretty_container column",
                     ),
                     html.Div(
@@ -222,92 +175,11 @@ def get_body():
                 id="main_graphs",
                 className="container-display",
             ),
-            # html.Div(
-            #     [
-            #         html.Div(
-            #             [
-            #                 html.H5(
-            #                     """
-            #                     Categorisering van de projecten met OHW:
-            #                     """,
-            #                     style={"margin-top": "0px"}
-            #                 ),
-            #             ],
-            #             id='uitleg_2',
-            #             className="pretty_container_title columns",
-            #         ),
-            #     ],
-            #     className="container-display",
-            # ),
-            # html.Div(
-            #     [
-            #         html.Div(
-            #             [
-            #                 html.Div(
-            #                     [
-            #                         html.H6(id="info_bakje_0"),
-            #                         html.P("Aantal projecten in categorie")
-
-            #                     ],
-            #                     className="pretty_container 3 columns",
-            #                 ),
-            #                 html.Div(
-            #                     [
-            #                         html.H6(id="info_bakje_1"),
-            #                         html.P("Aantal meter OHW in categorie")
-            #                     ],
-            #                     className="pretty_container 3 columns",
-            #                 ),
-            #                 html.Div(
-            #                     [
-            #                         html.H6(id="info_bakje_2"),
-            #                         html.P("""Aantal meter extra werk in categorie""")
-            #                     ],
-            #                     className="pretty_container 3 columns",
-            #                 ),
-            #             ],
-            #             id="info-container3",
-            #             className="container-display",
-            #         ),
-            #     ],
-            # ),
-            # html.Div(
-            #     [
-            #         html.Div(
-            #             [
-            #                 dcc.Graph(id="pie_graph"),
-            #                 html.Div(
-            #                     [
-            #                         dbc.Button(
-            #                             'Uitleg categorieën',
-            #                             id='uitleg_button'
-            #                         ),
-            #                         html.Div(
-            #                             [
-            #                                 dcc.Markdown(
-            #                                     config.uitleg_categorie
-            #                                 )
-            #                             ],
-            #                             id='uitleg_collapse',
-            #                             hidden=True,
-            #                         )
-            #                     ],
-            #                 ),
-            #             ],
-            #             className="pretty_container column",
-            #         ),
-            #         html.Div(
-            #             dcc.Graph(id="OHW_bakje_graph"),
-            #             className="pretty_container column",
-            #         ),
-            #     ],
-            #     className="container-display",
-            # ),
-            # html.Div(
-            #     id='status_table_ext',
-            #     className="pretty_container",
-            #     # hidden=True,
-            # ),
+            html.Div(
+                id='status_table_ext',
+                className="pretty_container",
+                # hidden=True,
+            ),
         ],
         id="mainContainer",
         style={"display": "flex", "flex-direction": "column"},
@@ -339,7 +211,7 @@ def update_gauges(value):
     df_l = data_from_DB()
     output = []
     for pname in ['Brielle', 'Dongen', 'Helvoirt', 'Nijmegen']:
-        output += [pname]
+        output += [pname + ' (aantal woningen voltooid)']
         output += [len(df_l[pname])]
         output += [df_l[pname]['HasApp_Status'].value_counts()['VOLTOOID']]
 
@@ -348,90 +220,122 @@ def update_gauges(value):
 
 # Globale grafieken
 @app.callback(
-    [Output("OHW_globaal_graph", "figure"),
+    [Output("Bar_1", "figure"),
+     Output("Bar_2", "figure"),
+     Output("Bar_3", "figure"),
+     Output("status_table_ext", "children"),
+     Output("geo_plot", "figure"),
      ],
-    [Input("checklist_filters", 'value')
+    [Input("checklist_filters", 'value'),
+     Input("Bar_1", 'clickData'),
+     Input("Bar_2", 'clickData'),
+     Input("Bar_3", 'clickData'),
      ]
 )
-def make_barplot(filter_selectie):
+def make_barplot(filter_selectie, cell_b1, cell_b2, cell_b3):
     if filter_selectie is None:
         raise PreventUpdate
     df_l = data_from_DB()
     df = df_l[filter_selectie]
-    # category = 'global'
+
+    if cell_b1 is not None:
+        print(cell_b1['points'][0]['x'])
+        print(int(cell_b1['points'][0]['curveNumber']))
+        pt = abs(int(cell_b1['points'][0]['curveNumber'])-1)
+        df = df[df['schouwAkkoord'] == pt]
+    if cell_b2 is not None:
+        print(cell_b2['points'][0]['x'])
+        print(int(cell_b2['points'][0]['curveNumber']))
+        px = cell_b2['points'][0]['x']
+        pt = abs(int(cell_b2['points'][0]['curveNumber'])-1)
+        if px == 'BIS-civiel':
+            df = df[df['Status civiel'] == pt]
+        if px == 'BIS-lasAP':
+            df = df[df['LaswerkAPGereed'] == pt]
+        if px == 'BIS-lasDP':
+            df = df[df['LaswerkDPGereed'] == pt]
+    if cell_b3 is not None:
+        print(cell_b3['points'][0]['x'])
+        print(int(cell_b3['points'][0]['curveNumber']))
+        pt = abs(int(cell_b3['points'][0]['curveNumber'])-1)
+        if pt == 0:
+            df = df[df['Opleverstatus'] != 2]
+        if pt == 1:
+            df = df[df['Opleverstatus'] == 2]
+
     if df.empty:
         raise PreventUpdate
-    bar, stats, geo_plot = generate_graph(df)
-    return [bar]
+    bar, bar2, bar3, stats, geo_plot, df_table = generate_graph(df)
+    return [bar, bar2, bar3, df_table, geo_plot]
 
 
-@app.callback(
-    [Output("geo_plot", "figure"),
-     ],
-    [Input("checklist_filters", 'value'),
-     Input("OHW_globaal_graph", 'clickData'),
-     ]
-)
-def make_geoplot(filter_selectie, clickData):
-    if filter_selectie is None:
-        raise PreventUpdate
-    df_l = data_from_DB()
-    df = df_l[filter_selectie]
-    if clickData is not None:
-        df = df[(df['Opleverstatus'] == int(clickData['points'][0]['x'][1:])) &
-                (df['schouwAkkoord'] == int(clickData['points'][0]['curveNumber']))]
-    if df.empty:
-        raise PreventUpdate
-    bar, stats, geo_plot = generate_graph(df)
-    return [geo_plot]
+# @app.callback(
+#     [Output("geo_plot", "figure"),
+#      ],
+#     [Input("checklist_filters", 'value'),
+#      Input("Bar_1", 'clickData'),
+#      ]
+# )
+# def make_geoplot(filter_selectie, clickData):
+#     if filter_selectie is None:
+#         raise PreventUpdate
+#     df_l = data_from_DB()
+#     df = df_l[filter_selectie]
+#     # if clickData is not None:
+#     #     df = df[(df['Opleverstatus'] == int(clickData['points'][0]['x'][1:])) &
+#     #             (df['schouwAkkoord'] == int(clickData['points'][0]['curveNumber']))]
+#     if df.empty:
+#         raise PreventUpdate
+#     bar, bar2, bar3, stats, geo_plot, df_table = generate_graph(df)
+#     return [geo_plot]
 
 
-# DOWNLOAD FUNCTIES
-@app.callback(
-    [Output('download-link', 'href'),
-     #  Output('download-link1', 'href'),
-     #  Output('download-link2', 'href'),
-     ],
-    [Input("checklist_filters", 'value'),
-     #  Input('pie_graph', 'clickData'),
-     ]
-)
-def update_link(filter_selectie):
-    if filter_selectie is None:
-        raise PreventUpdate
-    # if category is None:
-    #     cat = config.beschrijving_cat[0]
-    # else:
-    #     cat = category.get('points')[0].get('label')
+# # DOWNLOAD FUNCTIES
+# @app.callback(
+#     [Output('download-link', 'href'),
+#      #  Output('download-link1', 'href'),
+#      #  Output('download-link2', 'href'),
+#      ],
+#     [Input("checklist_filters", 'value'),
+#      #  Input('pie_graph', 'clickData'),
+#      ]
+# )
+# def update_link(filter_selectie):
+#     if filter_selectie is None:
+#         raise PreventUpdate
+#     # if category is None:
+#     #     cat = config.beschrijving_cat[0]
+#     # else:
+#     #     cat = category.get('points')[0].get('label')
 
-    return ['/download_excel?filters={}'.format(filter_selectie),
-            # '/download_excel1?filters={}'.format(filter_selectie),
-            # '/download_excel2?filters={}'.format(filter_selectie)
-            ]
+#     return ['/download_excel?filters={}'.format(filter_selectie),
+#             # '/download_excel1?filters={}'.format(filter_selectie),
+#             # '/download_excel2?filters={}'.format(filter_selectie)
+#             ]
 
-# download categorie
-@app.server.route('/download_excel')
-def download_excel():
-    # category = flask.request.args.get('categorie')
-    filter_selectie = flask.request.args.get('filters')
-    df = data_from_DB(filter_selectie)
-    # version_r = max(df['Datum_WF'].dropna().sum()).replace('-', '_')
-    df_table = df
+# # download categorie
+# @app.server.route('/download_excel')
+# def download_excel():
+#     # category = flask.request.args.get('categorie')
+#     filter_selectie = flask.request.args.get('filters')
+#     df = data_from_DB(filter_selectie)
+#     # version_r = max(df['Datum_WF'].dropna().sum()).replace('-', '_')
+#     df_table = df
 
-    # Convert df to excel
-    strIO = io.BytesIO()
-    excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
-    df_table.to_excel(excel_writer, sheet_name="sheet1", index=False)
-    excel_writer.save()
-    strIO.getvalue()
-    strIO.seek(0)
+#     # Convert df to excel
+#     strIO = io.BytesIO()
+#     excel_writer = pd.ExcelWriter(strIO, engine="xlsxwriter")
+#     df_table.to_excel(excel_writer, sheet_name="sheet1", index=False)
+#     excel_writer.save()
+#     strIO.getvalue()
+#     strIO.seek(0)
 
-    # Name download file
-    date = dt.datetime.now().strftime('%d-%m-%Y')
-    filename = "Info_project_filters_{}_{}['x']lsx".format(filter_selectie, date)
-    return send_file(strIO,
-                     attachment_filename=filename,
-                     as_attachment=True)
+#     # Name download file
+#     date = dt.datetime.now().strftime('%d-%m-%Y')
+#     filename = "Info_project_filters_{}_{}['x']lsx".format(filter_selectie, date)
+#     return send_file(strIO,
+#                      attachment_filename=filename,
+#                      as_attachment=True)
 
 
 # HELPER FUNCTIES
@@ -449,7 +353,6 @@ def generate_graph(df):
     bar, stats, df_g = processed_data(df)
 
     if bar is not None:
-        labels = ['s35', 's5', 's1', 's31', 's14']
         # info_l = dict(
         #     # R0='Geplande aansluiting',
         #     R1='Geen toestemming bewoner',
@@ -475,34 +378,84 @@ def generate_graph(df):
         #     # R21='Wordt niet binnen dit project aangesloten',
         #     # R22='Vorst, niet planbaar'
         #     )
+        labels = {}
+        labels['Schouwen'] = ['Schouwen']
+        labels['BIS'] = ['BIS-civiel', 'BIS-lasAP', 'BIS-lasDP']
+        labels['HAS'] = ['HAS']
 
-        bar1 = go.Bar(x=labels, y=bar['1'], name='SchouwAkkoord', marker=go.bar.Marker(color='rgb(0, 255, 0)'))
-        bar2 = go.Bar(x=labels, y=bar['0'], name='geen SchouwAkkoord', marker=go.bar.Marker(color='rgb(255, 0, 0)'))
-        # bar3 = go.Bar(x=labels, y=bar['R3'], name=info_l['R3'])
-        # bar4 = go.Bar(x=labels, y=bar['R5'], name=info_l['R5'])
-        # bar5 = go.Bar(x=labels, y=bar['R6'], name=info_l['R6'])
-        # bar6 = go.Bar(x=labels, y=bar['R7'], name=info_l['R7'])
-        # bar7 = go.Bar(x=labels, y=bar['R8'], name=info_l['R8'])
-        # bar8 = go.Bar(x=labels, y=bar['R10'], name=info_l['R10'])
-        bar = go.Figure(data=[bar1, bar2], layout=go.Layout(barmode='stack', clickmode='event+select'))
+        bar1 = go.Bar(x=labels['Schouwen'],
+                      y=bar['Schouwen1'],
+                      #   name='SchouwAkkoord',
+                      marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+        bar2 = go.Bar(x=labels['Schouwen'],
+                      y=bar['Schouwen0'],
+                      #   name='geen SchouwAkkoord',
+                      marker=go.bar.Marker(color='rgb(255, 0, 0)'))
+        barc = go.Figure(data=[bar1, bar2],
+                         layout=go.Layout(barmode='stack',
+                                          clickmode='event+select',
+                                          showlegend=False))
+
+        bar1 = go.Bar(x=labels['BIS'],
+                      y=bar['BIS-civiel1'] + bar['BIS-lasAP1'] + bar['BIS-lasDP1'],
+                      #   name='SchouwAkkoord',
+                      marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+        bar2 = go.Bar(x=labels['BIS'],
+                      y=bar['BIS-civiel0'] + bar['BIS-lasAP0'] + bar['BIS-lasDP0'],
+                      #   name='geen SchouwAkkoord',
+                      marker=go.bar.Marker(color='rgb(255, 0, 0)'))
+        barc2 = go.Figure(data=[bar1, bar2],
+                          layout=go.Layout(barmode='stack',
+                                           clickmode='event+select',
+                                           showlegend=False))
+
+        bar1 = go.Bar(x=labels['HAS'],
+                      y=bar['HAS1'],
+                      #   name='SchouwAkkoord',
+                      marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+        bar2 = go.Bar(x=labels['HAS'],
+                      y=bar['HAS0'],
+                      #   name='geen SchouwAkkoord',
+                      marker=go.bar.Marker(color='rgb(255, 0, 0)'))
+        barc3 = go.Figure(data=[bar1, bar2],
+                          layout=go.Layout(barmode='stack',
+                                           clickmode='event+select',
+                                           showlegend=False))
+
+        df_t = df[['Sleutel', 'Opleverdatum',
+                   'Opleverstatus', 'Internestatus',
+                   'RedenNA', 'schouwAkkoord',
+                   'HasApp_Status', 'Toelichting status']].copy()
+        df_table = dash_table.DataTable(
+            columns=[{"name": i, "id": i} for i in df_t.columns],
+            data=df_t.to_dict("rows"),
+            style_table={'overflowX': 'auto'},
+            style_header=table_styles['header'],
+            style_cell=table_styles['cell']['action'],
+            style_filter=table_styles['filter'],
+            css=[{
+                'selector': 'table',
+                'rule': 'width: 100%;'
+            }],
+        )
 
     if df_g is not None:
         mapbox_access_token = "pk.eyJ1IjoiamFja2x1byIsImEiOiJjajNlcnh3MzEwMHZtMzNueGw3NWw5ZXF5In0.fk8k06T96Ml9CLGgKmk81w"
-        normalized_size = 1  # (df_g['Sleutel']-df_g['Sleutel'].min())/(df_g['Sleutel'].max()-df_g['Sleutel'].min())
+        normalized_size = df_g['Size'].to_list() + df_g['Size_DP'].to_list()
         df_g['clr'] = df_g['clr'].astype(int)
 
         map_data = [
             go.Scattermapbox(
-                lat=df_g['Lat'],
-                lon=df_g['Long'],
+                lat=df_g['Lat'].to_list() + df_g['Lat_DP'].to_list(),
+                lon=df_g['Long'].to_list() + df_g['Long_DP'].to_list(),
                 mode='markers',
                 marker=dict(
                     cmax=50,
                     cmin=0,
                     color=df_g['clr'],
-                    colorbar=dict(
-                        title='Colorbar'
-                    ),
+                    # colorbar=dict(
+                    #     title='Colorbar'
+                    # ),
                     colorscale=['green', 'yellow', 'red'],
                     reversescale=True,
                     size=normalized_size * 7,
@@ -520,7 +473,7 @@ def generate_graph(df):
             plot_bgcolor="#F9F9F9",
             paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=10), orientation="h"),
-            title="Overzicht status woningen (groen = afgerond)",
+            title="Woningen (groen = afgerond) & DPs (blauw)",
             mapbox=dict(
                 accesstoken=mapbox_access_token,
                 style="light",
@@ -531,22 +484,23 @@ def generate_graph(df):
 
         geo_plot = {'data': map_data, 'layout': map_layout}
 
-    return bar, stats, geo_plot
+    return barc, barc2, barc3, stats, geo_plot, df_table
 
 
 def processed_data(df):
     # bar chart
-    df_detail = df[df['HasApp_Status'] != 'VOLTOOID']
 
     bar = {}
-    status_0 = []
-    status_1 = []
-    for key in df_detail['Opleverstatus'].unique():
-        if key != 2:
-            status_0 += [len(df_detail[(df_detail['Opleverstatus'] == key) & (df_detail['schouwAkkoord'] == 0)])]
-            status_1 += [len(df_detail[(df_detail['Opleverstatus'] == key) & (df_detail['schouwAkkoord'] == 1)])]
-    bar['0'] = status_0
-    bar['1'] = status_1
+    bar['Schouwen0'] = [len(df[df['schouwAkkoord'] == 0])]
+    bar['Schouwen1'] = [len(df[df['schouwAkkoord'] == 1])]
+    bar['BIS-civiel0'] = [len(df[df['Status civiel'] == 0])]
+    bar['BIS-civiel1'] = [len(df[df['Status civiel'] == 1])]
+    bar['BIS-lasAP0'] = [len(df[df['LaswerkAPGereed'] == 0])]
+    bar['BIS-lasAP1'] = [len(df[df['LaswerkAPGereed'] == 1])]
+    bar['BIS-lasDP0'] = [len(df[df['LaswerkDPGereed'] == 0])]
+    bar['BIS-lasDP1'] = [len(df[df['LaswerkDPGereed'] == 1])]
+    bar['HAS0'] = [len(df[df['Opleverstatus'] != 2])]
+    bar['HAS1'] = [len(df[df['Opleverstatus'] == 2])]
 
     # stats
     stats = {'0': str(round(len(df))),
@@ -559,14 +513,21 @@ def processed_data(df):
             'Sleutel': 'count',
             'Opleverstatus': lambda x: sum(x == 2),
             'X locatie Rol': 'first',
-            'Y locatie Rol': 'first'
+            'Y locatie Rol': 'first',
+            'X locatie DP': 'first',
+            'Y locatie DP': 'first'
         }
     )
     # df_g.reset_index(inplace=True)
     df_g['clr'] = df_g['Opleverstatus'] / df_g['Sleutel'] * 100
     df_g['X locatie Rol'] = df_g['X locatie Rol'].str.replace(',', '.').astype(float)
     df_g['Y locatie Rol'] = df_g['Y locatie Rol'].str.replace(',', '.').astype(float)
+    df_g['X locatie DP'] = df_g['X locatie DP'].str.replace(',', '.').astype(float)
+    df_g['Y locatie DP'] = df_g['Y locatie DP'].str.replace(',', '.').astype(float)
     df_g['Lat'], df_g['Long'] = from_rd(df_g['X locatie Rol'], df_g['Y locatie Rol'])
+    df_g['Lat_DP'], df_g['Long_DP'] = from_rd(df_g['X locatie DP'], df_g['Y locatie DP'])
+    df_g['Size'] = 7
+    df_g['Size_DP'] = 14
 
     return bar, stats, df_g
 
