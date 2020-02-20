@@ -178,7 +178,7 @@ def get_body():
             html.Div(
                 id='status_table_ext',
                 className="pretty_container",
-                # hidden=True,
+                hidden=True,
             ),
         ],
         id="mainContainer",
@@ -224,6 +224,7 @@ def update_gauges(value):
      Output("Bar_2", "figure"),
      Output("Bar_3", "figure"),
      Output("status_table_ext", "children"),
+     Output("status_table_ext", "hidden"),
      Output("geo_plot", "figure"),
      ],
     [Input("checklist_filters", 'value'),
@@ -237,13 +238,16 @@ def make_barplot(filter_selectie, cell_b1, cell_b2, cell_b3):
         raise PreventUpdate
     df_l = data_from_DB()
     df = df_l[filter_selectie]
+    hidden = True
 
     if cell_b1 is not None:
+        hidden = False
         print(cell_b1['points'][0]['x'])
         print(int(cell_b1['points'][0]['curveNumber']))
         pt = abs(int(cell_b1['points'][0]['curveNumber'])-1)
         df = df[df['schouwAkkoord'] == pt]
     if cell_b2 is not None:
+        hidden = False
         print(cell_b2['points'][0]['x'])
         print(int(cell_b2['points'][0]['curveNumber']))
         px = cell_b2['points'][0]['x']
@@ -255,6 +259,7 @@ def make_barplot(filter_selectie, cell_b1, cell_b2, cell_b3):
         if px == 'BIS-lasDP':
             df = df[df['LaswerkDPGereed'] == pt]
     if cell_b3 is not None:
+        hidden = False
         print(cell_b3['points'][0]['x'])
         print(int(cell_b3['points'][0]['curveNumber']))
         pt = abs(int(cell_b3['points'][0]['curveNumber'])-1)
@@ -266,7 +271,7 @@ def make_barplot(filter_selectie, cell_b1, cell_b2, cell_b3):
     if df.empty:
         raise PreventUpdate
     bar, bar2, bar3, stats, geo_plot, df_table = generate_graph(df)
-    return [bar, bar2, bar3, df_table, geo_plot]
+    return [bar, bar2, bar3, df_table, hidden, geo_plot]
 
 
 # @app.callback(
@@ -442,7 +447,6 @@ def generate_graph(df):
     if df_g is not None:
         mapbox_access_token = "pk.eyJ1IjoiamFja2x1byIsImEiOiJjajNlcnh3MzEwMHZtMzNueGw3NWw5ZXF5In0.fk8k06T96Ml9CLGgKmk81w"
         normalized_size = df_g['Size'].to_list() + df_g['Size_DP'].to_list()
-        df_g['clr'] = df_g['clr'].astype(int)
 
         map_data = [
             go.Scattermapbox(
@@ -452,7 +456,7 @@ def generate_graph(df):
                 marker=dict(
                     cmax=50,
                     cmin=0,
-                    color=df_g['clr'],
+                    color=df_g['clr'].to_list() + df_g['clr-DP'].to_list(),
                     # colorbar=dict(
                     #     title='Colorbar'
                     # ),
@@ -508,18 +512,22 @@ def processed_data(df):
              '2': str(round(0))}
 
     # geoplot
-    df_g = df.groupby('Sleutel').agg(
-        {
-            'Sleutel': 'count',
-            'Opleverstatus': lambda x: sum(x == 2),
-            'X locatie Rol': 'first',
-            'Y locatie Rol': 'first',
-            'X locatie DP': 'first',
-            'Y locatie DP': 'first'
-        }
-    )
+    # df_g = df.groupby('Sleutel').agg(
+    #     {
+    #         'Sleutel': 'count',
+    #         'Opleverstatus': lambda x: sum(x == 2),
+    #         'X locatie Rol': 'first',
+    #         'Y locatie Rol': 'first',
+    #         'X locatie DP': 'first',
+    #         'Y locatie DP': 'first'
+    #     }
+    # )
     # df_g.reset_index(inplace=True)
-    df_g['clr'] = df_g['Opleverstatus'] / df_g['Sleutel'] * 100
+    df_g = df.copy()
+    df_g['clr'] = 0
+    df_g.loc[df_g['Opleverstatus'] == 2, ('clr')] = 50
+    df_g['clr-DP'] = 0
+    df_g.loc[df_g['LaswerkDPGereed'] == 1, ('clr-DP')] = 50
     df_g['X locatie Rol'] = df_g['X locatie Rol'].str.replace(',', '.').astype(float)
     df_g['Y locatie Rol'] = df_g['Y locatie Rol'].str.replace(',', '.').astype(float)
     df_g['X locatie DP'] = df_g['X locatie DP'].str.replace(',', '.').astype(float)
