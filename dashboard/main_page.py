@@ -5,7 +5,7 @@ import config
 import pandas as pd
 import dash_core_components as dcc
 import plotly.graph_objs as go
-import dash_daq as daq
+# import dash_daq as daq
 # import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
@@ -77,81 +77,20 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                        [
-                            html.Div(
-                                [
-                                    dcc.Dropdown(
-                                        options=[
-                                            {'label': 'Brielle',
-                                                'value': 'Brielle'},
-                                            {'label': 'Nijmegen',
-                                                'value': 'Nijmegen'},
-                                            {'label': 'Helvoirt',
-                                                'value': 'Helvoirt'},
-                                            {'label': 'Dongen',
-                                                'value': 'Dongen'},
-                                        ],
-                                        id='checklist_filters',
-                                        value='Brielle',
-                                    ),
-                                ],
-                                id="filter_container",
-                                className="pretty_container_title columns",
-                            ),
-                            html.Div(
-                                [
-                                    daq.Gauge(
-                                        id='my-gauge-1',
-                                        label="Default",
-                                        value=6,
-                                        size=100,
-                                        max=10,
-                                    ),
-                                ],
-                                id="download_container",
-                                className="pretty_container_title columns",
-                            ),
-                            html.Div(
-                                [
-                                    daq.Gauge(
-                                        id='my-gauge-2',
-                                        label="Default",
-                                        value=6,
-                                        size=100,
-                                    ),
-                                ],
-                                id="download_container",
-                                className="pretty_container_title columns",
-                            ),
-                            html.Div(
-                                [
-                                    daq.Gauge(
-                                        id='my-gauge-3',
-                                        label="Default",
-                                        value=6,
-                                        size=100,
-                                    ),
-                                ],
-                                id="download_container",
-                                className="pretty_container_title columns",
-                            ),
-                            html.Div(
-                                [
-                                    daq.Gauge(
-                                        id='my-gauge-4',
-                                        label="Default",
-                                        value=6,
-                                        size=100,
-                                    ),
-                                ],
-                                id="download_container",
-                                className="pretty_container_title columns",
-                            ),
-                        ],
-                        id="info-container",
-                        className="container-display",
+                            [dcc.Graph(id="Bar_all",
+                                       figure=bar_projects(),
+                                       )],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Bar_all2",
+                                       figure=bar_projects(),
+                                       )],
+                            className="pretty_container column",
                     ),
                 ],
+                id="main_graphs0",
+                className="container-display",
             ),
             html.Div(
                 [
@@ -187,35 +126,29 @@ def get_body():
     return page
 
 
-# Info gauge meters
-@app.callback(
-    [
-     Output("my-gauge-1", "label"),
-     Output("my-gauge-1", "max"),
-     Output("my-gauge-1", "value"),
-     Output("my-gauge-2", "label"),
-     Output("my-gauge-2", "max"),
-     Output("my-gauge-2", "value"),
-     Output("my-gauge-3", "label"),
-     Output("my-gauge-3", "max"),
-     Output("my-gauge-3", "value"),
-     Output("my-gauge-4", "label"),
-     Output("my-gauge-4", "max"),
-     Output("my-gauge-4", "value"),
-    ],
-    [
-     Input("checklist_filters", "value"),
-    ],
-)
-def update_gauges(value):
+def bar_projects():
     df_l = data_from_DB()
-    output = []
-    for pname in ['Brielle', 'Dongen', 'Helvoirt', 'Nijmegen']:
-        output += [pname + ' (aantal woningen voltooid)']
-        output += [len(df_l[pname])]
-        output += [df_l[pname]['HasApp_Status'].value_counts()['VOLTOOID']]
+    bars = dict(tot=[], stat2=[])
+    pnames = ['Brielle', 'Dongen', 'Helvoirt', 'Nijmegen']
+    for pname in pnames:
+        bars['tot'] += [len(df_l[pname])]
+        bars['stat2'] += [df_l[pname]['Opleverstatus'].value_counts()[2]]
 
-    return output
+    bar1 = go.Bar(x=pnames,
+                  y=bars['stat2'],
+                  #   name='SchouwAkkoord',
+                  marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+    bar2 = go.Bar(x=pnames,
+                  y=bars['tot'],
+                  #   name='geen SchouwAkkoord',
+                  marker=go.bar.Marker(color='rgb(255, 0, 0)'))
+    barc = go.Figure(data=[bar1, bar2],
+                     layout=go.Layout(barmode='stack',
+                                      clickmode='event+select',
+                                      showlegend=False,
+                                      height=250))
+
+    return barc
 
 
 # Globale grafieken
