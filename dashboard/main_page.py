@@ -1,6 +1,7 @@
 # import flask
 # import io
 import config
+import os
 # import datetime as dt
 import pandas as pd
 import dash_core_components as dcc
@@ -36,59 +37,61 @@ def get_body():
                       data={'0': '0', '1': '0', '2': '0'}),
             dcc.Store(id="aggregate_data2",
                       data={'0': '0', '1': '0', '2': '0'}),
+            # html.Div(
+            #     [
+            #         html.Div(
+            #             [
+            #                 html.Img(
+            #                     src=app.get_asset_url("vqd.png"),
+            #                     id="vqd-image",
+            #                     style={
+            #                         "height": "100px",
+            #                         "width": "auto",
+            #                         "margin-bottom": "25px",
+            #                     },
+            #                 )
+            #             ],
+            #             className="one-third column",
+            #         ),
+            #         html.Div(
+            #             [
+            #                 # html.Div(
+            #                 #     [
+            #                 #         html.H3(
+            #                 #             "Analyse OHW VWT FTTx",
+            #                 #             style={"margin-bottom": "0px"},
+            #                 #         ),
+            #                 #         # html.P(),
+            #                 #         # html.P("(Laatste update: 05-02-2020)")
+            #                 #     ],
+            #                 #     style={"margin-left": "-120px"},
+            #                 # )
+            #             ],
+            #             className="one-half column",
+            #             id="title",
+            #         ),
+            #     ],
+            #     id="header",
+            #     className="row",
+            #     style={"margin-bottom": "25px"},
+            # ),
             html.Div(
-                [
-                    html.Div(
-                        [
-                            html.Img(
-                                src=app.get_asset_url("vqd.png"),
-                                id="vqd-image",
-                                style={
-                                    "height": "100px",
-                                    "width": "auto",
-                                    "margin-bottom": "25px",
-                                },
-                            )
-                        ],
-                        className="one-third column",
-                    ),
-                    html.Div(
-                        [
-                            html.Div(
-                                [
-                                    html.H3(
-                                        "Analyse OHW VWT FTTx",
-                                        style={"margin-bottom": "0px"},
-                                    ),
-                                    html.P(),
-                                    html.P("(Laatste update: 05-02-2020)")
-                                ],
-                                style={"margin-left": "-120px"},
-                            )
-                        ],
-                        className="one-half column",
-                        id="title",
-                    ),
-                ],
-                id="header",
-                className="row",
-                style={"margin-bottom": "25px"},
+                children=bar_projects(0),
+                id="main_graphs0",
+                className="container-display",
             ),
             html.Div(
-                [
-                    html.Div(
-                            [dcc.Graph(id="Bar_all",
-                                       figure=bar_projects(),
-                                       )],
-                            className="pretty_container column",
-                    ),
-                    html.Div(
-                            [dcc.Graph(id="Bar_all2",
-                                       figure=bar_projects(),
-                                       )],
-                            className="pretty_container column",
-                    ),
-                ],
+                children=bar_projects(1),
+                id="main_graphs0",
+                className="container-display",
+            ),
+            html.Div(
+                children=bar_projects(2),
+                id="main_graphs0",
+                className="container-display",
+            ),
+            html.Div(
+                children=bar_projects(3),
                 id="main_graphs0",
                 className="container-display",
             ),
@@ -126,29 +129,64 @@ def get_body():
     return page
 
 
-def bar_projects():
+def bar_projects(s):
     df_l = data_from_DB()
-    bars = dict(tot=[], stat2=[])
-    pnames = ['Brielle', 'Dongen', 'Helvoirt', 'Nijmegen']
-    for pname in pnames:
-        bars['tot'] += [len(df_l[pname])]
-        bars['stat2'] += [df_l[pname]['Opleverstatus'].value_counts()[2]]
+    list_div = []
 
-    bar1 = go.Bar(x=pnames,
-                  y=bars['stat2'],
-                  #   name='SchouwAkkoord',
-                  marker=go.bar.Marker(color='rgb(0, 255, 0)'))
-    bar2 = go.Bar(x=pnames,
-                  y=bars['tot'],
-                  #   name='geen SchouwAkkoord',
-                  marker=go.bar.Marker(color='rgb(255, 0, 0)'))
-    barc = go.Figure(data=[bar1, bar2],
-                     layout=go.Layout(barmode='stack',
-                                      clickmode='event+select',
-                                      showlegend=False,
-                                      height=250))
+    for i, pname in enumerate(df_l.keys()):
+        if (i >= s * 5) & (i < (s + 1) * 5):
+            fig = go.Figure()
+            nb = len(df_l[pname])
 
-    return barc
+            if 2 in df_l[pname]['Opleverstatus'].unique():
+                perc_complete = df_l[pname]['Opleverstatus'].value_counts()[2]/nb*100
+            else:
+                perc_complete = 0
+
+            if 'R0' in df_l[pname]['RedenNA'].unique():
+                perc_fout = (df_l[pname]['RedenNA'].value_counts().sum() - df_l[pname]['RedenNA'].value_counts()['R0'])/nb*100
+            elif 'R00' in df_l[pname]['RedenNA'].unique():
+                perc_fout = (df_l[pname]['RedenNA'].value_counts().sum() - df_l[pname]['RedenNA'].value_counts()['R00'])/nb*100
+            else:
+                perc_fout = df_l[pname]['RedenNA'].value_counts().sum()/nb * 100
+
+            # x_dloc = int(i / 4) * 0.21
+            # y_dloc = (i % 4 * 0.22)
+            fig.add_trace(go.Indicator(
+                mode="gauge",
+                value=perc_complete,
+                # align="right",
+                # delta={'reference': 100},
+                # domain={'x': [0.07 + x_dloc, 0.16 + x_dloc], 'y': [0.15 + y_dloc, 0.20 + y_dloc]},
+                domain={'x': [0.2, 1], 'y': [0.5, 0.8]},
+                title={'text': '<b>' + pname[0:4] + '</b>', 'font': {'size': 12}},
+                gauge={'shape': "bullet",
+                       'axis': {'range': [None, 100]},
+                       'threshold': {'line': {'color': "black", 'width': 2},
+                                     'thickness': 0.75,
+                                     'value': 100},
+                       'steps': [{'range': [0, round(perc_fout)], 'color': "cyan"},
+                                 {'range': [round(perc_fout), 100], 'color': "royalblue"}
+                                 ],
+                       'bar': {'color': "darkblue"}
+                       }))
+
+            fig.update_layout(height=50,
+                              width=320,
+                              margin={'t': 0, 'b': 0, 'l': 0})
+            div = [html.Div(
+                            [dcc.Graph(id="Bar_all",
+                                       figure=fig)
+                             ],
+                            )]
+            list_div += div
+
+    if s == 3:
+        for i in range(len(list_div), 5):
+            div = [html.Div(className="pretty_container column")]
+            list_div += div
+
+    return list_div
 
 
 # Globale grafieken
@@ -160,13 +198,14 @@ def bar_projects():
      Output("status_table_ext", "hidden"),
      Output("geo_plot", "figure"),
      ],
-    [Input("checklist_filters", 'value'),
+    [Input("Bar_all", 'clickData'),
      Input("Bar_1", 'clickData'),
      Input("Bar_2", 'clickData'),
      Input("Bar_3", 'clickData'),
      ]
 )
 def make_barplot(filter_selectie, cell_b1, cell_b2, cell_b3):
+    print(filter_selectie)
     if filter_selectie is None:
         raise PreventUpdate
     df_l = data_from_DB()
@@ -279,9 +318,10 @@ def make_barplot(filter_selectie, cell_b1, cell_b2, cell_b3):
 # HELPER FUNCTIES
 @cache.memoize()
 def data_from_DB():
+    fn = os.listdir(config.path_to_files)
     df_l = {}
-    for p in ['Brielle', 'Dongen', 'Helvoirt', 'Nijmegen']:
-        df_l[p] = pd.read_csv(config.files[p], sep=';', encoding='latin-1')
+    for i, p in enumerate(fn):
+        df_l[p[:-13]] = pd.read_csv(config.path_to_files + fn[i], sep=';', encoding='latin-1', low_memory=False)
 
     return df_l
 
