@@ -13,7 +13,7 @@ import dash_html_components as html
 import dash_table
 # from flask import send_file
 # from google.cloud import firestore
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
 from app import app, cache
@@ -35,9 +35,9 @@ def get_body():
     page = html.Div(
         [
             dcc.Store(id="aggregate_data",
-                      data={'0': '0', '1': '0', '2': '0'}),
+                      data=None),
             dcc.Store(id="aggregate_data2",
-                      data={'0': '0', '1': '0', '2': '0'}),
+                      data=None),
             # html.Div(
             #     [
             #         html.Div(
@@ -96,16 +96,20 @@ def get_body():
                             [dcc.Graph(id="Bar_1")],
                             className="pretty_container column",
                     ),
-                    # html.Div(
-                    #         [dcc.Graph(id="Bar_2")],
-                    #         className="pretty_container column",
-                    # ),
-                    # html.Div(
-                    #         [dcc.Graph(id="Bar_3")],
-                    #         className="pretty_container column",
-                    # ),
+                    html.Div(
+                            [dcc.Graph(id="graph_progT")],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="graph_prog")],
+                            className="pretty_container column",
+                    ),
                     html.Div(
                             [dcc.Graph(id="count_R")],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="graph_targets")],
                             className="pretty_container column",
                     ),
                 ],
@@ -127,26 +131,13 @@ def get_body():
 def bar_projects():
     df_l, t_s = data_from_DB()
     perc_complete = []
-    perc_fout = []
+    # perc_fout = []
     pnames = []
 
-    for i, pname in enumerate(df_l.keys()):
-        nb = len(df_l[pname])
-        pnames += [pname]
+    rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
 
-        if 2 in df_l[pname]['Opleverstatus'].unique():
-            perc_complete += [df_l[pname]['Opleverstatus'].value_counts()[2]/nb*100]
-        else:
-            perc_complete += [0]
+    perc_complete = [(el1/el2)*100 for el1, el2 in zip(af_l, tot_l)]
 
-        if 'R0' in df_l[pname]['RedenNA'].unique():
-            perc_fout += [(df_l[pname]['RedenNA'].value_counts().sum() - df_l[pname]['RedenNA'].value_counts()['R0'])/nb*100]
-        elif 'R00' in df_l[pname]['RedenNA'].unique():
-            perc_fout += [(df_l[pname]['RedenNA'].value_counts().sum() - df_l[pname]['RedenNA'].value_counts()['R00'])/nb*100]
-        else:
-            perc_fout += [df_l[pname]['RedenNA'].value_counts().sum()/nb * 100]
-
-    rc1, rc2, rc1_mean, rc2_mean, tot_l = speed_projects(df_l, t_s)
     rc = []
     for i, el in enumerate(rc1):
         if rc2[i] == 0:
@@ -183,6 +174,8 @@ def bar_projects():
                              'layout': {'clickmode': 'event+select',
                                         'xaxis': {'title': 'huizen afgerond (%)'},
                                         'yaxis': {'title': 'snelheid [woningen / dag]'},
+                                        'showlegend': False,
+                                        'title': {'text': 'Klik op een project voor meer informatie! <br> [projecten binnen het groene vlak verlopen volgens verwachting]'},
                                         }
                              }
                      )]
@@ -197,72 +190,65 @@ def bar_projects():
      Output("status_table_ext", "hidden"),
      Output("geo_plot", "figure"),
      Output("count_R", "figure"),
+     Output("aggregate_data", 'data'),
+     Output("aggregate_data2", 'data'),
+     Output("graph_prog", 'figure'),
+     Output("graph_progT", 'figure'),
+     Output("graph_targets", 'figure'),
      ],
     [Input("project_performance", 'clickData'),
      Input("Bar_1", 'clickData'),
      Input("count_R", 'clickData'),
+     ],
+    [State("aggregate_data", 'data'),
+     State("aggregate_data2", 'data'),
      ]
 )
-def make_barplot(filter_selectie, cell_b1, cell_bR):
+def make_barplot(filter_selectie, cell_b1, cell_bR, mask_all, filter_a):
     if filter_selectie is None:
         raise PreventUpdate
-    df_l, _ = data_from_DB()
+    df_l, t_s = data_from_DB()
     df = df_l[filter_selectie['points'][0]['text']]
     hidden = True
 
-    if cell_b1 is not None:
+    if cell_b1 is None:
+        mask_all = None
+    elif filter_selectie == filter_a:
         hidden = False
         pt_f = cell_b1['points'][0]['x']
-        pt_c = cell_b1['points'][0]['curveNumber']
+        if cell_b1['points'][0]['curveNumber'] == 0:
+            pt_c = 'LB1'
+        if cell_b1['points'][0]['curveNumber'] == 1:
+            pt_c = 'LB1HP'
+        if cell_b1['points'][0]['curveNumber'] == 2:
+            pt_c = 'LB0'
+        if cell_b1['points'][0]['curveNumber'] == 3:
+            pt_c = 'HB1'
+        if cell_b1['points'][0]['curveNumber'] == 4:
+            pt_c = 'HB1HP'
+        if cell_b1['points'][0]['curveNumber'] == 5:
+            pt_c = 'HB0'
+
+        bar, _, _, _ = processed_data(df)
+
+        mask = bar[pt_f + pt_c + '-mask']
+
+        print(cell_b1)
         print(pt_f)
         print(pt_c)
 
-        if pt_f == 'Schouwen-toestemmingcheck (LB/HB)':
-            if pt_c == 0:
-                mask = (~df['Toestemming'].isna()) & (df['Soort_bouw'] != 'Hoog')
-            if pt_c == 1:
-                mask = (~df['Toestemming'].isna()) & (df['Soort_bouw'] == 'Hoog')
-            if pt_c == 2:
-                mask = (df['Toestemming'].isna()) & (df['Soort_bouw'] != 'Hoog')
-            if pt_c == 3:
-                mask = (df['Toestemming'].isna()) & (df['Soort_bouw'] == 'Hoog')
+        if mask_all is None:
+            mask_all = mask
+        else:
+            mask_all = mask_all & mask
 
-        if pt_f == 'Schouwen-gereed':
-            if pt_c == 0:
-                mask = (df['D2D_status'] == 'Bij de weg') & (df['Toestemming'] == 'Ja')
-            if pt_c == 2:
-                mask = df['D2D_status'] == 'Bij de Woning'
-
-        if pt_f == 'BIS-civiel':
-            if pt_c == 0:
-                mask = df['Status civiel'].astype(str) == '0'
-            if pt_c == 1:
-                mask = df['Status civiel'].astype(str) == '1'
-
-        if pt_f == 'Montage-lasAP':
-            if pt_c == 0:
-                mask = df['LaswerkAPGereed'] == 0
-            if pt_c == 1:
-                mask = df['LaswerkAPGereed'] == 1
-
-        if pt_f == 'Montage-lasDP':
-            if pt_c == 0:
-                mask = df['LaswerkDPGereed'] == 0
-            if pt_c == 1:
-                mask = df['LaswerkDPGereed'] == 1
-
-        if pt_f == 'HAS':
-            if pt_c == 0:
-                mask = df['Opleverstatus'] != 2
-            if pt_c == 1:
-                mask = df['Opleverstatus'] == 2
-
-        df = df[mask]
+        df = df[mask_all]
 
     if df.empty:
         raise PreventUpdate
-    bar, stats, geo_plot, df_table, bar_R = generate_graph(df)
-    return [bar, df_table, hidden, geo_plot, bar_R]
+    rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
+    bar, stats, geo_plot, df_table, bar_R, fig_prog, fig_progT, fig_targets = generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie['points'][0]['text'], x_d, y_cum, t_s)
+    return [bar, df_table, hidden, geo_plot, bar_R, mask_all, filter_selectie, fig_prog, fig_progT, fig_targets]
 
 
 # HELPER FUNCTIES
@@ -282,7 +268,7 @@ def data_from_DB():
     return df_l, t_s
 
 
-def generate_graph(df):
+def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
 
     bar, stats, df_g, count_R = processed_data(df)
 
@@ -314,46 +300,62 @@ def generate_graph(df):
             R_geen='Geen reden of R0'
             )
         labels = {}
-        labels['Schouwen'] = ['Schouwen-toestemmingcheck (LB/HB)', 'Schouwen-gereed']
-        labels['BIS'] = ['BIS-civiel', 'Montage-lasAP', 'Montage-lasDP']
-        labels['HAS'] = ['HAS']
+        labels['OHW'] = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
 
-        bar1a = go.Bar(x=labels['Schouwen'],
-                       y=bar['Schouwen-toestemmingLB1'] + bar['Schouwen-afgerond1'],
-                       #   name='SchouwAkkoord',
+        bar1a = go.Bar(x=labels['OHW'],
+                       y=bar['SchouwenLB1'] + \
+                         bar['BISLB1'] + \
+                         bar['Montage-lasAPLB1'] + \
+                         bar['Montage-lasDPLB1'] + \
+                         bar['HASLB1'],
+                       name='LB1HC',
                        marker=go.bar.Marker(color='rgb(0, 200, 0)'))
-        bar1b = go.Bar(x=labels['Schouwen'],
-                       y=bar['Schouwen-toestemmingHB1'] + [0],
-                       #   name='geen SchouwAkkoord',
+        bar1b = go.Bar(x=labels['OHW'],
+                       y=[0] + \
+                         [0] + \
+                         [0] + \
+                         [0] + \
+                         bar['HASLB1HP'],
+                       name='LB1HP',
+                       marker=go.bar.Marker(color='rgb(0, 230, 0)'))
+        bar1c = go.Bar(x=labels['OHW'],
+                       y=bar['SchouwenLB0'] + \
+                         bar['BISLB0'] + \
+                         bar['Montage-lasAPLB0'] + \
+                         bar['Montage-lasDPLB0'] + \
+                         bar['HASLB0'],
+                       name='LB0',
+                       marker=go.bar.Marker(color='rgb(200, 0, 0)'))
+        bar1d = go.Bar(x=labels['OHW'],
+                       y=bar['SchouwenHB1'] + \
+                         bar['BISHB1'] + \
+                         bar['Montage-lasAPHB1'] + \
+                         bar['Montage-lasDPHB1'] + \
+                         bar['HASHB1'],
+                       name='HB1HC',
                        marker=go.bar.Marker(color='rgb(0, 255, 0)'))
-        bar1c = go.Bar(x=labels['Schouwen'],
-                       y=bar['Schouwen-toestemmingLB0'] + bar['Schouwen-afgerond0'],
-                       #   name='geen SchouwAkkoord',
-                       marker=go.bar.Marker(color='rgb(200, 0, 0)'))
-        bar1d = go.Bar(x=labels['Schouwen'],
-                       y=bar['Schouwen-toestemmingHB0'] + [0],
-                       #   name='geen SchouwAkkoord',
+        bar1e = go.Bar(x=labels['OHW'],
+                       y=[0] + \
+                         [0] + \
+                         [0] + \
+                         [0] + \
+                         bar['HASHB1HP'],
+                       name='HB1HP',
+                       marker=go.bar.Marker(color='rgb(0, 230, 0)'))
+        bar1f = go.Bar(x=labels['OHW'],
+                       y=bar['SchouwenHB0'] + \
+                         bar['BISHB0'] + \
+                         bar['Montage-lasAPHB0'] + \
+                         bar['Montage-lasDPHB0'] + \
+                         bar['HASHB0'],
+                       name='HB0',
                        marker=go.bar.Marker(color='rgb(255, 0, 0)'))
-        bar2a = go.Bar(x=labels['BIS'],
-                       y=bar['BIS-civiel1'] + bar['BIS-lasAP1'] + bar['BIS-lasDP1'],
-                       #   name='SchouwAkkoord',
-                       marker=go.bar.Marker(color='rgb(0, 200, 0)'))
-        bar2b = go.Bar(x=labels['BIS'],
-                       y=bar['BIS-civiel0'] + bar['BIS-lasAP0'] + bar['BIS-lasDP0'],
-                       #   name='geen SchouwAkkoord',
-                       marker=go.bar.Marker(color='rgb(200, 0, 0)'))
-        bar3a = go.Bar(x=labels['HAS'],
-                       y=bar['HAS1'],
-                       #   name='SchouwAkkoord',
-                       marker=go.bar.Marker(color='rgb(0, 200, 0)'))
-        bar3b = go.Bar(x=labels['HAS'],
-                       y=bar['HAS0'],
-                       #   name='geen SchouwAkkoord',
-                       marker=go.bar.Marker(color='rgb(200, 0, 0)'))
-        barc = go.Figure(data=[bar1a, bar1b, bar1c, bar1d, bar2a, bar2b, bar3a, bar3b],
+
+        barc = go.Figure(data=[bar1a, bar1b, bar1c, bar1d, bar1e, bar1f],
                          layout=go.Layout(barmode='stack',
                                           clickmode='event+select',
-                                          showlegend=False,
+                                          showlegend=True,
+                                          title={'text': 'OHW per projectfase:'}
                                           ))
 
         df_t = df[['Sleutel', 'Opleverdatum',
@@ -384,6 +386,63 @@ def generate_graph(df):
                                            showlegend=False,
                                            #    yaxis={'title': {'text': '%'}},
                                            ))
+        fig_prog = {'data': [{'x': list(x_e_l[filter_selectie]),
+                              'y': list(y_e_l[filter_selectie]),
+                              'mode': 'lines'
+                              },
+                             {'x': df_s_l[filter_selectie].index.to_list(),
+                              'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
+                              'mode': 'markers'
+                              }
+                             ],
+                    'layout': {
+                            #    'height': 225,
+                            #    'margin': {'l': 20, 'b': 30, 'r': 10, 't': 10},
+                               'xaxis': {'title': 'opleverdagen [dag]', 'range': [0, 3*365]},
+                               'yaxis': {'title': 'Totaal afgerond [%]', 'range': [0, 110]},
+                               'showlegend': False,
+                               }
+                    }
+
+        fig_progT = {'data': [{'x': list(x_d[0:1000]),
+                              'y': list(y_cum[0:1000]),
+                              'mode': 'lines'
+                              },
+                            #  {'x': df_s_l[filter_selectie].index.to_list(),
+                            #   'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
+                            #   'mode': 'markers'
+                            #   }
+                             ],
+                    'layout': {
+                            #    'height': 225,
+                            #    'margin': {'l': 20, 'b': 30, 'r': 10, 't': 10},
+                               'xaxis': {'title': 'Opleverdatum [dag]', 'range': [min(t_s.values()), '2022-01-01']},
+                               'yaxis': {'title': 'Aantal huizen nog aan te sluiten', 'range': [0, 130000]},
+                               'showlegend': False,
+                               }
+                     }
+        dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) & (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
+        dat_HAS = pd.to_datetime(df[(~df['HASdatum'].isna()) & (~df['Opleverdatum'].isna())]['HASdatum'], format='%d-%m-%Y')
+        dat_diff = (((dat_HAS - dat_opg).dt.days + 7) / 7).astype(int)
+
+        fig_targets = {'data': [{'x': dat_diff.to_list(),
+                            #   'y': list(y_cum[0:1000]),
+                              'type': 'histogram'
+                              },
+                            #  {'x': df_s_l[filter_selectie].index.to_list(),
+                            #   'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
+                            #   'mode': 'markers'
+                            #   }
+                             ],
+                    'layout': {
+                            #    'height': 225,
+                            #    'margin': {'l': 20, 'b': 30, 'r': 10, 't': 10},
+                               'xaxis': {'range': [0, 5]},
+                            #    'yaxis': {'title': 'Aantal huizen nog aan te sluiten',
+                               'showlegend': False,
+                               'title': {'text': 'Binnen hoeveel weken is HAS aangesloten gegeven HASdatum'},
+                               }
+                       }
 
     if df_g is not None:
         mapbox_access_token = "pk.eyJ1IjoiamFja2x1byIsImEiOiJjajNlcnh3MzEwMHZtMzNueGw3NWw5ZXF5In0.fk8k06T96Ml9CLGgKmk81w"
@@ -429,35 +488,61 @@ def generate_graph(df):
 
         geo_plot = {'data': map_data, 'layout': map_layout}
 
-    return barc, stats, geo_plot, df_table, bar_R
+    return barc, stats, geo_plot, df_table, bar_R, fig_prog, fig_progT, fig_targets
 
 
 def processed_data(df):
     # bar chart
 
     bar = {}
-    bar['Schouwen-toestemmingLB0'] = [len(df[(df['Toestemming'].isna()) &
-                                             (df['Soort_bouw'] != 'Hoog')])]
-    bar['Schouwen-toestemmingLB1'] = [len(df[(~df['Toestemming'].isna()) &
-                                             (df['Soort_bouw'] != 'Hoog')])]
-    bar['Schouwen-toestemmingHB0'] = [len(df[(df['Toestemming'].isna()) &
-                                             (df['Soort_bouw'] == 'Hoog')])]
-    bar['Schouwen-toestemmingHB1'] = [len(df[(~df['Toestemming'].isna()) &
-                                             (df['Soort_bouw'] == 'Hoog')])]
-    bar['Schouwen-afgerond0-ohw'] = [len(df[(df['D2D_status'] == 'Bij de weg') &
-                                            (df['Toestemming'] == 'Ja')])]
-    bar['Schouwen-afgerond0'] = [len(df[((df['D2D_status'] == 'Bij de weg') &
-                                        (df['Toestemming'] != 'Ja')) |
-                                        (df['D2D_status'].isna())])]
-    bar['Schouwen-afgerond1'] = [len(df[df['D2D_status'] == 'Bij de Woning'])]
-    bar['BIS-civiel0'] = [len(df[df['Status civiel'].astype(str) == '0'])]
-    bar['BIS-civiel1'] = [len(df[df['Status civiel'].astype(str) == '1'])]
-    bar['BIS-lasAP0'] = [len(df[df['LaswerkAPGereed'] == 0])]
-    bar['BIS-lasAP1'] = [len(df[df['LaswerkAPGereed'] == 1])]
-    bar['BIS-lasDP0'] = [len(df[df['LaswerkDPGereed'] == 0])]
-    bar['BIS-lasDP1'] = [len(df[df['LaswerkDPGereed'] == 1])]
-    bar['HAS0'] = [len(df[df['Opleverstatus'] != 2])]
-    bar['HAS1'] = [len(df[df['Opleverstatus'] == 2])]
+    bar['SchouwenLB0-mask'] = (df['Toestemming'].isna()) & (df['Soort_bouw'] != 'Hoog')
+    bar['SchouwenLB0'] =[len(df[bar['SchouwenLB0-mask']])]
+    bar['SchouwenLB1-mask'] = (~df['Toestemming'].isna()) & (df['Soort_bouw'] != 'Hoog')
+    bar['SchouwenLB1'] =[len(df[bar['SchouwenLB1-mask']])]
+    bar['SchouwenHB0-mask'] = (df['Toestemming'].isna()) & (df['Soort_bouw'] == 'Hoog')
+    bar['SchouwenHB0'] =[len(df[bar['SchouwenHB0-mask']])]
+    bar['SchouwenHB1-mask'] = (~df['Toestemming'].isna()) & (df['Soort_bouw'] == 'Hoog')
+    bar['SchouwenHB1'] =[len(df[bar['SchouwenHB1-mask']])]
+
+    bar['BISLB0-mask'] = (df['Opleverstatus'] == 0) & (df['Soort_bouw'] != 'Hoog')
+    bar['BISLB0'] =[len(df[bar['BISLB0-mask']])]
+    bar['BISLB1-mask'] = (df['Opleverstatus'] != 0) & (df['Soort_bouw'] != 'Hoog')
+    bar['BISLB1'] =[len(df[bar['BISLB1-mask']])]
+    bar['BISHB0-mask'] = (df['Opleverstatus'] == 0) & (df['Soort_bouw'] == 'Hoog')
+    bar['BISHB0'] =[len(df[bar['BISHB0-mask']])]
+    bar['BISHB1-mask'] = (df['Opleverstatus'] != 0) & (df['Soort_bouw'] == 'Hoog')
+    bar['BISHB1'] =[len(df[bar['BISHB1-mask']])]
+
+    bar['Montage-lasDPLB0-mask'] = (df['LaswerkDPGereed'] == 0) & (df['Soort_bouw'] != 'Hoog')
+    bar['Montage-lasDPLB0'] =[len(df[bar['Montage-lasDPLB0-mask']])]
+    bar['Montage-lasDPLB1-mask'] = (df['LaswerkDPGereed'] == 1) & (df['Soort_bouw'] != 'Hoog')
+    bar['Montage-lasDPLB1'] =[len(df[bar['Montage-lasDPLB1-mask']])]
+    bar['Montage-lasDPHB0-mask'] = (df['LaswerkDPGereed'] == 0) & (df['Soort_bouw'] == 'Hoog')
+    bar['Montage-lasDPHB0'] =[len(df[bar['Montage-lasDPHB0-mask']])]
+    bar['Montage-lasDPHB1-mask'] = (df['LaswerkDPGereed'] == 1) & (df['Soort_bouw'] == 'Hoog')
+    bar['Montage-lasDPHB1'] =[len(df[bar['Montage-lasDPHB1-mask']])]
+
+    bar['Montage-lasAPLB0-mask'] = (df['LaswerkAPGereed'] == 0) & (df['Soort_bouw'] != 'Hoog')
+    bar['Montage-lasAPLB0'] =[len(df[bar['Montage-lasAPLB0-mask']])]
+    bar['Montage-lasAPLB1-mask'] = (df['LaswerkAPGereed'] == 1) & (df['Soort_bouw'] != 'Hoog')
+    bar['Montage-lasAPLB1'] =[len(df[bar['Montage-lasAPLB1-mask']])]
+    bar['Montage-lasAPHB0-mask'] = (df['LaswerkAPGereed'] == 0) & (df['Soort_bouw'] == 'Hoog')
+    bar['Montage-lasAPHB0'] =[len(df[bar['Montage-lasAPHB0-mask']])]
+    bar['Montage-lasAPHB1-mask'] = (df['LaswerkAPGereed'] == 1) & (df['Soort_bouw'] == 'Hoog')
+    bar['Montage-lasAPHB1'] =[len(df[bar['Montage-lasAPHB1-mask']])]
+
+    bar['HASLB0-mask'] = (df['Opleverdatum'].isna()) & (df['Soort_bouw'] != 'Hoog')
+    bar['HASLB0'] =[len(df[bar['HASLB0-mask']])]
+    bar['HASLB1-mask'] = (df['Opleverstatus'] == 2) & (df['Soort_bouw'] != 'Hoog')
+    bar['HASLB1'] =[len(df[bar['HASLB1-mask']])]
+    bar['HASLB1HP-mask'] = (df['Opleverstatus'] != 2) & (~df['Opleverdatum'].isna()) & (df['Soort_bouw'] != 'Hoog')
+    bar['HASLB1HP'] =[len(df[bar['HASLB1HP-mask']])]
+    bar['HASHB0-mask'] = (df['Opleverdatum'].isna()) & (df['Soort_bouw'] == 'Hoog')
+    bar['HASHB0'] =[len(df[bar['HASHB0-mask']])]
+    bar['HASHB1-mask'] = (df['Opleverstatus'] == 2) & (df['Soort_bouw'] == 'Hoog')
+    bar['HASHB1'] =[len(df[bar['HASHB1-mask']])]
+    bar['HASHB1HP-mask'] = (df['Opleverstatus'] != 2) & (~df['Opleverdatum'].isna()) & (df['Soort_bouw'] == 'Hoog')
+    bar['HASHB1HP'] =[len(df[bar['HASHB1HP-mask']])]
 
     # stats
     stats = {'0': str(round(len(df))),
@@ -543,16 +628,20 @@ def speed_projects(df_l, t_s):
     rc1 = []
     rc2 = []
     count_rc2 = 0
-    cutoff = 20
+    cutoff = 15
     df_s_l = {}
     b1 = []
     b2 = []
     tot_l = []
+    af_l = []
     t_shift = []
+    pnames = []
     for i, key in enumerate(df_l):
         df_test = df_l[key]
         tot = len(df_test)
-        df_test = df_test[df_test['Opleverstatus'] == 2]
+        # df_test = df_test[df_test['Opleverstatus'] == 2]
+        df_test = df_test[~df_test['Opleverdatum'].isna()]
+        af = len(df_test)
         if not df_test.empty:
             df_s = df_test.groupby(['Opleverdatum']).agg({'Sleutel': 'count'})
             df_s.index = pd.to_datetime(df_s.index, format='%d-%m-%Y')
@@ -588,10 +677,46 @@ def speed_projects(df_l, t_s):
 
             df_s_l[key] = df_s
             tot_l += [tot]
+            af_l += [af]
             t_shift += [t_sh]
+            pnames += [key]
 
+    rc1[-3:-2] = [0]  # uitzondering voor "Nijmegen Biezen-Wolfskuil-Hatert " want maar 1 type opleverdatum
     rc1_mean = sum(rc1) / len(rc1)
     rc2_mean = sum(rc2) / count_rc2
-    # b2_mean = sum(b2) / count_rc2
+    b2_mean = sum(b2) / count_rc2
 
-    return rc1, rc2, rc1_mean, rc2_mean, tot_l
+    # prognose
+    ts = 0
+    te = 12000
+    df_y = pd.DataFrame()
+    x_e_l = {}
+    y_e_l = {}
+
+    for i, key in enumerate(df_s_l):
+
+        x_e = np.array(list(range(ts, te + 1)))
+        x_e_l[key] = x_e
+        a1 = (rc1[i] / tot_l[i] * 100)
+        y_e1 = b1[i] + a1 * x_e
+        a2 = (rc2[i] / tot_l[i] * 100)
+        b2i = b2[i]
+        if a2 == 0:
+            a2 = (rc2_mean / tot_l[i] * 100)
+            b2i = b2_mean
+        y_e2 = b2i + a2 * x_e
+
+        y_ed = y_e1 - y_e2
+        y_e = y_e1
+        y_e[y_ed < 0] = y_e2[y_ed < 0]
+        y_e[x_e < df_s_l[key].index.min()] = 0
+        y_e_l[key] = y_e
+
+        if i == 0:
+            y_cum = y_e / 100 * tot_l[i]
+        else:
+            y_cum += y_e / 100 * tot_l[i]
+
+    x_d = pd.date_range(min(t_s.values()), periods=te + 1, freq='D')
+
+    return rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum
