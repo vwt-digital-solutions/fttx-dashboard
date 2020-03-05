@@ -221,7 +221,12 @@ def bar_projects(s):
                                             'xaxis': {'title': 'huizen afgerond [%]'},
                                             'yaxis': {'title': 'snelheid [woningen / dag]'},
                                             'showlegend': False,
-                                            'title': {'text': 'Klik op een project voor meer informatie! <br> [projecten binnen het groene vlak verlopen volgens verwachting]'},
+                                            'title':
+                                            {'text': 'Klik op een project ' + \
+                                                'voor meer informatie! <br' + \
+                                                '> [projecten binnen het g' + \
+                                                'roene vlak verlopen volge' + \
+                                                'ns verwachting]'},
                                             }
                                  }
                          )]
@@ -507,7 +512,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                 ],
                        'layout': {
                                  'xaxis': {'title': 'week',
-                                 'range': [0, 5]},
+                                           'range': [0, 5]},
                                  'showlegend': False,
                                  'title': {'text': 'Verschil tussen HASdatum en Opleverdatum: <br> [target is max 1 week]'},
                                }
