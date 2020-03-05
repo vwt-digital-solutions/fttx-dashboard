@@ -38,52 +38,52 @@ def get_body():
                       data=None),
             dcc.Store(id="aggregate_data2",
                       data=None),
-            # html.Div(
-            #     [
-            #         html.Div(
-            #             [
-            #                 html.Img(
-            #                     src=app.get_asset_url("vqd.png"),
-            #                     id="vqd-image",
-            #                     style={
-            #                         "height": "100px",
-            #                         "width": "auto",
-            #                         "margin-bottom": "25px",
-            #                     },
-            #                 )
-            #             ],
-            #             className="one-third column",
-            #         ),
-            #         html.Div(
-            #             [
-            #                 # html.Div(
-            #                 #     [
-            #                 #         html.H3(
-            #                 #             "Analyse OHW VWT FTTx",
-            #                 #             style={"margin-bottom": "0px"},
-            #                 #         ),
-            #                 #         # html.P(),
-            #                 #         # html.P("(Laatste update: 05-02-2020)")
-            #                 #     ],
-            #                 #     style={"margin-left": "-120px"},
-            #                 # )
-            #             ],
-            #             className="one-half column",
-            #             id="title",
-            #         ),
-            #     ],
-            #     id="header",
-            #     className="row",
-            #     style={"margin-bottom": "25px"},
-            # ),
             html.Div(
                 [
                     html.Div(
-                            children=bar_projects(),
+                        [
+                            html.Img(
+                                src=app.get_asset_url("vqd.png"),
+                                id="vqd-image",
+                                style={
+                                    "height": "100px",
+                                    "width": "auto",
+                                    "margin-bottom": "25px",
+                                },
+                            )
+                        ],
+                        className="one-third column",
+                    ),
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.H3(
+                                        "Status projecten FttX",
+                                        style={"margin-bottom": "0px"},
+                                    ),
+                                    # html.P(),
+                                    # html.P("(Laatste update: 05-02-2020)")
+                                ],
+                                style={"margin-left": "-120px"},
+                            )
+                        ],
+                        className="one-half column",
+                        id="title",
+                    ),
+                ],
+                id="header",
+                className="row",
+                style={"margin-bottom": "25px"},
+            ),
+            html.Div(
+                [
+                    html.Div(
+                            children=bar_projects(1),
                             className="pretty_container column",
                     ),
                     html.Div(
-                            [dcc.Graph(id="geo_plot")],
+                            children=bar_projects(0),
                             className="pretty_container column",
                     ),
                 ],
@@ -93,15 +93,40 @@ def get_body():
             html.Div(
                 [
                     html.Div(
+                        [
+                            html.H3("Inzoom project:"),
+                        ],
+                        style={"margin-right": "140px"},
+                        # className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Dropdown(id='project-dropdown',
+                                          options=bar_projects(2),
+                                          value=None)],
+                            className="pretty_container column",
+                    ),
+                ],
+                className="container-display",
+                id="title",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                            [dcc.Graph(id="graph_prog")],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
                             [dcc.Graph(id="Bar_1")],
                             className="pretty_container column",
                     ),
+                ],
+                id="main_graphs",
+                className="container-display",
+            ),
+            html.Div(
+                [
                     html.Div(
-                            [dcc.Graph(id="graph_progT")],
-                            className="pretty_container column",
-                    ),
-                    html.Div(
-                            [dcc.Graph(id="graph_prog")],
+                            [dcc.Graph(id="graph_targets")],
                             className="pretty_container column",
                     ),
                     html.Div(
@@ -109,12 +134,34 @@ def get_body():
                             className="pretty_container column",
                     ),
                     html.Div(
-                            [dcc.Graph(id="graph_targets")],
+                            [dcc.Graph(id="geo_plot")],
                             className="pretty_container column",
                     ),
                 ],
                 id="main_graphs",
                 className="container-display",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    html.H3(
+                                        "Verdere details:",
+                                        style={"margin-bottom": "0px"},
+                                    ),
+                                ],
+                                style={"margin-left": "-120px"},
+                            )
+                        ],
+                        className="one-half column",
+                        id="title",
+                    ),
+                ],
+                id="header",
+                className="row",
+                style={"margin-bottom": "25px"},
             ),
             html.Div(
                 id='status_table_ext',
@@ -128,7 +175,7 @@ def get_body():
     return page
 
 
-def bar_projects():
+def bar_projects(s):
     df_l, t_s = data_from_DB()
     perc_complete = []
     # perc_fout = []
@@ -147,41 +194,63 @@ def bar_projects():
 
     # color = [1 if el1 / el2 < 1 else 0 for el1, el2 in zip(perc_fout, perc_complete)]
     # colorscale = [[0, 'red'], [0.5, 'gray'], [1.0, 'green']]
-    fig = [dcc.Graph(id='project_performance',
-                     figure={'data': [
-                                        {'x': [0, 80, 80, 100, 100, 0],
-                                         'y': [-rc1_mean*0.75, -rc1_mean*0.75,
-                                               -rc2_mean*0.75,  -rc2_mean*0.75,
-                                               -rc1_mean*1.75, -rc1_mean*1.75
-                                               ],
-                                         'name': 'Trace 2',
-                                         'mode': 'lines',
-                                         'fill': 'toself',
-                                         'line': {'color': 'rgb(0, 200, 0)'}
-                                         },
-                                        {'x': perc_complete,
-                                         #    'y': perc_fout,
-                                         'y': rc,
-                                         'text': pnames,
-                                         'name': 'Trace 1',
-                                         'mode': 'markers',
-                                         'marker': {'size': 15,
-                                                    #   'color': color,
-                                                    #   'colorscale': colorscale,
-                                                    }
-                                         },
-                                      ],
-                             'layout': {'clickmode': 'event+select',
-                                        'xaxis': {'title': 'huizen afgerond (%)'},
-                                        'yaxis': {'title': 'snelheid [woningen / dag]'},
-                                        'showlegend': False,
-                                        'title': {'text': '''Klik op een
-                                        project voor meer informatie! <br>
-                                        [projecten binnen het groene vlak
-                                        verlopen volgens verwachting]'''},
-                                        }
-                             }
-                     )]
+
+    if s == 0:
+        fig = [dcc.Graph(id='project_performance',
+                         figure={'data': [
+                                          {'x': [0, 80, 80, 100, 100, 0],
+                                           'y': [-rc1_mean*0.75, -rc1_mean*0.75,
+                                                 -rc2_mean*0.75,  -rc2_mean*0.75,
+                                                 -rc1_mean*1.75, -rc1_mean*1.75
+                                                 ],
+                                           'name': 'Trace 2',
+                                           'mode': 'lines',
+                                           'fill': 'toself',
+                                           'line': {'color': 'rgb(0, 200, 0)'}
+                                           },
+                                          {'x': perc_complete,
+                                           #    'y': perc_fout,
+                                           'y': rc,
+                                           'text': pnames,
+                                           'name': 'Trace 1',
+                                           'mode': 'markers',
+                                           'marker': {'size': 15}
+                                           },
+                                          ],
+                                 'layout': {'clickmode': 'event+select',
+                                            'xaxis': {'title': 'huizen afgerond [%]'},
+                                            'yaxis': {'title': 'snelheid [woningen / dag]'},
+                                            'showlegend': False,
+                                            'title': {'text': 'Klik op een project voor meer informatie! <br> [projecten binnen het groene vlak verlopen volgens verwachting]'},
+                                            }
+                                 }
+                         )]
+
+    if s == 1:
+        fig = [dcc.Graph(id="graph_progT",
+                         figure={'data': [{'x': list(x_d[0:1000]),
+                                           'y': list(y_cum[0:1000]),
+                                           'mode': 'lines'
+                                           },
+                                          ],
+                                 'layout': {
+                                            'xaxis': {'title': 'Opleverdatum [dag]',
+                                                      'range': [min(t_s.values()),
+                                                                '2022-01-01']},
+                                            'yaxis': {'title': 'Aantal huizen nog aan te sluiten',
+                                                               'range': [0, 130000]},
+                                            'showlegend': False,
+                                            'title': {'text': 'Prognose werkvoorraad FttX:'},
+                                            }
+                                 }
+                         )
+               ]
+
+    if s == 2:
+        filters = []
+        for el in pnames:
+            filters += [{'label': el, 'value': el}]
+        fig = filters
 
     return fig
 
@@ -196,10 +265,10 @@ def bar_projects():
      Output("aggregate_data", 'data'),
      Output("aggregate_data2", 'data'),
      Output("graph_prog", 'figure'),
-     Output("graph_progT", 'figure'),
      Output("graph_targets", 'figure'),
      ],
     [Input("project_performance", 'clickData'),
+     Input('project-dropdown', 'value'),
      Input("Bar_1", 'clickData'),
      Input("count_R", 'clickData'),
      ],
@@ -207,11 +276,16 @@ def bar_projects():
      State("aggregate_data2", 'data'),
      ]
 )
-def make_barplot(filter_selectie, cell_b1, cell_bR, mask_all, filter_a):
-    if filter_selectie is None:
+def make_barplot(filter_selectie, drop_selectie, cell_b1, cell_bR, mask_all, filter_a):
+    if (filter_selectie is None) & (drop_selectie is None):
         raise PreventUpdate
+    if drop_selectie is not None:
+        filter_selectie = drop_selectie
+    else:
+        filter_selectie = filter_selectie['points'][0]['text']
+
     df_l, t_s = data_from_DB()
-    df = df_l[filter_selectie['points'][0]['text']]
+    df = df_l[filter_selectie]
     hidden = True
 
     if cell_b1 is None:
@@ -251,12 +325,12 @@ def make_barplot(filter_selectie, cell_b1, cell_bR, mask_all, filter_a):
         raise PreventUpdate
     rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, \
         x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
-    bar, stats, geo_plot, df_table, bar_R, fig_prog, fig_progT, \
+    bar, stats, geo_plot, df_table, bar_R, fig_prog, \
         fig_targets = generate_graph(
-            df, x_e_l, y_e_l, df_s_l, filter_selectie['points'][0]['text'],
+            df, x_e_l, y_e_l, df_s_l, filter_selectie,
             x_d, y_cum, t_s)
     return [bar, df_table, hidden, geo_plot, bar_R, mask_all,
-            filter_selectie, fig_prog, fig_progT, fig_targets]
+            filter_selectie, fig_prog, fig_targets]
 
 
 # HELPER FUNCTIES
@@ -308,7 +382,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             R20='Uitrol na vraagbundeling, klant neemt geen dienst',
             R21='Wordt niet binnen dit project aangesloten',
             R22='Vorst, niet planbaar',
-            R_geen='Geen reden of R0'
+            R_geen='Geen reden'
             )
         labels = {}
         labels['OHW'] = ['Schouwen', 'BIS', 'Montage-lasAP',
@@ -367,8 +441,8 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                          layout=go.Layout(barmode='stack',
                                           clickmode='event+select',
                                           showlegend=True,
-                                          title={'text':
-                                                 'OHW per projectfase:'}
+                                          title={'text': 'OHW per projectfase voor LB en HB [rood]:',
+                                                 'x': 0.5}
                                           ))
 
         df_t = df[['Sleutel', 'Opleverdatum',
@@ -414,25 +488,11 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                          'range': [0, 3*365]},
                                'yaxis': {'title': 'Totaal afgerond [%]',
                                          'range': [0, 110]},
+                               'title': {'text': 'Snelheid project & prognose afronding:'},
                                'showlegend': False,
                                }
                     }
 
-        fig_progT = {'data': [{'x': list(x_d[0:1000]),
-                               'y': list(y_cum[0:1000]),
-                               'mode': 'lines'
-                               },
-                              ],
-                     'layout': {
-                                'xaxis': {'title': 'Opleverdatum [dag]',
-                                          'range': [min(t_s.values()),
-                                                    '2022-01-01']},
-                                'yaxis': {'title': '''Aantal huizen nog
-                                          aan te sluiten''',
-                                          'range': [0, 130000]},
-                                'showlegend': False,
-                                }
-                     }
         dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
                                     (~df['Opleverdatum'].isna())][
                                         'Opleverdatum'], format='%d-%m-%Y')
@@ -446,10 +506,10 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                  },
                                 ],
                        'layout': {
-                                 'xaxis': {'range': [0, 5]},
+                                 'xaxis': {'title': 'week',
+                                 'range': [0, 5]},
                                  'showlegend': False,
-                                 'title': {'text': '''Binnen hoeveel
-                                 weken is HAS aangesloten gegeven HASdatum'''},
+                                 'title': {'text': 'Verschil tussen HASdatum en Opleverdatum: <br> [target is max 1 week]'},
                                }
                        }
 
@@ -497,7 +557,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         geo_plot = {'data': map_data, 'layout': map_layout}
 
     return barc, stats, geo_plot, df_table, bar_R, fig_prog, \
-        fig_progT, fig_targets
+        fig_targets
 
 
 def processed_data(df):
@@ -615,11 +675,12 @@ def processed_data(df):
     df_g['Size_DP'] = 14
 
     count_R = df['RedenNA'].value_counts()
-    if 'R0'in count_R:
-        del count_R['R0']
-    if 'R00'in count_R:
-        del count_R['R00']
+    # if 'R0'in count_R:
+    #     del count_R['R0']
+    # if 'R00'in count_R:
+    #     del count_R['R00']
     count_R['R_geen'] = len(df) - sum([el for el in count_R])
+    print(count_R)
     # for key in count_R.keys():
     #     count_R[key] = count_R[key] / len(df) * 100
 

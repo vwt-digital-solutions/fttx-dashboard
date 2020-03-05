@@ -58,7 +58,7 @@ def get_navbar(huidige_pagina):
 
     return dbc.NavbarSimple(
         children=children,
-        brand='FTTx',
+        brand='FttX',
         sticky='top',
         dark=True,
         color='grey',
