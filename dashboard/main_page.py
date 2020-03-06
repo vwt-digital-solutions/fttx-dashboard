@@ -94,7 +94,7 @@ def get_body():
                 [
                     html.Div(
                         [
-                            html.H3("Inzoom project:"),
+                            html.H3("Details project:"),
                         ],
                         style={"margin-right": "140px"},
                         # className="pretty_container column",
@@ -116,7 +116,11 @@ def get_body():
                             className="pretty_container column",
                     ),
                     html.Div(
-                            [dcc.Graph(id="Bar_1")],
+                            [dcc.Graph(id="Bar_LB")],
+                            className="pretty_container column",
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Bar_HB")],
                             className="pretty_container column",
                     ),
                 ],
@@ -262,7 +266,19 @@ def bar_projects(s):
 
 # Globale grafieken
 @app.callback(
-    [Output("Bar_1", "figure"),
+    [Output("project-dropdown", 'value'),
+     ],
+    [Input("project_performance", 'clickData'),
+     ]
+)
+def update_dropdown(value):
+    return [value['points'][0]['text']]
+
+
+# Globale grafieken
+@app.callback(
+    [Output("Bar_LB", "figure"),
+     Output("Bar_HB", "figure"),
      Output("status_table_ext", "children"),
      Output("status_table_ext", "hidden"),
      Output("geo_plot", "figure"),
@@ -272,52 +288,44 @@ def bar_projects(s):
      Output("graph_prog", 'figure'),
      Output("graph_targets", 'figure'),
      ],
-    [Input("project_performance", 'clickData'),
-     Input('project-dropdown', 'value'),
-     Input("Bar_1", 'clickData'),
+    [Input('project-dropdown', 'value'),
+     Input("Bar_LB", 'clickData'),
+     Input("Bar_HB", 'clickData'),
      Input("count_R", 'clickData'),
      ],
     [State("aggregate_data", 'data'),
      State("aggregate_data2", 'data'),
      ]
 )
-def make_barplot(filter_selectie, drop_selectie, cell_b1, cell_bR, mask_all, filter_a):
-    if (filter_selectie is None) & (drop_selectie is None):
+def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
+    if (drop_selectie is None):
         raise PreventUpdate
-    if drop_selectie is not None:
-        filter_selectie = drop_selectie
-    else:
-        filter_selectie = filter_selectie['points'][0]['text']
 
     df_l, t_s = data_from_DB()
-    df = df_l[filter_selectie]
+    df = df_l[drop_selectie]
     hidden = True
 
-    if cell_b1 is None:
-        mask_all = None
-    elif filter_selectie == filter_a:
+    if (drop_selectie == filter_a) & ((cell_b1 is not None) | (cell_b2 is not None)):
         hidden = False
-        pt_f = cell_b1['points'][0]['x']
-        if cell_b1['points'][0]['curveNumber'] == 0:
-            pt_c = 'LB1'
-        if cell_b1['points'][0]['curveNumber'] == 1:
-            pt_c = 'LB1HP'
-        if cell_b1['points'][0]['curveNumber'] == 2:
-            pt_c = 'LB0'
-        if cell_b1['points'][0]['curveNumber'] == 3:
-            pt_c = 'HB1'
-        if cell_b1['points'][0]['curveNumber'] == 4:
-            pt_c = 'HB1HP'
-        if cell_b1['points'][0]['curveNumber'] == 5:
-            pt_c = 'HB0'
+        if cell_b1 is not None:
+            pt_f = cell_b1['points'][0]['x']
+            if cell_b1['points'][0]['curveNumber'] == 0:
+                pt_c = 'LB1'
+            if cell_b1['points'][0]['curveNumber'] == 1:
+                pt_c = 'LB1HP'
+            if cell_b1['points'][0]['curveNumber'] == 2:
+                pt_c = 'LB0'
+        if cell_b2 is not None:
+            pt_f = cell_b2['points'][0]['x']
+            if cell_b2['points'][0]['curveNumber'] == 0:
+                pt_c = 'HB1'
+            if cell_b2['points'][0]['curveNumber'] == 1:
+                pt_c = 'HB1HP'
+            if cell_b2['points'][0]['curveNumber'] == 2:
+                pt_c = 'HB0'
 
         bar, _, _, _ = processed_data(df)
-
         mask = bar[pt_f + pt_c + '-mask']
-
-        print(cell_b1)
-        print(pt_f)
-        print(pt_c)
 
         if mask_all is None:
             mask_all = mask
@@ -326,16 +334,19 @@ def make_barplot(filter_selectie, drop_selectie, cell_b1, cell_bR, mask_all, fil
 
         df = df[mask_all]
 
+    else:
+        mask_all = None
+
     if df.empty:
         raise PreventUpdate
     rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, \
         x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
-    bar, stats, geo_plot, df_table, bar_R, fig_prog, \
+    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
         fig_targets = generate_graph(
-            df, x_e_l, y_e_l, df_s_l, filter_selectie,
+            df, x_e_l, y_e_l, df_s_l, drop_selectie,
             x_d, y_cum, t_s)
-    return [bar, df_table, hidden, geo_plot, bar_R, mask_all,
-            filter_selectie, fig_prog, fig_targets]
+    return [barLB, barHB, df_table, hidden, geo_plot, bar_R, mask_all,
+            drop_selectie, fig_prog, fig_targets]
 
 
 # HELPER FUNCTIES
@@ -365,8 +376,11 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
     if bar is not None:
         reden_l = dict(
             R0='Geplande aansluiting',
+            R00='Geplande aansluiting',
             R1='Geen toestemming bewoner',
+            R01='Geen toestemming bewoner',
             R2='Geen toestemming VVE / WOCO',
+            R02='Geen toestemming VVE / WOCO',
             R3='Bewoner na 3 pogingen niet thuis',
             R4='Nieuwbouw (woning nog niet gereed)',
             R5='Hoogbouw obstructie (blokkeert andere bewoners)',
@@ -399,7 +413,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPLB1'] +
                        bar['Montage-lasDPLB1'] +
                        bar['HASLB1'],
-                       name='LB1HC',
+                       name='LB1HC [donkergroen]',
                        marker=go.bar.Marker(color='rgb(0, 200, 0)'))
         bar1b = go.Bar(x=labels['OHW'],
                        y=[0] +
@@ -407,53 +421,65 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        [0] +
                        [0] +
                        bar['HASLB1HP'],
-                       name='LB1HP',
-                       marker=go.bar.Marker(color='rgb(0, 230, 0)'))
+                       name='LB1HP [lichtgroen]',
+                       marker=go.bar.Marker(color='rgb(0, 255, 0)'))
         bar1c = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenLB0'] +
                        bar['BISLB0'] +
                        bar['Montage-lasAPLB0'] +
                        bar['Montage-lasDPLB0'] +
                        bar['HASLB0'],
-                       name='LB0',
+                       name='LB0 [rood]',
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'))
+        barLB = go.Figure(data=[bar1a, bar1b, bar1c],
+                          layout=go.Layout(barmode='stack',
+                                           clickmode='event+select',
+                                           showlegend=True,
+                                           title={'text': 'OHW per projectfase voor LB & Duplex:',
+                                                  'x': 0.5},
+                                           yaxis={'title': 'aantal woningen'},
+                                           #    height=200,
+                                           ))
+
         bar1d = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenHB1'] +
                        bar['BISHB1'] +
                        bar['Montage-lasAPHB1'] +
                        bar['Montage-lasDPHB1'] +
                        bar['HASHB1'],
-                       name='HB1HC',
-                       marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+                       name='HB1HC [donkergroen]',
+                       marker=go.bar.Marker(color='rgb(0, 200, 0)'))
         bar1e = go.Bar(x=labels['OHW'],
                        y=[0] +
                        [0] +
                        [0] +
                        [0] +
                        bar['HASHB1HP'],
-                       name='HB1HP',
-                       marker=go.bar.Marker(color='rgb(0, 230, 0)'))
+                       name='HB1HP [lichtgroen]',
+                       marker=go.bar.Marker(color='rgb(0, 255, 0)'))
         bar1f = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenHB0'] +
                        bar['BISHB0'] +
                        bar['Montage-lasAPHB0'] +
                        bar['Montage-lasDPHB0'] +
                        bar['HASHB0'],
-                       name='HB0',
-                       marker=go.bar.Marker(color='rgb(255, 0, 0)'))
+                       name='HB0 [rood]',
+                       marker=go.bar.Marker(color='rgb(200, 0, 0)'))
+        barHB = go.Figure(data=[bar1d, bar1e, bar1f],
+                          layout=go.Layout(barmode='stack',
+                                           clickmode='event+select',
+                                           showlegend=True,
+                                           title={'text': 'OHW per projectfase voor HB:',
+                                                  'x': 0.5},
+                                           yaxis={'title': 'aantal woningen'},
+                                           #    height=200,
+                                           ))
 
-        barc = go.Figure(data=[bar1a, bar1b, bar1c, bar1d, bar1e, bar1f],
-                         layout=go.Layout(barmode='stack',
-                                          clickmode='event+select',
-                                          showlegend=True,
-                                          title={'text': 'OHW per projectfase voor LB en HB [rood]:',
-                                                 'x': 0.5}
-                                          ))
-
-        df_t = df[['Sleutel', 'Opleverdatum',
-                   'Opleverstatus', 'Internestatus',
-                   'RedenNA', 'schouwAkkoord',
-                   'HasApp_Status', 'Toelichting status']].copy()
+        df_t = df.copy()
+        df_t['Uitleg RedenNA'] = df_t['RedenNA'].map(reden_l)
+        df_t = df_t[['Sleutel', 'Opleverdatum',
+                     'HASdatum', 'Opleverstatus',
+                     'RedenNA', 'Uitleg RedenNA', 'HasApp_Status']]
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df_t.columns],
             data=df_t.to_dict("rows"),
@@ -467,30 +493,90 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             }],
         )
 
-        bar1 = go.Bar(x=count_R.index.to_list(),
-                      y=count_R.to_list(),
-                      text=[el + ': ' + reden_l[el]
-                            for el in count_R.index.to_list()],
-                      marker=go.bar.Marker(color='rgb(255, 0, 0)'))
-        bar_R = go.Figure(data=[bar1],
-                          layout=go.Layout(barmode='stack',
-                                           clickmode='event+select',
-                                           showlegend=False,
-                                           #    yaxis={'title': {'text': '%'}},
-                                           ))
-        fig_prog = {'data': [{'x': list(x_e_l[filter_selectie]),
-                              'y': list(y_e_l[filter_selectie]),
+        # bar1 = go.Bar(x=count_R.index.to_list(),
+        #               y=count_R.to_list(),
+        #               text=[el + ': ' + reden_l[el]
+        #                     for el in count_R.index.to_list()],
+        #               marker=go.bar.Marker(color='rgb(255, 0, 0)'))
+        # bar_R = go.Figure(data=[bar1],
+        #                   layout=go.Layout(barmode='stack',
+        #                                    clickmode='event+select',
+        #                                    showlegend=False,
+        #                                    #    yaxis={'title': {'text': '%'}},
+        #                                    ))
+
+        count_Ra = dict(Wachten_op_actie=0, Definitief_niet_aansluiten=0, Geen_obstructies=0)
+        for key in count_R.keys():
+            if key in ['R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R17', 'R18', 'R19', 'R22']:
+                count_Ra['Wachten_op_actie'] = count_Ra['Wachten_op_actie'] + count_R[key]
+            if key in ['R1', 'R01', 'R2', 'R02', 'R3', 'R15', 'R16', 'R20', 'R21']:
+                count_Ra['Definitief_niet_aansluiten'] = count_Ra['Definitief_niet_aansluiten'] + count_R[key]
+            if key in ['R0', 'R00', 'R_geen']:
+                count_Ra['Geen_obstructies'] = count_Ra['Geen_obstructies'] + count_R[key]
+
+        layout = dict(
+            autosize=True,
+            automargin=True,
+            margin=dict(le=30, r=30, b=20, t=40),
+            hovermode="closest",
+            # plot_bgcolor="#F9F9F9",
+            # paper_bgcolor="#F9F9F9",
+            legend=dict(font=dict(size=14), orientation="h"),
+        )
+
+        data_pie = [
+            dict(
+                type="pie",
+                labels=list(count_Ra.keys()),
+                values=list(count_Ra.values()),
+                hoverinfo="percent",
+                textinfo="value",
+                hole=0.5,
+                # marker=dict(colors=['#003f5c', '#374c80', '#7a5195',
+                #                     '#bc5090',  '#ef5675']),
+                domain={"x": [0, 0.5], "y": [0.25, 0.75]},
+                sort=False
+            )
+        ]
+        layout_pie = layout
+        layout_pie["title"] = {'text': "Redenen opgegeven bij woningen:",
+                               'y': 0.92,
+                               }
+        # layout_pie["clickmode"] = "event+select"
+        # layout_pie["font"] = dict(color="#777777")
+        layout_pie["legend"] = dict(
+            # font=dict(color="#777777", size="14"),
+            orientation="v",
+            # bgcolor="rgba(0,0,0,0)",
+            traceorder='normal',
+            # itemclick=True,
+            # xanchor='bottom'
+            x=0.5,
+            y=0.5
+        )
+        layout_pie["showlegend"] = True
+        layout_pie["height"] = 500
+        bar_R = dict(data=data_pie, layout=layout_pie)
+
+        fig_prog = {'data': [{
+                              #   'x': list(x_e_l[filter_selectie]),
+                              'x': list(x_d[0:1000]),
+                              'y': list(y_e_l[filter_selectie][0:1000]),
                               'mode': 'lines'
                               },
-                             {'x': df_s_l[filter_selectie].index.to_list(),
-                              'y': df_s_l[
-                                   filter_selectie]['Sleutel'].to_list(),
+                             {
+                              #   'x': df_s_l[filter_selectie].index.to_list(),
+                              'x': list(x_d[df_s_l[filter_selectie].index.to_list()]),
+                              'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
                               'mode': 'markers'
                               }
                              ],
                     'layout': {
                                'xaxis': {'title': 'opleverdagen [dag]',
-                                         'range': [0, 3*365]},
+                                         #  'range': [0, 3*365]
+                                         'range': [t_s[filter_selectie], '2022-01-01'],
+                                         #  'range': [min(t_s.values()), '2022-01-01'],
+                                         },
                                'yaxis': {'title': 'Totaal afgerond [%]',
                                          'range': [0, 110]},
                                'title': {'text': 'Snelheid project & prognose afronding:'},
@@ -499,40 +585,47 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                     }
 
         dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
-                                    (~df['Opleverdatum'].isna())][
-                                        'Opleverdatum'], format='%d-%m-%Y')
+                                    (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
         dat_HAS = pd.to_datetime(df[(~df['HASdatum'].isna()) &
-                                    (~df['Opleverdatum'].isna())]['HASdatum'],
-                                 format='%d-%m-%Y')
-        dat_diff = (((dat_HAS - dat_opg).dt.days + 7) / 7).astype(int)
+                                    (~df['Opleverdatum'].isna())]['HASdatum'], format='%d-%m-%Y')
+        dat_diff = (dat_opg - dat_HAS).dt.days / 7
+        dat_diff[dat_diff < 0] = dat_diff[dat_diff < 0].astype(int) - 1
+        dat_diff[dat_diff == 0] = dat_diff[dat_diff == 0].astype(int)
+        dat_diff[dat_diff > 0] = dat_diff[dat_diff > 0].astype(int) + 1
 
-        fig_targets = {'data': [{'x': dat_diff.to_list(),
-                                 'type': 'histogram'
-                                 },
-                                ],
-                       'layout': {
-                                 'xaxis': {'title': 'week',
-                                           'range': [0, 5]},
-                                 'showlegend': False,
-                                 'title': {'text': 'Verschil tussen HASdatum en Opleverdatum: <br> [target is max 1 week]'},
-                               }
-                       }
+        if not dat_diff.empty:
+            fig_targets = {'data': [{'x': dat_diff.to_list(),
+                                     'type': 'histogram'
+                                     },
+                                    ],
+                           'layout': {
+                                      'xaxis': {'title': 'aantal weken',
+                                                'range': [-0.5, max(dat_diff)+1],
+                                                },
+                                      'yaxis': {'title': 'aantal woningen',
+                                                },
+                                      'showlegend': False,
+                                      'title': {'text': 'Aantal weken opgeleverd na HASdatum: <br> [target is max 1 week]'},
+                                        }
+                           }
+        else:
+            fig_targets = {}
 
     if df_g is not None:
         token_1 = 'pk.eyJ1IjoiamFja2x1byIsImEiOiJjajNlcnh3MzEwMHZtMzNueGw'
         token_2 = '3NWw5ZXF5In0.fk8k06T96Ml9CLGgKmk81w'
         mapbox_access_token = token_1 + token_2
-        normalized_size = df_g['Size'].to_list() + df_g['Size_DP'].to_list()
+        normalized_size = df_g['Size_DP'].to_list() + df_g['Size'].to_list()
 
         map_data = [
             go.Scattermapbox(
-                lat=df_g['Lat'].to_list() + df_g['Lat_DP'].to_list(),
-                lon=df_g['Long'].to_list() + df_g['Long_DP'].to_list(),
+                lat=df_g['Lat_DP'].to_list() + df_g['Lat'].to_list(),
+                lon=df_g['Long_DP'].to_list() + df_g['Long'].to_list(),
                 mode='markers',
                 marker=dict(
                     cmax=50,
                     cmin=0,
-                    color=df_g['clr'].to_list() + df_g['clr-DP'].to_list(),
+                    color=df_g['clr-DP'].to_list() + df_g['clr'].to_list(),
                     colorscale=['green', 'yellow', 'red'],
                     reversescale=True,
                     size=normalized_size * 7,
@@ -545,23 +638,24 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         map_layout = dict(
             autosize=True,
             automargin=True,
-            margin=dict(r=30, b=20, t=40),
+            margin=dict(r=30, b=20, t=100),
             hovermode="closest",
             plot_bgcolor="#F9F9F9",
             paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=10), orientation="h"),
-            title="Woningen (klein) & DPs (groot) [groen = afgerond]",
+            title="Woningen [aangesloten = groen, niet aangesloten = rood]<br>DPs [aangesloten = geel, niet aangesloten = rood]",
             mapbox=dict(
                 accesstoken=mapbox_access_token,
                 style="light",
                 center=dict(lon=df_g['Long'].mean(), lat=df_g['Lat'].mean()),
                 zoom=13,
             ),
+            # height=200,
         )
 
         geo_plot = {'data': map_data, 'layout': map_layout}
 
-    return barc, stats, geo_plot, df_table, bar_R, fig_prog, \
+    return barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
         fig_targets
 
 
@@ -661,9 +755,9 @@ def processed_data(df):
     # df_g.reset_index(inplace=True)
     df_g = df.copy()
     df_g['clr'] = 0
-    df_g.loc[df_g['Opleverstatus'] == 2, ('clr')] = 50
+    df_g.loc[~df_g['Opleverdatum'].isna(), ('clr')] = 50
     df_g['clr-DP'] = 0
-    df_g.loc[df_g['LaswerkDPGereed'] == 1, ('clr-DP')] = 50
+    df_g.loc[df_g['Opleverstatus'] != 0, ('clr-DP')] = 25
     df_g['X locatie Rol'] = df_g['X locatie Rol'].str.replace(
         ',', '.').astype(float)
     df_g['Y locatie Rol'] = df_g['Y locatie Rol'].str.replace(
