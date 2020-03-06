@@ -149,23 +149,13 @@ def get_body():
                 [
                     html.Div(
                         [
-                            html.Div(
-                                [
-                                    html.H3(
-                                        "Verdere details:",
-                                        style={"margin-bottom": "0px"},
-                                    ),
-                                ],
-                                style={"margin-left": "-120px"},
-                            )
+                            html.H3("Verdere details:"),
                         ],
-                        className="one-half column",
-                        id="title",
-                    ),
+                        style={"margin-left": "42px"},
+                    )
                 ],
-                id="header",
-                className="row",
-                style={"margin-bottom": "25px"},
+                className="container-display",
+                id="title",
             ),
             html.Div(
                 id='status_table_ext',
