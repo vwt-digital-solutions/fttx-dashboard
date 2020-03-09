@@ -213,7 +213,7 @@ def bar_projects(s):
                                           ],
                                  'layout': {'clickmode': 'event+select',
                                             'xaxis': {'title': 'huizen afgerond [%]'},
-                                            'yaxis': {'title': 'snelheid [woningen / dag]'},
+                                            'yaxis': {'title': 'gemiddelde snelheid [woningen / dag]'},
                                             'showlegend': False,
                                             'title':
                                             {'text': 'Klik op een project ' + \
@@ -567,7 +567,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                          'range': [t_s[filter_selectie], '2022-01-01'],
                                          #  'range': [min(t_s.values()), '2022-01-01'],
                                          },
-                               'yaxis': {'title': 'Totaal afgerond [%]',
+                               'yaxis': {'title': 'Aantal nog af te ronden huizen [%]',
                                          'range': [0, 110]},
                                'title': {'text': 'Snelheid project & prognose afronding:'},
                                'showlegend': False,
