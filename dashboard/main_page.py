@@ -1,18 +1,12 @@
-# import flask
-# import io
 import config
-import os
-# import datetime as dt
+from google.cloud import firestore
 import pandas as pd
 import numpy as np
 import dash_core_components as dcc
 import plotly.graph_objs as go
-# import dash_daq as daq
-# import dash_bootstrap_components as dbc
 import dash_html_components as html
 import dash_table
-# from flask import send_file
-# from google.cloud import firestore
+import time
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
@@ -342,19 +336,29 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 # HELPER FUNCTIES
 @cache.memoize()
 def data_from_DB():
-    fn = os.listdir(config.path_to_files)
+
+    def get_dataframe(docs, dataframe):
+        for doc in docs:
+            Sleutel = doc.id
+            doc = doc.to_dict()
+            doc['Sleutel'] = Sleutel
+            dataframe += [doc]
+        return dataframe
+
+    t = time.time()
+    db = firestore.Client()
+    fn_l = config.collections
     df_l = {}
     t_s = {}
-    for i, p in enumerate(fn):
-        df_l[p[:-13]] = pd.read_csv(
-            config.path_to_files + fn[i], sep=';',
-            encoding='latin-1', low_memory=False)
-        t_min = pd.to_datetime(
-            df_l[p[:-13]]['Opleverdatum'], format='%d-%m-%Y').min()
+    for i, p in enumerate(fn_l):
+        docs = db.collection(p[0:-13]).stream()
+        dataframe = get_dataframe(docs, [])
+        df = pd.DataFrame(dataframe)
+        df_l[p[0:-13]] = df
+        t_min = pd.to_datetime(df_l[p[0:-13]]['Opleverdatum'], format='%d-%m-%Y').min()
         if not pd.isnull(t_min):
-            t_s[p[:-13]] = t_min
-    del df_l['LCM project']
-    del t_s['LCM project']
+            t_s[p[0:-13]] = t_min
+        print(str(i) + ', time: ' + str(time.time() - t))
 
     return df_l, t_s
 
