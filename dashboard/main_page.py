@@ -1,4 +1,4 @@
-import config
+# import config
 from google.cloud import firestore
 import pandas as pd
 import numpy as np
@@ -164,21 +164,24 @@ def get_body():
 
 
 def bar_projects(s):
-    df_l, t_s = data_from_DB()
-    perc_complete = []
-    # perc_fout = []
-    pnames = []
 
-    rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
+    doc = firestore.Client().collection('plot_overview_graphs').document('plotparameters').get().to_dict()
 
-    perc_complete = [(el1/el2)*100 for el1, el2 in zip(af_l, tot_l)]
+    # df_l, t_s = data_from_DB()
+    # perc_complete = []
+    # # perc_fout = []
+    # pnames = []
 
-    rc = []
-    for i, el in enumerate(rc1):
-        if rc2[i] == 0:
-            rc += [-rc1[i]]
-        else:
-            rc += [-rc2[i]]
+    # rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
+
+    # perc_complete = [(el1/el2)*100 for el1, el2 in zip(af_l, tot_l)]
+
+    # rc = []
+    # for i, el in enumerate(rc1):
+    #     if rc2[i] == 0:
+    #         rc += [-rc1[i]]
+    #     else:
+    #         rc += [-rc2[i]]
 
     # color = [1 if el1 / el2 < 1 else 0 for el1, el2 in zip(perc_fout, perc_complete)]
     # colorscale = [[0, 'red'], [0.5, 'gray'], [1.0, 'green']]
@@ -186,20 +189,25 @@ def bar_projects(s):
     if s == 0:
         fig = [dcc.Graph(id='project_performance',
                          figure={'data': [
-                                          {'x': [0, 80, 80, 100, 100, 0],
-                                           'y': [-rc1_mean*0.75, -rc1_mean*0.75,
-                                                 -rc2_mean*0.75,  -rc2_mean*0.75,
-                                                 -rc1_mean*1.75, -rc1_mean*1.75
-                                                 ],
+                                          {  # 'x': [0, 80, 80, 100, 100, 0],
+                                           'x': doc['x1'],
+                                           #    'y': [-rc1_mean*0.75, -rc1_mean*0.75,
+                                           #          -rc2_mean*0.75,  -rc2_mean*0.75,
+                                           #          -rc1_mean*1.75, -rc1_mean*1.75
+                                           #          ],
+                                           'y': doc['y1'],
                                            'name': 'Trace 2',
                                            'mode': 'lines',
                                            'fill': 'toself',
                                            'line': {'color': 'rgb(0, 200, 0)'}
                                            },
-                                          {'x': perc_complete,
+                                          {  # 'x': perc_complete,
+                                           'x': doc['x2'],
                                            #    'y': perc_fout,
-                                           'y': rc,
-                                           'text': pnames,
+                                           #    'y': rc,
+                                           'y': doc['y2'],
+                                           #    'text': pnames,
+                                           'text': doc['pnames'],
                                            'name': 'Trace 1',
                                            'mode': 'markers',
                                            'marker': {'size': 15}
@@ -221,15 +229,17 @@ def bar_projects(s):
 
     if s == 1:
         fig = [dcc.Graph(id="graph_progT",
-                         figure={'data': [{'x': list(x_d[0:1000]),
-                                           'y': list(y_cum[0:1000]),
+                         figure={'data': [{  # 'x': list(x_d[0:1000]),
+                                           'x': doc['x3'],
+                                           #    'y': list(y_cum[0:1000]),
+                                           'y': doc['y3'],
                                            'mode': 'lines'
                                            },
                                           ],
                                  'layout': {
                                             'xaxis': {'title': 'Opleverdatum [dag]',
-                                                      'range': [min(t_s.values()),
-                                                                '2022-01-01']},
+                                                      #   'range': [min(t_s.values()), '2022-01-01']},
+                                                      'range': doc['xrange']},
                                             'yaxis': {'title': 'Aantal huizen nog aan te sluiten',
                                                                'range': [0, 130000]},
                                             'showlegend': False,
@@ -241,7 +251,8 @@ def bar_projects(s):
 
     if s == 2:
         filters = []
-        for el in pnames:
+        # for el in pnames:
+        for el in doc['pnames']:
             filters += [{'label': el, 'value': el}]
         fig = filters
 
@@ -284,8 +295,8 @@ def update_dropdown(value):
 def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if (drop_selectie is None):
         raise PreventUpdate
-
-    df_l, t_s = data_from_DB()
+    print(drop_selectie)
+    df_l, t_s = data_from_DB(drop_selectie)
     df = df_l[drop_selectie]
     hidden = True
 
@@ -335,7 +346,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 
 # HELPER FUNCTIES
 @cache.memoize()
-def data_from_DB():
+def data_from_DB(pname):
 
     def get_dataframe(docs, dataframe):
         for doc in docs:
@@ -347,18 +358,23 @@ def data_from_DB():
 
     t = time.time()
     db = firestore.Client()
-    fn_l = config.collections
+    # fn_l = config.collections
+    # fn_l = pname
     df_l = {}
     t_s = {}
-    for i, p in enumerate(fn_l):
-        docs = db.collection(p[0:-13]).stream()
-        dataframe = get_dataframe(docs, [])
-        df = pd.DataFrame(dataframe)
-        df_l[p[0:-13]] = df
-        t_min = pd.to_datetime(df_l[p[0:-13]]['Opleverdatum'], format='%d-%m-%Y').min()
-        if not pd.isnull(t_min):
-            t_s[p[0:-13]] = t_min
-        print(str(i) + ', time: ' + str(time.time() - t))
+    # for i, p in enumerate(fn_l):
+    # docs = db.collection(p[0:-13]).stream()
+    docs = db.collection(pname).stream()
+    dataframe = get_dataframe(docs, [])
+    df = pd.DataFrame(dataframe)
+    # df_l[p[0:-13]] = df
+    df_l[pname] = df
+    # t_min = pd.to_datetime(df_l[p[0:-13]]['Opleverdatum'], format='%d-%m-%Y').min()
+    t_min = pd.to_datetime(df_l[pname]['Opleverdatum'], format='%d-%m-%Y').min()
+    if not pd.isnull(t_min):
+        # t_s[p[0:-13]] = t_min
+        t_s[pname] = t_min
+    print('time: ' + str(time.time() - t))
 
     return df_l, t_s
 
@@ -868,10 +884,16 @@ def speed_projects(df_l, t_s):
             t_shift += [t_sh]
             pnames += [key]
 
-    rc1[-3:-2] = [0]  # uitzondering voor "Nijmegen Biezen-Wolfskuil-Hatert
+    if 'Nijmegen Biezen-Wolfskuil-Hatert' in df_l:
+        # rc1[-3:-2] = [0]  # uitzondering voor "Nijmegen Biezen-Wolfskuil-Hatert
+        rc1 = [0]  # uitzondering voor "Nijmegen Biezen-Wolfskuil-Hatert
     rc1_mean = sum(rc1) / len(rc1)
-    rc2_mean = sum(rc2) / count_rc2
-    b2_mean = sum(b2) / count_rc2
+    if count_rc2 != 0:
+        rc2_mean = sum(rc2) / count_rc2
+        b2_mean = sum(b2) / count_rc2
+    else:
+        rc2_mean = sum(rc2)
+        b2_mean = sum(b2)
 
     # prognose
     ts = 0
