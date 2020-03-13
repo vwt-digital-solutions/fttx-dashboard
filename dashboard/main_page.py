@@ -172,7 +172,7 @@ def bar_projects(s):
     # # perc_fout = []
     # pnames = []
 
-    # rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
+    #  rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
 
     # perc_complete = [(el1/el2)*100 for el1, el2 in zip(af_l, tot_l)]
 
