@@ -850,7 +850,7 @@ def speed_projects(df_l, t_s):
             df_s = df_test.groupby(['Opleverdatum']).agg({'Sleutel': 'count'})
             df_s.index = pd.to_datetime(df_s.index, format='%d-%m-%Y')
             df_s = df_s.sort_index()
-            df_s = df_s[df_s.index < '2020-02-26']
+            df_s = df_s[df_s.index < '2020-03-20']
             df_s['Sleutel'] = df_s['Sleutel'].cumsum()
             df_s['Sleutel'] = 100 - df_s['Sleutel'] / tot * 100
             # df_s = df_s / 100 * tot
