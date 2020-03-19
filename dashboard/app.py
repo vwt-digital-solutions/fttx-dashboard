@@ -8,11 +8,11 @@ import dash_bootstrap_components as dbc
 from google.cloud import kms_v1
 from authentication.azure_auth import AzureOAuth
 from flask_caching import Cache
-from flask_talisman import Talisman
+from flask_sslify import SSLify
 
 server = flask.Flask(__name__)
 if 'GAE_INSTANCE' in os.environ:
-    Talisman(server)
+    SSLify(server, permanent=True)
 
 app = dash.Dash(
     __name__,
