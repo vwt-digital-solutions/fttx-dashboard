@@ -828,7 +828,7 @@ def from_rd(x: int, y: int) -> tuple:
 
 
 def speed_projects(df_l, t_s):
-    # df_ss = []
+    #  df_ss = []
     rc1 = []
     rc2 = []
     count_rc2 = 0
