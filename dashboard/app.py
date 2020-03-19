@@ -1,20 +1,19 @@
-import pathlib
+import os
 import dash
 import flask
 import config
 import base64
-import os
+import dash_bootstrap_components as dbc
+
 from google.cloud import kms_v1
 from authentication.azure_auth import AzureOAuth
 from flask_caching import Cache
-import dash_bootstrap_components as dbc
+from flask_sslify import SSLify
 
-PATH = pathlib.Path(__file__).parent
-DATA_PATH = PATH.joinpath("data").resolve()
-AZURE_OAUTH = os.getenv('AD_AUTH', False)
-
-# Initiate flask server and dash application
 server = flask.Flask(__name__)
+if 'GAE_INSTANCE' in os.environ:
+    SSLify(server, permanent=True)
+
 app = dash.Dash(
     __name__,
     meta_tags=[{"name": "viewport", "content": "width=device-width"}],
