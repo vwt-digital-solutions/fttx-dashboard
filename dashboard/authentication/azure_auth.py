@@ -40,10 +40,10 @@ class AzureOAuth(Auth):
                 return True
             else:
                 logging.warning('Missing required role')
-                return abort(403)
+                return abort(401)
         else:
             logging.warning('Invalid access token')
-            return abort(403)
+            return abort(401)
 
     def login_request(self):
         # send to azure auth page
@@ -63,7 +63,7 @@ class AzureOAuth(Auth):
     def auth_wrapper(self, f):
         def wrap(*args, **kwargs):
             if not self.is_authorized():
-                return Response(status=403)
+                return Response(status=401)
 
             response = f(*args, **kwargs)
             logging.info(response)
