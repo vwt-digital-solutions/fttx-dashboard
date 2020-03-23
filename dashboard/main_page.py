@@ -37,16 +37,17 @@ def get_body():
                     html.Div(
                         [
                             html.Img(
-                                src=app.get_asset_url("vqd.png"),
-                                id="vqd-image",
+                                src=app.get_asset_url("ODH_logo_original.png"),
+                                id="DAT-logo",
                                 style={
-                                    "height": "100px",
+                                    "height": "70px",
                                     "width": "auto",
                                     "margin-bottom": "25px",
                                 },
-                            )
+                            ),
                         ],
                         className="one-third column",
+                        style={"margin-right": "120px"},
                     ),
                     html.Div(
                         [
@@ -62,8 +63,23 @@ def get_body():
                                 style={"margin-left": "-120px"},
                             )
                         ],
-                        className="one-half column",
+                        className="one-third column",
                         id="title",
+                    ),
+                    html.Div(
+                        [
+                            html.Img(
+                                src=app.get_asset_url("vqd.png"),
+                                id="vqd-image",
+                                style={
+                                    "height": "100px",
+                                    "width": "auto",
+                                    "margin-bottom": "25px",
+                                    "margin-left": "440px",
+                                },
+                            )
+                        ],
+                        className="one-third column",
                     ),
                 ],
                 id="header",
