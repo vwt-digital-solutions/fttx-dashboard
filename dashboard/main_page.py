@@ -265,7 +265,7 @@ def bar_projects(s):
                          )
                ]
 
-    if s == 2:
+    if s == 2:  # test
         filters = []
         # for el in pnames:
         for el in doc['pnames']:
