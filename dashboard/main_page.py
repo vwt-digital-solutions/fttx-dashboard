@@ -185,7 +185,7 @@ def get_body():
 
 def bar_projects(s):
 
-    doc = firestore.Client().collection('plot_overview_graphs').document('plotparameters').get().to_dict()
+    _, _, doc = data_from_DB(None, 1)
 
     # df_l, t_s = data_from_DB()
     # perc_complete = []
@@ -316,7 +316,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if (drop_selectie is None):
         raise PreventUpdate
     print(drop_selectie)
-    df_l, t_s = data_from_DB(drop_selectie)
+    df_l, t_s, _ = data_from_DB(drop_selectie, 0)
     df = df_l[drop_selectie]
     hidden = True
 
@@ -366,37 +366,40 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 
 # HELPER FUNCTIES
 @cache.memoize()
-def data_from_DB(pname):
-
-    def get_dataframe(docs, dataframe):
-        for doc in docs:
-            Sleutel = doc.id
-            doc = doc.to_dict()
-            doc['Sleutel'] = Sleutel
-            dataframe += [doc]
-        return dataframe
+def data_from_DB(pname, flag):
 
     t = time.time()
-    db = firestore.Client()
-    # fn_l = config.collections
-    # fn_l = pname
-    df_l = {}
-    t_s = {}
-    # for i, p in enumerate(fn_l):
-    # docs = db.collection(p[0:-13]).stream()
-    docs = db.collection(pname).stream()
-    dataframe = get_dataframe(docs, [])
-    df = pd.DataFrame(dataframe)
-    # df_l[p[0:-13]] = df
-    df_l[pname] = df
-    # t_min = pd.to_datetime(df_l[p[0:-13]]['Opleverdatum'], format='%d-%m-%Y').min()
-    t_min = pd.to_datetime(df_l[pname]['Opleverdatum'], format='%d-%m-%Y').min()
-    if not pd.isnull(t_min):
-        # t_s[p[0:-13]] = t_min
-        t_s[pname] = t_min
+
+    if flag == 0:
+        def get_dataframe(docs):
+            df = pd.DataFrame()
+            for doc in docs:
+                doc = doc.to_dict()
+                df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
+            return df
+
+        df_l = {}
+        t_s = {}
+        docs = firestore.Client().collection('Projecten').where('id', '==', pname).stream()
+        df = get_dataframe(docs)
+        df_l[pname] = df
+        t_min = pd.to_datetime(df_l[pname]['Opleverdatum'], format='%d-%m-%Y').min()
+        if not pd.isnull(t_min):
+            t_s[pname] = t_min
+
+        plot_parameters = None
+
+    if flag == 1:
+        docs = firestore.Client().collection('plot_overview_graphs').where('id', '==', 'plot_parameters').get()
+        for doc in docs:
+            plot_parameters = doc.to_dict()
+
+        df_l = None
+        t_s = None
+
     print('time: ' + str(time.time() - t))
 
-    return df_l, t_s
+    return df_l, t_s, plot_parameters
 
 
 def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
@@ -926,7 +929,7 @@ def speed_projects(df_l, t_s):
         a2 = (rc2[i] / tot_l[i] * 100)
         b2i = b2[i]
         if a2 == 0:
-            doc = firestore.Client().collection('plot_overview_graphs').document('plotparameters').get().to_dict()
+            _, _, doc = data_from_DB(None, 1)
             a2 = (doc['rc2_mean'] / tot_l[i] * 100)
             b2i = doc['b2_mean']
         y_e2 = b2i + a2 * x_e
