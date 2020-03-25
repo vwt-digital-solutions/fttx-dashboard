@@ -12,6 +12,10 @@ from dash.exceptions import PreventUpdate
 from elements import table_styles
 from app import app, cache
 
+# import os
+# gpath_d = '/simplxr/corp/01_clients/16_vwt/03_data/FTTX/vwt-d-gew1-fttx-dashboard-e0f4934a4255.json'
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
+
 # layout graphs
 layout = dict(
     autosize=True,
@@ -350,7 +354,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 
     if df.empty:
         raise PreventUpdate
-    rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, \
+    rc1, rc2, rc1_mean, _, _, tot_l, af_l, pnames, df_s_l, \
         x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
     barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
         fig_targets = generate_graph(
@@ -586,8 +590,8 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
 
         fig_prog = {'data': [{
                               #   'x': list(x_e_l[filter_selectie]),
-                              'x': list(x_d[0:1000]),
-                              'y': list(y_e_l[filter_selectie][0:1000]),
+                              'x': list(x_d),
+                              'y': list(y_e_l[filter_selectie]),
                               'mode': 'lines'
                               },
                              {
@@ -599,12 +603,11 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                              ],
                     'layout': {
                                'xaxis': {'title': 'opleverdagen [dag]',
-                                         #  'range': [0, 3*365]
                                          'range': [t_s[filter_selectie], '2022-01-01'],
-                                         #  'range': [min(t_s.values()), '2022-01-01'],
                                          },
                                'yaxis': {'title': 'Aantal nog af te ronden huizen [%]',
-                                         'range': [0, 110]},
+                                         'range': [0, 110]
+                                         },
                                'title': {'text': 'Snelheid project & prognose afronding:'},
                                'showlegend': False,
                                }
@@ -844,7 +847,7 @@ def from_rd(x: int, y: int) -> tuple:
 
 
 def speed_projects(df_l, t_s):
-    #  df_ss = []
+
     rc1 = []
     rc2 = []
     count_rc2 = 0
@@ -856,29 +859,34 @@ def speed_projects(df_l, t_s):
     af_l = []
     t_shift = []
     pnames = []
+    x_e_l = {}
+    y_e_l = {}
+    ts = 0
+    te = 12000
+    t_e = '2020-03-20'
+    y_cum = np.zeros(te + 1)
+
     for i, key in enumerate(df_l):
         df_test = df_l[key]
         tot = len(df_test)
-        # df_test = df_test[df_test['Opleverstatus'] == 2]
         df_test = df_test[~df_test['Opleverdatum'].isna()]
         af = len(df_test)
         if not df_test.empty:
             df_s = df_test.groupby(['Opleverdatum']).agg({'Sleutel': 'count'})
             df_s.index = pd.to_datetime(df_s.index, format='%d-%m-%Y')
             df_s = df_s.sort_index()
-            df_s = df_s[df_s.index < '2020-03-20']
+            df_s = df_s[df_s.index < t_e]
             df_s['Sleutel'] = df_s['Sleutel'].cumsum()
             df_s['Sleutel'] = 100 - df_s['Sleutel'] / tot * 100
-            # df_s = df_s / 100 * tot
             t_sh = (df_s.index.min() - min(t_s.values())).days
             df_s.index = (df_s.index - df_s.index[0]).days + t_sh
 
             df_s_rc1 = df_s[df_s['Sleutel'] > cutoff].copy()
             df_s_rc2 = df_s[df_s['Sleutel'] <= cutoff].copy()
 
+            x_e = np.array(list(range(ts, te + 1)))
             if not df_s_rc1.empty:
                 z1 = np.polyfit(df_s_rc1.index, df_s_rc1.Sleutel, 1)
-                # p1 = np.poly1d(z1)
                 rc1 += [z1[0] / 100 * tot]   # huizen/d
                 b1 += [z1[1]]
             else:
@@ -886,7 +894,6 @@ def speed_projects(df_l, t_s):
                 b1 += [0]
             if not df_s_rc2.empty:
                 z2 = np.polyfit(df_s_rc2.index, df_s_rc2.Sleutel, 1)
-                # p2 = np.poly1d(z2)
                 rc2 += [z2[0] / 100 * tot]   # huizen/d
                 count_rc2 += 1
                 b2 += [z2[1]]
@@ -900,9 +907,6 @@ def speed_projects(df_l, t_s):
             t_shift += [t_sh]
             pnames += [key]
 
-    if 'Nijmegen Biezen-Wolfskuil-Hatert' in df_l:
-        # rc1[-3:-2] = [0]  # uitzondering voor "Nijmegen Biezen-Wolfskuil-Hatert
-        rc1 = [0]  # uitzondering voor "Nijmegen Biezen-Wolfskuil-Hatert
     rc1_mean = sum(rc1) / len(rc1)
     if count_rc2 != 0:
         rc2_mean = sum(rc2) / count_rc2
@@ -911,38 +915,40 @@ def speed_projects(df_l, t_s):
         rc2_mean = sum(rc2)
         b2_mean = sum(b2)
 
-    # prognose
-    ts = 0
-    te = 12000
-    # df_y = pd.DataFrame()
-    x_e_l = {}
-    y_e_l = {}
-
     for i, key in enumerate(df_s_l):
 
-        x_e = np.array(list(range(ts, te + 1)))
+        if key == 'Nijmegen Biezen-Wolfskuil-Hatert ':
+            rc1[i] = 0
+
         x_e_l[key] = x_e
         a1 = (rc1[i] / tot_l[i] * 100)
         y_e1 = b1[i] + a1 * x_e
         a2 = (rc2[i] / tot_l[i] * 100)
         b2i = b2[i]
         if a2 == 0:
-            a2 = (rc2_mean / tot_l[i] * 100)
-            b2i = b2_mean
+            doc = firestore.Client().collection('plot_overview_graphs').document('plotparameters').get().to_dict()
+            a2 = (doc['rc2_mean'] / tot_l[i] * 100)
+            b2i = doc['b2_mean']
         y_e2 = b2i + a2 * x_e
 
-        y_ed = y_e1 - y_e2
         y_e = y_e1
-        y_e[y_ed < 0] = y_e2[y_ed < 0]
+        y_ed = y_e1 - y_e2
+        if df_s_l[key]['Sleutel'].min() < cutoff:
+            y_e[y_ed < 0] = y_e2[y_ed < 0]
+        else:
+            y_e = np.append(y_e1[y_e1 >= cutoff], y_e2[y_e2 < cutoff])
+            if len(y_e) <= len(y_e1):
+                y_e = np.append(y_e, np.zeros(len(y_e1) - len(y_e)))
+            else:
+                y_e = y_e[0:len(y_e1)]
         y_e[x_e < df_s_l[key].index.min()] = 0
+
         y_e_l[key] = y_e
 
-        if i == 0:
-            y_cum = y_e / 100 * tot_l[i]
-        else:
-            y_cum += y_e / 100 * tot_l[i]
+        y_add = y_e / 100 * tot_l[i]
+        y_cum[y_add >= 0] = y_cum[y_add >= 0] + y_add[y_add >= 0]
 
     x_d = pd.date_range(min(t_s.values()), periods=te + 1, freq='D')
 
-    return rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, \
+    return rc1, rc2, rc1_mean, rc2_mean, b2_mean, tot_l, af_l, pnames, \
         df_s_l, x_e_l, y_e_l, x_d, y_cum
