@@ -14,16 +14,6 @@ config_pages = OrderedDict(
             'link': ['/main_page', '/main_page/'],
             'body': main_page
         }),
-        # ('HAS', {
-        #     'name': 'HAS',
-        #     'link': ['/HAS', '/HAS/'],
-        #     'body': has
-        # }),
-        # ('blazen', {
-        #     'name': 'Blazen',
-        #     'link': ['/blazen', '/blazen/'],
-        #     'body': blazen
-        # })
     ]
 )
 
@@ -90,10 +80,6 @@ def display_page(pathname):
         return [get_navbar('/main_page'), main_page.get_body()]
     if pathname == '/main_page':
         return [get_navbar(pathname), main_page.get_body()]
-    # if pathname == '/HAS':
-    #     return [get_navbar(pathname), has.get_body()]
-    # if pathname == '/blazen':
-    #     return [get_navbar(pathname), blazen.get_body()]
 
     return [get_navbar(pathname), html.P('''deze pagina bestaat niet, druk op vorige
                    of een van de paginas in het menu hierboven''')]

@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 import dash_html_components as html
 import dash_table
 import time
+# import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
@@ -371,6 +372,12 @@ def data_from_DB(pname, flag):
     t = time.time()
 
     if flag == 0:
+        # url_s = '/Projecten?id=' + pname
+        # print(pname)
+        # docst = api.get(url_s)
+        # for doc in docst:
+        #     print(doc)
+
         def get_dataframe(docs):
             df = pd.DataFrame()
             for doc in docs:
