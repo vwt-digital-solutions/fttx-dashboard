@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
 from app import app, cache
-
+# to trigger
 # layout graphs
 layout = dict(
     autosize=True,
