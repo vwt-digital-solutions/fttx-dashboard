@@ -24,6 +24,9 @@ cache = Cache(app.server, config={
     "CACHE_TYPE": "simple",
     "CACHE_DEFAULT_TIMEOUT": 300
 })
+
+app.css.config.serve_locally = True
+app.scripts.config.serve_locally = True
 app.config.suppress_callback_exceptions = True
 app.title = "Analyse OHW"
 

@@ -1,5 +1,3 @@
-# import config
-from google.cloud import firestore
 import pandas as pd
 import numpy as np
 import dash_core_components as dcc
@@ -7,14 +5,11 @@ import plotly.graph_objs as go
 import dash_html_components as html
 import dash_table
 import time
+import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
 from app import app, cache
-
-# import os
-# gpath_d = '/simplxr/corp/01_clients/16_vwt/03_data/FTTX/vwt-d-gew1-fttx-dashboard-e0f4934a4255.json'
-# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 
 # layout graphs
 layout = dict(
@@ -51,7 +46,6 @@ def get_body():
                             ),
                         ],
                         className="one-third column",
-                        style={"margin-right": "120px"},
                     ),
                     html.Div(
                         [
@@ -61,10 +55,7 @@ def get_body():
                                         "Status projecten FttX",
                                         style={"margin-bottom": "0px"},
                                     ),
-                                    # html.P(),
-                                    # html.P("(Laatste update: 05-02-2020)")
                                 ],
-                                style={"margin-left": "-120px"},
                             )
                         ],
                         className="one-third column",
@@ -79,7 +70,6 @@ def get_body():
                                     "height": "100px",
                                     "width": "auto",
                                     "margin-bottom": "25px",
-                                    "margin-left": "440px",
                                 },
                             )
                         ],
@@ -111,7 +101,6 @@ def get_body():
                             html.H3("Details project:"),
                         ],
                         style={"margin-right": "140px"},
-                        # className="pretty_container column",
                     ),
                     html.Div(
                             [dcc.Dropdown(id='project-dropdown',
@@ -187,46 +176,19 @@ def bar_projects(s):
 
     _, _, doc = data_from_DB(None, 1)
 
-    # df_l, t_s = data_from_DB()
-    # perc_complete = []
-    # # perc_fout = []
-    # pnames = []
-
-    #  rc1, rc2, rc1_mean, rc2_mean, tot_l, af_l, pnames, df_s_l, x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
-
-    # perc_complete = [(el1/el2)*100 for el1, el2 in zip(af_l, tot_l)]
-
-    # rc = []
-    # for i, el in enumerate(rc1):
-    #     if rc2[i] == 0:
-    #         rc += [-rc1[i]]
-    #     else:
-    #         rc += [-rc2[i]]
-
-    # color = [1 if el1 / el2 < 1 else 0 for el1, el2 in zip(perc_fout, perc_complete)]
-    # colorscale = [[0, 'red'], [0.5, 'gray'], [1.0, 'green']]
-
     if s == 0:
         fig = [dcc.Graph(id='project_performance',
-                         figure={'data': [
-                                          {  # 'x': [0, 80, 80, 100, 100, 0],
+                         figure={'data': [{
                                            'x': doc['x1'],
-                                           #    'y': [-rc1_mean*0.75, -rc1_mean*0.75,
-                                           #          -rc2_mean*0.75,  -rc2_mean*0.75,
-                                           #          -rc1_mean*1.75, -rc1_mean*1.75
-                                           #          ],
                                            'y': doc['y1'],
                                            'name': 'Trace 2',
                                            'mode': 'lines',
                                            'fill': 'toself',
                                            'line': {'color': 'rgb(0, 200, 0)'}
                                            },
-                                          {  # 'x': perc_complete,
+                                          {
                                            'x': doc['x2'],
-                                           #    'y': perc_fout,
-                                           #    'y': rc,
                                            'y': doc['y2'],
-                                           #    'text': pnames,
                                            'text': doc['pnames'],
                                            'name': 'Trace 1',
                                            'mode': 'markers',
@@ -238,10 +200,10 @@ def bar_projects(s):
                                             'yaxis': {'title': 'gemiddelde snelheid [woningen / dag]'},
                                             'showlegend': False,
                                             'title':
-                                            {'text': 'Klik op een project ' + \
-                                                'voor meer informatie! <br' + \
-                                                '> [projecten binnen het g' + \
-                                                'roene vlak verlopen volge' + \
+                                            {'text': 'Klik op een project ' +
+                                                'voor meer informatie! <br' +
+                                                '> [projecten binnen het g' +
+                                                'roene vlak verlopen volge' +
                                                 'ns verwachting]'},
                                             }
                                  }
@@ -249,16 +211,14 @@ def bar_projects(s):
 
     if s == 1:
         fig = [dcc.Graph(id="graph_progT",
-                         figure={'data': [{  # 'x': list(x_d[0:1000]),
+                         figure={'data': [{
                                            'x': doc['x3'],
-                                           #    'y': list(y_cum[0:1000]),
                                            'y': doc['y3'],
                                            'mode': 'lines'
                                            },
                                           ],
                                  'layout': {
                                             'xaxis': {'title': 'Opleverdatum [dag]',
-                                                      #   'range': [min(t_s.values()), '2022-01-01']},
                                                       'range': doc['xrange']},
                                             'yaxis': {'title': 'Aantal huizen nog aan te sluiten',
                                                                'range': [0, 130000]},
@@ -271,7 +231,6 @@ def bar_projects(s):
 
     if s == 2:  # test
         filters = []
-        # for el in pnames:
         for el in doc['pnames']:
             filters += [{'label': el, 'value': el}]
         fig = filters
@@ -369,19 +328,15 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 def data_from_DB(pname, flag):
 
     t = time.time()
-
     if flag == 0:
-        def get_dataframe(docs):
-            df = pd.DataFrame()
+        df = pd.DataFrame()
+        for i in range(0, 5):
+            url_s = '/Projecten?id=' + pname + '_' + str(i)
+            docs = api.get(url_s)
             for doc in docs:
-                doc = doc.to_dict()
                 df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
-            return df
-
         df_l = {}
         t_s = {}
-        docs = firestore.Client().collection('Projecten').where('id', '==', pname).stream()
-        df = get_dataframe(docs)
         df_l[pname] = df
         t_min = pd.to_datetime(df_l[pname]['Opleverdatum'], format='%d-%m-%Y').min()
         if not pd.isnull(t_min):
@@ -390,10 +345,9 @@ def data_from_DB(pname, flag):
         plot_parameters = None
 
     if flag == 1:
-        docs = firestore.Client().collection('plot_overview_graphs').where('id', '==', 'plot_parameters').get()
-        for doc in docs:
-            plot_parameters = doc.to_dict()
-
+        url_s = '/plot_overview_graphs?id=plot_parameters'
+        doc = api.get(url_s)
+        plot_parameters = doc[0]
         df_l = None
         t_s = None
 
@@ -471,7 +425,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                            title={'text': 'OHW per projectfase voor LB & Duplex:',
                                                   'x': 0.5},
                                            yaxis={'title': 'aantal woningen'},
-                                           #    height=200,
                                            ))
 
         bar1d = go.Bar(x=labels['OHW'],
@@ -505,7 +458,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                            title={'text': 'OHW per projectfase voor HB:',
                                                   'x': 0.5},
                                            yaxis={'title': 'aantal woningen'},
-                                           #    height=200,
                                            ))
 
         df_t = df.copy()
@@ -525,18 +477,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                 'rule': 'width: 100%;'
             }],
         )
-
-        # bar1 = go.Bar(x=count_R.index.to_list(),
-        #               y=count_R.to_list(),
-        #               text=[el + ': ' + reden_l[el]
-        #                     for el in count_R.index.to_list()],
-        #               marker=go.bar.Marker(color='rgb(255, 0, 0)'))
-        # bar_R = go.Figure(data=[bar1],
-        #                   layout=go.Layout(barmode='stack',
-        #                                    clickmode='event+select',
-        #                                    showlegend=False,
-        #                                    #    yaxis={'title': {'text': '%'}},
-        #                                    ))
 
         count_Ra = dict(Wachten_op_actie=0, Definitief_niet_aansluiten=0, Geen_obstructies=0)
         for key in count_R.keys():
@@ -565,8 +505,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                 hoverinfo="percent",
                 textinfo="value",
                 hole=0.5,
-                # marker=dict(colors=['#003f5c', '#374c80', '#7a5195',
-                #                     '#bc5090',  '#ef5675']),
                 domain={"x": [0, 0.5], "y": [0.25, 0.75]},
                 sort=False
             )
@@ -575,15 +513,9 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         layout_pie["title"] = {'text': "Redenen opgegeven bij woningen:",
                                'y': 0.92,
                                }
-        # layout_pie["clickmode"] = "event+select"
-        # layout_pie["font"] = dict(color="#777777")
         layout_pie["legend"] = dict(
-            # font=dict(color="#777777", size="14"),
             orientation="v",
-            # bgcolor="rgba(0,0,0,0)",
             traceorder='normal',
-            # itemclick=True,
-            # xanchor='bottom'
             x=0.5,
             y=0.5
         )
@@ -592,13 +524,11 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         bar_R = dict(data=data_pie, layout=layout_pie)
 
         fig_prog = {'data': [{
-                              #   'x': list(x_e_l[filter_selectie]),
                               'x': list(x_d),
                               'y': list(y_e_l[filter_selectie]),
                               'mode': 'lines'
                               },
                              {
-                              #   'x': df_s_l[filter_selectie].index.to_list(),
                               'x': list(x_d[df_s_l[filter_selectie].index.to_list()]),
                               'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
                               'mode': 'markers'
@@ -682,7 +612,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                 center=dict(lon=df_g['Long'].mean(), lat=df_g['Lat'].mean()),
                 zoom=13,
             ),
-            # height=200,
         )
 
         geo_plot = {'data': map_data, 'layout': map_layout}
@@ -692,7 +621,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
 
 
 def processed_data(df):
-    # bar chart
 
     bar = {}
     bar['SchouwenLB0-mask'] = (df['Toestemming'].isna()) & \
@@ -768,23 +696,10 @@ def processed_data(df):
                            (df['Soort_bouw'] == 'Hoog')
     bar['HASHB1HP'] = [len(df[bar['HASHB1HP-mask']])]
 
-    # stats
     stats = {'0': str(round(len(df))),
              '1': str(round(0)),
              '2': str(round(0))}
 
-    # geoplot
-    # df_g = df.groupby('Sleutel').agg(
-    #     {
-    #         'Sleutel': 'count',
-    #         'Opleverstatus': lambda x: sum(x == 2),
-    #         'X locatie Rol': 'first',
-    #         'Y locatie Rol': 'first',
-    #         'X locatie DP': 'first',
-    #         'Y locatie DP': 'first'
-    #     }
-    # )
-    # df_g.reset_index(inplace=True)
     df_g = df.copy()
     df_g['clr'] = 0
     df_g.loc[~df_g['Opleverdatum'].isna(), ('clr')] = 50
@@ -806,14 +721,7 @@ def processed_data(df):
     df_g['Size_DP'] = 14
 
     count_R = df['RedenNA'].value_counts()
-    # if 'R0'in count_R:
-    #     del count_R['R0']
-    # if 'R00'in count_R:
-    #     del count_R['R00']
     count_R['R_geen'] = len(df) - sum([el for el in count_R])
-    print(count_R)
-    # for key in count_R.keys():
-    #     count_R[key] = count_R[key] / len(df) * 100
 
     return bar, stats, df_g, count_R
 
