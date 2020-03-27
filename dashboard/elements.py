@@ -15,15 +15,15 @@ table_style_header = {
     'fontWeight': 'bold',
     'borderBottom': '1px solid black',
     'color': site_colors['indigo'],
-    'align': 'left',
+    'align': 'center',
 }
 
 table_style_cell_problem = {
     'font-family': 'helvetica',
     'boxShadow': '0 0',
     'backgroundColor': site_colors['grey20'],
-    'textAlign': 'left',
-    'minWidth': '100px',
+    'textAlign': 'center',
+    'minWidth': '120px',
     'maxWidth': '500px',
 }
 
