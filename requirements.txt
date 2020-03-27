@@ -5,14 +5,10 @@ gunicorn==19.9.0
 Flask==1.1.1
 Flask-Dance==2.2.0
 jwkaas==0.3
-gcsfs==0.3.1
 flask_caching==1.7.2
 flask_login==0.4.1
 google-cloud-kms==1.1.0
-google-cloud-storage==1.16.1
-google-cloud-firestore==1.6.0
 dash-bootstrap-components==0.9.1
 xlsxwriter==1.1.8
 numpy==1.16.4
-dash_daq==0.3.1
 Flask-SSLify==0.1.5
