@@ -258,12 +258,18 @@ def bar_projects(s):
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'),
                        width=0.2,
                        )
+        bar_t = go.Bar(x=[int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1],
+                       y=[4500],
+                       name='Huidige week',
+                       marker=go.bar.Marker(color='rgb(0, 0, 0)'),
+                       width=0.05,
+                       )
         fig = [dcc.Graph(id="graph_targets",
-                         figure=go.Figure(data=[bar_z, bar_y, bar_k],
+                         figure=go.Figure(data=[bar_z, bar_y, bar_k, bar_t],
                                           layout=go.Layout(barmode='stack',
                                                            clickmode='event+select',
                                                            showlegend=True,
-                                                           legend=dict(x=0.75, y=1.1),
+                                                        #    legend=dict(x=0.75, y=1.1),
                                                            title={'text': 'Totaal aantal opgeleverde huizen per week',
                                                                   'x': 0.5},
                                                            xaxis={'range': [0.5, 25.5], 'title': '[Weken in 2020]'},
@@ -449,7 +455,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPLB1'] +
                        bar['Montage-lasDPLB1'] +
                        bar['HASLB1'],
-                       name='LB1HC [donkergroen]',
+                       name='LB-HC',
                        marker=go.bar.Marker(color='rgb(0, 200, 0)'))
         bar1b = go.Bar(x=labels['OHW'],
                        y=[0] +
@@ -457,15 +463,15 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        [0] +
                        [0] +
                        bar['HASLB1HP'],
-                       name='LB1HP [lichtgroen]',
-                       marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+                       name='LB-HP',
+                       marker=go.bar.Marker(color='rgb(0, 0, 200)'))
         bar1c = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenLB0'] +
                        bar['BISLB0'] +
                        bar['Montage-lasAPLB0'] +
                        bar['Montage-lasDPLB0'] +
                        bar['HASLB0'],
-                       name='LB0 [rood]',
+                       name='LB niet opgeleverd',
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'))
         barLB = go.Figure(data=[bar1a, bar1b, bar1c],
                           layout=go.Layout(barmode='stack',
@@ -482,7 +488,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPHB1'] +
                        bar['Montage-lasDPHB1'] +
                        bar['HASHB1'],
-                       name='HB1HC [donkergroen]',
+                       name='HB-HC',
                        marker=go.bar.Marker(color='rgb(0, 200, 0)'))
         bar1e = go.Bar(x=labels['OHW'],
                        y=[0] +
@@ -490,15 +496,15 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        [0] +
                        [0] +
                        bar['HASHB1HP'],
-                       name='HB1HP [lichtgroen]',
-                       marker=go.bar.Marker(color='rgb(0, 255, 0)'))
+                       name='HB-HP',
+                       marker=go.bar.Marker(color='rgb(0, 0, 200)'))
         bar1f = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenHB0'] +
                        bar['BISHB0'] +
                        bar['Montage-lasAPHB0'] +
                        bar['Montage-lasDPHB0'] +
                        bar['HASHB0'],
-                       name='HB0 [rood]',
+                       name='HB niet opgeleverd',
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'))
         barHB = go.Figure(data=[bar1d, bar1e, bar1f],
                           layout=go.Layout(barmode='stack',
