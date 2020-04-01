@@ -83,9 +83,13 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            children=bar_projects(1),
+                            children=bar_projects(3),
                             className="pretty_container column",
                     ),
+                    # html.Div(
+                    #         children=bar_projects(1),
+                    #         className="pretty_container column",
+                    # ),
                     html.Div(
                             children=bar_projects(0),
                             className="pretty_container column",
@@ -174,7 +178,7 @@ def get_body():
 
 def bar_projects(s):
 
-    _, _, doc = data_from_DB(None, 1)
+    _, _, _, _, _, _, doc = data_from_DB(None, 1)
 
     if s == 0:
         fig = [dcc.Graph(id='project_performance',
@@ -202,9 +206,9 @@ def bar_projects(s):
                                             'title':
                                             {'text': 'Klik op een project ' +
                                                 'voor meer informatie! <br' +
-                                                '> [projecten binnen het g' +
-                                                'roene vlak verlopen volge' +
-                                                'ns verwachting]'},
+                                                '> [Snelheden binnen het groene vlak ' +
+                                                'liggen tussen 75% en 125% van de ' +
+                                                'gemiddelde snelheid]'},
                                             }
                                  }
                          )]
@@ -234,6 +238,40 @@ def bar_projects(s):
         for el in doc['pnames']:
             filters += [{'label': el, 'value': el}]
         fig = filters
+
+    if s == 3:
+        bar_z = go.Bar(x=[el - 0.2 for el in doc['x_target']],
+                       y=doc['z_target'],
+                       name='Realisatie / Target (intern)',
+                       marker=go.bar.Marker(color='rgb(0, 0, 200)'),
+                       width=0.2,
+                       )
+        bar_y = go.Bar(x=doc['x_target'],
+                       y=doc['y_target'],
+                       name='Prognose',
+                       marker=go.bar.Marker(color='rgb(0, 200, 0)'),
+                       width=0.2,
+                       )
+        bar_k = go.Bar(x=[el + 0.2 for el in doc['x_target']],
+                       y=doc['k_target'],
+                       name='Realisatie (FiberConnect)',
+                       marker=go.bar.Marker(color='rgb(200, 0, 0)'),
+                       width=0.2,
+                       )
+        fig = [dcc.Graph(id="graph_targets",
+                         figure=go.Figure(data=[bar_z, bar_y, bar_k],
+                                          layout=go.Layout(barmode='stack',
+                                                           clickmode='event+select',
+                                                           showlegend=True,
+                                                           legend=dict(x=0.75, y=1.1),
+                                                           title={'text': 'Totaal aantal opgeleverde huizen per week',
+                                                                  'x': 0.5},
+                                                           xaxis={'range': [0.5, 25.5], 'title': '[Weken in 2020]'},
+                                                           yaxis={'range': [0, 4500], 'title': '[Aantal huizen]'},
+                                                           )
+                                          )
+                         )
+               ]
 
     return fig
 
@@ -275,7 +313,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if (drop_selectie is None):
         raise PreventUpdate
     print(drop_selectie)
-    df_l, t_s, _ = data_from_DB(drop_selectie, 0)
+    df_l, t_s, x_e, x_d, cutoff, t_e, _ = data_from_DB(drop_selectie, 0)
     df = df_l[drop_selectie]
     hidden = True
 
@@ -313,12 +351,13 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 
     if df.empty:
         raise PreventUpdate
-    rc1, rc2, rc1_mean, _, _, tot_l, af_l, pnames, df_s_l, \
-        x_e_l, y_e_l, x_d, y_cum = speed_projects(df_l, t_s)
-    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
-        fig_targets = generate_graph(
-            df, x_e_l, y_e_l, df_s_l, drop_selectie,
-            x_d, y_cum, t_s)
+
+    rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min, rc1_mean, rc2_mean = \
+        speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e)
+
+    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_targets = \
+        generate_graph(df, x_e_l, y_e_l, df_s_l, drop_selectie, x_d, y_cum, t_s)
+
     return [barLB, barHB, df_table, hidden, geo_plot, bar_R, mask_all,
             drop_selectie, fig_prog, fig_targets]
 
@@ -328,6 +367,10 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 def data_from_DB(pname, flag):
 
     t = time.time()
+    cutoff = 15
+    t_e = pd.Timestamp.now().strftime('%Y-%m-%d')
+    t_d = 12000
+
     if flag == 0:
         df = pd.DataFrame()
         for i in range(0, 5):
@@ -341,8 +384,12 @@ def data_from_DB(pname, flag):
         t_min = pd.to_datetime(df_l[pname]['Opleverdatum'], format='%d-%m-%Y').min()
         if not pd.isnull(t_min):
             t_s[pname] = t_min
+        else:
+            t_s[pname] = pd.to_datetime(t_e)
 
         plot_parameters = None
+        x_e = np.array(list(range(0, t_d + 1)))
+        x_d = pd.date_range(min(t_s.values()), periods=t_d + 1, freq='D')
 
     if flag == 1:
         url_s = '/plot_overview_graphs?id=plot_parameters'
@@ -350,10 +397,12 @@ def data_from_DB(pname, flag):
         plot_parameters = doc[0]
         df_l = None
         t_s = None
+        x_e = None
+        x_d = None
 
     print('time: ' + str(time.time() - t))
 
-    return df_l, t_s, plot_parameters
+    return df_l, t_s, x_e, x_d, cutoff, t_e, plot_parameters
 
 
 def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
@@ -528,11 +577,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                               'y': list(y_e_l[filter_selectie]),
                               'mode': 'lines'
                               },
-                             {
-                              'x': list(x_d[df_s_l[filter_selectie].index.to_list()]),
-                              'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
-                              'mode': 'markers'
-                              }
                              ],
                     'layout': {
                                'xaxis': {'title': 'opleverdagen [dag]',
@@ -545,6 +589,12 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                'showlegend': False,
                                }
                     }
+        if filter_selectie in df_s_l:
+            fig_prog['data'] = fig_prog['data'] + [{
+                                                    'x': list(x_d[df_s_l[filter_selectie].index.to_list()]),
+                                                    'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
+                                                    'mode': 'markers'
+                                                    }]
 
         dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
                                     (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
@@ -615,6 +665,8 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         )
 
         geo_plot = {'data': map_data, 'layout': map_layout}
+    else:
+        geo_plot = {'data': None, 'layout': dict()}
 
     return barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
         fig_targets
@@ -701,24 +753,27 @@ def processed_data(df):
              '2': str(round(0))}
 
     df_g = df.copy()
-    df_g['clr'] = 0
-    df_g.loc[~df_g['Opleverdatum'].isna(), ('clr')] = 50
-    df_g['clr-DP'] = 0
-    df_g.loc[df_g['Opleverstatus'] != 0, ('clr-DP')] = 25
-    df_g['X locatie Rol'] = df_g['X locatie Rol'].str.replace(
-        ',', '.').astype(float)
-    df_g['Y locatie Rol'] = df_g['Y locatie Rol'].str.replace(
-        ',', '.').astype(float)
-    df_g['X locatie DP'] = df_g['X locatie DP'].str.replace(
-        ',', '.').astype(float)
-    df_g['Y locatie DP'] = df_g['Y locatie DP'].str.replace(
-        ',', '.').astype(float)
-    df_g['Lat'], df_g['Long'] = from_rd(df_g['X locatie Rol'],
-                                        df_g['Y locatie Rol'])
-    df_g['Lat_DP'], df_g['Long_DP'] = from_rd(df_g['X locatie DP'],
-                                              df_g['Y locatie DP'])
-    df_g['Size'] = 7
-    df_g['Size_DP'] = 14
+    if df_g[~df_g['X locatie Rol'].isna()].empty:
+        df_g = None
+    else:
+        df_g['clr'] = 0
+        df_g.loc[~df_g['Opleverdatum'].isna(), ('clr')] = 50
+        df_g['clr-DP'] = 0
+        df_g.loc[df_g['Opleverstatus'] != 0, ('clr-DP')] = 25
+        df_g['X locatie Rol'] = df_g['X locatie Rol'].str.replace(
+            ',', '.').astype(float)
+        df_g['Y locatie Rol'] = df_g['Y locatie Rol'].str.replace(
+            ',', '.').astype(float)
+        df_g['X locatie DP'] = df_g['X locatie DP'].str.replace(
+            ',', '.').astype(float)
+        df_g['Y locatie DP'] = df_g['Y locatie DP'].str.replace(
+            ',', '.').astype(float)
+        df_g['Lat'], df_g['Long'] = from_rd(df_g['X locatie Rol'],
+                                            df_g['Y locatie Rol'])
+        df_g['Lat_DP'], df_g['Long_DP'] = from_rd(df_g['X locatie DP'],
+                                                  df_g['Y locatie DP'])
+        df_g['Size'] = 7
+        df_g['Size_DP'] = 14
 
     count_R = df['RedenNA'].value_counts()
     count_R['R_geen'] = len(df) - sum([el for el in count_R])
@@ -757,94 +812,86 @@ def from_rd(x: int, y: int) -> tuple:
     return latitude, longitude
 
 
-def speed_projects(df_l, t_s):
+def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e):
 
-    rc1 = []
-    rc2 = []
-    count_rc2 = 0
-    cutoff = 15
+    rc1 = {}
+    rc2 = {}
     df_s_l = {}
-    b1 = []
-    b2 = []
-    tot_l = []
-    af_l = []
-    t_shift = []
-    pnames = []
+    b1 = {}
+    b2 = {}
+    tot_l = {}
+    af_l = {}
+    t_shift = {}
     x_e_l = {}
     y_e_l = {}
-    ts = 0
-    te = 12000
-    t_e = '2020-03-20'
-    y_cum = np.zeros(te + 1)
+    y_cum = x_e * 0
+    t_min = {}
 
-    for i, key in enumerate(df_l):
-        df_test = df_l[key]
-        tot = len(df_test)
-        df_test = df_test[~df_test['Opleverdatum'].isna()]
-        af = len(df_test)
-        if not df_test.empty:
-            df_s = df_test.groupby(['Opleverdatum']).agg({'Sleutel': 'count'})
+    for key in df_l:
+        tot_l[key] = len(df_l[key])
+        if key in ['Den Haag', 'Den Haag Regentessekwatier', 'Den Haag Morgenstond west']:
+            tot_l[key] = 0.3 * tot_l[key]
+        df_af = df_l[key][~df_l[key]['Opleverdatum'].isna()]
+        af_l[key] = len(df_af)
+        if not df_af.empty:
+            df_s = df_af.groupby(['Opleverdatum']).agg({'Sleutel': 'count'})
             df_s.index = pd.to_datetime(df_s.index, format='%d-%m-%Y')
             df_s = df_s.sort_index()
             df_s = df_s[df_s.index < t_e]
             df_s['Sleutel'] = df_s['Sleutel'].cumsum()
-            df_s['Sleutel'] = 100 - df_s['Sleutel'] / tot * 100
+            df_s['Sleutel'] = 100 - df_s['Sleutel'] / tot_l[key] * 100
+            df_s[df_s['Sleutel'] < 0]['Sleutel'] = 0  # alleen nodig voor DH
             t_sh = (df_s.index.min() - min(t_s.values())).days
+            t_shift[key] = t_sh
             df_s.index = (df_s.index - df_s.index[0]).days + t_sh
-
-            df_s_rc1 = df_s[df_s['Sleutel'] > cutoff].copy()
-            df_s_rc2 = df_s[df_s['Sleutel'] <= cutoff].copy()
-
-            x_e = np.array(list(range(ts, te + 1)))
-            if not df_s_rc1.empty:
-                z1 = np.polyfit(df_s_rc1.index, df_s_rc1.Sleutel, 1)
-                rc1 += [z1[0] / 100 * tot]   # huizen/d
-                b1 += [z1[1]]
-            else:
-                rc1 += [0]
-                b1 += [0]
-            if not df_s_rc2.empty:
-                z2 = np.polyfit(df_s_rc2.index, df_s_rc2.Sleutel, 1)
-                rc2 += [z2[0] / 100 * tot]   # huizen/d
-                count_rc2 += 1
-                b2 += [z2[1]]
-            else:
-                rc2 += [0]
-                b2 += [0]
-
             df_s_l[key] = df_s
-            tot_l += [tot]
-            af_l += [af]
-            t_shift += [t_sh]
-            pnames += [key]
+            if len(df_s_l[key]) > 1:
+                df_s_rc1 = df_s[df_s['Sleutel'] > cutoff].copy()
+                df_s_rc2 = df_s[df_s['Sleutel'] <= cutoff].copy()
+                if len(df_s_rc1) > 1:
+                    z1 = np.polyfit(df_s_rc1.index, df_s_rc1.Sleutel, 1)
+                    rc1[key] = z1[0]  # percentage
+                    b1[key] = z1[1]   # percentage
+                if len(df_s_rc2) > 1:
+                    z2 = np.polyfit(df_s_rc2.index, df_s_rc2.Sleutel, 1)
+                    rc2[key] = z2[0]  # percentage
+                    b2[key] = z2[1]  # percentage
 
-    rc1_mean = sum(rc1) / len(rc1)
-    if count_rc2 != 0:
-        rc2_mean = sum(rc2) / count_rc2
-        b2_mean = sum(b2) / count_rc2
-    else:
-        rc2_mean = sum(rc2)
-        b2_mean = sum(b2)
+    for key in df_l:
+        _, _, _, _, _, _, doc = data_from_DB(None, 1)
+        rc1_mean = doc['rc1_mean']
+        rc2_mean = doc['rc2_mean']
 
-    for i, key in enumerate(df_s_l):
-
-        if key == 'Nijmegen Biezen-Wolfskuil-Hatert ':
-            rc1[i] = 0
-
-        x_e_l[key] = x_e
-        a1 = (rc1[i] / tot_l[i] * 100)
-        y_e1 = b1[i] + a1 * x_e
-        a2 = (rc2[i] / tot_l[i] * 100)
-        b2i = b2[i]
-        if a2 == 0:
-            _, _, doc = data_from_DB(None, 1)
-            a2 = (doc['rc2_mean'] / tot_l[i] * 100)
-            b2i = doc['b2_mean']
-        y_e2 = b2i + a2 * x_e
+        if key in df_s_l:
+            y_min = df_s_l[key]['Sleutel'].min()
+            t_min[key] = df_s_l[key].index.min()
+            x_e_l[key] = x_e
+            if key in rc1:
+                y_e1 = b1[key] + rc1[key] * x_e_l[key]
+            else:
+                # rc1_mean = sum(rc1.values()) / len(rc1.values())
+                b1_mean = 100 + (-rc1_mean * t_min[key])
+                y_e1 = b1_mean + rc1_mean * x_e_l[key]
+            if key in rc2:
+                y_e2 = b2[key] + rc2[key] * x_e_l[key]
+            else:
+                # rc2_mean = sum(rc2.values()) / len(rc2.values())
+                b2_mean = cutoff + (-rc2_mean * t_min[key])
+                y_e2 = b2_mean + rc2_mean * x_e_l[key]
+        else:
+            y_min = 2 * cutoff
+            t_min[key] = x_e[x_d == t_e][0]
+            x_e_l[key] = x_e
+            # rc1_mean = sum(rc1.values()) / len(rc1.values())
+            b1_mean = 100 + (-rc1_mean * t_min[key])
+            y_e1 = b1_mean + rc1_mean * x_e_l[key]
+            # rc2_mean = sum(rc2.values()) / len(rc2.values())
+            b2_mean = cutoff + (-rc2_mean * t_min[key])
+            y_e2 = b2_mean + rc2_mean * x_e_l[key]
 
         y_e = y_e1
         y_ed = y_e1 - y_e2
-        if df_s_l[key]['Sleutel'].min() < cutoff:
+        if y_min < cutoff:
             y_e[y_ed < 0] = y_e2[y_ed < 0]
         else:
             y_e = np.append(y_e1[y_e1 >= cutoff], y_e2[y_e2 < cutoff])
@@ -852,14 +899,10 @@ def speed_projects(df_l, t_s):
                 y_e = np.append(y_e, np.zeros(len(y_e1) - len(y_e)))
             else:
                 y_e = y_e[0:len(y_e1)]
-        y_e[x_e < df_s_l[key].index.min()] = 0
-
+        y_e[x_e < t_min[key]] = 0
         y_e_l[key] = y_e
 
-        y_add = y_e / 100 * tot_l[i]
+        y_add = y_e / 100 * tot_l[key]
         y_cum[y_add >= 0] = y_cum[y_add >= 0] + y_add[y_add >= 0]
 
-    x_d = pd.date_range(min(t_s.values()), periods=te + 1, freq='D')
-
-    return rc1, rc2, rc1_mean, rc2_mean, b2_mean, tot_l, af_l, pnames, \
-        df_s_l, x_e_l, y_e_l, x_d, y_cum
+    return rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min, rc1_mean, rc2_mean
