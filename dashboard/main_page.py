@@ -269,7 +269,7 @@ def bar_projects(s):
                                           layout=go.Layout(barmode='stack',
                                                            clickmode='event+select',
                                                            showlegend=True,
-                                                        #    legend=dict(x=0.75, y=1.1),
+                                                           #    legend=dict(x=0.75, y=1.1),
                                                            title={'text': 'Totaal aantal opgeleverde huizen per week',
                                                                   'x': 0.5},
                                                            xaxis={'range': [0.5, 25.5], 'title': '[Weken in 2020]'},
