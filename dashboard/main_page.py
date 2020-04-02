@@ -290,8 +290,8 @@ def bar_projects(s):
                                                            #    legend=dict(x=0.75, y=1.1),
                                                            title={'text': 'Totaal aantal opgeleverde huizen per week',
                                                                   'x': 0.5},
-                                                           xaxis={'range': [0.5, 25.5], 'title': '[Weken in 2020]'},
-                                                           yaxis={'range': [0, 4500], 'title': '[Aantal huizen]'},
+                                                           xaxis={'range': [1.5, 26.5], 'title': '[Weken in 2020]'},
+                                                           yaxis={'range': [0, 5000], 'title': '[Aantal huizen]'},
                                                            )
                                           )
                          )
