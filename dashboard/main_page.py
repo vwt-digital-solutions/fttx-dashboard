@@ -660,9 +660,9 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             fig_targets = {}
 
     if df_g is not None:
-        token_1 = 'pk.eyJ1IjoiamFja2x1byIsImEiOiJjajNlcnh3MzEwMHZtMzNueGw'
-        token_2 = '3NWw5ZXF5In0.fk8k06T96Ml9CLGgKmk81w'
-        mapbox_access_token = token_1 + token_2
+        # this is a default public token obtained from a free account on https://account.mapbox.com/
+        # and can there be refreshed at any moment
+        mapbox_at = 'pk.eyJ1IjoiYXZhbnR1cm5ob3V0IiwiYSI6ImNrOGl4Y2o3ZTA5MjMzbW53a3dicTRnMnIifQ.FdFexMQbqQrZBNMEZkYvvg'
         normalized_size = df_g['Size_DP'].to_list() + df_g['Size'].to_list()
 
         map_data = [
@@ -694,7 +694,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             legend=dict(font=dict(size=10), orientation="h"),
             title="Woningen (klein) & DP's (groot)<br>[groen / geel = opgeleverd, rood = niet klaar]",
             mapbox=dict(
-                accesstoken=mapbox_access_token,
+                accesstoken=mapbox_at,
                 style="light",
                 center=dict(lon=df_g['Long'].mean(), lat=df_g['Lat'].mean()),
                 zoom=13,
