@@ -41,11 +41,13 @@ def get_body():
                                 style={
                                     "height": "70px",
                                     "width": "auto",
-                                    "margin-bottom": "25px",
+                                    "margin-bottom": "15px",
+                                    "margin-left": "115px"
                                 },
                             ),
                         ],
                         className="one-third column",
+                        style={'textAlign': 'left'}
                     ),
                     html.Div(
                         [
@@ -53,13 +55,16 @@ def get_body():
                                 [
                                     html.H3(
                                         "Status projecten FttX",
-                                        style={"margin-bottom": "0px"},
+                                        style={"margin-bottom": "25px",
+                                               "margin-left": "75px",
+                                               },
                                     ),
                                 ],
                             )
                         ],
                         className="one-third column",
                         id="title",
+                        style={'textAlign': 'center'}
                     ),
                     html.Div(
                         [
@@ -69,11 +74,13 @@ def get_body():
                                 style={
                                     "height": "100px",
                                     "width": "auto",
-                                    "margin-bottom": "25px",
+                                    "margin-bottom": "15px",
+                                    "margin-right": "0px"
                                 },
                             )
                         ],
                         className="one-third column",
+                        style={'textAlign': 'right'}
                     ),
                 ],
                 id="header",
@@ -120,15 +127,21 @@ def get_body():
                 [
                     html.Div(
                             [dcc.Graph(id="graph_prog")],
+                            id='subgraph1',
                             className="pretty_container column",
+                            hidden=True,
                     ),
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
+                            id='subgraph2',
                             className="pretty_container column",
+                            hidden=True,
                     ),
                     html.Div(
                             [dcc.Graph(id="Bar_HB")],
+                            id='subgraph3',
                             className="pretty_container column",
+                            hidden=True,
                     ),
                 ],
                 id="main_graphs",
@@ -138,15 +151,21 @@ def get_body():
                 [
                     html.Div(
                             [dcc.Graph(id="graph_targets")],
+                            id='subgraph4',
                             className="pretty_container column",
+                            hidden=True,
                     ),
                     html.Div(
                             [dcc.Graph(id="count_R")],
+                            id='subgraph5',
                             className="pretty_container column",
+                            hidden=True,
                     ),
                     html.Div(
                             [dcc.Graph(id="geo_plot")],
+                            id='subgraph6',
                             className="pretty_container column",
+                            hidden=True,
                     ),
                 ],
                 id="main_graphs",
@@ -158,7 +177,9 @@ def get_body():
                         [
                             html.H3("Verdere details:"),
                         ],
+                        id='text_table',
                         style={"margin-left": "42px"},
+                        hidden=True,
                     )
                 ],
                 className="container-display",
@@ -204,11 +225,8 @@ def bar_projects(s):
                                             'yaxis': {'title': 'gemiddelde snelheid [woningen / dag]'},
                                             'showlegend': False,
                                             'title':
-                                            {'text': 'Klik op een project ' +
-                                                'voor meer informatie! <br' +
-                                                '> [Snelheden binnen het groene vlak ' +
-                                                'liggen tussen 75% en 125% van de ' +
-                                                'gemiddelde snelheid]'},
+                                            {'text': 'Klik op een project voor meer informatie!<br>' +
+                                                '[Het groene vlak geeft een bandbreedte van 75% tot 125% gem. snelheid aan]'},
                                             }
                                  }
                          )]
@@ -262,7 +280,7 @@ def bar_projects(s):
                        y=[4500],
                        name='Huidige week',
                        marker=go.bar.Marker(color='rgb(0, 0, 0)'),
-                       width=0.05,
+                       width=0.1,
                        )
         fig = [dcc.Graph(id="graph_targets",
                          figure=go.Figure(data=[bar_z, bar_y, bar_k, bar_t],
@@ -299,6 +317,13 @@ def update_dropdown(value):
      Output("Bar_HB", "figure"),
      Output("status_table_ext", "children"),
      Output("status_table_ext", "hidden"),
+     Output("subgraph1", "hidden"),
+     Output("subgraph2", "hidden"),
+     Output("subgraph3", "hidden"),
+     Output("subgraph4", "hidden"),
+     Output("subgraph5", "hidden"),
+     Output("subgraph6", "hidden"),
+     Output("text_table", "hidden"),
      Output("geo_plot", "figure"),
      Output("count_R", "figure"),
      Output("aggregate_data", 'data'),
@@ -322,6 +347,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     df_l, t_s, x_e, x_d, cutoff, t_e, _ = data_from_DB(drop_selectie, 0)
     df = df_l[drop_selectie]
     hidden = True
+    hidden2 = False
 
     if (drop_selectie == filter_a) & ((cell_b1 is not None) | (cell_b2 is not None)):
         hidden = False
@@ -364,8 +390,8 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_targets = \
         generate_graph(df, x_e_l, y_e_l, df_s_l, drop_selectie, x_d, y_cum, t_s)
 
-    return [barLB, barHB, df_table, hidden, geo_plot, bar_R, mask_all,
-            drop_selectie, fig_prog, fig_targets]
+    return [barLB, barHB, df_table, hidden, hidden2, hidden2, hidden2, hidden2, hidden2, hidden2, hidden,
+            geo_plot, bar_R, mask_all, drop_selectie, fig_prog, fig_targets]
 
 
 # HELPER FUNCTIES
@@ -477,6 +503,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                           layout=go.Layout(barmode='stack',
                                            clickmode='event+select',
                                            showlegend=True,
+                                           height=350,
                                            title={'text': 'OHW per projectfase voor LB & Duplex:',
                                                   'x': 0.5},
                                            yaxis={'title': 'aantal woningen'},
@@ -510,6 +537,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                           layout=go.Layout(barmode='stack',
                                            clickmode='event+select',
                                            showlegend=True,
+                                           height=350,
                                            title={'text': 'OHW per projectfase voor HB:',
                                                   'x': 0.5},
                                            yaxis={'title': 'aantal woningen'},
@@ -547,6 +575,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             automargin=True,
             margin=dict(le=30, r=30, b=20, t=40),
             hovermode="closest",
+            height=350,
             # plot_bgcolor="#F9F9F9",
             # paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=14), orientation="h"),
@@ -575,7 +604,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             y=0.5
         )
         layout_pie["showlegend"] = True
-        layout_pie["height"] = 500
         bar_R = dict(data=data_pie, layout=layout_pie)
 
         fig_prog = {'data': [{
@@ -593,6 +621,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                          },
                                'title': {'text': 'Snelheid project & prognose afronding:'},
                                'showlegend': False,
+                               'height': 350,
                                }
                     }
         if filter_selectie in df_s_l:
@@ -624,6 +653,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                                 },
                                       'showlegend': False,
                                       'title': {'text': 'Aantal weken opgeleverd na HASdatum: <br> [target is max 1 week]'},
+                                      'height': 350,
                                         }
                            }
         else:
@@ -657,11 +687,12 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             autosize=True,
             automargin=True,
             margin=dict(r=30, b=20, t=100),
+            height=350,
             hovermode="closest",
             plot_bgcolor="#F9F9F9",
             paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=10), orientation="h"),
-            title="Woningen [aangesloten = groen, niet aangesloten = rood]<br>DPs [aangesloten = geel, niet aangesloten = rood]",
+            title="Woningen (klein) & DP's (groot)<br>[groen / geel = opgeleverd, rood = niet klaar]",
             mapbox=dict(
                 accesstoken=mapbox_access_token,
                 style="light",
