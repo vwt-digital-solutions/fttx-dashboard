@@ -481,7 +481,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPLB1'] +
                        bar['Montage-lasDPLB1'] +
                        bar['HASLB1'],
-                       name='LB-HC',
+                       name='Opgeleverd (HAS: HC)',
                        marker=go.bar.Marker(color='rgb(0, 200, 0)'))
         bar1b = go.Bar(x=labels['OHW'],
                        y=[0] +
@@ -489,7 +489,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        [0] +
                        [0] +
                        bar['HASLB1HP'],
-                       name='LB-HP',
+                       name='Opgeleverd (HAS: HP)',
                        marker=go.bar.Marker(color='rgb(0, 0, 200)'))
         bar1c = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenLB0'] +
@@ -497,7 +497,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPLB0'] +
                        bar['Montage-lasDPLB0'] +
                        bar['HASLB0'],
-                       name='LB niet opgeleverd',
+                       name='Niet opgeleverd',
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'))
         barLB = go.Figure(data=[bar1a, bar1b, bar1c],
                           layout=go.Layout(barmode='stack',
@@ -515,7 +515,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPHB1'] +
                        bar['Montage-lasDPHB1'] +
                        bar['HASHB1'],
-                       name='HB-HC',
+                       name='Opgeleverd (HAS: HC)',
                        marker=go.bar.Marker(color='rgb(0, 200, 0)'))
         bar1e = go.Bar(x=labels['OHW'],
                        y=[0] +
@@ -523,7 +523,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        [0] +
                        [0] +
                        bar['HASHB1HP'],
-                       name='HB-HP',
+                       name='Opgeleverd (HAS: HP)',
                        marker=go.bar.Marker(color='rgb(0, 0, 200)'))
         bar1f = go.Bar(x=labels['OHW'],
                        y=bar['SchouwenHB0'] +
@@ -531,7 +531,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                        bar['Montage-lasAPHB0'] +
                        bar['Montage-lasDPHB0'] +
                        bar['HASHB0'],
-                       name='HB niet opgeleverd',
+                       name='Niet opgeleverd',
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'))
         barHB = go.Figure(data=[bar1d, bar1e, bar1f],
                           layout=go.Layout(barmode='stack',
