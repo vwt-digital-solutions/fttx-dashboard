@@ -131,6 +131,12 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
+                    # html.Div(
+                    #         [dcc.Graph(id="graph_BIS-HAS")],
+                    #         id='subgraph1b',
+                    #         className="pretty_container column",
+                    #         hidden=True,
+                    # ),
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
                             id='subgraph2',
@@ -199,7 +205,7 @@ def get_body():
 
 def bar_projects(s):
 
-    _, _, _, _, _, _, doc = data_from_DB(None, 1)
+    _, _, _, _, _, _, doc, _, _, _ = data_from_DB(None, 1)
 
     if s == 0:
         fig = [dcc.Graph(id='project_performance',
@@ -258,32 +264,39 @@ def bar_projects(s):
         fig = filters
 
     if s == 3:
-        bar_z = go.Bar(x=[el - 0.2 for el in doc['x_target']],
-                       y=doc['z_target'],
-                       name='Realisatie / Target (intern)',
-                       marker=go.bar.Marker(color='rgb(0, 0, 200)'),
-                       width=0.2,
-                       )
-        bar_y = go.Bar(x=doc['x_target'],
-                       y=doc['y_target'],
-                       name='Prognose',
-                       marker=go.bar.Marker(color='rgb(0, 200, 0)'),
-                       width=0.2,
-                       )
-        bar_k = go.Bar(x=[el + 0.2 for el in doc['x_target']],
-                       y=doc['k_target'],
-                       name='Realisatie (FiberConnect)',
+
+        bar_p = go.Bar(x=[el - 0.3 for el in doc['x_target']],
+                       y=doc['p_target'],
+                       name='Targets (KPN)',
                        marker=go.bar.Marker(color='rgb(200, 0, 0)'),
                        width=0.2,
                        )
+        bar_y = go.Bar(x=[el - 0.1 for el in doc['x_target']],
+                       y=doc['y_target'],
+                       name='Prognose (VQD)',
+                       marker=go.bar.Marker(color='rgb(200, 200, 0)'),
+                       width=0.2,
+                       )
+        bar_k = go.Bar(x=[el + 0.1 for el in doc['x_target']],
+                       y=doc['k_target'],
+                       name='Realisatie (FC)',
+                       marker=go.bar.Marker(color='rgb(0, 200, 0)'),
+                       width=0.2,
+                       )
+        bar_z = go.Bar(x=[el + 0.3 for el in doc['x_target']],
+                       y=doc['z_target'],
+                       name='Realisatie / Planning (VWT)',
+                       marker=go.bar.Marker(color='rgb(0, 0, 200)'),
+                       width=0.2,
+                       )
         bar_t = go.Bar(x=[int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1],
-                       y=[4500],
+                       y=[5000],
                        name='Huidige week',
                        marker=go.bar.Marker(color='rgb(0, 0, 0)'),
                        width=0.1,
                        )
         fig = [dcc.Graph(id="graph_targets",
-                         figure=go.Figure(data=[bar_z, bar_y, bar_k, bar_t],
+                         figure=go.Figure(data=[bar_z, bar_k, bar_y, bar_p, bar_t],
                                           layout=go.Layout(barmode='stack',
                                                            clickmode='event+select',
                                                            showlegend=True,
@@ -318,6 +331,7 @@ def update_dropdown(value):
      Output("status_table_ext", "children"),
      Output("status_table_ext", "hidden"),
      Output("subgraph1", "hidden"),
+     #  Output("subgraph1b", "hidden"),
      Output("subgraph2", "hidden"),
      Output("subgraph3", "hidden"),
      Output("subgraph4", "hidden"),
@@ -329,6 +343,7 @@ def update_dropdown(value):
      Output("aggregate_data", 'data'),
      Output("aggregate_data2", 'data'),
      Output("graph_prog", 'figure'),
+     #  Output("graph_BIS-HAS", 'figure'),
      Output("graph_targets", 'figure'),
      ],
     [Input('project-dropdown', 'value'),
@@ -344,7 +359,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if (drop_selectie is None):
         raise PreventUpdate
     print(drop_selectie)
-    df_l, t_s, x_e, x_d, cutoff, t_e, _ = data_from_DB(drop_selectie, 0)
+    df_l, t_s, x_e, x_d, cutoff, t_e, _, date_FTU0, date_FTU1, info_BISHAS = data_from_DB(drop_selectie, 0)
     df = df_l[drop_selectie]
     hidden = True
     hidden2 = False
@@ -384,14 +399,15 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if df.empty:
         raise PreventUpdate
 
-    rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min, rc1_mean, rc2_mean = \
-        speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e)
+    rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min,\
+        rc1_mean, rc2_mean, x_t_l, y_t_l, rc_K, t_diff = \
+        speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e, date_FTU0, date_FTU1)
 
-    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_targets = \
-        generate_graph(df, x_e_l, y_e_l, df_s_l, drop_selectie, x_d, y_cum, t_s)
+    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_targets, fig_bish = \
+        generate_graph(df, x_e_l, y_e_l, df_s_l, drop_selectie, x_d, y_cum, t_s, y_t_l, info_BISHAS)
 
     return [barLB, barHB, df_table, hidden, hidden2, hidden2, hidden2, hidden2, hidden2, hidden2, hidden,
-            geo_plot, bar_R, mask_all, drop_selectie, fig_prog, fig_targets]
+            geo_plot, bar_R, mask_all, drop_selectie, fig_prog, fig_bish]
 
 
 # HELPER FUNCTIES
@@ -423,6 +439,15 @@ def data_from_DB(pname, flag):
         x_e = np.array(list(range(0, t_d + 1)))
         x_d = pd.date_range(min(t_s.values()), periods=t_d + 1, freq='D')
 
+        url_s = '/plots_extra?id=dates_FTU'
+        doc = api.get(url_s)
+        date_FTU0 = doc[0]['date_FTU0']
+        date_FTU1 = doc[0]['date_FTU1']
+
+        url_s = '/plots_extra?id=' + pname
+        doc = api.get(url_s)
+        info_BISHAS = doc[0]
+
     if flag == 1:
         url_s = '/plot_overview_graphs?id=plot_parameters'
         doc = api.get(url_s)
@@ -431,13 +456,16 @@ def data_from_DB(pname, flag):
         t_s = None
         x_e = None
         x_d = None
+        date_FTU0 = None
+        date_FTU1 = None
+        info_BISHAS = None
 
     print('time: ' + str(time.time() - t))
 
-    return df_l, t_s, x_e, x_d, cutoff, t_e, plot_parameters
+    return df_l, t_s, x_e, x_d, cutoff, t_e, plot_parameters, date_FTU0, date_FTU1, info_BISHAS
 
 
-def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
+def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y_t_l, info_BISHAS):
 
     bar, stats, df_g, count_R = processed_data(df)
 
@@ -609,7 +637,9 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         fig_prog = {'data': [{
                               'x': list(x_d),
                               'y': list(y_e_l[filter_selectie]),
-                              'mode': 'lines'
+                              'mode': 'lines',
+                              'line': dict(color='rgb(200, 200, 0)'),
+                              'name': 'Prognose (VQD)',
                               },
                              ],
                     'layout': {
@@ -620,7 +650,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
                                          'range': [0, 110]
                                          },
                                'title': {'text': 'Snelheid project & prognose afronding:'},
-                               'showlegend': False,
+                               'showlegend': True,
                                'height': 350,
                                }
                     }
@@ -628,8 +658,88 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
             fig_prog['data'] = fig_prog['data'] + [{
                                                     'x': list(x_d[df_s_l[filter_selectie].index.to_list()]),
                                                     'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
-                                                    'mode': 'markers'
+                                                    'mode': 'markers',
+                                                    'line': dict(color='rgb(0, 200, 0)'),
+                                                    'name': 'Realisatie (FC)',
                                                     }]
+        if filter_selectie in y_t_l:
+            fig_prog['data'] = fig_prog['data'] + [{
+                                                    'x': list(x_d),
+                                                    'y': list(y_t_l[filter_selectie]),
+                                                    'mode': 'lines',
+                                                    'line': dict(color='rgb(200, 0, 0)'),
+                                                    'name': 'Target (KPN)',
+                                                    }]
+
+        if 'x_comp' in info_BISHAS:
+            if 'y_KPN' in info_BISHAS:
+                advies = 'Advies:<br>' + info_BISHAS['Advies_BIS'] + ' BIS teams<br>' + info_BISHAS['Advies_HAS'] + ' HAS teams'
+            else:
+                advies = ' '
+            fig_bish = {'data': [{
+                                 'x': info_BISHAS['x_comp'],
+                                 'y': info_BISHAS['y_schouw'],
+                                 'mode': 'markers',
+                                 'marker': {'symbol': 'triangle-down', 'color': 'rgb(0, 200, 0)'},
+                                 'name': 'Geschouwd',
+                                 }] +
+                                [{
+                                 'x': info_BISHAS['x_comp'],
+                                 'y': info_BISHAS['y_BIS'],
+                                 'mode': 'markers',
+                                 'marker': {'symbol': 'x', 'color': 'rgb(0, 200, 0)'},
+                                 'name': 'BIS-gegraven',
+                                 }] +
+                                [{
+                                 'x': info_BISHAS['x_comp'],
+                                 'y': info_BISHAS['y_HASm'],
+                                 'mode': 'markers',
+                                 'marker': {'symbol': 'circle', 'color': 'rgb(0, 200, 0)'},
+                                 'name': 'HAS-gegraven',
+                                 }] +
+                                [{
+                                 'x': info_BISHAS['x_comp'],
+                                 'y': info_BISHAS['y_HAS'],
+                                 'mode': 'markers',
+                                 'marker': {'symbol': 'diamond', 'color': 'rgb(0, 200, 0)'},
+                                 'name': 'HAS-opgeleverd (HP / 2)',
+                                 }],
+                        'layout': {
+                                'xaxis': {'title': 'weken 2020',
+                                          'range': [0, 21],
+                                          },
+                                'yaxis': {'title': 'Nog af te ronden [%]',
+                                          'range': [0, 110]
+                                          },
+                                'title': {'text': 'Voortgang verschillende fasen:'},
+                                'showlegend': True,
+                                # 'legend': dict(loc=1),
+                                'height': 350,
+                                'annotations': [dict(x=10, y=20, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
+                                }
+                        }
+        if 'y_KPN' in info_BISHAS:
+            fig_bish['data'] = fig_bish['data'] + [{
+                                                    'x': info_BISHAS['x_KPN'],
+                                                    'y': info_BISHAS['y_KPN'],
+                                                    'mode': 'line',
+                                                    'line': dict(color='rgb(200, 0, 0)'),
+                                                    'name': 'Targets (KPN)',
+                                                    }]
+        else:
+            fig_bish = {
+                        'layout': {
+                                'xaxis': {'title': ' ',
+                                          'range': [t_s[filter_selectie], '2022-01-01'],
+                                          },
+                                'yaxis': {'title': ' ',
+                                          'range': [0, 110]
+                                          },
+                                'title': {'text': ' '},
+                                'showlegend': False,
+                                'height': 350,
+                                }
+            }
 
         dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
                                     (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
@@ -706,7 +816,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s):
         geo_plot = {'data': None, 'layout': dict()}
 
     return barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
-        fig_targets
+        fig_targets, fig_bish
 
 
 def processed_data(df):
@@ -849,7 +959,11 @@ def from_rd(x: int, y: int) -> tuple:
     return latitude, longitude
 
 
-def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e):
+def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e, date_FTU0, date_FTU1):
+    # extra code voor fttx-dashboard
+    _, _, _, _, _, _, doc, _, _, _ = data_from_DB(None, 1)
+    rc1_mean = doc['rc1_mean']
+    rc2_mean = doc['rc2_mean']
 
     rc1 = {}
     rc2 = {}
@@ -864,8 +978,8 @@ def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e):
     y_cum = x_e * 0
     t_min = {}
 
-    for key in df_l:
-        tot_l[key] = len(df_l[key])
+    for key in df_l:  # to process project data in FC
+        tot_l[key] = len(df_l[key])  # straks aantal projecten baseren op targets KPN?
         if key in ['Den Haag', 'Den Haag Regentessekwatier', 'Den Haag Morgenstond west']:
             tot_l[key] = 0.3 * tot_l[key]
         df_af = df_l[key][~df_l[key]['Opleverdatum'].isna()]
@@ -894,35 +1008,36 @@ def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e):
                     rc2[key] = z2[0]  # percentage
                     b2[key] = z2[1]  # percentage
 
-    for key in df_l:
-        _, _, _, _, _, _, doc = data_from_DB(None, 1)
-        rc1_mean = doc['rc1_mean']
-        rc2_mean = doc['rc2_mean']
-
+    for key in df_l:  # to make prognoses
         if key in df_s_l:
             y_min = df_s_l[key]['Sleutel'].min()
             t_min[key] = df_s_l[key].index.min()
             x_e_l[key] = x_e
-            if key in rc1:
+            if key in rc1:  # for projects with more than 1 opleverdatum
                 y_e1 = b1[key] + rc1[key] * x_e_l[key]
-            else:
-                # rc1_mean = sum(rc1.values()) / len(rc1.values())
+            else:  # for projects with 1 opleverdatum
+                # rc1_mean = sum(rc1.values()) / len(rc1.values())  # uit voor fttx-dashboardv
                 b1_mean = 100 + (-rc1_mean * t_min[key])
                 y_e1 = b1_mean + rc1_mean * x_e_l[key]
             if key in rc2:
                 y_e2 = b2[key] + rc2[key] * x_e_l[key]
             else:
-                # rc2_mean = sum(rc2.values()) / len(rc2.values())
+                # rc2_mean = sum(rc2.values()) / len(rc2.values())  # uit voor fttx-dashboard
                 b2_mean = cutoff + (-rc2_mean * t_min[key])
                 y_e2 = b2_mean + rc2_mean * x_e_l[key]
-        else:
+        else:  # for projects with no opleverdatums yet
             y_min = 2 * cutoff
+
             t_min[key] = x_e[x_d == t_e][0]
+            if key in date_FTU0:
+                if not pd.isnull(date_FTU0[key]):
+                    t_min[key] = x_e[x_d == date_FTU0[key]][0]
+
             x_e_l[key] = x_e
-            # rc1_mean = sum(rc1.values()) / len(rc1.values())
+            # rc1_mean = sum(rc1.values()) / len(rc1.values())  # uit voor fttx-dashboard
             b1_mean = 100 + (-rc1_mean * t_min[key])
             y_e1 = b1_mean + rc1_mean * x_e_l[key]
-            # rc2_mean = sum(rc2.values()) / len(rc2.values())
+            # rc2_mean = sum(rc2.values()) / len(rc2.values())  # uit voor fttx-dashboard
             b2_mean = cutoff + (-rc2_mean * t_min[key])
             y_e2 = b2_mean + rc2_mean * x_e_l[key]
 
@@ -942,4 +1057,23 @@ def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e):
         y_add = y_e / 100 * tot_l[key]
         y_cum[y_add >= 0] = y_cum[y_add >= 0] + y_add[y_add >= 0]
 
-    return rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min, rc1_mean, rc2_mean
+    # to add target info KPN in days uitgaande van FTU0 en FTU1
+    rc_K = {}
+    x_t_l = {}
+    y_t_l = {}
+    t_diff = {}
+    for key in t_min:
+        if key in date_FTU1:
+            if (not pd.isnull(date_FTU1[key])):
+                x_t_l[key] = x_e
+                y_t_l[key] = x_e * 0
+                t_max = x_e[x_d == date_FTU1[key]][0]
+                # t_delay = 2 * 3 * 7
+                t_delay = 0
+                t_diff[key] = t_max - t_min[key] - t_delay
+                rc_K[key] = -(tot_l[key] / t_diff[key] / tot_l[key] * 100)  # % woningen / d
+                y_t = 100 + rc_K[key] * np.array(range(0, t_diff[key] + 1))
+                y_t_l[key][(x_e >= t_min[key] + t_delay / 2) & (x_e <= t_max - t_delay / 2)] = y_t
+
+    return rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min,\
+        rc1_mean, rc2_mean, x_t_l, y_t_l, rc_K, t_diff
