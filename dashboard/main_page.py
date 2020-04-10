@@ -10,8 +10,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
 from app import app, cache
-# to trigger
-# layout graphs
+
 layout = dict(
     autosize=True,
     automargin=True,
@@ -573,9 +572,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
 
         df_t = df.copy()
         df_t['Uitleg RedenNA'] = df_t['RedenNA'].map(reden_l)
-        df_t = df_t[['Sleutel', 'Opleverdatum',
-                     'HASdatum', 'Opleverstatus',
-                     'RedenNA', 'Uitleg RedenNA', 'HasApp_Status']]
+        df_t = df_t[['Sleutel', 'Opleverdatum', 'Opleverstatus', 'RedenNA', 'Uitleg RedenNA']]
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df_t.columns],
             data=df_t.to_dict("rows"),
@@ -741,33 +738,33 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
                                 }
             }
 
-        dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
-                                    (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
-        dat_HAS = pd.to_datetime(df[(~df['HASdatum'].isna()) &
-                                    (~df['Opleverdatum'].isna())]['HASdatum'], format='%d-%m-%Y')
-        dat_diff = (dat_opg - dat_HAS).dt.days / 7
-        dat_diff[dat_diff < 0] = dat_diff[dat_diff < 0].astype(int) - 1
-        dat_diff[dat_diff == 0] = dat_diff[dat_diff == 0].astype(int)
-        dat_diff[dat_diff > 0] = dat_diff[dat_diff > 0].astype(int) + 1
+        # dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
+        #                             (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
+        # dat_HAS = pd.to_datetime(df[(~df['HASdatum'].isna()) &
+        #                             (~df['Opleverdatum'].isna())]['HASdatum'], format='%d-%m-%Y')
+        # dat_diff = (dat_opg - dat_HAS).dt.days / 7
+        # dat_diff[dat_diff < 0] = dat_diff[dat_diff < 0].astype(int) - 1
+        # dat_diff[dat_diff == 0] = dat_diff[dat_diff == 0].astype(int)
+        # dat_diff[dat_diff > 0] = dat_diff[dat_diff > 0].astype(int) + 1
 
-        if not dat_diff.empty:
-            fig_targets = {'data': [{'x': dat_diff.to_list(),
-                                     'type': 'histogram'
-                                     },
-                                    ],
-                           'layout': {
-                                      'xaxis': {'title': 'aantal weken',
-                                                'range': [-0.5, max(dat_diff)+1],
-                                                },
-                                      'yaxis': {'title': 'aantal woningen',
-                                                },
-                                      'showlegend': False,
-                                      'title': {'text': 'Aantal weken opgeleverd na HASdatum: <br> [target is max 1 week]'},
-                                      'height': 350,
-                                        }
-                           }
-        else:
-            fig_targets = {}
+        # if not dat_diff.empty:
+        #     fig_targets = {'data': [{'x': dat_diff.to_list(),
+        #                              'type': 'histogram'
+        #                              },
+        #                             ],
+        #                    'layout': {
+        #                               'xaxis': {'title': 'aantal weken',
+        #                                         'range': [-0.5, max(dat_diff)+1],
+        #                                         },
+        #                               'yaxis': {'title': 'aantal woningen',
+        #                                         },
+        #                               'showlegend': False,
+        #                               'title': {'text': 'Aantal weken opgeleverd na HASdatum: <br> [target is max 1 week]'},
+        #                               'height': 350,
+        #                                 }
+        #                    }
+        # else:
+        fig_targets = {}
 
     if df_g is not None:
         # this is a default public token obtained from a free account on https://account.mapbox.com/
