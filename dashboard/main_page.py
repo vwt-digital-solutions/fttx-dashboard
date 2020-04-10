@@ -204,7 +204,7 @@ def get_body():
 
 def bar_projects(s):
 
-    _, _, _, _, _, _, doc, _, _, _ = data_from_DB(None, 1)
+    _, _, _, _, doc, _, _, _, _ = data_from_DB(None, 1)
 
     if s == 0:
         fig = [dcc.Graph(id='project_performance',
@@ -358,7 +358,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if (drop_selectie is None):
         raise PreventUpdate
     print(drop_selectie)
-    df_l, t_s, x_e, x_d, cutoff, t_e, _, date_FTU0, date_FTU1, info_BISHAS = data_from_DB(drop_selectie, 0)
+    df_l, t_s, x_e, x_d, _, date_FTU0, date_FTU1, info_BISHAS, info_prog = data_from_DB(drop_selectie, 0)
     df = df_l[drop_selectie]
     hidden = True
     hidden2 = False
@@ -398,12 +398,8 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     if df.empty:
         raise PreventUpdate
 
-    rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min,\
-        rc1_mean, rc2_mean, x_t_l, y_t_l, rc_K, t_diff = \
-        speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e, date_FTU0, date_FTU1)
-
-    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_targets, fig_bish = \
-        generate_graph(df, x_e_l, y_e_l, df_s_l, drop_selectie, x_d, y_cum, t_s, y_t_l, info_BISHAS)
+    barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_bish = \
+        generate_graph(df, drop_selectie, info_BISHAS, info_prog)
 
     return [barLB, barHB, df_table, hidden, hidden2, hidden2, hidden2, hidden2, hidden2, hidden2, hidden,
             geo_plot, bar_R, mask_all, drop_selectie, fig_prog, fig_bish]
@@ -414,9 +410,6 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
 def data_from_DB(pname, flag):
 
     t = time.time()
-    cutoff = 15
-    t_e = pd.Timestamp.now().strftime('%Y-%m-%d')
-    t_d = 12000
 
     if flag == 0:
         df = pd.DataFrame()
@@ -426,26 +419,29 @@ def data_from_DB(pname, flag):
             for doc in docs:
                 df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
         df_l = {}
-        t_s = {}
         df_l[pname] = df
-        t_min = pd.to_datetime(df_l[pname]['Opleverdatum'], format='%d-%m-%Y').min()
-        if not pd.isnull(t_min):
-            t_s[pname] = t_min
-        else:
-            t_s[pname] = pd.to_datetime(t_e)
-
-        plot_parameters = None
-        x_e = np.array(list(range(0, t_d + 1)))
-        x_d = pd.date_range(min(t_s.values()), periods=t_d + 1, freq='D')
 
         url_s = '/plots_extra?id=dates_FTU'
         doc = api.get(url_s)
         date_FTU0 = doc[0]['date_FTU0']
         date_FTU1 = doc[0]['date_FTU1']
+        t_s = doc[0]['t_s']
+        for key in t_s:
+            t_s[key] = pd.to_datetime(t_s[key])
+        t_d = doc[0]['t_d']
+        x_e = np.array(list(range(0, t_d + 1)))
+        x_d = pd.date_range(min(t_s.values()), periods=t_d + 1, freq='D')
+        print(min(t_s.values()))
 
         url_s = '/plots_extra?id=' + pname
         doc = api.get(url_s)
         info_BISHAS = doc[0]
+
+        url_s = '/plots_extra?id=' + 'project_' + pname
+        doc = api.get(url_s)
+        info_prog = doc[0]
+
+        plot_parameters = None
 
     if flag == 1:
         url_s = '/plot_overview_graphs?id=plot_parameters'
@@ -458,13 +454,14 @@ def data_from_DB(pname, flag):
         date_FTU0 = None
         date_FTU1 = None
         info_BISHAS = None
+        info_prog = None
 
     print('time: ' + str(time.time() - t))
 
-    return df_l, t_s, x_e, x_d, cutoff, t_e, plot_parameters, date_FTU0, date_FTU1, info_BISHAS
+    return df_l, t_s, x_e, x_d, plot_parameters, date_FTU0, date_FTU1, info_BISHAS, info_prog
 
 
-def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y_t_l, info_BISHAS):
+def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
 
     bar, stats, df_g, count_R = processed_data(df)
 
@@ -601,8 +598,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
             margin=dict(le=30, r=30, b=20, t=40),
             hovermode="closest",
             height=350,
-            # plot_bgcolor="#F9F9F9",
-            # paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=14), orientation="h"),
         )
 
@@ -632,8 +627,8 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
         bar_R = dict(data=data_pie, layout=layout_pie)
 
         fig_prog = {'data': [{
-                              'x': list(x_d),
-                              'y': list(y_e_l[filter_selectie]),
+                              'x': pd.to_datetime(info_prog['x_e_l']),
+                              'y': info_prog['y_e_l'],
                               'mode': 'lines',
                               'line': dict(color='rgb(200, 200, 0)'),
                               'name': 'Prognose (VQD)',
@@ -641,7 +636,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
                              ],
                     'layout': {
                                'xaxis': {'title': 'opleverdagen [dag]',
-                                         'range': [t_s[filter_selectie], '2022-01-01'],
+                                         'range': info_prog['x_range'],
                                          },
                                'yaxis': {'title': 'Aantal nog af te ronden huizen [%]',
                                          'range': [0, 110]
@@ -651,28 +646,31 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
                                'height': 350,
                                }
                     }
-        if filter_selectie in df_s_l:
+        if 'df_s_l' in info_prog:
             fig_prog['data'] = fig_prog['data'] + [{
-                                                    'x': list(x_d[df_s_l[filter_selectie].index.to_list()]),
-                                                    'y': df_s_l[filter_selectie]['Sleutel'].to_list(),
+                                                    'x': pd.to_datetime(info_prog['df_s_l_i']),
+                                                    'y': info_prog['df_s_l'],
                                                     'mode': 'markers',
                                                     'line': dict(color='rgb(0, 200, 0)'),
                                                     'name': 'Realisatie (FC)',
                                                     }]
-        if filter_selectie in y_t_l:
+        if 'y_t_l' in info_prog:
             fig_prog['data'] = fig_prog['data'] + [{
-                                                    'x': list(x_d),
-                                                    'y': list(y_t_l[filter_selectie]),
+                                                    'x': pd.to_datetime(info_prog['x_t_l']),
+                                                    'y': info_prog['y_t_l'],
                                                     'mode': 'lines',
                                                     'line': dict(color='rgb(200, 0, 0)'),
                                                     'name': 'Target (KPN)',
                                                     }]
 
-        if 'x_comp' in info_BISHAS:
-            if 'y_KPN' in info_BISHAS:
+        if ('y_KPN' in info_BISHAS) & ('y_BIS' in info_BISHAS):
+            if len(info_BISHAS['y_KPN']) > 0:
                 advies = 'Advies:<br>' + info_BISHAS['Advies_BIS'] + ' BIS teams<br>' + info_BISHAS['Advies_HAS'] + ' HAS teams'
             else:
                 advies = ' '
+        else:
+            advies = ' '
+        if 'x_comp' in info_BISHAS:
             fig_bish = {'data': [{
                                  'x': info_BISHAS['x_comp'],
                                  'y': info_BISHAS['y_schouw'],
@@ -715,19 +713,20 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
                                 'annotations': [dict(x=10, y=20, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
                                 }
                         }
-        if 'y_KPN' in info_BISHAS:
-            fig_bish['data'] = fig_bish['data'] + [{
-                                                    'x': info_BISHAS['x_KPN'],
-                                                    'y': info_BISHAS['y_KPN'],
-                                                    'mode': 'line',
-                                                    'line': dict(color='rgb(200, 0, 0)'),
-                                                    'name': 'Targets (KPN)',
-                                                    }]
+            if 'y_KPN' in info_BISHAS:
+                if len(info_BISHAS['y_KPN']) > 0:
+                    fig_bish['data'] = fig_bish['data'] + [{
+                                                            'x': info_BISHAS['x_KPN'],
+                                                            'y': info_BISHAS['y_KPN'],
+                                                            'mode': 'line',
+                                                            'line': dict(color='rgb(200, 0, 0)'),
+                                                            'name': 'Targets (KPN)',
+                                                            }]
         else:
             fig_bish = {
                         'layout': {
                                 'xaxis': {'title': ' ',
-                                          'range': [t_s[filter_selectie], '2022-01-01'],
+                                          'range': [0, 21],
                                           },
                                 'yaxis': {'title': ' ',
                                           'range': [0, 110]
@@ -737,34 +736,6 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
                                 'height': 350,
                                 }
             }
-
-        # dat_opg = pd.to_datetime(df[(~df['HASdatum'].isna()) &
-        #                             (~df['Opleverdatum'].isna())]['Opleverdatum'], format='%d-%m-%Y')
-        # dat_HAS = pd.to_datetime(df[(~df['HASdatum'].isna()) &
-        #                             (~df['Opleverdatum'].isna())]['HASdatum'], format='%d-%m-%Y')
-        # dat_diff = (dat_opg - dat_HAS).dt.days / 7
-        # dat_diff[dat_diff < 0] = dat_diff[dat_diff < 0].astype(int) - 1
-        # dat_diff[dat_diff == 0] = dat_diff[dat_diff == 0].astype(int)
-        # dat_diff[dat_diff > 0] = dat_diff[dat_diff > 0].astype(int) + 1
-
-        # if not dat_diff.empty:
-        #     fig_targets = {'data': [{'x': dat_diff.to_list(),
-        #                              'type': 'histogram'
-        #                              },
-        #                             ],
-        #                    'layout': {
-        #                               'xaxis': {'title': 'aantal weken',
-        #                                         'range': [-0.5, max(dat_diff)+1],
-        #                                         },
-        #                               'yaxis': {'title': 'aantal woningen',
-        #                                         },
-        #                               'showlegend': False,
-        #                               'title': {'text': 'Aantal weken opgeleverd na HASdatum: <br> [target is max 1 week]'},
-        #                               'height': 350,
-        #                                 }
-        #                    }
-        # else:
-        fig_targets = {}
 
     if df_g is not None:
         # this is a default public token obtained from a free account on https://account.mapbox.com/
@@ -812,8 +783,7 @@ def generate_graph(df, x_e_l, y_e_l, df_s_l, filter_selectie, x_d, y_cum, t_s, y
     else:
         geo_plot = {'data': None, 'layout': dict()}
 
-    return barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, \
-        fig_targets, fig_bish
+    return barLB, barHB, stats, geo_plot, df_table, bar_R, fig_prog, fig_bish
 
 
 def processed_data(df):
@@ -954,123 +924,3 @@ def from_rd(x: int, y: int) -> tuple:
                             for i, v in enumerate(Lpq)]) / 3600
 
     return latitude, longitude
-
-
-def speed_projects(df_l, t_s, x_e, x_d, cutoff, t_e, date_FTU0, date_FTU1):
-    # extra code voor fttx-dashboard
-    _, _, _, _, _, _, doc, _, _, _ = data_from_DB(None, 1)
-    rc1_mean = doc['rc1_mean']
-    rc2_mean = doc['rc2_mean']
-
-    rc1 = {}
-    rc2 = {}
-    df_s_l = {}
-    b1 = {}
-    b2 = {}
-    tot_l = {}
-    af_l = {}
-    t_shift = {}
-    x_e_l = {}
-    y_e_l = {}
-    y_cum = x_e * 0
-    t_min = {}
-
-    for key in df_l:  # to process project data in FC
-        tot_l[key] = len(df_l[key])  # straks aantal projecten baseren op targets KPN?
-        if key in ['Den Haag', 'Den Haag Regentessekwatier', 'Den Haag Morgenstond west']:
-            tot_l[key] = 0.3 * tot_l[key]
-        df_af = df_l[key][~df_l[key]['Opleverdatum'].isna()]
-        af_l[key] = len(df_af)
-        if not df_af.empty:
-            df_s = df_af.groupby(['Opleverdatum']).agg({'Sleutel': 'count'})
-            df_s.index = pd.to_datetime(df_s.index, format='%d-%m-%Y')
-            df_s = df_s.sort_index()
-            df_s = df_s[df_s.index < t_e]
-            df_s['Sleutel'] = df_s['Sleutel'].cumsum()
-            df_s['Sleutel'] = 100 - df_s['Sleutel'] / tot_l[key] * 100
-            df_s[df_s['Sleutel'] < 0]['Sleutel'] = 0  # alleen nodig voor DH
-            t_sh = (df_s.index.min() - min(t_s.values())).days
-            t_shift[key] = t_sh
-            df_s.index = (df_s.index - df_s.index[0]).days + t_sh
-            df_s_l[key] = df_s
-            if len(df_s_l[key]) > 1:
-                df_s_rc1 = df_s[df_s['Sleutel'] > cutoff].copy()
-                df_s_rc2 = df_s[df_s['Sleutel'] <= cutoff].copy()
-                if len(df_s_rc1) > 1:
-                    z1 = np.polyfit(df_s_rc1.index, df_s_rc1.Sleutel, 1)
-                    rc1[key] = z1[0]  # percentage
-                    b1[key] = z1[1]   # percentage
-                if len(df_s_rc2) > 1:
-                    z2 = np.polyfit(df_s_rc2.index, df_s_rc2.Sleutel, 1)
-                    rc2[key] = z2[0]  # percentage
-                    b2[key] = z2[1]  # percentage
-
-    for key in df_l:  # to make prognoses
-        if key in df_s_l:
-            y_min = df_s_l[key]['Sleutel'].min()
-            t_min[key] = df_s_l[key].index.min()
-            x_e_l[key] = x_e
-            if key in rc1:  # for projects with more than 1 opleverdatum
-                y_e1 = b1[key] + rc1[key] * x_e_l[key]
-            else:  # for projects with 1 opleverdatum
-                # rc1_mean = sum(rc1.values()) / len(rc1.values())  # uit voor fttx-dashboardv
-                b1_mean = 100 + (-rc1_mean * t_min[key])
-                y_e1 = b1_mean + rc1_mean * x_e_l[key]
-            if key in rc2:
-                y_e2 = b2[key] + rc2[key] * x_e_l[key]
-            else:
-                # rc2_mean = sum(rc2.values()) / len(rc2.values())  # uit voor fttx-dashboard
-                b2_mean = cutoff + (-rc2_mean * t_min[key])
-                y_e2 = b2_mean + rc2_mean * x_e_l[key]
-        else:  # for projects with no opleverdatums yet
-            y_min = 2 * cutoff
-
-            t_min[key] = x_e[x_d == t_e][0]
-            if key in date_FTU0:
-                if not pd.isnull(date_FTU0[key]):
-                    t_min[key] = x_e[x_d == date_FTU0[key]][0]
-
-            x_e_l[key] = x_e
-            # rc1_mean = sum(rc1.values()) / len(rc1.values())  # uit voor fttx-dashboard
-            b1_mean = 100 + (-rc1_mean * t_min[key])
-            y_e1 = b1_mean + rc1_mean * x_e_l[key]
-            # rc2_mean = sum(rc2.values()) / len(rc2.values())  # uit voor fttx-dashboard
-            b2_mean = cutoff + (-rc2_mean * t_min[key])
-            y_e2 = b2_mean + rc2_mean * x_e_l[key]
-
-        y_e = y_e1
-        y_ed = y_e1 - y_e2
-        if y_min < cutoff:
-            y_e[y_ed < 0] = y_e2[y_ed < 0]
-        else:
-            y_e = np.append(y_e1[y_e1 >= cutoff], y_e2[y_e2 < cutoff])
-            if len(y_e) <= len(y_e1):
-                y_e = np.append(y_e, np.zeros(len(y_e1) - len(y_e)))
-            else:
-                y_e = y_e[0:len(y_e1)]
-        y_e[x_e < t_min[key]] = 0
-        y_e_l[key] = y_e
-
-        y_add = y_e / 100 * tot_l[key]
-        y_cum[y_add >= 0] = y_cum[y_add >= 0] + y_add[y_add >= 0]
-
-    # to add target info KPN in days uitgaande van FTU0 en FTU1
-    rc_K = {}
-    x_t_l = {}
-    y_t_l = {}
-    t_diff = {}
-    for key in t_min:
-        if key in date_FTU1:
-            if (not pd.isnull(date_FTU1[key])):
-                x_t_l[key] = x_e
-                y_t_l[key] = x_e * 0
-                t_max = x_e[x_d == date_FTU1[key]][0]
-                # t_delay = 2 * 3 * 7
-                t_delay = 0
-                t_diff[key] = t_max - t_min[key] - t_delay
-                rc_K[key] = -(tot_l[key] / t_diff[key] / tot_l[key] * 100)  # % woningen / d
-                y_t = 100 + rc_K[key] * np.array(range(0, t_diff[key] + 1))
-                y_t_l[key][(x_e >= t_min[key] + t_delay / 2) & (x_e <= t_max - t_delay / 2)] = y_t
-
-    return rc1, rc2, tot_l, af_l, df_s_l, x_e_l, y_e_l, x_d, y_cum, t_min,\
-        rc1_mean, rc2_mean, x_t_l, y_t_l, rc_K, t_diff
