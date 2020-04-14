@@ -615,7 +615,7 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                                'xaxis': {'title': 'Opleverdatum [d]',
                                          'range': info_prog['x_range'],
                                          },
-                               'yaxis': {'title': 'Niet opgeleverde woningen [%]',
+                               'yaxis': {'title': 'Opgeleverde woningen [%]',
                                          'range': [0, 110]
                                          },
                                'title': {'text': 'Trends in oplevering project:'},
@@ -680,14 +680,15 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                                 'xaxis': {'title': '[weken in 2020]',
                                           'range': [0, 21],
                                           },
-                                'yaxis': {'title': 'Niet opgeleverde woningen [%]',
+                                'yaxis': {'title': 'Opgeleverde woningen [%]',
                                           'range': [0, 110]
                                           },
                                 'title': {'text': 'Trends in oplevering projectfases:'},
                                 'showlegend': True,
                                 # 'legend': dict(loc=1),
                                 'height': 350,
-                                'annotations': [dict(x=10, y=20, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
+                                # 'annotations': [dict(x=10, y=20, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
+                                'annotations': [dict(x=10, y=90, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
                                 }
                         }
             if 'y_KPN' in info_BISHAS:
