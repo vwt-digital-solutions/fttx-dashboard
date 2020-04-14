@@ -89,16 +89,16 @@ def get_body():
             html.Div(
                 [
                     html.Div(
+                            id='graph_targets_overall',
                             children=bar_projects(3),
                             className="pretty_container column",
+                            hidden=False,
                     ),
-                    # html.Div(
-                    #         children=bar_projects(1),
-                    #         className="pretty_container column",
-                    # ),
                     html.Div(
+                            id='graph_speed',
                             children=bar_projects(0),
                             className="pretty_container column",
+                            hidden=False,
                     ),
                 ],
                 id="main_graphs0",
@@ -130,12 +130,24 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
-                    # html.Div(
-                    #         [dcc.Graph(id="graph_BIS-HAS")],
-                    #         id='subgraph1b',
-                    #         className="pretty_container column",
-                    #         hidden=True,
-                    # ),
+                    html.Div(
+                            [dcc.Graph(id="graph_targets")],
+                            id='subgraph4',
+                            className="pretty_container column",
+                            hidden=True,
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="geo_plot")],
+                            id='subgraph6',
+                            className="pretty_container column",
+                            hidden=True,
+                    ),
+                ],
+                id="main_graphs",
+                className="container-display",
+            ),
+            html.Div(
+                [
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
                             id='subgraph2',
@@ -148,27 +160,9 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
-                ],
-                id="main_graphs",
-                className="container-display",
-            ),
-            html.Div(
-                [
-                    html.Div(
-                            [dcc.Graph(id="graph_targets")],
-                            id='subgraph4',
-                            className="pretty_container column",
-                            hidden=True,
-                    ),
                     html.Div(
                             [dcc.Graph(id="count_R")],
                             id='subgraph5',
-                            className="pretty_container column",
-                            hidden=True,
-                    ),
-                    html.Div(
-                            [dcc.Graph(id="geo_plot")],
-                            id='subgraph6',
                             className="pretty_container column",
                             hidden=True,
                     ),
@@ -226,44 +220,24 @@ def bar_projects(s):
                                            },
                                           ],
                                  'layout': {'clickmode': 'event+select',
-                                            'xaxis': {'title': 'huizen afgerond [%]'},
+                                            'xaxis': {'title': 'opgeleverde woningen (HP & HC) [%]'},
                                             'yaxis': {'title': 'gemiddelde snelheid [woningen / dag]'},
                                             'showlegend': False,
                                             'title':
                                             {'text': 'Klik op een project voor meer informatie!<br>' +
-                                                '[Het groene vlak geeft een bandbreedte van 75% tot 125% gem. snelheid aan]'},
+                                                '[Het groene vlak geeft 75% tot 125% van het gemiddelde aan]'},
                                             }
                                  }
                          )]
 
-    if s == 1:
-        fig = [dcc.Graph(id="graph_progT",
-                         figure={'data': [{
-                                           'x': doc['x3'],
-                                           'y': doc['y3'],
-                                           'mode': 'lines'
-                                           },
-                                          ],
-                                 'layout': {
-                                            'xaxis': {'title': 'Opleverdatum [dag]',
-                                                      'range': doc['xrange']},
-                                            'yaxis': {'title': 'Aantal huizen nog aan te sluiten',
-                                                               'range': [0, 130000]},
-                                            'showlegend': False,
-                                            'title': {'text': 'Prognose werkvoorraad FttX:'},
-                                            }
-                                 }
-                         )
-               ]
-
-    if s == 2:  # test
+    if s == 2:
         filters = []
         for el in doc['pnames']:
             filters += [{'label': el, 'value': el}]
         fig = filters
 
     if s == 3:
-
+        w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         bar_p = go.Bar(x=[el - 0.3 for el in doc['x_target']],
                        y=doc['p_target'],
                        name='Targets (KPN)',
@@ -288,7 +262,7 @@ def bar_projects(s):
                        marker=go.bar.Marker(color='rgb(0, 0, 200)'),
                        width=0.2,
                        )
-        bar_t = go.Bar(x=[int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1],
+        bar_t = go.Bar(x=[w_now],
                        y=[5000],
                        name='Huidige week',
                        marker=go.bar.Marker(color='rgb(0, 0, 0)'),
@@ -300,10 +274,10 @@ def bar_projects(s):
                                                            clickmode='event+select',
                                                            showlegend=True,
                                                            #    legend=dict(x=0.75, y=1.1),
-                                                           title={'text': 'Totaal aantal opgeleverde huizen per week',
+                                                           title={'text': 'Aantal opgeleverde woningen (HP & HC):',
                                                                   'x': 0.5},
-                                                           xaxis={'range': [1.5, 26.5], 'title': '[Weken in 2020]'},
-                                                           yaxis={'range': [0, 5000], 'title': '[Aantal huizen]'},
+                                                           xaxis={'range': [w_now - 5.5, w_now + 6.5], 'title': '[weken in 2020]'},
+                                                           yaxis={'range': [0, 5000], 'title': '[aantal woningen]'},
                                                            )
                                           )
                          )
@@ -344,6 +318,8 @@ def update_dropdown(value):
      Output("graph_prog", 'figure'),
      #  Output("graph_BIS-HAS", 'figure'),
      Output("graph_targets", 'figure'),
+     Output("graph_targets_overall", 'hidden'),
+     Output("graph_speed", 'hidden'),
      ],
     [Input('project-dropdown', 'value'),
      Input("Bar_LB", 'clickData'),
@@ -362,6 +338,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
     df = df_l[drop_selectie]
     hidden = True
     hidden2 = False
+    hidden3 = True
 
     if (drop_selectie == filter_a) & ((cell_b1 is not None) | (cell_b2 is not None)):
         hidden = False
@@ -402,7 +379,7 @@ def make_barplot(drop_selectie, cell_b1, cell_b2, cell_bR, mask_all, filter_a):
         generate_graph(df, drop_selectie, info_BISHAS, info_prog)
 
     return [barLB, barHB, df_table, hidden, hidden2, hidden2, hidden2, hidden2, hidden2, hidden2, hidden,
-            geo_plot, bar_R, mask_all, drop_selectie, fig_prog, fig_bish]
+            geo_plot, bar_R, mask_all, drop_selectie, fig_prog, fig_bish, hidden3, hidden3]
 
 
 # HELPER FUNCTIES
@@ -528,9 +505,9 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                                            clickmode='event+select',
                                            showlegend=True,
                                            height=350,
-                                           title={'text': 'OHW per projectfase voor LB & Duplex:',
+                                           title={'text': 'Status per projectfase (LB & Duplex):',
                                                   'x': 0.5},
-                                           yaxis={'title': 'aantal woningen'},
+                                           yaxis={'title': '[aantal woningen]'},
                                            ))
 
         bar1d = go.Bar(x=labels['OHW'],
@@ -562,14 +539,14 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                                            clickmode='event+select',
                                            showlegend=True,
                                            height=350,
-                                           title={'text': 'OHW per projectfase voor HB:',
+                                           title={'text': 'Status per projectfase (HB):',
                                                   'x': 0.5},
-                                           yaxis={'title': 'aantal woningen'},
+                                           yaxis={'title': '[aantal woningen]'},
                                            ))
 
         df_t = df.copy()
         df_t['Uitleg RedenNA'] = df_t['RedenNA'].map(reden_l)
-        df_t = df_t[['Sleutel', 'Opleverdatum', 'Opleverstatus', 'RedenNA', 'Uitleg RedenNA']]
+        df_t = df_t[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']]
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df_t.columns],
             data=df_t.to_dict("rows"),
@@ -583,12 +560,12 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
             }],
         )
 
-        count_Ra = dict(Wachten_op_actie=0, Definitief_niet_aansluiten=0, Geen_obstructies=0)
+        count_Ra = dict(Wachten_op_actie=0, Niet_aansluiten=0, Geen_obstructies=0)
         for key in count_R.keys():
             if key in ['R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R17', 'R18', 'R19', 'R22']:
                 count_Ra['Wachten_op_actie'] = count_Ra['Wachten_op_actie'] + count_R[key]
             if key in ['R1', 'R01', 'R2', 'R02', 'R3', 'R15', 'R16', 'R20', 'R21']:
-                count_Ra['Definitief_niet_aansluiten'] = count_Ra['Definitief_niet_aansluiten'] + count_R[key]
+                count_Ra['Niet_aansluiten'] = count_Ra['Niet_aansluiten'] + count_R[key]
             if key in ['R0', 'R00', 'R_geen']:
                 count_Ra['Geen_obstructies'] = count_Ra['Geen_obstructies'] + count_R[key]
 
@@ -614,7 +591,7 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
             )
         ]
         layout_pie = layout
-        layout_pie["title"] = {'text': "Redenen opgegeven bij woningen:",
+        layout_pie["title"] = {'text': "Redenen bij woningen:",
                                'y': 0.92,
                                }
         layout_pie["legend"] = dict(
@@ -635,13 +612,13 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                               },
                              ],
                     'layout': {
-                               'xaxis': {'title': 'opleverdagen [dag]',
+                               'xaxis': {'title': 'Opleverdatum [d]',
                                          'range': info_prog['x_range'],
                                          },
-                               'yaxis': {'title': 'Aantal nog af te ronden huizen [%]',
+                               'yaxis': {'title': 'Niet opgeleverde woningen [%]',
                                          'range': [0, 110]
                                          },
-                               'title': {'text': 'Snelheid project & prognose afronding:'},
+                               'title': {'text': 'Trends in oplevering project:'},
                                'showlegend': True,
                                'height': 350,
                                }
@@ -667,9 +644,9 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
             if len(info_BISHAS['y_KPN']) > 0:
                 advies = 'Advies:<br>' + info_BISHAS['Advies_BIS'] + ' BIS teams<br>' + info_BISHAS['Advies_HAS'] + ' HAS teams'
             else:
-                advies = ' '
+                advies = 'FTU data niet bekend'
         else:
-            advies = ' '
+            advies = 'Geen FTU-1 of FTU-eind bekend'
         if 'x_comp' in info_BISHAS:
             fig_bish = {'data': [{
                                  'x': info_BISHAS['x_comp'],
@@ -700,13 +677,13 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                                  'name': 'HAS-opgeleverd (HP / 2)',
                                  }],
                         'layout': {
-                                'xaxis': {'title': 'weken 2020',
+                                'xaxis': {'title': '[weken in 2020]',
                                           'range': [0, 21],
                                           },
-                                'yaxis': {'title': 'Nog af te ronden [%]',
+                                'yaxis': {'title': 'Niet opgeleverde woningen [%]',
                                           'range': [0, 110]
                                           },
-                                'title': {'text': 'Voortgang verschillende fasen:'},
+                                'title': {'text': 'Trends in oplevering projectfases:'},
                                 'showlegend': True,
                                 # 'legend': dict(loc=1),
                                 'height': 350,
@@ -770,7 +747,7 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
             plot_bgcolor="#F9F9F9",
             paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=10), orientation="h"),
-            title="Woningen (klein) & DP's (groot)<br>[groen / geel = opgeleverd, rood = niet klaar]",
+            title="Status woningen [klein, groen = opgeleverd]<br>Status DP's [groot, geel = opgeleverd]",
             mapbox=dict(
                 accesstoken=mapbox_at,
                 style="light",
