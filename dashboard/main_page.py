@@ -546,7 +546,7 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
 
         df_t = df.copy()
         df_t['Uitleg RedenNA'] = df_t['RedenNA'].map(reden_l)
-        df_t = df_t[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']]
+        df_t = df_t[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']].sort_values(by='HASdatum')
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df_t.columns],
             data=df_t.to_dict("rows"),
