@@ -29,7 +29,11 @@ def get_navbar(huidige_pagina):
     dropdown_items = []
     for page in config_pages:
         dropdown_items = dropdown_items + [
-            dbc.DropdownMenuItem(config_pages[page]['name'], href=config_pages[page]['link'][0], style={'font-size': '1.5rem'}),
+            dbc.DropdownMenuItem(
+                config_pages[page]['name'],
+                href=config_pages[page]['link'][0],
+                style={'font-size': '1.5rem'}
+            ),
             dbc.DropdownMenuItem(divider=True)
         ]
 
