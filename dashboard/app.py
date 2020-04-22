@@ -9,7 +9,7 @@ from google.cloud import kms_v1
 from authentication.azure_auth import AzureOAuth
 from flask_caching import Cache
 from flask_sslify import SSLify
-from flaks_cors import CORS
+from flask_cors import CORS
 
 server = flask.Flask(__name__)
 
