@@ -12,3 +12,4 @@ dash-bootstrap-components==0.9.1
 xlsxwriter==1.1.8
 numpy==1.16.4
 Flask-SSLify==0.1.5
+Flask-Cors==3.0.8

@@ -9,10 +9,9 @@ from google.cloud import kms_v1
 from authentication.azure_auth import AzureOAuth
 from flask_caching import Cache
 from flask_sslify import SSLify
+from flaks_cors import CORS
 
 server = flask.Flask(__name__)
-if 'GAE_INSTANCE' in os.environ:
-    SSLify(server, permanent=True)
 
 app = dash.Dash(
     __name__,
@@ -20,6 +19,13 @@ app = dash.Dash(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     server=server,
 )
+
+if 'GAE_INSTANCE' in os.environ:
+    SSLify(server, permanent=True)
+    CORS(app.app, origins=config.ORIGINS)
+else:
+    CORS(app.app)
+
 cache = Cache(app.server, config={
     "CACHE_TYPE": "simple",
     "CACHE_DEFAULT_TIMEOUT": 300
