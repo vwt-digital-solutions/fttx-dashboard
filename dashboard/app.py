@@ -26,12 +26,6 @@ app = dash.Dash(
     server=server,
 )
 
-if 'GAE_INSTANCE' in os.environ:
-    SSLify(server, permanent=True)
-    CORS(app.app, origins=config.ORIGINS)
-else:
-    CORS(app.app)
-
 cache = Cache(app.server, config={
     "CACHE_TYPE": "simple",
     "CACHE_DEFAULT_TIMEOUT": 300
