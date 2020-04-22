@@ -563,6 +563,8 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df_t.columns],
             data=df_t.to_dict("rows"),
+            filter_action="native",
+            sort_action="native",
             style_table={'overflowX': 'auto'},
             style_header=table_styles['header'],
             style_cell=table_styles['cell']['action'],
