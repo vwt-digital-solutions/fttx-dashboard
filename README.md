@@ -1,3 +1,4 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/vwt-digital/fttx-dashboard/badge)](https://www.codefactor.io/repository/github/vwt-digital/fttx-dashboard)
 # ITH Dashboard
 
 This is the repository of FTTX Dashboard. It contains a Dash dashboard with accompanying files.
