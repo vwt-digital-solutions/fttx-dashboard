@@ -268,20 +268,32 @@ def bar_projects(s):
                        marker=go.bar.Marker(color='rgb(0, 0, 0)'),
                        width=0.1,
                        )
-        fig = [dcc.Graph(id="graph_targets",
-                         figure=go.Figure(data=[bar_z, bar_k, bar_y, bar_p, bar_t],
-                                          layout=go.Layout(barmode='stack',
-                                                           clickmode='event+select',
-                                                           showlegend=True,
-                                                           #    legend=dict(x=0.75, y=1.1),
-                                                           title={'text': 'Aantal opgeleverde woningen (HP & HC):',
-                                                                  'x': 0.5},
-                                                           xaxis={'range': [w_now - 5.5, w_now + 6.5], 'title': '[weken in 2020]'},
-                                                           yaxis={'range': [0, 5000], 'title': '[aantal woningen]'},
-                                                           )
-                                          )
-                         )
-               ]
+        fig = [
+            dcc.Graph(
+                id="graph_targets",
+                figure=go.Figure(
+                    data=[bar_z, bar_k, bar_y, bar_p, bar_t],
+                    layout=go.Layout(
+                        barmode='stack',
+                        clickmode='event+select',
+                        showlegend=True,
+                        # legend=dict(x=0.75, y=1.1),
+                        title={
+                            'text': 'Aantal opgeleverde woningen (HP & HC):',
+                            'x': 0.5
+                        },
+                        xaxis={
+                            'range': [w_now - 5.5, w_now + 6.5],
+                            'title': '[weken in 2020]'
+                        },
+                        yaxis={
+                            'range': [0, 5000],
+                            'title': '[aantal woningen]'
+                        },
+                    )
+                )
+            )
+        ]
 
     return fig
 
@@ -546,10 +558,13 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
 
         df_t = df.copy()
         df_t['Uitleg RedenNA'] = df_t['RedenNA'].map(reden_l)
-        df_t = df_t[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']].sort_values(by='HASdatum')
+        df_t = df_t[['Sleutel', 'Opleverdatum', 'HASdatum',
+                     'Opleverstatus', 'Uitleg RedenNA']].sort_values(by='HASdatum')
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df_t.columns],
             data=df_t.to_dict("rows"),
+            filter_action="native",
+            sort_action="native",
             style_table={'overflowX': 'auto'},
             style_header=table_styles['header'],
             style_cell=table_styles['cell']['action'],
@@ -562,7 +577,8 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
 
         count_Ra = dict(Wachten_op_actie=0, Niet_aansluiten=0, Geen_obstructies=0)
         for key in count_R.keys():
-            if key in ['R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R17', 'R18', 'R19', 'R22']:
+            if key in ['R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12',
+                       'R13', 'R14', 'R17', 'R18', 'R19', 'R22']:
                 count_Ra['Wachten_op_actie'] = count_Ra['Wachten_op_actie'] + count_R[key]
             if key in ['R1', 'R01', 'R2', 'R02', 'R3', 'R15', 'R16', 'R20', 'R21']:
                 count_Ra['Niet_aansluiten'] = count_Ra['Niet_aansluiten'] + count_R[key]
@@ -642,7 +658,8 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
 
         if ('y_KPN' in info_BISHAS) & ('y_BIS' in info_BISHAS):
             if len(info_BISHAS['y_KPN']) > 0:
-                advies = 'Advies:<br>' + info_BISHAS['Advies_BIS'] + ' BIS teams<br>' + info_BISHAS['Advies_HAS'] + ' HAS teams'
+                advies = 'Advies:<br>' + info_BISHAS['Advies_BIS'] + ' BIS teams<br>' + \
+                         info_BISHAS['Advies_HAS'] + ' HAS teams'
             else:
                 advies = 'FTU data niet bekend'
         else:
@@ -687,8 +704,12 @@ def generate_graph(df, filter_selectie, info_BISHAS, info_prog):
                                 'showlegend': True,
                                 # 'legend': dict(loc=1),
                                 'height': 350,
-                                # 'annotations': [dict(x=10, y=20, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
-                                'annotations': [dict(x=10, y=90, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')],
+                                # 'annotations': [
+                                #     dict(x=10, y=20, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')
+                                # ],
+                                'annotations': [
+                                    dict(x=10, y=90, text=advies, xref="x", yref="y", ax=0, ay=0, alignment='left')
+                                ],
                                 }
                         }
             if 'y_KPN' in info_BISHAS:
