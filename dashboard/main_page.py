@@ -4,7 +4,7 @@ import dash_core_components as dcc
 # import plotly.graph_objs as go
 import dash_html_components as html
 # import dash_table
-import time
+# import time
 import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -89,14 +89,15 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            id='graph_targets_overall',
-                            children=bar_projects(3),
+                            [dcc.Graph(figure=generate_graphs(4, None, None))],
+                            id='graph_targets_overall_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
                     html.Div(
-                            id='graph_speed',
-                            children=bar_projects(0),
+                            [dcc.Graph(figure=generate_graphs(2, None, None),
+                                       id='project_performance')],
+                            id='graph_speed_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
@@ -114,7 +115,7 @@ def get_body():
                     ),
                     html.Div(
                             [dcc.Dropdown(id='project-dropdown',
-                                          options=bar_projects(2),
+                                          options=generate_graphs(3, None, None),
                                           value=None)],
                             className="pretty_container column",
                     ),
@@ -126,13 +127,13 @@ def get_body():
                 [
                     html.Div(
                             [dcc.Graph(id="graph_prog")],
-                            id='subgraph1',
+                            id='graph_prog_c',
                             className="pretty_container column",
                             hidden=True,
                     ),
                     html.Div(
                             [dcc.Graph(id="graph_targets")],
-                            id='subgraph4',
+                            id='graph_targets_c',
                             className="pretty_container column",
                             hidden=True,
                     ),
@@ -144,13 +145,13 @@ def get_body():
                 [
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
-                            id='subgraph2',
+                            id='Bar_LB_c',
                             className="pretty_container column",
                             hidden=True,
                     ),
                     html.Div(
                             [dcc.Graph(id="Bar_HB")],
-                            id='subgraph3',
+                            id='Bar_HB_c',
                             className="pretty_container column",
                             hidden=True,
                     ),
@@ -190,7 +191,7 @@ def get_body():
     return page
 
 
-# Globale grafieken
+# update value dropdown given selection in scatter chart
 @app.callback(
     [Output("project-dropdown", 'value'),
      ],
@@ -201,21 +202,39 @@ def update_dropdown(value):
     return [value['points'][0]['text']]
 
 
-# Globale grafieken
+# update middle-top charts given dropdown selection
 @app.callback(
     [
      Output("graph_prog", 'figure'),
      Output("graph_targets", 'figure'),
+     Output("graph_targets_overall_c", 'hidden'),
+     Output("graph_speed_c", 'hidden'),
+     Output("graph_prog_c", "hidden"),
+     Output("graph_targets_c", "hidden"),
+     ],
+    [
+     Input('project-dropdown', 'value'),
+     ],
+)
+def middle_top_graphs(drop_selectie):
+    if drop_selectie is None:
+        raise PreventUpdate
+
+    fig_bish = generate_graphs(0, drop_selectie, None)
+    fig_prog = generate_graphs(1, drop_selectie, None)
+
+    return [fig_prog, fig_bish, True, True, False, False]
+
+
+# update click bar charts
+@app.callback(
+    [
      Output("Bar_LB", "figure"),
      Output("Bar_HB", "figure"),
      Output("aggregate_data", 'data'),
      Output("aggregate_data2", 'data'),
-     Output("graph_targets_overall", 'hidden'),
-     Output("graph_speed", 'hidden'),
-     Output("subgraph1", "hidden"),
-     Output("subgraph2", "hidden"),
-     Output("subgraph3", "hidden"),
-     Output("subgraph4", "hidden"),
+     Output("Bar_LB_c", "hidden"),
+     Output("Bar_HB_c", "hidden"),
      ],
     [Input('project-dropdown', 'value'),
      Input("Bar_LB", 'clickData'),
@@ -225,12 +244,9 @@ def update_dropdown(value):
      State("aggregate_data2", 'data'),
      ]
 )
-def project_plots(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
+def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     if drop_selectie is None:
         raise PreventUpdate
-
-    data = data_from_DB(drop_selectie, 0)
-    data['bar_names'] = api.get('/plots_extra?id=bar_names')[0]
 
     if (drop_selectie == filter_a) & ((cell_bar_LB is not None) | (cell_bar_HB is not None)):
         if cell_bar_LB is not None:
@@ -250,61 +266,44 @@ def project_plots(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
             if cell_bar_HB['points'][0]['curveNumber'] == 2:
                 pt_cell = 'HB0'
         mask_all += pt_x + pt_cell
-        if mask_all not in data['bar_names']:
+
+        doc = api.get('/plots_extra?id=bar_names')[0]['bar_names']
+        if mask_all not in doc:
             mask_all = '0'
     else:
         mask_all = '0'
 
-    data['bar_filters'] = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]
-    barLB, barHB, fig_prog, fig_bish = generate_mid_graphs(data['info_BISHAS'], data['info_prog'], data['bar_filters'], mask_all)
+    barLB = generate_graphs(5, drop_selectie, mask_all)
+    barHB = generate_graphs(6, drop_selectie, mask_all)
 
-    hide_mid = False
-    hide_top = True
-
-    return [fig_prog, fig_bish, barLB, barHB, mask_all, drop_selectie, hide_top, hide_top, hide_mid, hide_mid, hide_mid, hide_mid]
+    return [barLB, barHB, mask_all, drop_selectie, False, False]
 
 
 # HELPER FUNCTIES
 @cache.memoize()
-def data_from_DB(pname, flag):
-    t = time.time()
-    data = {}
+def generate_graphs(flag, drop_selectie, mask_all):
 
+    # BIS/HAS
     if flag == 0:
-        data['info_BISHAS'] = api.get('/plots_extra?id=' + pname)[0]
-        data['info_prog'] = api.get('/plots_extra?id=' + 'project_' + pname)[0]
+        fig = api.get('/plots_extra?id=' + drop_selectie)[0]['figure']
 
+    # prognose
     if flag == 1:
-        data['project_performance'] = api.get('/plot_overview_graphs?id=project_performance')[0]
-        data['pnames'] = api.get('/plot_overview_graphs?id=pnames')[0]
-        data['graph_targets'] = api.get('/plot_overview_graphs?id=graph_targets')[0]
+        fig = api.get('/plots_extra?id=' + 'project_' + drop_selectie)[0]['figure']
+        for i, item in enumerate(fig['data']):
+            fig['data'][i]['x'] = pd.to_datetime(item['x'])
 
+    # project speed
     if flag == 2:
-        df = pd.DataFrame()
-        for i in range(0, 5):
-            docs = api.get('/Projecten?id=' + pname + '_' + str(i))
-            for doc in docs:
-                df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
-        data['df'] = df
+        fig = api.get('/plot_overview_graphs?id=project_performance')[0]['figure']
 
-    print('time: ' + str(time.time() - t))
+    # labels
+    if flag == 3:
+        fig = api.get('/plot_overview_graphs?id=pnames')[0]['filters']
 
-    return data
-
-
-def bar_projects(s):
-
-    data = data_from_DB(None, 1)
-
-    if s == 0:
-        fig = [dcc.Graph(id='project_performance',
-                         figure=data['project_performance']['figure']
-                         )]
-
-    if s == 2:
-        fig = data['pnames']['filters']
-
-    if s == 3:
+    # targets
+    if flag == 4:
+        fig = api.get('/plot_overview_graphs?id=graph_targets')[0]['figure']
         w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         bar_t = [dict(x=[w_now],
                       y=[5000],
@@ -313,81 +312,88 @@ def bar_projects(s):
                       marker=dict(color='rgb(0, 0, 0)'),
                       width=0.1,
                       )]
-        data['graph_targets']['figure']['data'] = data['graph_targets']['figure']['data'] + bar_t
-        data['graph_targets']['figure']['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5],
-                                                              'title': '[weken in 2020]'}
-        fig = [dcc.Graph(id='graph_targets',
-                         figure=data['graph_targets']['figure']
-                         )]
+        fig['data'] = fig['data'] + bar_t
+        fig['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5], 'title': '[weken in 2020]'}
+
+    # clickbar LB
+    if flag == 5:
+        fig = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
+        bar = {}
+        for key in fig:
+            if 'LB' in key:
+                bar[key] = [int(fig[key])]
+        labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
+        barLB1HC = dict(x=labels,
+                        y=bar['SchouwenLB1'] + bar['BISLB1'] + bar['Montage-lasAPLB1'] + bar['Montage-lasDPLB1'] + bar['HASLB1'],
+                        name='Opgeleverd (HAS: HC)',
+                        type='bar',
+                        marker=dict(color='rgb(0, 200, 0)'),
+                        )
+        barLB1HP = dict(x=labels,
+                        y=[0] + [0] + [0] + [0] + bar['HASLB1HP'],
+                        name='Opgeleverd (HAS: HP)',
+                        type='bar',
+                        marker=dict(color='rgb(0, 0, 200)')
+                        )
+        barLB0 = dict(x=labels,
+                      y=bar['SchouwenLB0'] + bar['BISLB0'] + bar['Montage-lasAPLB0'] + bar['Montage-lasDPLB0'] + bar['HASLB0'],
+                      name='Niet opgeleverd',
+                      type='bar',
+                      marker=dict(color='rgb(200, 0, 0)')
+                      )
+        fig = dict(data=[barLB1HC, barLB1HP, barLB0],
+                   layout=dict(barmode='stack',
+                               clickmode='event+select',
+                               showlegend=True,
+                               height=350,
+                               title={'text': 'Status per projectfase (LB & Duplex):', 'x': 0.5},
+                               yaxis={'title': '[aantal woningen]'},
+                               ))
+
+    # clickbar HB
+    if flag == 6:
+        fig = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
+        bar = {}
+        for key in fig:
+            if 'HB' in key:
+                bar[key] = [int(fig[key])]
+        labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
+        barHB1HC = dict(x=labels,
+                        y=bar['SchouwenHB1'] + bar['BISHB1'] + bar['Montage-lasAPHB1'] + bar['Montage-lasDPHB1'] + bar['HASHB1'],
+                        name='Opgeleverd (HAS: HC)',
+                        type='bar',
+                        marker=dict(color='rgb(0, 200, 0)')
+                        )
+        barHB1HP = dict(x=labels,
+                        y=[0] + [0] + [0] + [0] + bar['HASHB1HP'],
+                        name='Opgeleverd (HAS: HP)',
+                        type='bar',
+                        marker=dict(color='rgb(0, 0, 200)')
+                        )
+        barHB0 = dict(x=labels,
+                      y=bar['SchouwenHB0'] + bar['BISHB0'] + bar['Montage-lasAPHB0'] + bar['Montage-lasDPHB0'] + bar['HASHB0'],
+                      name='Niet opgeleverd',
+                      type='bar',
+                      marker=dict(color='rgb(200, 0, 0)')
+                      )
+        fig = dict(data=[barHB1HC, barHB1HP, barHB0],
+                   layout=dict(barmode='stack',
+                               clickmode='event+select',
+                               showlegend=True,
+                               height=350,
+                               title={'text': 'Status per projectfase (HB):', 'x': 0.5},
+                               yaxis={'title': '[aantal woningen]'},
+                               ))
 
     return fig
 
+# if flag == 2:
+#     df = pd.DataFrame()
+#     for i in range(0, 5):
+#         docs = api.get('/Projecten?id=' + pname + '_' + str(i))
+#         for doc in docs:
+#             df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
+#     data['df'] = df
 
-def generate_mid_graphs(info_BISHAS, info_prog, bar_filters, mask_all):
-    bar = {}
-    for key in bar_filters['bar']:
-        bar[key] = [int(bar_filters['bar'][key])]
-
-    labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
-
-    barLB1HC = dict(x=labels,
-                    y=bar['SchouwenLB1'] + bar['BISLB1'] + bar['Montage-lasAPLB1'] + bar['Montage-lasDPLB1'] + bar['HASLB1'],
-                    name='Opgeleverd (HAS: HC)',
-                    type='bar',
-                    marker=dict(color='rgb(0, 200, 0)'),
-                    )
-    barLB1HP = dict(x=labels,
-                    y=[0] + [0] + [0] + [0] + bar['HASLB1HP'],
-                    name='Opgeleverd (HAS: HP)',
-                    type='bar',
-                    marker=dict(color='rgb(0, 0, 200)')
-                    )
-    barLB0 = dict(x=labels,
-                  y=bar['SchouwenLB0'] + bar['BISLB0'] + bar['Montage-lasAPLB0'] + bar['Montage-lasDPLB0'] + bar['HASLB0'],
-                  name='Niet opgeleverd',
-                  type='bar',
-                  marker=dict(color='rgb(200, 0, 0)')
-                  )
-    barLB = dict(data=[barLB1HC, barLB1HP, barLB0],
-                 layout=dict(barmode='stack',
-                             clickmode='event+select',
-                             showlegend=True,
-                             height=350,
-                             title={'text': 'Status per projectfase (LB & Duplex):', 'x': 0.5},
-                             yaxis={'title': '[aantal woningen]'},
-                             ))
-
-    barHB1HC = dict(x=labels,
-                    y=bar['SchouwenHB1'] + bar['BISHB1'] + bar['Montage-lasAPHB1'] + bar['Montage-lasDPHB1'] + bar['HASHB1'],
-                    name='Opgeleverd (HAS: HC)',
-                    type='bar',
-                    marker=dict(color='rgb(0, 200, 0)')
-                    )
-    barHB1HP = dict(x=labels,
-                    y=[0] + [0] + [0] + [0] + bar['HASHB1HP'],
-                    name='Opgeleverd (HAS: HP)',
-                    type='bar',
-                    marker=dict(color='rgb(0, 0, 200)')
-                    )
-    barHB0 = dict(x=labels,
-                  y=bar['SchouwenHB0'] + bar['BISHB0'] + bar['Montage-lasAPHB0'] + bar['Montage-lasDPHB0'] + bar['HASHB0'],
-                  name='Niet opgeleverd',
-                  type='bar',
-                  marker=dict(color='rgb(200, 0, 0)')
-                  )
-    barHB = dict(data=[barHB1HC, barHB1HP, barHB0],
-                 layout=dict(barmode='stack',
-                             clickmode='event+select',
-                             showlegend=True,
-                             height=350,
-                             title={'text': 'Status per projectfase (HB):', 'x': 0.5},
-                             yaxis={'title': '[aantal woningen]'},
-                             ))
-
-    fig_prog = info_prog['figure']
-    for i, item in enumerate(fig_prog['data']):
-        fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
-
-    fig_bish = info_BISHAS['figure']
-
-    return barLB, barHB, fig_prog, fig_bish
+# t = time.time()
+# print('time: ' + str(time.time() - t))
