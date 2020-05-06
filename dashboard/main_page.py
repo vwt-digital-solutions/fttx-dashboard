@@ -415,8 +415,10 @@ def generate_graphs(flag, drop_selectie, mask_all):
             docs = api.get('/Projecten?id=' + drop_selectie + '_' + str(i))
             for doc in docs:
                 df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
+        print(mask_all)
         mask = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask']
-        df = df[mask]
+        if not mask:
+            df = df[mask]
 
         if not df[~df['X locatie Rol'].isna()].empty:
             df['clr'] = 0
