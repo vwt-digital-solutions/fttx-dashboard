@@ -1,14 +1,14 @@
 import pandas as pd
-# import numpy as np
 import dash_core_components as dcc
-# import plotly.graph_objs as go
+import dash_bootstrap_components as dbc
+import plotly.graph_objs as go
 import dash_html_components as html
-# import dash_table
+import dash_table
 # import time
 import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-# from elements import table_styles
+from elements import table_styles
 from app import app, cache
 
 layout = dict(
@@ -107,12 +107,12 @@ def get_body():
             ),
             html.Div(
                 [
-                    html.Div(
-                        [
-                            html.H3("Details project:"),
-                        ],
-                        style={"margin-right": "140px"},
-                    ),
+                    # html.Div(
+                    #     [
+                    #         html.H3("Details project:"),
+                    #     ],
+                    #     style={"margin-right": "140px"},
+                    # ),
                     html.Div(
                             [dcc.Dropdown(id='project-dropdown',
                                           options=generate_graphs(3, None, None),
@@ -160,30 +160,25 @@ def get_body():
                 className="container-display",
             ),
             html.Div(
-                [
-                    html.Div(
-                        [
-                            html.H3("Verdere details:"),
-                        ],
-                        id='text_table',
-                        style={"margin-left": "42px"},
-                        hidden=True,
-                    ),
-                    html.Div(
-                        [dcc.Graph(id="geo_plot")],
-                        id='subgraph6',
-                        className="pretty_container column",
-                        hidden=True,
-                    ),
-                ],
-                className="container-display",
-                id="title",
+                [dbc.Button('Project details', id='detail_button')],
             ),
             html.Div(
-                id='status_table_ext',
-                className="pretty_container",
-                hidden=True,
-            ),
+                [
+                    html.Div(
+                        id='table_c',
+                        className="pretty_container",
+                        hidden=True,
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="geo_plot")],
+                            id='geo_plot_c',
+                            className="pretty_container column",
+                            hidden=True,
+                            ),
+                ],
+                id="details",
+                className="container-display",
+            )
         ],
         id="mainContainer",
         style={"display": "flex", "flex-direction": "column"},
@@ -278,6 +273,34 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     return [barLB, barHB, mask_all, drop_selectie, False, False]
 
+    Output("uitleg_collapse", "hidden"),
+
+
+# update geomap
+@app.callback(
+    [
+     Output("geo_plot", 'figure'),
+     Output("table_c", 'children'),
+     Output("geo_plot_c", "hidden"),
+     Output("table_c", "hidden"),
+     ],
+    [
+     Input("detail_button", "n_clicks")
+     ],
+    [
+     State('project-dropdown', 'value'),
+     State("geo_plot_c", "hidden"),
+     State("aggregate_data", 'data'),
+     ],
+)
+def geomap(n, drop_selectie, hidden, mask_all):
+    if (drop_selectie is None) | (mask_all is None):
+        raise PreventUpdate
+    if n:
+        hidden = not hidden
+    fig = generate_graphs(7, drop_selectie, mask_all)
+
+    return [fig['geo'], fig['table'], hidden, hidden]
 
 # HELPER FUNCTIES
 @cache.memoize()
@@ -385,15 +408,123 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
+    # geomap & data table
+    if flag == 7:
+        df = pd.DataFrame()
+        for i in range(0, 5):
+            docs = api.get('/Projecten?id=' + drop_selectie + '_' + str(i))
+            for doc in docs:
+                df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
+        mask = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask']
+        df = df[mask]
+
+        if not df[~df['X locatie Rol'].isna()].empty:
+            df['clr'] = 0
+            df.loc[~df['Opleverdatum'].isna(), ('clr')] = 50
+            df['clr-DP'] = 0
+            df.loc[df['Opleverstatus'] != 0, ('clr-DP')] = 25
+            df['X locatie Rol'] = df['X locatie Rol'].str.replace(',', '.').astype(float)
+            df['Y locatie Rol'] = df['Y locatie Rol'].str.replace(',', '.').astype(float)
+            df['X locatie DP'] = df['X locatie DP'].str.replace(',', '.').astype(float)
+            df['Y locatie DP'] = df['Y locatie DP'].str.replace(',', '.').astype(float)
+            df['Lat'], df['Long'] = from_rd(df['X locatie Rol'], df['Y locatie Rol'])
+            df['Lat_DP'], df['Long_DP'] = from_rd(df['X locatie DP'], df['Y locatie DP'])
+            df['Size'] = 7
+            df['Size_DP'] = 14
+
+            # this is a default public token obtained from a free account on https://account.mapbox.com/
+            # and can there be refreshed at any moment
+            mapbox_at = 'pk.eyJ1IjoiYXZhbnR1cm5ob3V0IiwiYSI6ImNrOGl4Y2o3ZTA5MjMzbW53a3dicTRnMnIifQ.FdFexMQbqQrZBNMEZkYvvg'
+            normalized_size = df['Size_DP'].to_list() + df['Size'].to_list()
+            map_data = [
+                go.Scattermapbox(
+                    lat=df['Lat_DP'].to_list() + df['Lat'].to_list(),
+                    lon=df['Long_DP'].to_list() + df['Long'].to_list(),
+                    mode='markers',
+                    marker=dict(
+                        cmax=50,
+                        cmin=0,
+                        color=df['clr-DP'].to_list() + df['clr'].to_list(),
+                        colorscale=['green', 'yellow', 'red'],
+                        reversescale=True,
+                        size=normalized_size * 7,
+                    ),
+                    text=df['clr'],
+                    hoverinfo='text'
+                )
+            ]
+            map_layout = dict(
+                autosize=True,
+                automargin=True,
+                margin=dict(r=30, b=20, t=100),
+                height=600,
+                hovermode="closest",
+                plot_bgcolor="#F9F9F9",
+                paper_bgcolor="#F9F9F9",
+                legend=dict(font=dict(size=10), orientation="h"),
+                title="Status woningen [klein, groen = opgeleverd]<br>Status DP's [groot, geel = opgeleverd]",
+                mapbox=dict(
+                    accesstoken=mapbox_at,
+                    style="light",
+                    center=dict(lon=df['Long'].mean(), lat=df['Lat'].mean()),
+                    zoom=13,
+                ),
+            )
+
+            fig = dict(geo={'data': map_data, 'layout': map_layout})
+        else:
+            fig = dict(geo={'data': None, 'layout': dict()})
+
+        df['Uitleg RedenNA'] = df['RedenNA'].map(api.get('/plots_extra?id=reden_mapping')[0]['map'])
+        df = df[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']].sort_values(by='HASdatum')
+        df_table = dash_table.DataTable(
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data=df.to_dict("rows"),
+            filter_action="native",
+            sort_action="native",
+            style_table={'overflowX': 'auto'},
+            style_header=table_styles['header'],
+            style_cell=table_styles['cell']['action'],
+            style_filter=table_styles['filter'],
+            css=[{
+                'selector': 'table',
+                'rule': 'width: 100%;'
+            }],
+        )
+        fig['table'] = df_table
+
     return fig
 
-# if flag == 2:
-#     df = pd.DataFrame()
-#     for i in range(0, 5):
-#         docs = api.get('/Projecten?id=' + pname + '_' + str(i))
-#         for doc in docs:
-#             df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
-#     data['df'] = df
+
+def from_rd(x: int, y: int) -> tuple:
+
+    x0 = 155000
+    y0 = 463000
+    phi0 = 52.15517440
+    lam0 = 5.38720621
+
+    # Coefficients or the conversion from RD to WGS84
+    Kp = [0, 2, 0, 2, 0, 2, 1, 4, 2, 4, 1]
+    Kq = [1, 0, 2, 1, 3, 2, 0, 0, 3, 1, 1]
+    Kpq = [3235.65389, -32.58297, -0.24750, -0.84978, -0.06550, -0.01709,
+           -0.00738, 0.00530, -0.00039, 0.00033, -0.00012]
+
+    Lp = [1, 1, 1, 3, 1, 3, 0, 3, 1, 0, 2, 5]
+    Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
+    Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607,
+           0.01199, -0.00256, 0.00128, 0.00022, -0.00022, 0.00026]
+
+    """
+    Converts RD coordinates into WGS84 coordinates
+    """
+    dx = 1E-5 * (x - x0)
+    dy = 1E-5 * (y - y0)
+    latitude = phi0 + sum([v * dx ** Kp[i] * dy ** Kq[i]
+                           for i, v in enumerate(Kpq)]) / 3600
+    longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
+                            for i, v in enumerate(Lpq)]) / 3600
+
+    return latitude, longitude
 
 # t = time.time()
 # print('time: ' + str(time.time() - t))
