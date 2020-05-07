@@ -9,7 +9,7 @@ import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
-from app import app, cache
+from app import app  # , cache
 
 t_t = time.time()
 
@@ -91,14 +91,16 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            [dcc.Graph(figure=generate_graphs(4, None, None))],
+                            # [dcc.Graph(figure=generate_graphs(4, None, None))],
+                            # [dcc.Graph(figure=None)],
                             id='graph_targets_overall_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
                     html.Div(
-                            [dcc.Graph(figure=generate_graphs(2, None, None),
-                                       id='project_performance')],
+                            # [dcc.Graph(figure=generate_graphs(2, None, None),
+                            # [dcc.Graph(figure=None,
+                            #            id='project_performance')],
                             id='graph_speed_c',
                             className="pretty_container column",
                             hidden=False,
@@ -307,8 +309,9 @@ def geomap(n, drop_selectie, hidden, mask_all):
     print('time geomap: ' + str(time.time() - t))
     return [fig['geo'], fig['table'], hidden, hidden]
 
+
 # HELPER FUNCTIES
-@cache.memoize()
+# @cache.memoize()
 def generate_graphs(flag, drop_selectie, mask_all):
 
     # BIS/HAS
