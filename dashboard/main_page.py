@@ -91,16 +91,15 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            # [dcc.Graph(figure=generate_graphs(4, None, None))],
+                            [dcc.Graph(figure=generate_graphs(4, None, None))],
                             # [dcc.Graph(figure=None)],
                             id='graph_targets_overall_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
                     html.Div(
-                            # [dcc.Graph(figure=generate_graphs(2, None, None),
-                            # [dcc.Graph(figure=None,
-                            #            id='project_performance')],
+                            [dcc.Graph(figure=generate_graphs(2, None, None),
+                                       id='project_performance')],
                             id='graph_speed_c',
                             className="pretty_container column",
                             hidden=False,
