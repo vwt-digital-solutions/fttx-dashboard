@@ -4,12 +4,14 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objs as go
 import dash_html_components as html
 import dash_table
-# import time
+import time
 import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
 from app import app, cache
+
+t_t = time.time()
 
 layout = dict(
     autosize=True,
@@ -215,8 +217,10 @@ def middle_top_graphs(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
+    t = time.time()
     fig_bish = generate_graphs(0, drop_selectie, None)
     fig_prog = generate_graphs(1, drop_selectie, None)
+    print('time middle_top_graphs: ' + str(time.time() - t))
 
     return [fig_prog, fig_bish, True, True, False, False]
 
@@ -242,7 +246,7 @@ def middle_top_graphs(drop_selectie):
 def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     if drop_selectie is None:
         raise PreventUpdate
-
+    t = time.time()
     if (drop_selectie == filter_a) & ((cell_bar_LB is not None) | (cell_bar_HB is not None)):
         if cell_bar_LB is not None:
             pt_x = cell_bar_LB['points'][0]['x']
@@ -270,7 +274,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     barLB = generate_graphs(5, drop_selectie, mask_all)
     barHB = generate_graphs(6, drop_selectie, mask_all)
-
+    print('time clickbars: ' + str(time.time() - t))
     return [barLB, barHB, mask_all, drop_selectie, False, False]
 
     Output("uitleg_collapse", "hidden"),
@@ -298,8 +302,9 @@ def geomap(n, drop_selectie, hidden, mask_all):
         raise PreventUpdate
     if n:
         hidden = not hidden
+    t = time.time()
     fig = generate_graphs(7, drop_selectie, mask_all)
-
+    print('time geomap: ' + str(time.time() - t))
     return [fig['geo'], fig['table'], hidden, hidden]
 
 # HELPER FUNCTIES
@@ -318,14 +323,19 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     # project speed
     if flag == 2:
+        t = time.time()
         fig = api.get('/plot_overview_graphs?id=project_performance')[0]['figure']
+        print('time speed: ' + str(time.time() - t))
 
     # labels
     if flag == 3:
+        t = time.time()
         fig = api.get('/plot_overview_graphs?id=pnames')[0]['filters']
+        print('time labels: ' + str(time.time() - t))
 
     # targets
     if flag == 4:
+        t = time.time()
         fig = api.get('/plot_overview_graphs?id=graph_targets')[0]['figure']
         w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         bar_t = [dict(x=[w_now],
@@ -337,6 +347,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                       )]
         fig['data'] = fig['data'] + bar_t
         fig['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5], 'title': '[weken in 2020]'}
+        print('time targets: ' + str(time.time() - t))
 
     # clickbar LB
     if flag == 5:
@@ -498,7 +509,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
 
 def from_rd(x: int, y: int) -> tuple:
-
+    t = time.time()
     x0 = 155000
     y0 = 463000
     phi0 = 52.15517440
@@ -524,8 +535,8 @@ def from_rd(x: int, y: int) -> tuple:
                            for i, v in enumerate(Kpq)]) / 3600
     longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
                             for i, v in enumerate(Lpq)]) / 3600
-
+    print('time from_rd: ' + str(time.time() - t))
     return latitude, longitude
 
-# t = time.time()
-# print('time: ' + str(time.time() - t))
+
+print('time main_page.py: ' + str(time.time() - t_t))

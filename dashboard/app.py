@@ -4,12 +4,15 @@ import flask
 import config
 import base64
 import dash_bootstrap_components as dbc
+import time
 
 from google.cloud import kms_v1
 from authentication.azure_auth import AzureOAuth
 from flask_caching import Cache
 from flask_sslify import SSLify
 from flask_cors import CORS
+
+t = time.time()
 
 server = flask.Flask(__name__)
 
@@ -63,3 +66,5 @@ if config.authentication:
         config.authentication['role'],
         config.authentication['required_scopes']
     )
+
+print('time app.py: ' + str(time.time() - t))

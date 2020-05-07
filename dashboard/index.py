@@ -2,10 +2,13 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 import main_page
+import time
 
 from app import app
 from collections import OrderedDict
 from dash.dependencies import Input, Output
+
+t = time.time()
 
 config_pages = OrderedDict(
     [
@@ -88,6 +91,8 @@ def display_page(pathname):
     return [get_navbar(pathname), html.P('''deze pagina bestaat niet, druk op vorige
                    of een van de paginas in het menu hierboven''')]
 
+
+print('time index.py: ' + str(time.time() - t))
 
 if __name__ == "__main__":
     app.run_server(debug=True)
