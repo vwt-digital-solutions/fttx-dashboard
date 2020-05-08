@@ -8,7 +8,7 @@ import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
-from app import app  # , cache
+from app import app
 
 layout = dict(
     autosize=True,
@@ -89,7 +89,6 @@ def get_body():
                 [
                     html.Div(
                             [dcc.Graph(figure=generate_graphs(4, None, None))],
-                            # [dcc.Graph(figure=None)],
                             id='graph_targets_overall_c',
                             className="pretty_container column",
                             hidden=False,
@@ -107,12 +106,6 @@ def get_body():
             ),
             html.Div(
                 [
-                    # html.Div(
-                    #     [
-                    #         html.H3("Details project:"),
-                    #     ],
-                    #     style={"margin-right": "140px"},
-                    # ),
                     html.Div(
                             [dcc.Dropdown(id='project-dropdown',
                                           options=generate_graphs(3, None, None),
@@ -230,6 +223,7 @@ def middle_top_graphs(drop_selectie):
      Output("aggregate_data2", 'data'),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
+     Output("detail_button", "n_clicks")
      ],
     [Input('project-dropdown', 'value'),
      Input("Bar_LB", 'clickData'),
@@ -271,7 +265,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     barLB = generate_graphs(5, drop_selectie, mask_all)
     barHB = generate_graphs(6, drop_selectie, mask_all)
 
-    return [barLB, barHB, mask_all, drop_selectie, False, False]
+    return [barLB, barHB, mask_all, drop_selectie, False, False, 0]
 
     Output("uitleg_collapse", "hidden"),
 
@@ -296,15 +290,18 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 def geomap(n, drop_selectie, hidden, mask_all):
     if (drop_selectie is None) | (mask_all is None):
         raise PreventUpdate
-    if n:
-        hidden = not hidden
-    fig = generate_graphs(7, drop_selectie, mask_all)
+    print(n)
+    if n in [1, 3, 5]:
+        hidden = False
+        fig = generate_graphs(7, drop_selectie, mask_all)
+    else:
+        hidden = True
+        fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
     return [fig['geo'], fig['table'], hidden, hidden]
 
 
 # HELPER FUNCTIES
-# @cache.memoize()
 def generate_graphs(flag, drop_selectie, mask_all):
 
     # BIS/HAS
@@ -415,14 +412,16 @@ def generate_graphs(flag, drop_selectie, mask_all):
         for i in range(0, 5):
             docs = api.get('/Projecten?id=' + drop_selectie + '_' + str(i))
             for doc in docs:
-                df = df.append(pd.read_json(doc['df'], orient='records')).reset_index(drop=True)
-        print(mask_all)
+                df = df.append(pd.read_json(doc['df'], orient='records'), ignore_index=True)
+        df = df.set_index('index').sort_index()
+
         if mask_all != '0':
             df = df[api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask']]
 
         if not df[~df['X locatie Rol'].isna()].empty:
-            df['clr'] = 0
-            df.loc[~df['Opleverdatum'].isna(), ('clr')] = 50
+
+            df['clr'] = 50
+            df.loc[df['Opleverdatum'].isna(), ('clr')] = 0
             df['clr-DP'] = 0
             df.loc[df['Opleverstatus'] != 0, ('clr-DP')] = 25
             df['X locatie Rol'] = df['X locatie Rol'].str.replace(',', '.').astype(float)
