@@ -416,7 +416,8 @@ def generate_graphs(flag, drop_selectie, mask_all):
         df = df.set_index('index').sort_index()
 
         if mask_all != '0':
-            df = df[api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask']]
+            idx = pd.read_json(api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask'])[0]
+            df = df.ix[idx]
 
         if not df[~df['X locatie Rol'].isna()].empty:
 
