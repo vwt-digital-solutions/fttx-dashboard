@@ -110,7 +110,11 @@ def get_body():
                             [dcc.Dropdown(id='project-dropdown',
                                           options=generate_graphs(3, None, None),
                                           value=None)],
-                            className="pretty_container column",
+                            className="two-third column",
+                    ),
+                    html.Div(
+                            [dbc.Button('Terug naar overzicht alle projecten', id='overzicht_button')],
+                            className="one-third column",
                     ),
                 ],
                 className="container-display",
@@ -153,7 +157,8 @@ def get_body():
                 className="container-display",
             ),
             html.Div(
-                [dbc.Button('Project details', id='detail_button')],
+                    [dbc.Button('Project details', id='detail_button')],
+                    className="one-third column"
             ),
             html.Div(
                 [
@@ -190,15 +195,34 @@ def update_dropdown(value):
     return [value['points'][0]['text']]
 
 
+# update top overview charts and middle charts, also given status back to start button
+@app.callback(
+    [
+     Output("graph_targets_overall_c", 'hidden'),
+     Output("graph_speed_c", 'hidden'),
+     Output("graph_prog_c", "hidden"),
+     Output("graph_targets_c", "hidden"),
+     Output("Bar_LB_c", "hidden"),
+     Output("Bar_HB_c", "hidden"),
+     ],
+    [
+     Input("overzicht_button", 'n_clicks'),
+     ]
+)
+def update_top_graphs(n):
+    if n == -1:
+        hidden = True
+    else:
+        hidden = False
+    return [hidden, hidden, not hidden, not hidden, not hidden, not hidden]
+
+
 # update middle-top charts given dropdown selection
 @app.callback(
     [
      Output("graph_prog", 'figure'),
      Output("graph_targets", 'figure'),
-     Output("graph_targets_overall_c", 'hidden'),
-     Output("graph_speed_c", 'hidden'),
-     Output("graph_prog_c", "hidden"),
-     Output("graph_targets_c", "hidden"),
+     Output("overzicht_button", 'n_clicks'),
      ],
     [
      Input('project-dropdown', 'value'),
@@ -211,7 +235,7 @@ def middle_top_graphs(drop_selectie):
     fig_bish = generate_graphs(0, drop_selectie, None)
     fig_prog = generate_graphs(1, drop_selectie, None)
 
-    return [fig_prog, fig_bish, True, True, False, False]
+    return [fig_prog, fig_bish, -1]
 
 
 # update click bar charts
@@ -221,8 +245,6 @@ def middle_top_graphs(drop_selectie):
      Output("Bar_HB", "figure"),
      Output("aggregate_data", 'data'),
      Output("aggregate_data2", 'data'),
-     Output("Bar_LB_c", "hidden"),
-     Output("Bar_HB_c", "hidden"),
      Output("detail_button", "n_clicks")
      ],
     [Input('project-dropdown', 'value'),
@@ -265,7 +287,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     barLB = generate_graphs(5, drop_selectie, mask_all)
     barHB = generate_graphs(6, drop_selectie, mask_all)
 
-    return [barLB, barHB, mask_all, drop_selectie, False, False, 0]
+    return [barLB, barHB, mask_all, drop_selectie, 0]
 
     Output("uitleg_collapse", "hidden"),
 
@@ -290,7 +312,6 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 def geomap(n, drop_selectie, hidden, mask_all):
     if (drop_selectie is None) | (mask_all is None):
         raise PreventUpdate
-    print(n)
     if n in [1, 3, 5]:
         hidden = False
         fig = generate_graphs(7, drop_selectie, mask_all)
@@ -367,7 +388,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status per projectfase (LB & Duplex):', 'x': 0.5},
+                               title={'text': 'Status per projectfase (LB & Duplex) [selection resets after 3 clicks]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
@@ -402,7 +423,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status per projectfase (HB):', 'x': 0.5},
+                               title={'text': 'Status per projectfase (HB) [selection resets after 3 clicks]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
