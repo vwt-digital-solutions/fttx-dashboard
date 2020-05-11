@@ -388,7 +388,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status per projectfase (LB & Duplex):', 'x': 0.5},
+                               title={'text': 'Status per projectfase (LB & Duplex) [selection resets after 3 clicks]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
@@ -423,7 +423,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status per projectfase (HB):', 'x': 0.5},
+                               title={'text': 'Status per projectfase (HB) [selection resets after 3 clicks]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
