@@ -5,6 +5,7 @@ import plotly.graph_objs as go
 import dash_html_components as html
 import dash_table
 import api
+import datetime
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
@@ -163,11 +164,6 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                        id='table_c',
-                        className="pretty_container",
-                        hidden=True,
-                    ),
-                    html.Div(
                             [dcc.Graph(id="geo_plot")],
                             id='geo_plot_c',
                             className="pretty_container column",
@@ -176,7 +172,18 @@ def get_body():
                 ],
                 id="details",
                 className="container-display",
-            )
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        id='table_c',
+                        className="pretty_container",
+                        hidden=True,
+                    ),
+                ],
+                id="details",
+                className="container-display",
+            ),
         ],
         id="mainContainer",
         style={"display": "flex", "flex-direction": "column"},
@@ -355,7 +362,13 @@ def generate_graphs(flag, drop_selectie, mask_all):
                       width=0.1,
                       )]
         fig['data'] = fig['data'] + bar_t
-        fig['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5], 'title': '[weken in 2020]'}
+        x_ticks = list(range(w_now - 5, w_now + 6))
+        fig['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5],
+                                  'tickvals': x_ticks,
+                                  'ticktext': [datetime.datetime.strptime(
+                                               '2020-W' + str(int(el-1)) + '-1', "%Y-W%W-%w").date().strftime('%Y-%m-%d')
+                                               for el in x_ticks],
+                                  'title': ' '}
 
     # clickbar LB
     if flag == 5:
@@ -367,15 +380,15 @@ def generate_graphs(flag, drop_selectie, mask_all):
         labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
         barLB1HC = dict(x=labels,
                         y=bar['SchouwenLB1'] + bar['BISLB1'] + bar['Montage-lasAPLB1'] + bar['Montage-lasDPLB1'] + bar['HASLB1'],
-                        name='Opgeleverd (HAS: HC)',
+                        name='Opgeleverd',
                         type='bar',
                         marker=dict(color='rgb(0, 200, 0)'),
                         )
         barLB1HP = dict(x=labels,
                         y=[0] + [0] + [0] + [0] + bar['HASLB1HP'],
-                        name='Opgeleverd (HAS: HP)',
+                        name='Opgeleverd tot HP',
                         type='bar',
-                        marker=dict(color='rgb(0, 0, 200)')
+                        marker=dict(color='rgb(200, 200, 0)')
                         )
         barLB0 = dict(x=labels,
                       y=bar['SchouwenLB0'] + bar['BISLB0'] + bar['Montage-lasAPLB0'] + bar['Montage-lasDPLB0'] + bar['HASLB0'],
@@ -388,7 +401,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status per projectfase (LB & Duplex) [selection resets after 3 clicks]:', 'x': 0.5},
+                               title={'text': 'Status oplevering per fase (LB & Duplex)<br>[selectie resets na 3x klikken]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
@@ -402,15 +415,15 @@ def generate_graphs(flag, drop_selectie, mask_all):
         labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
         barHB1HC = dict(x=labels,
                         y=bar['SchouwenHB1'] + bar['BISHB1'] + bar['Montage-lasAPHB1'] + bar['Montage-lasDPHB1'] + bar['HASHB1'],
-                        name='Opgeleverd (HAS: HC)',
+                        name='Opgeleverd',
                         type='bar',
                         marker=dict(color='rgb(0, 200, 0)')
                         )
         barHB1HP = dict(x=labels,
                         y=[0] + [0] + [0] + [0] + bar['HASHB1HP'],
-                        name='Opgeleverd (HAS: HP)',
+                        name='Opgeleverd tot HP',
                         type='bar',
-                        marker=dict(color='rgb(0, 0, 200)')
+                        marker=dict(color='rgb(200, 200, 0)')
                         )
         barHB0 = dict(x=labels,
                       y=bar['SchouwenHB0'] + bar['BISHB0'] + bar['Montage-lasAPHB0'] + bar['Montage-lasDPHB0'] + bar['HASHB0'],
@@ -423,7 +436,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status per projectfase (HB) [selection resets after 3 clicks]:', 'x': 0.5},
+                               title={'text': 'Status oplevering per fase (HB)<br>[selectie resets na 3x klikken]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
@@ -445,7 +458,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
             df['clr'] = 50
             df.loc[df['Opleverdatum'].isna(), ('clr')] = 0
             df['clr-DP'] = 0
-            df.loc[df['Opleverstatus'] != 0, ('clr-DP')] = 25
+            df.loc[df['Opleverstatus'] != 0, ('clr-DP')] = 50  # 25 == geel
             df['X locatie Rol'] = df['X locatie Rol'].str.replace(',', '.').astype(float)
             df['Y locatie Rol'] = df['Y locatie Rol'].str.replace(',', '.').astype(float)
             df['X locatie DP'] = df['X locatie DP'].str.replace(',', '.').astype(float)
@@ -479,13 +492,13 @@ def generate_graphs(flag, drop_selectie, mask_all):
             map_layout = dict(
                 autosize=True,
                 automargin=True,
-                margin=dict(r=30, b=20, t=100),
-                height=600,
+                margin={'l': 30, 'r': 30, 'b': 30, 't': 120},
+                height=500,
                 hovermode="closest",
                 plot_bgcolor="#F9F9F9",
                 paper_bgcolor="#F9F9F9",
                 legend=dict(font=dict(size=10), orientation="h"),
-                title="Status woningen [klein, groen = opgeleverd]<br>Status DP's [groot, geel = opgeleverd]",
+                title="Status oplevering per woning (kleine marker) & DP (grote marker)<br>[groen = opgeleverd, rood = niet opgeleverd]",
                 mapbox=dict(
                     accesstoken=mapbox_at,
                     style="light",
