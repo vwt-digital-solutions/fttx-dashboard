@@ -202,7 +202,7 @@ def update_dropdown(value):
     return [value['points'][0]['text']]
 
 
-# update top overview charts and middle charts, also given status back to start button
+# update graphs
 @app.callback(
     [
      Output("graph_targets_overall_c", 'hidden'),
@@ -211,17 +211,36 @@ def update_dropdown(value):
      Output("graph_targets_c", "hidden"),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
+     Output("geo_plot", 'figure'),
+     Output("table_c", 'children'),
+     Output("geo_plot_c", "hidden"),
+     Output("table_c", "hidden"),
      ],
     [
      Input("overzicht_button", 'n_clicks'),
-     ]
+     Input("detail_button", "n_clicks")
+     ],
+    [
+     State('project-dropdown', 'value'),
+     State("aggregate_data", 'data'),
+     ],
 )
-def update_top_graphs(n):
-    if n == -1:
+def update_graphs(n_o, n_d, drop_selectie, mask_all):
+    if drop_selectie is None:
+        raise PreventUpdate
+    if n_o == -1:
         hidden = True
     else:
         hidden = False
-    return [hidden, hidden, not hidden, not hidden, not hidden, not hidden]
+        n_d = 0
+    if n_d in [1, 3, 5]:
+        hidden1 = False
+        fig = generate_graphs(7, drop_selectie, mask_all)
+    else:
+        hidden1 = True
+        fig = dict(geo={'data': None, 'layout': dict()}, table=None)
+
+    return [hidden, hidden, not hidden, not hidden, not hidden, not hidden, fig['geo'], fig['table'], hidden1, hidden1]
 
 
 # update middle-top charts given dropdown selection
@@ -297,36 +316,6 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     return [barLB, barHB, mask_all, drop_selectie, 0]
 
     Output("uitleg_collapse", "hidden"),
-
-
-# update geomap
-@app.callback(
-    [
-     Output("geo_plot", 'figure'),
-     Output("table_c", 'children'),
-     Output("geo_plot_c", "hidden"),
-     Output("table_c", "hidden"),
-     ],
-    [
-     Input("detail_button", "n_clicks")
-     ],
-    [
-     State('project-dropdown', 'value'),
-     State("geo_plot_c", "hidden"),
-     State("aggregate_data", 'data'),
-     ],
-)
-def geomap(n, drop_selectie, hidden, mask_all):
-    if (drop_selectie is None) | (mask_all is None):
-        raise PreventUpdate
-    if n in [1, 3, 5]:
-        hidden = False
-        fig = generate_graphs(7, drop_selectie, mask_all)
-    else:
-        hidden = True
-        fig = dict(geo={'data': None, 'layout': dict()}, table=None)
-
-    return [fig['geo'], fig['table'], hidden, hidden]
 
 
 # HELPER FUNCTIES
