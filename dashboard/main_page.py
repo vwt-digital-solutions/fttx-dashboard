@@ -6,6 +6,7 @@ import dash_html_components as html
 import dash_table
 import api
 import datetime
+import json
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from elements import table_styles
@@ -304,7 +305,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
                 pt_cell = 'HB0'
         mask_all += pt_x + pt_cell
 
-        doc = api.get('/plots_extra?id=bar_names')[0]['bar_names']
+        doc = api.get('/Graphs?id=bar_names')[0]['bar_names']
         if mask_all not in doc:
             mask_all = '0'
     else:
@@ -323,25 +324,25 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     # BIS/HAS
     if flag == 0:
-        fig = api.get('/plots_extra?id=' + drop_selectie)[0]['figure']
+        fig = api.get('/Graphs?id=' + drop_selectie)[0]['figure']
 
     # prognose
     if flag == 1:
-        fig = api.get('/plots_extra?id=' + 'project_' + drop_selectie)[0]['figure']
+        fig = api.get('/Graphs?id=' + 'project_' + drop_selectie)[0]['figure']
         for i, item in enumerate(fig['data']):
             fig['data'][i]['x'] = pd.to_datetime(item['x'])
 
     # project speed
     if flag == 2:
-        fig = api.get('/plot_overview_graphs?id=project_performance')[0]['figure']
+        fig = api.get('/Graphs?id=project_performance')[0]['figure']
 
     # labels
     if flag == 3:
-        fig = api.get('/plot_overview_graphs?id=pnames')[0]['filters']
+        fig = api.get('/Graphs?id=pnames')[0]['filters']
 
     # targets
     if flag == 4:
-        fig = api.get('/plot_overview_graphs?id=graph_targets')[0]['figure']
+        fig = api.get('/Graphs?id=graph_targets')[0]['figure']
         w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         bar_t = [dict(x=[w_now],
                       y=[5000],
@@ -361,7 +362,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     # clickbar LB
     if flag == 5:
-        fig = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
+        fig = api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
         bar = {}
         for key in fig:
             if 'LB' in key:
@@ -396,7 +397,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     # clickbar HB
     if flag == 6:
-        fig = api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
+        fig = api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
         bar = {}
         for key in fig:
             if 'HB' in key:
@@ -431,16 +432,13 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     # geomap & data table
     if flag == 7:
-        df = pd.DataFrame()
-        for i in range(0, 5):
-            docs = api.get('/Projecten?id=' + drop_selectie + '_' + str(i))
-            for doc in docs:
-                df = df.append(pd.read_json(doc['df'], orient='records'), ignore_index=True)
-        df = df.set_index('index').sort_index()
 
-        if mask_all != '0':
-            idx = pd.read_json(api.get('/plots_extra?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask'])[0]
-            df = df.ix[idx]
+        df = pd.DataFrame()
+        mask = json.loads(api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask'])
+        records = []
+        for key in mask:
+            records += [api.get('/Projects?id=' + drop_selectie + '_' + key)[0]]
+        df = pd.DataFrame(records)
 
         if not df[~df['X locatie Rol'].isna()].empty:
 
@@ -500,7 +498,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
         else:
             fig = dict(geo={'data': None, 'layout': dict()})
 
-        df['Uitleg RedenNA'] = df['RedenNA'].map(api.get('/plots_extra?id=reden_mapping')[0]['map'])
+        df['Uitleg RedenNA'] = df['RedenNA'].map(api.get('/Graphs?id=reden_mapping')[0]['map'])
         df = df[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']].sort_values(by='HASdatum')
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df.columns],
