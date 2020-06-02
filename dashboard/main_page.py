@@ -159,7 +159,7 @@ def get_body():
                 className="container-display",
             ),
             html.Div(
-                    [dbc.Button('Project details', id='detail_button')],
+                    [dbc.Button('Project details [eerste 3000 resultaten]', id='detail_button')],
                     className="one-third column"
             ),
             html.Div(
@@ -432,11 +432,15 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     # geomap & data table
     if flag == 7:
-        records = api.get('/Projects?project=' + drop_selectie)
-        df = pd.DataFrame(records)
-        if mask_all != '0':
+        if mask_all == '0':
+            records = api.get('/Projects?project=' + drop_selectie)
+            df = pd.DataFrame(records)
+        else:
             mask = json.loads(api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask'])
-            df = df[df['Sleutel'].isin(mask)]
+            dataframe = []
+            for m in mask:
+                dataframe += api.get('/Projects?id=' + drop_selectie + '_' + m)
+            df = pd.DataFrame(dataframe)
 
         if not df[~df['X locatie Rol'].isna()].empty:
 
