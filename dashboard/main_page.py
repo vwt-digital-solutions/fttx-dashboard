@@ -5,7 +5,6 @@ import plotly.graph_objs as go
 import dash_html_components as html
 import dash_table
 import api
-import datetime
 import json
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
