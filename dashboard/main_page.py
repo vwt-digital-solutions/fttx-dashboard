@@ -343,22 +343,6 @@ def generate_graphs(flag, drop_selectie, mask_all):
     # targets
     if flag == 4:
         fig = api.get('/Graphs?id=graph_targets')[0]['figure']
-        w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-        bar_t = [dict(x=[w_now],
-                      y=[5000],
-                      name='Huidige week',
-                      type='bar',
-                      marker=dict(color='rgb(0, 0, 0)'),
-                      width=0.1,
-                      )]
-        fig['data'] = fig['data'] + bar_t
-        x_ticks = list(range(w_now - 5, w_now + 6))
-        fig['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5],
-                                  'tickvals': x_ticks,
-                                  'ticktext': [datetime.datetime.strptime(
-                                               '2020-W' + str(int(el-1)) + '-1', "%Y-W%W-%w").date().strftime('%Y-%m-%d')
-                                               for el in x_ticks],
-                                  'title': ' '}
 
     # clickbar LB
     if flag == 5:
