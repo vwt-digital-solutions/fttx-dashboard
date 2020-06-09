@@ -5,7 +5,6 @@ import plotly.graph_objs as go
 import dash_html_components as html
 import dash_table
 import api
-import datetime
 import json
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -343,22 +342,6 @@ def generate_graphs(flag, drop_selectie, mask_all):
     # targets
     if flag == 4:
         fig = api.get('/Graphs?id=graph_targets')[0]['figure']
-        w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-        bar_t = [dict(x=[w_now],
-                      y=[5000],
-                      name='Huidige week',
-                      type='bar',
-                      marker=dict(color='rgb(0, 0, 0)'),
-                      width=0.1,
-                      )]
-        fig['data'] = fig['data'] + bar_t
-        x_ticks = list(range(w_now - 5, w_now + 6))
-        fig['layout']['xaxis'] = {'range': [w_now - 5.5, w_now + 6.5],
-                                  'tickvals': x_ticks,
-                                  'ticktext': [datetime.datetime.strptime(
-                                               '2020-W' + str(int(el-1)) + '-1', "%Y-W%W-%w").date().strftime('%Y-%m-%d')
-                                               for el in x_ticks],
-                                  'title': ' '}
 
     # clickbar LB
     if flag == 5:
@@ -442,18 +425,18 @@ def generate_graphs(flag, drop_selectie, mask_all):
                 dataframe += api.get('/Projects?id=' + drop_selectie + '_' + m)
             df = pd.DataFrame(dataframe)
 
-        if not df[~df['X locatie Rol'].isna()].empty:
+        if not df[~df['x_locatie_rol'].isna()].empty:
 
             df['clr'] = 50
-            df.loc[df['Opleverdatum'].isna(), ('clr')] = 0
+            df.loc[df['opleverdatum'].isna(), ('clr')] = 0
             df['clr-DP'] = 0
-            df.loc[df['Opleverstatus'] != 0, ('clr-DP')] = 50  # 25 == geel
-            df['X locatie Rol'] = df['X locatie Rol'].str.replace(',', '.').astype(float)
-            df['Y locatie Rol'] = df['Y locatie Rol'].str.replace(',', '.').astype(float)
-            df['X locatie DP'] = df['X locatie DP'].str.replace(',', '.').astype(float)
-            df['Y locatie DP'] = df['Y locatie DP'].str.replace(',', '.').astype(float)
-            df['Lat'], df['Long'] = from_rd(df['X locatie Rol'], df['Y locatie Rol'])
-            df['Lat_DP'], df['Long_DP'] = from_rd(df['X locatie DP'], df['Y locatie DP'])
+            df.loc[df['opleverstatus'] != 0, ('clr-DP')] = 50  # 25 == geel
+            df['x_locatie_rol'] = df['x_locatie_rol'].str.replace(',', '.').astype(float)
+            df['y_locatie_rol'] = df['y_locatie_rol'].str.replace(',', '.').astype(float)
+            df['x_locatie_dp'] = df['x_locatie_dp'].str.replace(',', '.').astype(float)
+            df['y_locatie_dp'] = df['y_locatie_dp'].str.replace(',', '.').astype(float)
+            df['Lat'], df['Long'] = from_rd(df['x_locatie_rol'], df['y_locatie_rol'])
+            df['Lat_DP'], df['Long_DP'] = from_rd(df['x_locatie_dp'], df['y_locatie_dp'])
             df['Size'] = 7
             df['Size_DP'] = 14
 
@@ -500,8 +483,8 @@ def generate_graphs(flag, drop_selectie, mask_all):
         else:
             fig = dict(geo={'data': None, 'layout': dict()})
 
-        df['Uitleg RedenNA'] = df['RedenNA'].map(api.get('/Graphs?id=reden_mapping')[0]['map'])
-        df = df[['Sleutel', 'Opleverdatum', 'HASdatum', 'Opleverstatus', 'Uitleg RedenNA']].sort_values(by='HASdatum')
+        df['uitleg redenna'] = df['redenna'].map(api.get('/Graphs?id=reden_mapping')[0]['map'])
+        df = df[['sleutel', 'opleverdatum', 'hasdatum', 'opleverstatus', 'uitleg redenna']].sort_values(by='hasdatum')
         df_table = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict("rows"),
