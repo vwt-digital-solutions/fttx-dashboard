@@ -1,10 +1,5 @@
-export.sh
-.DS_Store
+export.bat
 __pycache__
-settings.json
-config.json
-start_jupyter.py
+.vscode
 config.py
 env_vars.bat
-.vscode
-.png
