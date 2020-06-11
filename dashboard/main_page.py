@@ -89,8 +89,14 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            [dcc.Graph(figure=generate_graphs(4, None, None))],
+                            [dcc.Graph(figure=generate_graphs(41, None, None))],
                             id='graph_targets_overall_c',
+                            className="pretty_container column",
+                            hidden=False,
+                    ),
+                    html.Div(
+                            [dcc.Graph(figure=generate_graphs(42, None, None))],
+                            id='graph_targets_overallM_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
@@ -206,6 +212,7 @@ def update_dropdown(value):
 @app.callback(
     [
      Output("graph_targets_overall_c", 'hidden'),
+     Output("graph_targets_overallM_c", 'hidden'),
      Output("graph_speed_c", 'hidden'),
      Output("graph_prog_c", "hidden"),
      Output("graph_targets_c", "hidden"),
@@ -240,7 +247,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
-    return [hidden, hidden, not hidden, not hidden, not hidden, not hidden, fig['geo'], fig['table'], hidden1, hidden1]
+    return [hidden, hidden, hidden, not hidden, not hidden, not hidden, not hidden, fig['geo'], fig['table'], hidden1, hidden1]
 
 
 # update middle-top charts given dropdown selection
@@ -340,8 +347,11 @@ def generate_graphs(flag, drop_selectie, mask_all):
         fig = api.get('/Graphs?id=pnames')[0]['filters']
 
     # targets
-    if flag == 4:
-        fig = api.get('/Graphs?id=graph_targets')[0]['figure']
+    if flag == 41:
+        fig = api.get('/Graphs?id=graph_targets_W')[0]['figure']
+    
+    if flag == 42:
+        fig = api.get('/Graphs?id=graph_targets_M')[0]['figure']
 
     # clickbar LB
     if flag == 5:
