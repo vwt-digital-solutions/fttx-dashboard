@@ -349,7 +349,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
     # targets
     if flag == 41:
         fig = api.get('/Graphs?id=graph_targets_W')[0]['figure']
-    
+
     if flag == 42:
         fig = api.get('/Graphs?id=graph_targets_M')[0]['figure']
 
