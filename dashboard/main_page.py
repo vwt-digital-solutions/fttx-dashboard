@@ -89,13 +89,13 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            [dcc.Graph(figure=generate_graphs(41, None, None))],
+                            [dcc.Graph(figure=generate_graphs(42, None, None))],
                             id='graph_targets_overall_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
                     html.Div(
-                            [dcc.Graph(figure=generate_graphs(42, None, None))],
+                            [dcc.Graph(figure=generate_graphs(41, None, None))],
                             id='graph_targets_overallM_c',
                             className="pretty_container column",
                             hidden=False,
