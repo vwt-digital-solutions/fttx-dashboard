@@ -53,7 +53,7 @@ def get_body():
                             html.Div(
                                 [
                                     html.H3(
-                                        "Status projecten FttX",
+                                        "Status projecten KPN",
                                         style={"margin-bottom": "25px",
                                                "margin-left": "75px",
                                                },
@@ -89,11 +89,69 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                            [dcc.Graph(figure=generate_graphs(4, None, None))],
+                        [
+                            html.H6(id="info_globaal_0"),
+                            html.P('Aantal woningen afgesproken met KPN in 2020:'),
+                            html.P(generate_graphs(80, None, None))
+                        ],
+                        id="info_globaal_container0",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_1"),
+                            html.P('Aantal woningen gerealiseerd in FC in 2020:'),
+                            html.P(generate_graphs(81, None, None))
+                        ],
+                        id="info_globaal_container1",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_2"),
+                            html.P('Aantal woningen gepland door VWT in 2020:'),
+                            html.P(generate_graphs(82, None, None))
+                        ],
+                        id="info_globaal_container2",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_3"),
+                            html.P('Aantal woningen voorspeld door VQD in 2020:'),
+                            html.P(generate_graphs(83, None, None))
+                        ],
+                        id="info_globaal_container3",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
+                ],
+                id="info-container1",
+                className="container-display",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                            [dcc.Graph(figure=generate_graphs(42, None, None))],
                             id='graph_targets_overall_c',
                             className="pretty_container column",
                             hidden=False,
                     ),
+                    html.Div(
+                            [dcc.Graph(figure=generate_graphs(41, None, None))],
+                            id='graph_targets_overallM_c',
+                            className="pretty_container column",
+                            hidden=False,
+                    ),
+                ],
+                id="main_graphs0",
+                className="container-display",
+            ),
+            html.Div(
+                [
                     html.Div(
                             [dcc.Graph(figure=generate_graphs(2, None, None),
                                        id='project_performance')],
@@ -102,7 +160,6 @@ def get_body():
                             hidden=False,
                     ),
                 ],
-                id="main_graphs0",
                 className="container-display",
             ),
             html.Div(
@@ -206,6 +263,11 @@ def update_dropdown(value):
 @app.callback(
     [
      Output("graph_targets_overall_c", 'hidden'),
+     Output("graph_targets_overallM_c", 'hidden'),
+     Output("info_globaal_container0", 'hidden'),
+     Output("info_globaal_container1", 'hidden'),
+     Output("info_globaal_container2", 'hidden'),
+     Output("info_globaal_container3", 'hidden'),
      Output("graph_speed_c", 'hidden'),
      Output("graph_prog_c", "hidden"),
      Output("graph_targets_c", "hidden"),
@@ -240,7 +302,9 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
-    return [hidden, hidden, not hidden, not hidden, not hidden, not hidden, fig['geo'], fig['table'], hidden1, hidden1]
+    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden,
+            not hidden, not hidden, not hidden, not hidden,
+            fig['geo'], fig['table'], hidden1, hidden1]
 
 
 # update middle-top charts given dropdown selection
@@ -321,6 +385,18 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 # HELPER FUNCTIES
 def generate_graphs(flag, drop_selectie, mask_all):
 
+    if flag == 80:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['target']
+
+    if flag == 81:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['real']
+
+    if flag == 82:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['plan']
+
+    if flag == 83:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['prog']
+
     # BIS/HAS
     if flag == 0:
         fig = api.get('/Graphs?id=' + drop_selectie)[0]['figure']
@@ -340,8 +416,11 @@ def generate_graphs(flag, drop_selectie, mask_all):
         fig = api.get('/Graphs?id=pnames')[0]['filters']
 
     # targets
-    if flag == 4:
-        fig = api.get('/Graphs?id=graph_targets')[0]['figure']
+    if flag == 41:
+        fig = api.get('/Graphs?id=graph_targets_W')[0]['figure']
+
+    if flag == 42:
+        fig = api.get('/Graphs?id=graph_targets_M')[0]['figure']
 
     # clickbar LB
     if flag == 5:
