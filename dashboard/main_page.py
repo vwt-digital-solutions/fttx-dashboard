@@ -453,7 +453,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status oplevering per fase (LB & Duplex)<br>[selectie resets na 3x klikken]:', 'x': 0.5},
+                               title={'text': 'Status oplevering per fase (LB)<br>[selectie resets na 3x klikken]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
@@ -488,7 +488,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                                clickmode='event+select',
                                showlegend=True,
                                height=350,
-                               title={'text': 'Status oplevering per fase (HB)<br>[selectie resets na 3x klikken]:', 'x': 0.5},
+                               title={'text': 'Status oplevering per fase (HB & Duplex)<br>[selectie resets na 3x klikken]:', 'x': 0.5},
                                yaxis={'title': '[aantal woningen]'},
                                ))
 
