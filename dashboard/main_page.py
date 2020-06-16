@@ -186,18 +186,12 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
-                    html.Div(
-                            [dcc.Graph(id="graph_targets")],
-                            id='graph_targets_c',
-                            className="pretty_container column",
-                            hidden=True,
-                    ),
-                ],
-                id="main_graphs",
-                className="container-display",
-            ),
-            html.Div(
-                [
+                    # html.Div(
+                    #         [dcc.Graph(id="graph_targets")],
+                    #         id='graph_targets_c',
+                    #         className="pretty_container column",
+                    #         hidden=True,
+                    # ),
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
                             id='Bar_LB_c',
@@ -210,6 +204,18 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
+                ],
+                id="main_graphs",
+                className="container-display",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                            id='table_info',
+                            className="pretty_container column",
+                            hidden=True,
+                    ),
+
                 ],
                 id="main_graphs",
                 className="container-display",
@@ -271,6 +277,7 @@ def update_dropdown(value):
      Output("graph_speed_c", 'hidden'),
      Output("graph_prog_c", "hidden"),
      Output("graph_targets_c", "hidden"),
+     Output("table_info", "hidden"),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
      Output("geo_plot", 'figure'),
@@ -303,7 +310,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
     return [hidden, hidden, hidden, hidden, hidden, hidden, hidden,
-            not hidden, not hidden, not hidden, not hidden,
+            not hidden, not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
 
@@ -312,6 +319,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
     [
      Output("graph_prog", 'figure'),
      Output("graph_targets", 'figure'),
+     Output("table_info", 'children'),
      Output("overzicht_button", 'n_clicks'),
      ],
     [
@@ -324,8 +332,9 @@ def middle_top_graphs(drop_selectie):
 
     fig_bish = generate_graphs(0, drop_selectie, None)
     fig_prog = generate_graphs(1, drop_selectie, None)
+    table_info = generate_graphs(8, drop_selectie, None)
 
-    return [fig_prog, fig_bish, -1]
+    return [fig_prog, fig_bish, table_info, -1]
 
 
 # update click bar charts
@@ -432,13 +441,13 @@ def generate_graphs(flag, drop_selectie, mask_all):
         labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
         barLB1HC = dict(x=labels,
                         y=bar['SchouwenLB1'] + bar['BISLB1'] + bar['Montage-lasAPLB1'] + bar['Montage-lasDPLB1'] + bar['HASLB1'],
-                        name='Opgeleverd',
+                        name='Opgeleverd HC',
                         type='bar',
                         marker=dict(color='rgb(0, 200, 0)'),
                         )
         barLB1HP = dict(x=labels,
                         y=[0] + [0] + [0] + [0] + bar['HASLB1HP'],
-                        name='Opgeleverd tot HP',
+                        name='Opgeleverd zonder HC',
                         type='bar',
                         marker=dict(color='rgb(200, 200, 0)')
                         )
@@ -467,13 +476,13 @@ def generate_graphs(flag, drop_selectie, mask_all):
         labels = ['Schouwen', 'BIS', 'Montage-lasAP', 'Montage-lasDP', 'HAS']
         barHB1HC = dict(x=labels,
                         y=bar['SchouwenHB1'] + bar['BISHB1'] + bar['Montage-lasAPHB1'] + bar['Montage-lasDPHB1'] + bar['HASHB1'],
-                        name='Opgeleverd',
+                        name='Opgeleverd HC',
                         type='bar',
                         marker=dict(color='rgb(0, 200, 0)')
                         )
         barHB1HP = dict(x=labels,
                         y=[0] + [0] + [0] + [0] + bar['HASHB1HP'],
-                        name='Opgeleverd tot HP',
+                        name='Opgeleverd zonder HC',
                         type='bar',
                         marker=dict(color='rgb(200, 200, 0)')
                         )
@@ -579,6 +588,24 @@ def generate_graphs(flag, drop_selectie, mask_all):
             }],
         )
         fig['table'] = df_table
+
+    if flag == 8:
+        df = pd.read_json(api.get('/Graphs?id=info_table')[0]['table'], orient='records').sort_values(by=['real vs KPN'], ascending=True)
+        df = df[['project', 'real vs KPN', 'real vs plan', 'HC / HP', 'Schouw & BIS gereed', 'HPend', 'woningen']]
+        fig = dash_table.DataTable(
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data=df.to_dict("rows"),
+            filter_action="native",
+            sort_action="native",
+            style_table={'overflowX': 'auto'},
+            style_header=table_styles['header'],
+            style_cell=table_styles['cell']['action'],
+            style_filter=table_styles['filter'],
+            css=[{
+                'selector': 'table',
+                'rule': 'width: 100%;'
+            }],
+        )
 
     return fig
 
