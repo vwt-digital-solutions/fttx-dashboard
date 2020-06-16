@@ -591,7 +591,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
     if flag == 8:
         df = pd.read_json(api.get('/Graphs?id=info_table')[0]['table'], orient='records').sort_values(by=['real vs KPN'], ascending=True)
-        df = df[['project', 'real vs KPN', 'real vs plan', 'HC / HP', 'Schouw & BIS gereed', 'HPend', 'woningen']]
+        df = df[api.get('/Graphs?id=info_table')[0]['col']]
         fig = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict("rows"),
