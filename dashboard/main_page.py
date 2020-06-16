@@ -91,8 +91,8 @@ def get_body():
                     html.Div(
                         [
                             html.H6(id="info_globaal_0"),
-                            html.P('Aantal woningen afgesproken met KPN in 2020:'),
-                            html.P(generate_graphs(80, None, None))
+                            html.P([html.Strong('Outlook (KPN)')]),
+                            html.P('Aantal woningen in 2020: ' + generate_graphs(80, None, None))
                         ],
                         id="info_globaal_container0",
                         className="pretty_container column",
@@ -101,8 +101,8 @@ def get_body():
                     html.Div(
                         [
                             html.H6(id="info_globaal_1"),
-                            html.P('Aantal woningen gerealiseerd in FC in 2020:'),
-                            html.P(generate_graphs(81, None, None))
+                            html.P([html.Strong('Realisatie (FC)')]),
+                            html.P('Aantal woningen in 2020: ' + generate_graphs(81, None, None))
                         ],
                         id="info_globaal_container1",
                         className="pretty_container column",
@@ -111,8 +111,8 @@ def get_body():
                     html.Div(
                         [
                             html.H6(id="info_globaal_2"),
-                            html.P('Aantal woningen gepland door VWT in 2020:'),
-                            html.P(generate_graphs(82, None, None))
+                            html.P([html.Strong('Planning HP (VWT)')]),
+                            html.P('Aantal woningen in 2020: ' + generate_graphs(82, None, None))
                         ],
                         id="info_globaal_container2",
                         className="pretty_container column",
@@ -121,8 +121,8 @@ def get_body():
                     html.Div(
                         [
                             html.H6(id="info_globaal_3"),
-                            html.P('Aantal woningen voorspeld door VQD in 2020:'),
-                            html.P(generate_graphs(83, None, None))
+                            html.P([html.Strong('Voorspelling (VQD)')]),
+                            html.P('Aantal woningen in 2020: ' + generate_graphs(83, None, None))
                         ],
                         id="info_globaal_container3",
                         className="pretty_container column",
