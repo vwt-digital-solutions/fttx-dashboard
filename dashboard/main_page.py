@@ -53,7 +53,7 @@ def get_body():
                             html.Div(
                                 [
                                     html.H3(
-                                        "Status projecten KPN",
+                                        "Status projecten KPN in 2020",
                                         style={"margin-bottom": "25px",
                                                "margin-left": "75px",
                                                },
@@ -92,7 +92,7 @@ def get_body():
                         [
                             html.H6(id="info_globaal_0"),
                             html.P([html.Strong('Outlook (KPN)')]),
-                            html.P('Aantal woningen in 2020: ' + generate_graphs(80, None, None))
+                            html.P('HPend afgesproken: ' + generate_graphs(80, None, None))
                         ],
                         id="info_globaal_container0",
                         className="pretty_container column",
@@ -102,7 +102,7 @@ def get_body():
                         [
                             html.H6(id="info_globaal_1"),
                             html.P([html.Strong('Realisatie (FC)')]),
-                            html.P('Aantal woningen in 2020: ' + generate_graphs(81, None, None))
+                            html.P('HPend gerealiseerd: ' + generate_graphs(81, None, None))
                         ],
                         id="info_globaal_container1",
                         className="pretty_container column",
@@ -111,8 +111,8 @@ def get_body():
                     html.Div(
                         [
                             html.H6(id="info_globaal_2"),
-                            html.P([html.Strong('Planning HP (VWT)')]),
-                            html.P('Aantal woningen in 2020: ' + generate_graphs(82, None, None))
+                            html.P([html.Strong('Planning (VWT)')]),
+                            html.P('HPend gepland vanaf nu: ' + generate_graphs(82, None, None))
                         ],
                         id="info_globaal_container2",
                         className="pretty_container column",
@@ -122,9 +122,19 @@ def get_body():
                         [
                             html.H6(id="info_globaal_3"),
                             html.P([html.Strong('Voorspelling (VQD)')]),
-                            html.P('Aantal woningen in 2020: ' + generate_graphs(83, None, None))
+                            html.P('HPend voorspeld vanaf nu: ' + generate_graphs(83, None, None)['prog'])
                         ],
                         id="info_globaal_container3",
+                        className=generate_graphs(83, None, None)['prog_c'] + ' column',
+                        hidden=False,
+                    ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_4"),
+                            html.P([html.Strong('Actuele HC / HPend')]),
+                            html.P(generate_graphs(84, None, None))
+                        ],
+                        id="info_globaal_container4",
                         className="pretty_container column",
                         hidden=False,
                     ),
@@ -274,6 +284,7 @@ def update_dropdown(value):
      Output("info_globaal_container1", 'hidden'),
      Output("info_globaal_container2", 'hidden'),
      Output("info_globaal_container3", 'hidden'),
+     Output("info_globaal_container4", 'hidden'),
      Output("graph_speed_c", 'hidden'),
      Output("graph_prog_c", "hidden"),
      Output("graph_targets_c", "hidden"),
@@ -309,7 +320,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
-    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden,
+    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
             not hidden, not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
@@ -404,7 +415,10 @@ def generate_graphs(flag, drop_selectie, mask_all):
         fig = api.get('/Graphs?id=jaaroverzicht')[0]['plan']
 
     if flag == 83:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['prog']
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]
+
+    if flag == 84:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['HC_HPend']
 
     # BIS/HAS
     if flag == 0:
