@@ -174,11 +174,19 @@ def get_body():
                             className="pretty_container column",
                             hidden=False,
                     ),
-                    html.Div(
-                            children=generate_graphs(9, None, None),
-                            className="pretty_container column",
-                            hidden=False,
-                    ),
+                    html.Div([
+                                html.Div(id='ww_c',
+                                         children=dcc.Input(id='ww', value=' ', type='text'),
+                                         className="pretty_container column",
+                                         hidden=False,
+                                         ),
+                                html.Div(
+                                        children=generate_graphs(9, None, None),
+                                        id='FTU_table_c',
+                                        className="pretty_container column",
+                                        hidden=False,
+                                ),
+                    ]),
                 ],
                 className="container-display",
             ),
@@ -296,6 +304,8 @@ def update_dropdown(value):
      Output("info_globaal_container3", 'hidden'),
      Output("info_globaal_container4", 'hidden'),
      Output("graph_speed_c", 'hidden'),
+     Output("ww_c", 'hidden'),
+     Output('FTU_table_c', 'hidden'),
      Output("graph_prog_c", "hidden"),
      Output("graph_targets_c", "hidden"),
      Output("table_info", "hidden"),
@@ -330,7 +340,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
-    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
+    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
             not hidden, not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
@@ -412,6 +422,19 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     Output("uitleg_collapse", "hidden"),
 
 
+# update FTU table for editing
+@app.callback(
+    [
+     Output('table_FTU', 'editable'),
+     ],
+    [
+     Input('ww', 'value'),
+     ],
+)
+def FTU_table_editable(ww):
+    return [ww == 'Wout']
+
+
 # update firestore given edit FTU table
 @app.callback(
     [
@@ -446,6 +469,9 @@ def FTU_update(data):
     x_d = pd.to_datetime(doc['x_d'])
     tot_l = doc['tot_l']
     HP = doc['HP']
+    HC_HPend_l = doc['HC_HPend_l']
+    Schouw_BIS = doc['Schouw_BIS']
+    HPend_l = doc['HPend_l']
     d_real_l = doc2['d_real_l']
     d_real_li = doc2['d_real_li']
     y_prog_l = doc['y_prog_l']
@@ -473,6 +499,8 @@ def FTU_update(data):
     graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='W-MON')  # 2019-12-30 -- 2020-12-21
     graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='M')  # 2019-12-30 -- 2020-12-21
     performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
+    prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
+    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
 
     out0 = 'HPend afgesproken: ' + generate_graphs(80, None, None)
     out1 = 'HPend gerealiseerd: ' + generate_graphs(81, None, None)
@@ -724,7 +752,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
                 'selector': 'table',
                 'rule': 'width: 100%;'
             }],
-            editable=True,
+            editable=False,
         )
 
     return fig
@@ -960,7 +988,10 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
         else:
             x += [0]
         y_voorraad = tot_l[key] / t_diff[key] * 7 * 9  # op basis van 9 weken voorraad
-        y += [round(y_voorraad_act[key] / y_voorraad * 100)]
+        if y_voorraad > 0:
+            y += [round(y_voorraad_act[key] / y_voorraad * 100)]
+        else:
+            y += [0]
         names += [key]
 
     x_max = 30  # + max([abs(min(x)), abs(max(x))])
@@ -1043,3 +1074,66 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
            }
     record = dict(id='project_performance', figure=fig)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
+
+
+def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+    for key in y_prog_l:
+        fig = {'data': [{
+                         'x': list(x_d.strftime('%Y-%m-%d')),
+                         'y': list(y_prog_l[key]),
+                         'mode': 'lines',
+                         'line': dict(color='rgb(200, 200, 0)'),
+                         'name': 'Voorspelling (VQD)',
+                         }],
+               'layout': {
+                          'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
+                          'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
+                          'title': {'text': 'Voortgang project vs outlook KPN:'},
+                          'showlegend': True,
+                          'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
+                          'height': 350
+                           },
+               }
+        if key in d_real_l:
+            fig['data'] = fig['data'] + [{
+                                          'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
+                                          'y': d_real_l[key]['Aantal'].to_list(),
+                                          'mode': 'markers',
+                                          'line': dict(color='rgb(0, 200, 0)'),
+                                          'name': 'Realisatie (FC)',
+                                          }]
+
+        if key in y_target_l:
+            fig['data'] = fig['data'] + [{
+                                          'x': list(x_d.strftime('%Y-%m-%d')),
+                                          'y': list(y_target_l[key]),
+                                          'mode': 'lines',
+                                          'line': dict(color='rgb(170, 170, 170)'),
+                                          'name': 'Outlook (KPN)',
+                                          }]
+
+        record = dict(id='project_' + key, figure=fig)
+        firestore.Client().collection('Graphs').document(record['id']).set(record)
+
+
+def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
+    n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
+    col = ['project', 'real vs KPN', 'real vs plan', 'HC / HP', 'Schouw & BIS gereed', 'HPend', 'woningen']
+    records = []
+    for key in d_real_l:
+        if d_real_l[key].max()[0] < 100:
+            record = dict(project=key)
+            record['real vs KPN'] = round((d_real_l[key].max() - y_target_l[key][int((pd.Timestamp.now() -
+                                          x_d[0]).days)]) / 100 * tot_l[key])[0]
+            record['HC / HP'] = round(HC_HPend_l[key])
+            if key in HP.keys():
+                record['real vs plan'] = round(d_real_l[key].max() / 100 * tot_l[key] - sum(HP[key][:n_now]))[0]
+            else:
+                record['real vs plan'] = 0
+            record['Schouw & BIS gereed'] = round(Schouw_BIS[key])
+            record['HPend'] = round(HPend_l[key])
+            # record['HAS gepland'] = round(len(df_l[key][~df_l[key].opleverdatum.isna()]))
+            record['woningen'] = round(tot_l[key])
+            records += [record]
+    df_table = pd.DataFrame(records).to_json(orient='records')
+    firestore.Client().collection('Graphs').document('info_table').set(dict(id='info_table', table=df_table, col=col))
