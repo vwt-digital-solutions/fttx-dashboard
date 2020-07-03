@@ -57,6 +57,7 @@ info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 t_start = time.time()
 for i, pkey in enumerate(config.subset_KPN_2020):
+    # df_l = get_data_projects([pkey], config.col)
     bar_m = masks_phases(pkey, df_l)
     print(i)
 set_bar_names(bar_m)

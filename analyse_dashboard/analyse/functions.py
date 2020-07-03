@@ -823,8 +823,6 @@ def get_data_projects(pnames, col):
             records += [doc.to_dict()]
         if records != []:
             df_l[key_p] = pd.DataFrame(records)[col]
-        # else:
-        #     df_l[key_p] = pd.DataFrame(columns=col)
         print(key_p)
         print('Time: ' + str((time.time() - t)/60) + ' minutes')
 
