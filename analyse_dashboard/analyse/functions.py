@@ -51,7 +51,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data):
     # hash sleutel code
     for key in df_l:
         df_l[key] = df_l[key][~df_l[key].sleutel.isna()]
-        df_l[key].sleutel = [hashlib.md5(el.encode()).hexdigest() for el in df_l[key].sleutel.to_list()]
+        df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel.to_list()]
         df_l[key]['id'] = df_l[key]['project'] + '_' + df_l[key]['sleutel']
         # for i, idx in enumerate(df_l[key][df_l[key]['sleutel'].duplicated()].index):
         #     df_l[key]['sleutel'][idx] = df_l[key]['sleutel'][idx] + '_' + str(i)
