@@ -62,7 +62,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data):
 
 def get_data_FC(subset, col, gpath_i, path_data):
     if gpath_i is None:
-        df_l_r = get_data_projects(col)
+        df_l_r = get_data_projects(subset, col)
     else:
         df_l_r = get_data_from_ingestbucket(gpath_i, col, path_data)
 
@@ -675,112 +675,121 @@ def map_redenen():
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-def masks_phases(df_l):
-    for jj, pkey in enumerate(df_l):
-        df = df_l[pkey]
-        batch = firestore.Client().batch()
-        bar_m = {}
-        bar_m['SchouwenLB0-mask'] = (df['toestemming'].isna()) & \
-                                    (df['soort_bouw'] == 'Laag')
-        bar_m['SchouwenLB1-mask'] = (~df['toestemming'].isna()) & \
-                                    (df['soort_bouw'] == 'Laag')
-        bar_m['SchouwenHB0-mask'] = (df['toestemming'].isna()) & \
-                                    (df['soort_bouw'] != 'Laag')
-        bar_m['SchouwenHB1-mask'] = (~df['toestemming'].isna()) &\
-                                    (df['soort_bouw'] != 'Laag')
-        bar_m['BISLB0-mask'] = (df['opleverstatus'] == '0') & \
-                               (df['soort_bouw'] == 'Laag')
-        bar_m['BISLB1-mask'] = (df['opleverstatus'] != '0') & \
-                               (df['soort_bouw'] == 'Laag')
-        bar_m['BISHB0-mask'] = (df['opleverstatus'] == '0') & \
-                               (df['soort_bouw'] != 'Laag')
-        bar_m['BISHB1-mask'] = (df['opleverstatus'] != '0') & \
-                               (df['soort_bouw'] != 'Laag')
-        bar_m['Montage-lasDPLB0-mask'] = (df['laswerkdpgereed'] == '0') & \
-                                         (df['soort_bouw'] == 'Laag')
-        bar_m['Montage-lasDPLB1-mask'] = (df['laswerkdpgereed'] == '1') & \
-                                         (df['soort_bouw'] == 'Laag')
-        bar_m['Montage-lasDPHB0-mask'] = (df['laswerkdpgereed'] == '0') & \
-                                         (df['soort_bouw'] != 'Laag')
-        bar_m['Montage-lasDPHB1-mask'] = (df['laswerkdpgereed'] == '1') & \
-                                         (df['soort_bouw'] != 'Laag')
-        bar_m['Montage-lasAPLB0-mask'] = (df['laswerkapgereed'] == '0') & \
-                                         (df['soort_bouw'] == 'Laag')
-        bar_m['Montage-lasAPLB1-mask'] = (df['laswerkapgereed'] == '1') & \
-                                         (df['soort_bouw'] == 'Laag')
-        bar_m['Montage-lasAPHB0-mask'] = (df['laswerkapgereed'] == '0') & \
-                                         (df['soort_bouw'] != 'Laag')
-        bar_m['Montage-lasAPHB1-mask'] = (df['laswerkapgereed'] == '1') & \
-                                         (df['soort_bouw'] != 'Laag')
-        bar_m['HASLB0-mask'] = (df['opleverdatum'].isna()) & \
-                               (df['soort_bouw'] == 'Laag')
-        bar_m['HASLB1-mask'] = (df['opleverstatus'] == '2') & \
-                               (df['soort_bouw'] == 'Laag')
-        bar_m['HASLB1HP-mask'] = (df['opleverstatus'] != '2') & \
-                                 (~df['opleverdatum'].isna()) & \
-                                 (df['soort_bouw'] == 'Laag')
-        bar_m['HASHB0-mask'] = (df['opleverdatum'].isna()) & \
-                               (df['soort_bouw'] != 'Laag')
-        bar_m['HASHB1-mask'] = (df['opleverstatus'] == '2') & \
-                               (df['soort_bouw'] != 'Laag')
-        bar_m['HASHB1HP-mask'] = (df['opleverstatus'] != '2') & \
-                                 (~df['opleverdatum'].isna()) & \
-                                 (df['soort_bouw'] != 'Laag')
+def masks_phases(pkey, df_l):
+    df = df_l[pkey]
+    batch = firestore.Client().batch()
+    bar_m = {}
+    bar_m['SchouwenLB0-mask'] = (df['toestemming'].isna()) & \
+                                (df['soort_bouw'] == 'Laag')
+    bar_m['SchouwenLB1-mask'] = (~df['toestemming'].isna()) & \
+                                (df['soort_bouw'] == 'Laag')
+    bar_m['SchouwenHB0-mask'] = (df['toestemming'].isna()) & \
+                                (df['soort_bouw'] != 'Laag')
+    bar_m['SchouwenHB1-mask'] = (~df['toestemming'].isna()) &\
+                                (df['soort_bouw'] != 'Laag')
+    bar_m['BISLB0-mask'] = (df['opleverstatus'] == '0') & \
+                           (df['soort_bouw'] == 'Laag')
+    bar_m['BISLB1-mask'] = (df['opleverstatus'] != '0') & \
+                           (df['soort_bouw'] == 'Laag')
+    bar_m['BISHB0-mask'] = (df['opleverstatus'] == '0') & \
+                           (df['soort_bouw'] != 'Laag')
+    bar_m['BISHB1-mask'] = (df['opleverstatus'] != '0') & \
+                           (df['soort_bouw'] != 'Laag')
+    bar_m['Montage-lasDPLB0-mask'] = (df['laswerkdpgereed'] == '0') & \
+                                     (df['soort_bouw'] == 'Laag')
+    bar_m['Montage-lasDPLB1-mask'] = (df['laswerkdpgereed'] == '1') & \
+                                     (df['soort_bouw'] == 'Laag')
+    bar_m['Montage-lasDPHB0-mask'] = (df['laswerkdpgereed'] == '0') & \
+                                     (df['soort_bouw'] != 'Laag')
+    bar_m['Montage-lasDPHB1-mask'] = (df['laswerkdpgereed'] == '1') & \
+                                     (df['soort_bouw'] != 'Laag')
+    bar_m['Montage-lasAPLB0-mask'] = (df['laswerkapgereed'] == '0') & \
+                                     (df['soort_bouw'] == 'Laag')
+    bar_m['Montage-lasAPLB1-mask'] = (df['laswerkapgereed'] == '1') & \
+                                     (df['soort_bouw'] == 'Laag')
+    bar_m['Montage-lasAPHB0-mask'] = (df['laswerkapgereed'] == '0') & \
+                                     (df['soort_bouw'] != 'Laag')
+    bar_m['Montage-lasAPHB1-mask'] = (df['laswerkapgereed'] == '1') & \
+                                     (df['soort_bouw'] != 'Laag')
+    bar_m['HASLB0-mask'] = (df['opleverdatum'].isna()) & \
+                           (df['soort_bouw'] == 'Laag')
+    bar_m['HASLB1-mask'] = (df['opleverstatus'] == '2') & \
+                           (df['soort_bouw'] == 'Laag')
+    bar_m['HASLB1HP-mask'] = (df['opleverstatus'] != '2') & \
+                             (~df['opleverdatum'].isna()) & \
+                             (df['soort_bouw'] == 'Laag')
+    bar_m['HASHB0-mask'] = (df['opleverdatum'].isna()) & \
+                           (df['soort_bouw'] != 'Laag')
+    bar_m['HASHB1-mask'] = (df['opleverstatus'] == '2') & \
+                           (df['soort_bouw'] != 'Laag')
+    bar_m['HASHB1HP-mask'] = (df['opleverstatus'] != '2') & \
+                             (~df['opleverdatum'].isna()) & \
+                             (df['soort_bouw'] != 'Laag')
 
+    bar = {}
+    bar_names = []
+    mask = True
+    # begin state:
+    for key2 in bar_m:
+        len_b = (bar_m[key2] & mask).value_counts()
+        if True in len_b:
+            bar[key2[0:-5]] = str(len_b[True])
+        else:
+            bar[key2[0:-5]] = str(0)
+    record = dict(id=pkey + '_bar_filters_0', bar=bar)
+    bar_names += '0'
+    batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
+    # after one click:
+    for key2 in bar_m:
+        mask = bar_m[key2]
         bar = {}
-        bar_names = []
-        mask = True
-        # begin state:
-        for key2 in bar_m:
-            len_b = (bar_m[key2] & mask).value_counts()
+        for key3 in bar_m:
+            len_b = (bar_m[key3] & mask).value_counts()
             if True in len_b:
-                bar[key2[0:-5]] = str(len_b[True])
+                bar[key3[0:-5]] = str(len_b[True])
             else:
-                bar[key2[0:-5]] = str(0)
-        record = dict(id=pkey + '_bar_filters_0', bar=bar)
-        bar_names += '0'
+                bar[key3[0:-5]] = str(0)
+        record = dict(id=pkey + '_bar_filters_0' + key2[0:-5], bar=bar, mask=json.dumps(df[mask].sleutel.to_list()))
+        bar_names += ['0' + key2[0:-5]]
         batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
-        # after one click:
-        for key2 in bar_m:
-            mask = bar_m[key2]
+    batch.commit()
+    batch = firestore.Client().batch()
+    print('23')
+    # after second click:
+    ii = 0
+    for key2 in bar_m:
+        mask = bar_m[key2]
+        for key3 in bar_m:
+            mask2 = bar_m[key3]
             bar = {}
-            for key3 in bar_m:
-                len_b = (bar_m[key3] & mask).value_counts()
+            for key4 in bar_m:
+                len_b = (bar_m[key4] & mask & mask2).value_counts()
                 if True in len_b:
-                    bar[key3[0:-5]] = str(len_b[True])
+                    bar[key4[0:-5]] = str(len_b[True])
                 else:
-                    bar[key3[0:-5]] = str(0)
-            record = dict(id=pkey + '_bar_filters_0' + key2[0:-5], bar=bar, mask=json.dumps(df[mask].sleutel.to_list()))
-            bar_names += ['0' + key2[0:-5]]
+                    bar[key4[0:-5]] = str(0)
+            record = dict(id=pkey + '_bar_filters_0' + key2[0:-5] + key3[0:-5],
+                          bar=bar,
+                          mask=json.dumps(df[mask & mask2].sleutel.to_list()))
+            bar_names += ['0' + key2[0:-5] + key3[0:-5]]
             batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
-        batch.commit()
-        batch = firestore.Client().batch()
-        print('23')
-        # after second click:
-        ii = 0
-        for key2 in bar_m:
-            mask = bar_m[key2]
-            for key3 in bar_m:
-                mask2 = bar_m[key3]
-                bar = {}
-                for key4 in bar_m:
-                    len_b = (bar_m[key4] & mask & mask2).value_counts()
-                    if True in len_b:
-                        bar[key4[0:-5]] = str(len_b[True])
-                    else:
-                        bar[key4[0:-5]] = str(0)
-                record = dict(id=pkey + '_bar_filters_0' + key2[0:-5] + key3[0:-5],
-                              bar=bar,
-                              mask=json.dumps(df[mask & mask2].sleutel.to_list()))
-                bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-                batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
-                ii += 1
-                if (ii % 150 == 0):
-                    print(ii)
-                    batch.commit()
-                    batch = firestore.Client().batch()
-        batch.commit()
-        print(str(jj + 1) + '/' + str(len(df_l)))
+            ii += 1
+            if (ii % 150 == 0):
+                print(ii)
+                batch.commit()
+                batch = firestore.Client().batch()
+    batch.commit()
+
+    return bar_m
+
+
+def set_bar_names(bar_m):
+    bar_names = ['0']
+    for key2 in bar_m:
+        bar_names += ['0' + key2[0:-5]]
+    for key2 in bar_m:
+        for key3 in bar_m:
+            bar_names += ['0' + key2[0:-5] + key3[0:-5]]
     record = dict(id='bar_names', bar_names=bar_names)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
@@ -804,11 +813,7 @@ def consume(df_l):
         print('Time: ' + str((time.time() - t)/60) + ' minutes')
 
 
-def get_data_projects(col):
-    doc = next(firestore.Client().collection('Graphs').where('id', '==', 'pnames').get()).to_dict()['filters']
-    pnames = []
-    for item in doc:
-        pnames += [item['label']]
+def get_data_projects(pnames, col):
     t = time.time()
     df_l = {}
     for key_p in pnames:
@@ -818,8 +823,8 @@ def get_data_projects(col):
             records += [doc.to_dict()]
         if records != []:
             df_l[key_p] = pd.DataFrame(records)[col]
-        else:
-            df_l[key_p] = pd.DataFrame(columns=col)
+        # else:
+        #     df_l[key_p] = pd.DataFrame(columns=col)
         print(key_p)
         print('Time: ' + str((time.time() - t)/60) + ' minutes')
 

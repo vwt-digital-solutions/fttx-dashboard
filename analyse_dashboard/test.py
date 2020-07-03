@@ -4,7 +4,7 @@ import time
 import analyse.config as config
 from analyse.functions import get_data_FC, get_data_planning, get_data_targets
 from analyse.functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
-from analyse.functions import set_filters, prognose_graph, performance_matrix, info_table
+from analyse.functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names
 from analyse.functions import graph_overview, masks_phases, map_redenen, consume, analyse_to_firestore
 
 # %% Set environment variables and permissions and data path
@@ -20,9 +20,10 @@ for fn in keys:
 
 # %% Get data from state collection Projects
 t_start = time.time()
-df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
-HP = get_data_planning(config.path_data, config.subset_KPN_2020)
+# df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
+df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
+HP = get_data_planning(config.path_data, config.subset_KPN_2020)
 # date_FTU0, date_FTU1 = get_data_targets(config.path_data, gpath_d)  # if path_data is None, then FTU from firestore
 date_FTU0, date_FTU1 = get_data_targets(None)  # if path_data is None, then FTU from firestore
 print('get data: ' + str((time.time() - t_start) / 60) + ' min')
@@ -48,13 +49,17 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 
 set_filters(df_l)
 map_redenen()
-
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='W-MON')  # 2019-12-30 -- 2020-12-21
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='M')  # 2019-12-30 -- 2020-12-21
 performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
 prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
 info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
-
-masks_phases(df_l)
+print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
+t_start = time.time()
+for i, pkey in enumerate(config.subset_KPN_2020):
+    bar_m = masks_phases(pkey, df_l)
+    print(i)
+set_bar_names(bar_m)
+print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 consume(df_l)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
