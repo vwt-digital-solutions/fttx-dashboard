@@ -20,9 +20,9 @@ for fn in keys:
 
 # %% Get data from state collection Projects
 t_start = time.time()
-# df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
+df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
-df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
+# df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
 HP = get_data_planning(config.path_data, config.subset_KPN_2020)
 # date_FTU0, date_FTU1 = get_data_targets(config.path_data, gpath_d)  # if path_data is None, then FTU from firestore
 date_FTU0, date_FTU1 = get_data_targets(None)  # if path_data is None, then FTU from firestore

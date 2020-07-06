@@ -419,8 +419,6 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     return [barLB, barHB, mask_all, drop_selectie, 0]
 
-    Output("uitleg_collapse", "hidden"),
-
 
 # update FTU table for editing
 @app.callback(
@@ -636,7 +634,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
             mask = json.loads(api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask'])
             dataframe = []
             for m in mask:
-                dataframe += api.get('/Projects?id=' + drop_selectie + '_' + m)
+                dataframe += api.get('/Projects?sleutel=' + m)
             df = pd.DataFrame(dataframe)
 
         if not df[~df['x_locatie_rol'].isna()].empty:
@@ -716,7 +714,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
         fig['table'] = df_table
 
     if flag == 8:
-        df = pd.read_json(api.get('/Graphs?id=info_table')[0]['table'], orient='records').sort_values(by=['real vs KPN'], ascending=True)
+        df = pd.read_json(api.get('/Graphs?id=info_table')[0]['table'], orient='records')
         df = df[api.get('/Graphs?id=info_table')[0]['col']]
         fig = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df.columns],
@@ -1117,23 +1115,30 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
 
 
 def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
-    n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-    col = ['project', 'real vs KPN', 'real vs plan', 'HC / HP', 'Schouw & BIS gereed', 'HPend', 'woningen']
+    n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
+    n_d = int((pd.Timestamp.now() - x_d[0]).days)
+    n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
+    col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
+           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel']
     records = []
     for key in d_real_l:
         if d_real_l[key].max()[0] < 100:
             record = dict(project=key)
-            record['real vs KPN'] = round((d_real_l[key].max() - y_target_l[key][int((pd.Timestamp.now() -
-                                          x_d[0]).days)]) / 100 * tot_l[key])[0]
-            record['HC / HP'] = round(HC_HPend_l[key])
-            if key in HP.keys():
-                record['real vs plan'] = round(d_real_l[key].max() / 100 * tot_l[key] - sum(HP[key][:n_now]))[0]
+            record[col[1]] = round(y_target_l[key][n_dw - 7] / 100 * tot_l[key])
+            real_latest = d_real_l[key][d_real_l[key].index <= n_dw - 7]
+            if not real_latest.empty:
+                record[col[2]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
             else:
-                record['real vs plan'] = 0
-            record['Schouw & BIS gereed'] = round(Schouw_BIS[key])
-            record['HPend'] = round(HPend_l[key])
-            # record['HAS gepland'] = round(len(df_l[key][~df_l[key].opleverdatum.isna()]))
-            record['woningen'] = round(tot_l[key])
+                record[col[2]] = 0
+            record[col[3]] = record[col[2]] - record[col[1]]
+            record[col[4]] = round(y_target_l[key][n_d] / 100 * tot_l[key])
+            real_latest = d_real_l[key][d_real_l[key].index <= n_d]
+            if not real_latest.empty:
+                record[col[5]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
+            else:
+                record[col[5]] = 0
+            record[col[6]] = record[col[5]] - record[col[4]]
+            record[col[7]] = round(HC_HPend_l[key])
             records += [record]
     df_table = pd.DataFrame(records).to_json(orient='records')
     firestore.Client().collection('Graphs').document('info_table').set(dict(id='info_table', table=df_table, col=col))

@@ -8,75 +8,60 @@ import datetime
 import hashlib
 
 
-def get_data_from_ingestbucket(gpath_i, col, path_data):
+def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
     fn_l = os.listdir(path_data + '../jsonFC/')
-    # for fn in fn_l:
-    #     os.remove(path_data + '../jsonFC/' + fn)
     client = storage.Client()
     bucket = client.get_bucket('vwt-d-gew1-it-fiberconnect-int-preprocess-stg')
     blobs = bucket.list_blobs()
     for blob in blobs:
         if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-            # if '20200616' in blob.name:
-            # if '20200622' in blob.name:
             blob.download_to_filename(path_data + '../jsonFC/' + blob.name.split('/')[-1])
     fn_l = os.listdir(path_data + '../jsonFC/')
 
     df_l = {}
     for fn in fn_l:
         df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
-        key = df['title'].iloc[0][0:-13]
-        if key not in df_l.keys():
-            df_l[key] = df.replace('', np.nan)
-        else:
-            df_l[key] = df_l[key].append(df.replace('', np.nan))
+        df = df.replace('', np.nan).fillna(np.nan)
+        df['title'] = key = df['title'].iloc[0][0:-13]
+        # df = df[~df.sleutel.isna()]  # generate this as error output?
+        df.rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
+                           'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
+                           'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
+                           'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
+                           'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
+                           'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
+                           'HASdatum': 'hasdatum', 'title': 'project'}, inplace=True)
+        df = df[col]
+        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
+            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
+        df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
+            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
+        if (key in subset) and (key not in df_l.keys()):
+            df_l[key] = df
+        if (key in subset) and (key in df_l.keys()):
+            df_l[key] = df_l[key].append(df)
+            df_l[key] = df_l[key][~df_l[key].duplicated()]  # generate this as error output?
+
         if key not in ['Brielle', 'Helvoirt POP Volbouw']:
             os.remove(path_data + '../jsonFC/' + fn)
 
-    for key in df_l:
-        df_l[key].rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
-                                  'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
-                                  'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
-                                  'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
-                                  'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
-                                  'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                                  'HASdatum': 'hasdatum'}, inplace=True)
-        df_l[key]['project'] = df_l[key]['title'].iloc[0][0:-13]
-        df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
-            [el[6:] + '-' + el[3:5] + '-' + el[0:2] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
-        df_l[key].loc[~df_l[key]['hasdatum'].isna(), ('hasdatum')] = \
-            [el[6:] + '-' + el[3:5] + '-' + el[0:2] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
-
     # hash sleutel code
     for key in df_l:
-        df_l[key] = df_l[key][~df_l[key].sleutel.isna()]
-        df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel.to_list()]
-        df_l[key]['id'] = df_l[key]['project'] + '_' + df_l[key]['sleutel']
-        # for i, idx in enumerate(df_l[key][df_l[key]['sleutel'].duplicated()].index):
-        #     df_l[key]['sleutel'][idx] = df_l[key]['sleutel'][idx] + '_' + str(i)
-        df_l[key] = df_l[key][col]
+        df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
+
+    for key in subset:
+        if key not in df_l:
+            df_l[key] = pd.DataFrame(columns=col)
 
     return df_l
 
 
 def get_data_FC(subset, col, gpath_i, path_data):
     if gpath_i is None:
-        df_l_r = get_data_projects(subset, col)
+        df_l = get_data_projects(subset, col)
     else:
-        df_l_r = get_data_from_ingestbucket(gpath_i, col, path_data)
-
-    df_l = {}
-    for key in subset:
-        if key in df_l_r:
-            df_l[key] = df_l_r[key][~df_l_r[key].duplicated()].fillna(np.nan)  # do we take the proper key here???
-            # df_l[key] = df_l_r[key][~df_l_r[key].sleutel.duplicated()].fillna(np.nan)  # do we take the proper key here???
-            df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
-                [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
-            df_l[key].loc[~df_l[key]['hasdatum'].isna(), ('hasdatum')] = \
-                [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
-        else:
-            df_l[key] = pd.DataFrame(columns=col)
+        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset)
 
     t_s = {}
     tot_l = {}
@@ -84,9 +69,7 @@ def get_data_FC(subset, col, gpath_i, path_data):
         t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
         if pd.isnull(t_s[key]):
             t_s[key] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
-        tot_l[key] = len(df_l[key])  # straks aantal projecten baseren op targets KPN?
-        # if key in ['Den Haag', 'Den Haag Regentessekwatier', 'Den Haag Morgenstond west']:
-        #     tot_l[key] = 0.3 * tot_l[key]
+        tot_l[key] = len(df_l[key])
     x_d = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
 
     return df_l, t_s, x_d, tot_l
@@ -796,34 +779,40 @@ def set_bar_names(bar_m):
 
 def consume(df_l):
     t = time.time()
-    for key_p in df_l:  # niet nodig in gcp
-        df = df_l[key_p]  # niet nodig in gcp
+    for key in df_l:  # niet nodig in gcp
+        df = df_l[key]  # niet nodig in gcp
         records = df.to_dict('records')  # niet nodig in gcp
         batch = firestore.Client().batch()
         for i, row in enumerate(records):
             record = row
-            # record['id'] = row['title'][0:-13] + '_' + row['sleutel']
-            # record['index'] = i  # niet nodig in gcp
-            # record['project'] = row['title'][0:-13]
-            batch.set(firestore.Client().collection('Projects').document(record['id']), record)
+            batch.set(firestore.Client().collection('Projects').document(record['sleutel']), record)
             if (i + 1) % 500 == 0:
                 batch.commit()
         batch.commit()
-        print(key_p + ' ' + str(i+1))
+        print(key + ' ' + str(i+1))
         print('Time: ' + str((time.time() - t)/60) + ' minutes')
 
 
-def get_data_projects(pnames, col):
+def get_data_projects(subset, col):
     t = time.time()
     df_l = {}
-    for key_p in pnames:
-        docs = firestore.Client().collection('Projects').where('project', '==', key_p).stream()
+    for key in subset:
+        docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
         records = []
         for doc in docs:
             records += [doc.to_dict()]
         if records != []:
-            df_l[key_p] = pd.DataFrame(records)[col]
-        print(key_p)
+            df_l[key] = pd.DataFrame(records)[col]
+        else:
+            df_l[key] = pd.DataFrame(columns=col)
+
+        # to correct for datetime value at HUB
+        df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
+            [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
+        df_l[key].loc[~df_l[key]['hasdatum'].isna(), ('hasdatum')] = \
+            [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
+
+        print(key)
         print('Time: ' + str((time.time() - t)/60) + ' minutes')
 
     return df_l
@@ -1018,23 +1007,30 @@ def get_intersect(a1, a2, b1, b2):
 
 
 def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
-    n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-    col = ['project', 'real vs KPN', 'real vs plan', 'HC / HP', 'Schouw & BIS gereed', 'HPend', 'woningen']
+    n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
+    n_d = int((pd.Timestamp.now() - x_d[0]).days)
+    n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
+    col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
+           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel']
     records = []
     for key in d_real_l:
         if d_real_l[key].max()[0] < 100:
             record = dict(project=key)
-            record['real vs KPN'] = round((d_real_l[key].max() - y_target_l[key][int((pd.Timestamp.now() -
-                                          x_d[0]).days)]) / 100 * tot_l[key])[0]
-            record['HC / HP'] = round(HC_HPend_l[key])
-            if key in HP.keys():
-                record['real vs plan'] = round(d_real_l[key].max() / 100 * tot_l[key] - sum(HP[key][:n_now]))[0]
+            record[col[1]] = round(y_target_l[key][n_dw - 7] / 100 * tot_l[key])
+            real_latest = d_real_l[key][d_real_l[key].index <= n_dw - 7]
+            if not real_latest.empty:
+                record[col[2]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
             else:
-                record['real vs plan'] = 0
-            record['Schouw & BIS gereed'] = round(Schouw_BIS[key])
-            record['HPend'] = round(HPend_l[key])
-            # record['HAS gepland'] = round(len(df_l[key][~df_l[key].opleverdatum.isna()]))
-            record['woningen'] = round(tot_l[key])
+                record[col[2]] = 0
+            record[col[3]] = record[col[2]] - record[col[1]]
+            record[col[4]] = round(y_target_l[key][n_d] / 100 * tot_l[key])
+            real_latest = d_real_l[key][d_real_l[key].index <= n_d]
+            if not real_latest.empty:
+                record[col[5]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
+            else:
+                record[col[5]] = 0
+            record[col[6]] = record[col[5]] - record[col[4]]
+            record[col[7]] = round(HC_HPend_l[key])
             records += [record]
     df_table = pd.DataFrame(records).to_json(orient='records')
     firestore.Client().collection('Graphs').document('info_table').set(dict(id='info_table', table=df_table, col=col))
@@ -1106,3 +1102,16 @@ def calculate_y_voorraad_act(df_l):
                                             (df_l[key].opleverdatum.isna())])
 
     return y_voorraad_act
+
+
+def empty_collection(subset):
+    t_start = time.time()
+    for key in subset:
+        i = 0
+        for ii in range(0, 20):
+            docs = firestore.Client().collection('Projects').where('project', '==', key).limit(1000).stream()
+            for doc in docs:
+                doc.reference.delete()
+                i += 1
+            print(i)
+        print(key + ' ' + str((time.time() - t_start) / 60) + ' min ' + str(i))
