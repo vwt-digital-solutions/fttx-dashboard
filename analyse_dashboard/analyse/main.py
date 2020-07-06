@@ -45,7 +45,8 @@ def analyse():
     except Exception as e:
         logging.error(f'Extracting of data failed: {e}')
         time.sleep(10)
-        return 'Error', 500
+        raise e
+        # return 'Error', 500
 
     finally:
         logging.info('run done')
