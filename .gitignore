@@ -3,3 +3,9 @@ __pycache__
 .vscode
 config.py
 env_vars.bat
+export.sh
+*__pycache__*
+Graphs
+jsonFC
+jsonkey
+Firestore_data
