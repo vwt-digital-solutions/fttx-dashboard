@@ -8,7 +8,7 @@ from functions import set_filters, prognose_graph, performance_matrix, info_tabl
 from functions import graph_overview, masks_phases, map_redenen, analyse_to_firestore
 
 
-def analyse():
+def analyse(request):
     try:
         # Get data from state collection Projects
         df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
@@ -45,8 +45,7 @@ def analyse():
     except Exception as e:
         logging.error(f'Extracting of data failed: {e}')
         time.sleep(10)
-        raise e
-        # return 'Error', 500
+        return 'Error', 500
 
     finally:
         logging.info('run done')
