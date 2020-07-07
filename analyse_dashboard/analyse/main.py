@@ -1,7 +1,6 @@
 # %% Set data path
 import config
 import logging
-import time
 from functions import get_data_FC, get_data_planning, get_data_targets
 from functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
 from functions import set_filters, prognose_graph, performance_matrix, info_table
@@ -43,8 +42,7 @@ def analyse(request):
         return 'OK', 204
 
     except Exception as e:
-        logging.error(f'Extracting of data failed: {e}')
-        time.sleep(10)
+        logging.exception(f'Analyse failed {e}')
         return 'Error', 500
 
     finally:
