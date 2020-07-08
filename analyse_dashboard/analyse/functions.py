@@ -136,7 +136,7 @@ def get_data_meters(path_data):
 
 def get_data_targets(path_data):
     if path_data is None:
-        doc = next(firestore.Client().collection('Graphs').where('id', '==', 'analysis').get()).to_dict()
+        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
         date_FTU0 = doc['FTU0']
         date_FTU1 = doc['FTU1']
     else:

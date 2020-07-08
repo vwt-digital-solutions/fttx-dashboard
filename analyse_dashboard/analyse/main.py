@@ -36,6 +36,7 @@ def analyse(request):
         info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
         for i, pkey in enumerate(config.subset_KPN_2020):
             bar_m = masks_phases(pkey, df_l)
+            print(i)
         set_bar_names(bar_m)
         logging.info('masks bar uploaded')
 
