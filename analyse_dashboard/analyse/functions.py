@@ -43,7 +43,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
             df_l[key] = df_l[key].append(df)
             df_l[key] = df_l[key][~df_l[key].duplicated()]  # generate this as error output?
 
-        if key not in ['Brielle', 'Helvoirt POP Volbouw']:
+        if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
             os.remove(path_data + '../jsonFC/' + fn)
 
     # hash sleutel code
@@ -942,9 +942,9 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                      'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
                      }],
            'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': '(HPend gerealiseerd - Target KPN) /  HPend totaal [%]', 'range': [x_min, x_max],
+                      'xaxis': {'title': 'HPend meer dan KPN target [%]', 'range': [x_min, x_max],
                                 'zeroline': False},
-                      'yaxis': {'title': '(Geschouwd + BIS) / werkvoorraad [%]', 'range': [y_min, y_max], 'zeroline': False},
+                      'yaxis': {'title': 'Werkvoorraad Schouw & BIS [%]', 'range': [y_min, y_max], 'zeroline': False},
                       'showlegend': False,
                       'title': {'text': 'Krijg alle projecten in het groene vlak doormiddel van de pijlen te volgen'},
                       'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",

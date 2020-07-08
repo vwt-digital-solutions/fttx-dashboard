@@ -181,12 +181,14 @@ def get_body():
                                          hidden=False,
                                          ),
                                 html.Div(
-                                        children=generate_graphs(9, None, None),
+                                        generate_graphs(9, None, None),
                                         id='FTU_table_c',
                                         className="pretty_container column",
                                         hidden=False,
                                 ),
-                    ]),
+                    ],
+                               className="pretty_container column",
+                    ),
                 ],
                 className="container-display",
             ),
@@ -785,6 +787,41 @@ def from_rd(x: int, y: int) -> tuple:
     return latitude, longitude
 
 
+def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
+
+    df_prog = pd.DataFrame(index=x_d, columns=['d'], data=0)
+    for key in y_prog_l:
+        y_prog = y_prog_l[key] / 100 * tot_l[key]
+        df_prog += pd.DataFrame(index=x_d, columns=['d'], data=y_prog).diff().fillna(0)
+
+    df_target = pd.DataFrame(index=x_d, columns=['d'], data=0)
+    for key in y_target_l:
+        y_target = y_target_l[key] / 100 * tot_l[key]
+        df_target += pd.DataFrame(index=x_d, columns=['d'], data=y_target).diff().fillna(0)
+
+    df_real = pd.DataFrame(index=x_d, columns=['d'], data=0)
+    for key in d_real_l:
+        y_real = (d_real_l[key] / 100 * tot_l[key]).diff().fillna((d_real_l[key] / 100 * tot_l[key]).iloc[0])
+        y_real = y_real.rename(columns={'Aantal': 'd'})
+        y_real.index = x_d[y_real.index]
+        df_real = df_real.add(y_real, fill_value=0)
+
+    df_plan = pd.DataFrame(index=x_d, columns=['d'], data=0)
+    y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
+                          columns=['d'], data=HP['HPendT'])
+    y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
+    df_plan = df_plan.add(y_plan, fill_value=0)
+
+    # plot option
+    # import matplotlib.pyplot as plt
+    # test = df_real.resample('M', closed='left', loffset=None).sum()['d']
+    # fig, ax = plt.subplots(figsize=(14,8))
+    # ax.bar(x=test.index[0:15].strftime('%Y-%m'), height=test[0:15], width=0.5)
+    # plt.savefig('Graphs/jaaroverzicht_2019_2020.png')
+
+    return df_prog, df_target, df_real, df_plan
+
+
 def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res):
     if 'W' in res:
         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
@@ -888,41 +925,6 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res):
         firestore.Client().collection('Graphs').document('jaaroverzicht').set(jaaroverzicht)
         record = dict(id='graph_targets_M', figure=fig)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
-
-
-def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
-
-    df_prog = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_prog_l:
-        y_prog = y_prog_l[key] / 100 * tot_l[key]
-        df_prog += pd.DataFrame(index=x_d, columns=['d'], data=y_prog).diff().fillna(0)
-
-    df_target = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_target_l:
-        y_target = y_target_l[key] / 100 * tot_l[key]
-        df_target += pd.DataFrame(index=x_d, columns=['d'], data=y_target).diff().fillna(0)
-
-    df_real = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in d_real_l:
-        y_real = (d_real_l[key] / 100 * tot_l[key]).diff().fillna((d_real_l[key] / 100 * tot_l[key]).iloc[0])
-        y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = x_d[y_real.index]
-        df_real = df_real.add(y_real, fill_value=0)
-
-    df_plan = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
-                          columns=['d'], data=HP['HPendT'])
-    y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-    df_plan = df_plan.add(y_plan, fill_value=0)
-
-    # plot option
-    # import matplotlib.pyplot as plt
-    # test = df_real.resample('M', closed='left', loffset=None).sum()['d']
-    # fig, ax = plt.subplots(figsize=(14,8))
-    # ax.bar(x=test.index[0:15].strftime('%Y-%m'), height=test[0:15], width=0.5)
-    # plt.savefig('Graphs/jaaroverzicht_2019_2020.png')
-
-    return df_prog, df_target, df_real, df_plan
 
 
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
@@ -1036,9 +1038,9 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                      'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
                      }],
            'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': '(HPend gerealiseerd - Target KPN) /  HPend totaal [%]', 'range': [x_min, x_max],
+                      'xaxis': {'title': 'HPend meer dan KPN target [%]', 'range': [x_min, x_max],
                                 'zeroline': False},
-                      'yaxis': {'title': '(Geschouwd + BIS) / werkvoorraad [%]', 'range': [y_min, y_max], 'zeroline': False},
+                      'yaxis': {'title': 'Werkvoorraad Schouw & BIS [%]', 'range': [y_min, y_max], 'zeroline': False},
                       'showlegend': False,
                       'title': {'text': 'Krijg alle projecten in het groene vlak doormiddel van de pijlen te volgen'},
                       'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
