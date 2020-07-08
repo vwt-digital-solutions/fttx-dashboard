@@ -34,7 +34,7 @@ def analyse(request):
         performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
         prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
         info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
-        for i, pkey in enumerate(config.subset_KPN_2020):
+        for i, pkey in enumerate(config.subset_KPN_2020_m):
             bar_m = masks_phases(pkey, df_l)
             print(i)
         set_bar_names(bar_m)
