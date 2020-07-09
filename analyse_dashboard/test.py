@@ -8,12 +8,11 @@ from analyse.functions import set_filters, prognose_graph, performance_matrix, i
 from analyse.functions import graph_overview, masks_phases, map_redenen, consume, analyse_to_firestore
 
 # %% Set environment variables and permissions and data path
-
 keys = os.listdir(config.path_jsons)
 for fn in keys:
     if ('-d-' in fn) & ('-fttx-' in fn):
         gpath_d = config.path_jsons + fn
-    if '-p-' in fn:
+    if ('-p-' in fn) & ('-fttx-' in fn):
         gpath_p = config.path_jsons + fn
     if ('-d-' in fn) & ('-it-' in fn):
         gpath_i = config.path_jsons + fn
