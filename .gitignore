@@ -1,8 +1,0 @@
-export0.bat
-__pycache__
-.vscode
-config.py
-env_vars.bat
-export.sh
-*__pycache__*
-deploy.sh
