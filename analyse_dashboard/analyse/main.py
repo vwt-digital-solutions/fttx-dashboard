@@ -2,6 +2,7 @@
 import config
 import logging
 import json
+import base64
 from gobits import Gobits
 from google.cloud import pubsub, firestore
 from functions import get_data_FC, get_data_planning, get_data_targets
@@ -82,13 +83,13 @@ def analyse(request):
         logging.info('run done')
 
 
-def graph(data, context):
+def graph(request):
     try:
-        request = data
-        df_l, _, _, _ = get_data_FC([request], config.col, None, None)
-        bar_m = masks_phases(request, df_l)
-        print(request)
+        envelope = json.loads(request.data.decode('utf-8'))
+        project = base64.b64decode(envelope['message']['data'])
+        df_l, _, _, _ = get_data_FC(list(project), config.col, None, None)
+        bar_m = masks_phases(project, df_l)
         set_bar_names(bar_m)
-        logging.info('masks bar uploaded')
+        logging.info(f'masks bar uploaded for {project}')
     except Exception:
-        logging.exception(f'Graph calculation {input} failed')
+        logging.exception('Graph calculation failed')
