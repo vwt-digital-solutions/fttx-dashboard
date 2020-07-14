@@ -41,7 +41,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
             df_l[key] = df
         if (key in subset) and (key in df_l.keys()):
             df_l[key] = df_l[key].append(df)
-            df_l[key] = df_l[key][~df_l[key].duplicated()]  # generate this as error output?
+            df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
         if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
             os.remove(path_data + '../jsonFC/' + fn)

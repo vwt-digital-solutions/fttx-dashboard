@@ -14,7 +14,7 @@ for fn in keys:
         gpath_d = config.path_jsons + fn
     if ('-p-' in fn) & ('-fttx-' in fn):
         gpath_p = config.path_jsons + fn
-    if ('-d-' in fn) & ('-it-' in fn):
+    if ('-d-' in fn) & ('-it-fiber' in fn):
         gpath_i = config.path_jsons + fn
 
 # %% Get data from state collection Projects
@@ -63,3 +63,8 @@ set_bar_names(bar_m)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 consume(df_l)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
+
+
+# for key in df_l:
+#     if df_l[key].empty:
+#         df_l[key] = df_l_t[key]
