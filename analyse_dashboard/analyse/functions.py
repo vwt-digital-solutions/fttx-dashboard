@@ -1115,3 +1115,9 @@ def empty_collection(subset):
                 i += 1
             print(i)
         print(key + ' ' + str((time.time() - t_start) / 60) + ' min ' + str(i))
+
+
+def add_token_mapbox(token):
+    record = dict(id='token_mapbox',
+                  token=token)
+    firestore.Client().collection('Graphs').document(record['id']).set(record)

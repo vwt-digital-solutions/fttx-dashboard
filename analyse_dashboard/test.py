@@ -48,6 +48,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 
 set_filters(df_l)
 map_redenen()
+# add_token_mapbox(config.mapbox_token)
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='W-MON')  # 2019-12-30 -- 2020-12-21
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='M')  # 2019-12-30 -- 2020-12-21
 performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
@@ -65,6 +66,9 @@ consume(df_l)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 
 
-# for key in df_l:
-#     if df_l[key].empty:
-#         df_l[key] = df_l_t[key]
+# hoe zit het met tot l lege projecten?
+df_l_t = {}
+for key in df_l:
+    if df_l[key].empty:
+        print(key)
+        # df_l[key] = df_l_t[key]
