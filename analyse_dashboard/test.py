@@ -14,7 +14,7 @@ for fn in keys:
         gpath_d = config.path_jsons + fn
     if ('-p-' in fn) & ('-fttx-' in fn):
         gpath_p = config.path_jsons + fn
-    if ('-d-' in fn) & ('-it-' in fn):
+    if ('-d-' in fn) & ('-it-fiber' in fn):
         gpath_i = config.path_jsons + fn
 
 # %% Get data from state collection Projects
@@ -48,6 +48,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 
 set_filters(df_l)
 map_redenen()
+# add_token_mapbox(config.mapbox_token)
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='W-MON')  # 2019-12-30 -- 2020-12-21
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='M')  # 2019-12-30 -- 2020-12-21
 performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
@@ -63,3 +64,11 @@ set_bar_names(bar_m)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 consume(df_l)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
+
+
+# hoe zit het met tot l lege projecten?
+df_l_t = {}
+for key in df_l:
+    if df_l[key].empty:
+        print(key)
+        # df_l[key] = df_l_t[key]

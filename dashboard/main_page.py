@@ -656,7 +656,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
 
             # this is a default public token obtained from a free account on https://account.mapbox.com/
             # and can there be refreshed at any moment
-            mapbox_at = 'pk.eyJ1IjoiYXZhbnR1cm5ob3V0IiwiYSI6ImNrOGl4Y2o3ZTA5MjMzbW53a3dicTRnMnIifQ.FdFexMQbqQrZBNMEZkYvvg'
+            mapbox_at = api.get('/Graphs?id=token_mapbox')[0]['token']
             normalized_size = df['Size_DP'].to_list() + df['Size'].to_list()
             map_data = [
                 go.Scattermapbox(
