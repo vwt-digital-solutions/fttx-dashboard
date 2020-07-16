@@ -250,7 +250,7 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
     return rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff
 
 
-def calculate_projectspecs(df_l):
+def calculate_projectspecs(df_l, year):
     # to calculate HC / HPend ratio:
     HC = {}
     HPend = {}
@@ -258,8 +258,15 @@ def calculate_projectspecs(df_l):
     Schouw_BIS = {}
     HPend_l = {}
     for key in df_l:
-        HC[key] = len(df_l[key][df_l[key].opleverstatus == '2'])
-        HPend[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
+        df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
+        if not df_HPend.empty:
+            df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
+                                (df_HPend.opleverdatum <= year + '-12-31')]
+            HPend[key] = len(df_HPend)
+            HC[key] = len(df_HPend[(df_HPend.opleverstatus == '2')])
+        else:
+            HC[key] = 0
+            HPend[key] = 0
         opgeleverd = len(df_l[key][~df_l[key].opleverdatum.isna()])
         if opgeleverd > 0:
             HC_HPend_l[key] = len(df_l[key][df_l[key].opleverstatus == '2']) / opgeleverd * 100

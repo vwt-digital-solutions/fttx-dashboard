@@ -53,7 +53,7 @@ def analyse(request):
         logging.info('data is retrieved')
 
         # Analysis
-        HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l = calculate_projectspecs(df_l)
+        HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l = calculate_projectspecs(df_l, '2020')
         y_voorraad_act = calculate_y_voorraad_act(df_l)
         rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = prognose(df_l, t_s, x_d, tot_l, date_FTU0)
         y_target_l, t_diff = targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
