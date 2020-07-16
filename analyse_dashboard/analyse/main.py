@@ -86,8 +86,9 @@ def analyse(request):
 def graph(request):
     try:
         envelope = json.loads(request.data.decode('utf-8'))
-        project = base64.b64decode(envelope['message']['data'])
-        df_l, _, _, _ = get_data_FC(list(project), config.col, None, None)
+        bytes = base64.b64decode(envelope['message']['data'])
+        project = json.loads(bytes)
+        df_l, _, _, _ = get_data_FC([project], config.col, None, None)
         bar_m = masks_phases(project, df_l)
         set_bar_names(bar_m)
         logging.info(f'masks bar uploaded for {project}')
