@@ -197,7 +197,7 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
             d_real = d_real[d_real.index < pd.Timestamp.now()]
 
             d_real = d_real.cumsum() / tot_l[key] * 100
-            d_real[d_real.Aantal > 100] = 100  # alleen nodig voor DH
+            d_real[d_real.Aantal > 100] = 100  # only necessary for DH
             t_shift[key] = (d_real.index.min() - min(t_s.values())).days
             d_real.index = (d_real.index - d_real.index[0]).days + t_shift[key]
             d_real_l[key] = d_real
