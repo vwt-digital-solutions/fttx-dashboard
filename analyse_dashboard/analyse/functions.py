@@ -66,9 +66,13 @@ def get_data_FC(subset, col, gpath_i, path_data):
     t_s = {}
     tot_l = {}
     for key in df_l:
-        t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
-        if pd.isnull(t_s[key]):
+        if df_l[key][~df_l[key].opleverdatum.isna()].empty:
             t_s[key] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
+        else:
+            df_l[key] = df_l[key][(df_l[key]['opleverdatum'] >= '2019-01-01') |
+                                  (df_l[key]['opleverdatum'].isna())]  # dates before 2019 are faulty?!
+            t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
+
         tot_l[key] = len(df_l[key])
     x_d = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
 
@@ -209,12 +213,16 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
                 y_prog_l[key] = y_prog1.copy()
 
             d_rc2 = d_real[d_real.Aantal >= cutoff]
-            if len(d_rc2) > 1:
+            if (len(d_rc2) > 1) & (len(d_rc1) > 1):
                 rc2[key], b2 = np.polyfit(d_rc2.index, d_rc2, 1)
                 y_prog2 = b2[0] + rc2[key][0] * x_prog
                 x_i, y_i = get_intersect([x_prog[0], y_prog1[0]], [x_prog[-1], y_prog1[-1]],
                                          [x_prog[0], y_prog2[0]], [x_prog[-1], y_prog2[-1]])
                 y_prog_l[key][x_prog >= x_i] = y_prog2[x_prog >= x_i]
+            # if (len(d_rc2) > 1) & (len(d_rc1) <= 1):
+            #     rc1[key], b1 = np.polyfit(d_rc2.index, d_rc2, 1)
+            #     y_prog1 = b1[0] + rc1[key][0] * x_prog
+            #     y_prog_l[key] = y_prog1.copy()
 
     rc1_mean = sum(rc1.values()) / len(rc1.values())
     rc2_mean = sum(rc2.values()) / len(rc2.values())

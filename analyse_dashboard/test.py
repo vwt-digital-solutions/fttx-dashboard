@@ -69,6 +69,7 @@ print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min'
 
 # jsons vs state database
 df_l, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 df_l_r, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, None, None)
 
 # hoe zit het met tot l lege projecten?
