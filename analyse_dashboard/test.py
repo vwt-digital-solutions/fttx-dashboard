@@ -65,6 +65,11 @@ print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min'
 consume(df_l)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 
+# %% Extra tests
+
+# jsons vs state database
+df_l, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
+df_l_r, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, None, None)
 
 # hoe zit het met tot l lege projecten?
 df_l_t = {}
