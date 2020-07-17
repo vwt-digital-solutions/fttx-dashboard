@@ -41,9 +41,9 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
             df_l[key] = df
         if (key in subset) and (key in df_l.keys()):
             df_l[key] = df_l[key].append(df)
-            df_l[key] = df_l[key][~df_l[key].duplicated()]  # generate this as error output?
+            df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
-        if key not in ['Brielle', 'Helvoirt POP Volbouw']:
+        if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
             os.remove(path_data + '../jsonFC/' + fn)
 
     # hash sleutel code
@@ -66,9 +66,13 @@ def get_data_FC(subset, col, gpath_i, path_data):
     t_s = {}
     tot_l = {}
     for key in df_l:
-        t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
-        if pd.isnull(t_s[key]):
+        if df_l[key][~df_l[key].opleverdatum.isna()].empty:
             t_s[key] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
+        else:
+            df_l[key] = df_l[key][(df_l[key]['opleverdatum'] >= '2019-01-01') |
+                                  (df_l[key]['opleverdatum'].isna())]  # dates before 2019 are faulty?!
+            t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
+
         tot_l[key] = len(df_l[key])
     x_d = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
 
@@ -136,7 +140,7 @@ def get_data_meters(path_data):
 
 def get_data_targets(path_data):
     if path_data is None:
-        doc = next(firestore.Client().collection('Graphs').where('id', '==', 'analysis').get()).to_dict()
+        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
         date_FTU0 = doc['FTU0']
         date_FTU1 = doc['FTU1']
     else:
@@ -197,7 +201,7 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
             d_real = d_real[d_real.index < pd.Timestamp.now()]
 
             d_real = d_real.cumsum() / tot_l[key] * 100
-            d_real[d_real.Aantal > 100] = 100  # alleen nodig voor DH
+            d_real[d_real.Aantal > 100] = 100  # only necessary for DH
             t_shift[key] = (d_real.index.min() - min(t_s.values())).days
             d_real.index = (d_real.index - d_real.index[0]).days + t_shift[key]
             d_real_l[key] = d_real
@@ -209,12 +213,16 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
                 y_prog_l[key] = y_prog1.copy()
 
             d_rc2 = d_real[d_real.Aantal >= cutoff]
-            if len(d_rc2) > 1:
+            if (len(d_rc2) > 1) & (len(d_rc1) > 1):
                 rc2[key], b2 = np.polyfit(d_rc2.index, d_rc2, 1)
                 y_prog2 = b2[0] + rc2[key][0] * x_prog
                 x_i, y_i = get_intersect([x_prog[0], y_prog1[0]], [x_prog[-1], y_prog1[-1]],
                                          [x_prog[0], y_prog2[0]], [x_prog[-1], y_prog2[-1]])
                 y_prog_l[key][x_prog >= x_i] = y_prog2[x_prog >= x_i]
+            # if (len(d_rc2) > 1) & (len(d_rc1) <= 1):
+            #     rc1[key], b1 = np.polyfit(d_rc2.index, d_rc2, 1)
+            #     y_prog1 = b1[0] + rc1[key][0] * x_prog
+            #     y_prog_l[key] = y_prog1.copy()
 
     rc1_mean = sum(rc1.values()) / len(rc1.values())
     rc2_mean = sum(rc2.values()) / len(rc2.values())
@@ -250,7 +258,7 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
     return rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff
 
 
-def calculate_projectspecs(df_l):
+def calculate_projectspecs(df_l, year):
     # to calculate HC / HPend ratio:
     HC = {}
     HPend = {}
@@ -258,8 +266,15 @@ def calculate_projectspecs(df_l):
     Schouw_BIS = {}
     HPend_l = {}
     for key in df_l:
-        HC[key] = len(df_l[key][df_l[key].opleverstatus == '2'])
-        HPend[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
+        df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
+        if not df_HPend.empty:
+            df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
+                                (df_HPend.opleverdatum <= year + '-12-31')]
+            HPend[key] = len(df_HPend)
+            HC[key] = len(df_HPend[(df_HPend.opleverstatus == '2')])
+        else:
+            HC[key] = 0
+            HPend[key] = 0
         opgeleverd = len(df_l[key][~df_l[key].opleverdatum.isna()])
         if opgeleverd > 0:
             HC_HPend_l[key] = len(df_l[key][df_l[key].opleverstatus == '2']) / opgeleverd * 100
@@ -942,9 +957,9 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                      'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
                      }],
            'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': '(HPend gerealiseerd - Target KPN) /  HPend totaal [%]', 'range': [x_min, x_max],
+                      'xaxis': {'title': 'HPend meer dan KPN target [%]', 'range': [x_min, x_max],
                                 'zeroline': False},
-                      'yaxis': {'title': '(Geschouwd + BIS) / werkvoorraad [%]', 'range': [y_min, y_max], 'zeroline': False},
+                      'yaxis': {'title': 'Werkvoorraad Schouw & BIS [%]', 'range': [y_min, y_max], 'zeroline': False},
                       'showlegend': False,
                       'title': {'text': 'Krijg alle projecten in het groene vlak doormiddel van de pijlen te volgen'},
                       'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
@@ -1115,3 +1130,9 @@ def empty_collection(subset):
                 i += 1
             print(i)
         print(key + ' ' + str((time.time() - t_start) / 60) + ' min ' + str(i))
+
+
+def add_token_mapbox(token):
+    record = dict(id='token_mapbox',
+                  token=token)
+    firestore.Client().collection('Graphs').document(record['id']).set(record)
