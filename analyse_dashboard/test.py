@@ -19,7 +19,7 @@ for fn in keys:
 
 # %% Get data from state collection Projects
 t_start = time.time()
-df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
+df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data, 0)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 # df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
 HP = get_data_planning(config.path_data, config.subset_KPN_2020)
@@ -68,9 +68,19 @@ print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min'
 # %% Extra tests
 
 # jsons vs state database
-df_l, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data)
+df_l, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data, 0)
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
-df_l_r, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, None, None)
+df_l_r, _, _, _ = get_data_FC(config.subset_KPN_2020, config.col, None, None, 0)
+
+for key in df_l:
+    print(key + ': ' + str(df_l_r[key].shape[0] - df_l[key].shape[0]))
+    print(key + ': ' + str(len(df_l[key].append(df_l_r[key], ignore_index=True).drop_duplicates(keep=False))))
+
+key = 'Bavel'
+test = df_l[key].append(df_l_r[key], ignore_index=True)
+mask = test[test.duplicated()].iloc[0].sleutel
+t1 = df_l[key][df_l[key].sleutel == mask]
+t2 = df_l_r[key][df_l_r[key].sleutel == mask]
 
 # hoe zit het met tot l lege projecten?
 df_l_t = {}
@@ -78,3 +88,28 @@ for key in df_l:
     if df_l[key].empty:
         print(key)
         # df_l[key] = df_l_t[key]
+
+# error check FC en BC
+df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i, config.path_data, 1)
+key = 'Bavel'
+df = df_l[key]
+errors_FC_BC = {key: {}}
+errors_FC_BC[key]['101'] = df[df.KabelID.isna() & ~df.opleverdatum.isna() & (df.Postcode.isna() | df.Huisnummer.isna())].shape[0]
+errors_FC_BC[key]['102'] = df[df.Plandatum.isna()].shape[0]
+errors_FC_BC[key]['103'] = df[df.opleverdatum.isna() & df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99'])].shape[0]
+errors_FC_BC[key]['104'] = df[df.opleverstatus.isna()].shape[0]
+errors_FC_BC[key]['114'] = df[df.toestemming.isna()].shape[0]
+errors_FC_BC[key]['115'] = df[df.soort_bouw.isna()].shape[0]  # gebouwtype?
+errors_FC_BC[key]['116'] = df[df.FTU_type.isna()].shape[0]
+errors_FC_BC[key]['117'] = df[df['Toelichting status'].isna() & df.opleverstatus.isin(['4', '12'])].shape[0]
+errors_FC_BC[key]['118'] = df[df.soort_bouw.isna()].size  # zelfde als 115? ... type bouw?
+errors_FC_BC[key]['119'] = df[df['Toelichting status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].shape[0]
+
+errors_FC_BC[key]['120'] = 0  # doorvoerafhankelijk niet aanwezig
+errors_FC_BC[key]['121'] = df[(df.Postcode.isna() & ~df.Huisnummer.isna()) | (~df.Postcode.isna() & df.Huisnummer.isna())].shape[0]
+errors_FC_BC[key]['122'] = df[~((df.Kast.isna() & df.Kastrij.isna() & df.IPvezel.isna() &
+                                 df.ODFpos.isna() & df.CATVpos.isna() & df.CATVvezel.isna()) |
+                                (~df.Kast.isna() & ~df.Kastrij.isna() & ~df.IPvezel.isna() &
+                                 ~df.ODFpos.isna() & ~df.CATVpos.isna() & ~df.CATVvezel.isna()))].shape[0]
+# & df.Areapop.isna()
+#                                | (~df.Postcode.isna() & df.Huisnummer.isna())].shape[0]

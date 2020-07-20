@@ -45,7 +45,7 @@ def analyse(request):
             publish_json(gobits, msg_data=msg, rowcount=i, rowmax=len(data), **config.TOPIC_SETTINGS)
             i += 1
 
-        df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
+        df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None, 0)
         # Get data from state collection Projects
 
         HP = get_data_planning(config.path_data_b, config.subset_KPN_2020)
@@ -88,7 +88,7 @@ def graph(request):
         envelope = json.loads(request.data.decode('utf-8'))
         bytes = base64.b64decode(envelope['message']['data'])
         project = json.loads(bytes)
-        df_l, _, _, _ = get_data_FC([project], config.col, None, None)
+        df_l, _, _, _ = get_data_FC([project], config.col, None, None, 0)
         bar_m = masks_phases(project, df_l)
         set_bar_names(bar_m)
         logging.info(f'masks bar uploaded for {project}')

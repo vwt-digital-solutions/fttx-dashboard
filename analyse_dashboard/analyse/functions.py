@@ -8,7 +8,7 @@ import datetime
 import hashlib
 
 
-def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
+def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
     fn_l = os.listdir(path_data + '../jsonFC/')
     client = storage.Client()
@@ -32,7 +32,8 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
                            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
                            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
                            'HASdatum': 'hasdatum', 'title': 'project'}, inplace=True)
-        df = df[col]
+        if flag == 0:
+            df = df[col]
         df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
         df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
@@ -40,15 +41,16 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
         if (key in subset) and (key not in df_l.keys()):
             df_l[key] = df
         if (key in subset) and (key in df_l.keys()):
-            df_l[key] = df_l[key].append(df)
+            df_l[key] = df_l[key].append(df, ignore_index=True)
             df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
         if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
             os.remove(path_data + '../jsonFC/' + fn)
 
     # hash sleutel code
-    for key in df_l:
-        df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
+    if flag == 0:
+        for key in df_l:
+            df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
 
     for key in subset:
         if key not in df_l:
@@ -57,11 +59,11 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
     return df_l
 
 
-def get_data_FC(subset, col, gpath_i, path_data):
+def get_data_FC(subset, col, gpath_i, path_data, flag):
     if gpath_i is None:
         df_l = get_data_projects(subset, col)
     else:
-        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset)
+        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag)
 
     t_s = {}
     tot_l = {}
@@ -817,10 +819,9 @@ def get_data_projects(subset, col):
         for doc in docs:
             records += [doc.to_dict()]
         if records != []:
-            df_l[key] = pd.DataFrame(records)[col]
+            df_l[key] = pd.DataFrame(records)[col].fillna(np.nan)
         else:
-            df_l[key] = pd.DataFrame(columns=col)
-
+            df_l[key] = pd.DataFrame(columns=col).fillna(np.nan)
         # to correct for datetime value at HUB
         df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
             [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
@@ -1136,3 +1137,7 @@ def add_token_mapbox(token):
     record = dict(id='token_mapbox',
                   token=token)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
+
+
+def error_check_FC_BC(df_l):
+    return 0
