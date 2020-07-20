@@ -77,6 +77,9 @@ def get_data_FC(subset, col, gpath_i, path_data, flag):
 
         tot_l[key] = len(df_l[key])
     x_d = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    tot_l['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9.465  # not yet in FC, total from excel bouwstromen
+    tot_l['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
+    tot_l['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
 
     return df_l, t_s, x_d, tot_l
 
