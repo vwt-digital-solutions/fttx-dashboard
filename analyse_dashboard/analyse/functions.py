@@ -757,7 +757,7 @@ def masks_phases(pkey, df_l):
         batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
     batch.commit()
     batch = firestore.Client().batch()
-    print('23')
+    # print('23')
     # after second click:
     ii = 0
     for key2 in bar_m:
@@ -778,7 +778,7 @@ def masks_phases(pkey, df_l):
             batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
             ii += 1
             if (ii % 150 == 0):
-                print(ii)
+                # print(ii)
                 batch.commit()
                 batch = firestore.Client().batch()
     batch.commit()

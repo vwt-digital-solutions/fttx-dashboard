@@ -8,6 +8,6 @@ for fn in keys:
         gpath_d = config.path_jsons + fn
     if '-p-' in fn:
         gpath_p = config.path_jsons + fn
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_p
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 
 empty_collection(config.subset_KPN_2020)
