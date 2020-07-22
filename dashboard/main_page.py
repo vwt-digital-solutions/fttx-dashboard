@@ -537,7 +537,9 @@ def generate_graphs(flag, drop_selectie, mask_all):
         fig = api.get('/Graphs?id=jaaroverzicht')[0]['HC_HPend']
 
     if flag == 85:
-        fig = api.get('/Graphs?id=update_date')[0]['date']
+        date_an = api.get('/Graphs?id=update_date')[0]['date']
+        date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
+        fig = min([date_an, date_con])
 
     # BIS/HAS
     if flag == 0:
