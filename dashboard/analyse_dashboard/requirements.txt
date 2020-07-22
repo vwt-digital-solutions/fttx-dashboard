@@ -1,0 +1,8 @@
+pandas==0.24.2
+google-cloud-kms==1.1.0
+xlsxwriter==1.1.8
+xlrd==1.2.0
+firestore==0.0.8
+numpy==1.16.4
+matplotlib==3.2.1
+seaborn==0.10.0
