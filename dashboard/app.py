@@ -34,7 +34,7 @@ cache = Cache(app.server, config={
 app.css.config.serve_locally = False
 app.scripts.config.serve_locally = False
 app.config.suppress_callback_exceptions = True
-app.title = "Analyse OHW"
+app.title = "FttX operationeel"
 
 # Azure AD authentication
 if config.authentication:

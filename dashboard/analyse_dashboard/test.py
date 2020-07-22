@@ -6,7 +6,7 @@ import numpy as np
 from analyse.functions import get_data_FC, get_data_planning, get_data_targets
 from analyse.functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
 from analyse.functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names
-from analyse.functions import graph_overview, masks_phases, map_redenen, consume, analyse_to_firestore
+from analyse.functions import graph_overview, masks_phases, map_redenen, consume, analyse_to_firestore, set_date_update
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -62,6 +62,7 @@ for i, pkey in enumerate(config.subset_KPN_2020):
     bar_m = masks_phases(pkey, df_l)
     print(i)
 set_bar_names(bar_m)
+set_date_update()
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 consume(df_l)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')

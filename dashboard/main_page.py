@@ -14,7 +14,7 @@ from google.cloud import firestore
 from app import app
 from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
 from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
-from analyse_dashboard.analyse.functions import info_table
+from analyse_dashboard.analyse.functions import info_table, overview, from_rd
 
 layout = dict(
     autosize=True,
@@ -61,10 +61,12 @@ def get_body():
                                 [
                                     html.H3(
                                         "Status projecten KPN in 2020",
-                                        style={"margin-bottom": "25px",
-                                               "margin-left": "75px",
-                                               },
+                                        style={"margin-bottom": "0px", "margin-left": "75px"},
                                     ),
+                                    html.P(id='date_update',
+                                           children='Laatste data update: ' + generate_graphs(85, None, None),
+                                           style={"margin-bottom": "0px", "margin-left": "75px"},
+                                           )
                                 ],
                             )
                         ],
@@ -534,6 +536,9 @@ def generate_graphs(flag, drop_selectie, mask_all):
     if flag == 84:
         fig = api.get('/Graphs?id=jaaroverzicht')[0]['HC_HPend']
 
+    if flag == 85:
+        fig = api.get('/Graphs?id=update_date')[0]['date']
+
     # BIS/HAS
     if flag == 0:
         fig = api.get('/Graphs?id=' + drop_selectie)[0]['figure']
@@ -758,67 +763,3 @@ def generate_graphs(flag, drop_selectie, mask_all):
         )
 
     return fig
-
-
-def from_rd(x: int, y: int) -> tuple:
-    x0 = 155000
-    y0 = 463000
-    phi0 = 52.15517440
-    lam0 = 5.38720621
-
-    # Coefficients or the conversion from RD to WGS84
-    Kp = [0, 2, 0, 2, 0, 2, 1, 4, 2, 4, 1]
-    Kq = [1, 0, 2, 1, 3, 2, 0, 0, 3, 1, 1]
-    Kpq = [3235.65389, -32.58297, -0.24750, -0.84978, -0.06550, -0.01709,
-           -0.00738, 0.00530, -0.00039, 0.00033, -0.00012]
-
-    Lp = [1, 1, 1, 3, 1, 3, 0, 3, 1, 0, 2, 5]
-    Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
-    Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607,
-           0.01199, -0.00256, 0.00128, 0.00022, -0.00022, 0.00026]
-
-    """
-    Converts RD coordinates into WGS84 coordinates
-    """
-    dx = 1E-5 * (x - x0)
-    dy = 1E-5 * (y - y0)
-    latitude = phi0 + sum([v * dx ** Kp[i] * dy ** Kq[i]
-                           for i, v in enumerate(Kpq)]) / 3600
-    longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
-                            for i, v in enumerate(Lpq)]) / 3600
-    return latitude, longitude
-
-
-def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
-
-    df_prog = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_prog_l:
-        y_prog = y_prog_l[key] / 100 * tot_l[key]
-        df_prog += pd.DataFrame(index=x_d, columns=['d'], data=y_prog).diff().fillna(0)
-
-    df_target = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_target_l:
-        y_target = y_target_l[key] / 100 * tot_l[key]
-        df_target += pd.DataFrame(index=x_d, columns=['d'], data=y_target).diff().fillna(0)
-
-    df_real = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in d_real_l:
-        y_real = (d_real_l[key] / 100 * tot_l[key]).diff().fillna((d_real_l[key] / 100 * tot_l[key]).iloc[0])
-        y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = x_d[y_real.index]
-        df_real = df_real.add(y_real, fill_value=0)
-
-    df_plan = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
-                          columns=['d'], data=HP['HPendT'])
-    y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-    df_plan = df_plan.add(y_plan, fill_value=0)
-
-    # plot option
-    # import matplotlib.pyplot as plt
-    # test = df_real.resample('M', closed='left', loffset=None).sum()['d']
-    # fig, ax = plt.subplots(figsize=(14,8))
-    # ax.bar(x=test.index[0:15].strftime('%Y-%m'), height=test[0:15], width=0.5)
-    # plt.savefig('Graphs/jaaroverzicht_2019_2020.png')
-
-    return df_prog, df_target, df_real, df_plan
