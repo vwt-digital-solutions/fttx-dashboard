@@ -10,18 +10,18 @@ import hashlib
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
-    fn_l = os.listdir(path_data + '../jsonFC/')
+    fn_l = os.listdir(path_data + 'jsonFC/')
     client = storage.Client()
     bucket = client.get_bucket('vwt-d-gew1-it-fiberconnect-int-preprocess-stg')
     blobs = bucket.list_blobs()
     for blob in blobs:
         if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-            blob.download_to_filename(path_data + '../jsonFC/' + blob.name.split('/')[-1])
-    fn_l = os.listdir(path_data + '../jsonFC/')
+            blob.download_to_filename(path_data + 'jsonFC/' + blob.name.split('/')[-1])
+    fn_l = os.listdir(path_data + 'jsonFC/')
 
     df_l = {}
     for fn in fn_l:
-        df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
+        df = pd.DataFrame(pd.read_json(path_data + 'jsonFC/' + fn, orient='records')['data'].to_list())
         df = df.replace('', np.nan).fillna(np.nan)
         df['title'] = key = df['title'].iloc[0][0:-13]
         # df = df[~df.sleutel.isna()]  # generate this as error output?
@@ -45,7 +45,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
             df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
         if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
-            os.remove(path_data + '../jsonFC/' + fn)
+            os.remove(path_data + 'jsonFC/' + fn)
 
     # hash sleutel code
     if flag == 0:
@@ -270,8 +270,12 @@ def calculate_projectspecs(df_l, year):
     HC_HPend_l = {}
     Schouw_BIS = {}
     HPend_l = {}
+    # Schouw = {}
+    # BIS = {}
     for key in df_l:
         df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
+        # BIS = df_l[key][~df_l[key]['opleverdatum'].isna()]
+        # Schouw = df_l[key].opleverstatus != '0'
         if not df_HPend.empty:
             df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
                                 (df_HPend.opleverdatum <= year + '-12-31')]
@@ -289,7 +293,7 @@ def calculate_projectspecs(df_l, year):
         HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
     HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
 
-    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l
+    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l  # , Schouw, BIS
 
 
 def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):

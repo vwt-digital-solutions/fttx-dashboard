@@ -10,6 +10,7 @@ from analyse.functions import graph_overview, masks_phases, map_redenen, consume
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
+print(keys)
 for fn in keys:
     if ('-d-' in fn) & ('-fttx-' in fn):
         gpath_d = config.path_jsons + fn
