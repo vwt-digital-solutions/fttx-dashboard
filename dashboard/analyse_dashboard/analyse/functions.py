@@ -148,6 +148,9 @@ def get_data_targets(path_data):
         doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
         date_FTU0 = doc['FTU0']
         date_FTU1 = doc['FTU1']
+        date_FTU0['Bergen op Zoom Noord  wijk 01 + Halsteren'] = date_FTU0.pop('Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren')
+        date_FTU1['Bergen op Zoom Noord  wijk 01 + Halsteren'] = date_FTU1.pop('Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren')
+        # Add statement becasue of '+' in project name to run on MacOS
     else:
         map_key2 = {
             # FT0 en FT1
