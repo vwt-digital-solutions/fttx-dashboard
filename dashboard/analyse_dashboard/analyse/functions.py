@@ -8,7 +8,7 @@ import datetime
 import hashlib
 
 
-def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
+def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
     fn_l = os.listdir(path_data + '../jsonFC/')
     client = storage.Client()
@@ -32,7 +32,8 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
                            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
                            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
                            'HASdatum': 'hasdatum', 'title': 'project'}, inplace=True)
-        df = df[col]
+        if flag == 0:
+            df = df[col]
         df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
         df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
@@ -40,15 +41,16 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
         if (key in subset) and (key not in df_l.keys()):
             df_l[key] = df
         if (key in subset) and (key in df_l.keys()):
-            df_l[key] = df_l[key].append(df)
+            df_l[key] = df_l[key].append(df, ignore_index=True)
             df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
         if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
             os.remove(path_data + '../jsonFC/' + fn)
 
     # hash sleutel code
-    for key in df_l:
-        df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
+    if flag == 0:
+        for key in df_l:
+            df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
 
     for key in subset:
         if key not in df_l:
@@ -57,11 +59,11 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset):
     return df_l
 
 
-def get_data_FC(subset, col, gpath_i, path_data):
+def get_data_FC(subset, col, gpath_i, path_data, flag):
     if gpath_i is None:
         df_l = get_data_projects(subset, col)
     else:
-        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset)
+        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag)
 
     t_s = {}
     tot_l = {}
@@ -75,6 +77,9 @@ def get_data_FC(subset, col, gpath_i, path_data):
 
         tot_l[key] = len(df_l[key])
     x_d = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    tot_l['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9.465  # not yet in FC, total from excel bouwstromen
+    tot_l['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
+    tot_l['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
 
     return df_l, t_s, x_d, tot_l
 
@@ -752,7 +757,7 @@ def masks_phases(pkey, df_l):
         batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
     batch.commit()
     batch = firestore.Client().batch()
-    print('23')
+    # print('23')
     # after second click:
     ii = 0
     for key2 in bar_m:
@@ -773,7 +778,7 @@ def masks_phases(pkey, df_l):
             batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
             ii += 1
             if (ii % 150 == 0):
-                print(ii)
+                # print(ii)
                 batch.commit()
                 batch = firestore.Client().batch()
     batch.commit()
@@ -817,10 +822,9 @@ def get_data_projects(subset, col):
         for doc in docs:
             records += [doc.to_dict()]
         if records != []:
-            df_l[key] = pd.DataFrame(records)[col]
+            df_l[key] = pd.DataFrame(records)[col].fillna(np.nan)
         else:
-            df_l[key] = pd.DataFrame(columns=col)
-
+            df_l[key] = pd.DataFrame(columns=col).fillna(np.nan)
         # to correct for datetime value at HUB
         df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
             [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
@@ -1135,4 +1139,42 @@ def empty_collection(subset):
 def add_token_mapbox(token):
     record = dict(id='token_mapbox',
                   token=token)
+    firestore.Client().collection('Graphs').document(record['id']).set(record)
+
+
+def error_check_FC_BC(df_l):
+    return 0
+
+
+def from_rd(x: int, y: int) -> tuple:
+    x0 = 155000
+    y0 = 463000
+    phi0 = 52.15517440
+    lam0 = 5.38720621
+
+    # Coefficients or the conversion from RD to WGS84
+    Kp = [0, 2, 0, 2, 0, 2, 1, 4, 2, 4, 1]
+    Kq = [1, 0, 2, 1, 3, 2, 0, 0, 3, 1, 1]
+    Kpq = [3235.65389, -32.58297, -0.24750, -0.84978, -0.06550, -0.01709,
+           -0.00738, 0.00530, -0.00039, 0.00033, -0.00012]
+
+    Lp = [1, 1, 1, 3, 1, 3, 0, 3, 1, 0, 2, 5]
+    Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
+    Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607,
+           0.01199, -0.00256, 0.00128, 0.00022, -0.00022, 0.00026]
+
+    """
+    Converts RD coordinates into WGS84 coordinates
+    """
+    dx = 1E-5 * (x - x0)
+    dy = 1E-5 * (y - y0)
+    latitude = phi0 + sum([v * dx ** Kp[i] * dy ** Kq[i]
+                           for i, v in enumerate(Kpq)]) / 3600
+    longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
+                            for i, v in enumerate(Lpq)]) / 3600
+    return latitude, longitude
+
+
+def set_date_update():
+    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%d'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)

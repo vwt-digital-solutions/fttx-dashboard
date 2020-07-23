@@ -8,7 +8,7 @@ from google.cloud import pubsub, firestore
 from functions import get_data_FC, get_data_planning, get_data_targets
 from functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
 from functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names
-from functions import graph_overview, masks_phases, map_redenen, analyse_to_firestore
+from functions import graph_overview, masks_phases, map_redenen, analyse_to_firestore, set_date_update
 
 
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +45,7 @@ def analyse(request):
             publish_json(gobits, msg_data=msg, rowcount=i, rowmax=len(data), **config.TOPIC_SETTINGS)
             i += 1
 
-        df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None)
+        df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, None, None, 0)
         # Get data from state collection Projects
 
         HP = get_data_planning(config.path_data_b, config.subset_KPN_2020)
@@ -72,6 +72,7 @@ def analyse(request):
         performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
         prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
         info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
+        set_date_update()
 
         return 'OK', 204
 
@@ -88,7 +89,7 @@ def graph(request):
         envelope = json.loads(request.data.decode('utf-8'))
         bytes = base64.b64decode(envelope['message']['data'])
         project = json.loads(bytes)
-        df_l, _, _, _ = get_data_FC([project], config.col, None, None)
+        df_l, _, _, _ = get_data_FC([project], config.col, None, None, 0)
         bar_m = masks_phases(project, df_l)
         set_bar_names(bar_m)
         logging.info(f'masks bar uploaded for {project}')
