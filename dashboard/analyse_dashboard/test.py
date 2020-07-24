@@ -3,6 +3,7 @@ import os
 import time
 import analyse.config as config
 import numpy as np
+import pandas as pd
 from analyse.functions import get_data_FC, get_data_planning, get_data_targets
 from analyse.functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
 from analyse.functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names
@@ -98,32 +99,34 @@ df_l, t_s, x_d, tot_l = get_data_FC(config.subset_KPN_2020, config.col, gpath_i,
 key = 'Bavel'
 df = df_l[key]
 errors_FC_BC = {key: {}}
-errors_FC_BC[key]['101'] = df[df.KabelID.isna() & ~df.opleverdatum.isna() & (df.Postcode.isna() | df.Huisnummer.isna())].shape[0]
-errors_FC_BC[key]['102'] = df[df.Plandatum.isna()].shape[0]
-errors_FC_BC[key]['103'] = df[df.opleverdatum.isna() & df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99'])].shape[0]
-errors_FC_BC[key]['104'] = df[df.opleverstatus.isna()].shape[0]
-errors_FC_BC[key]['114'] = df[df.toestemming.isna()].shape[0]
-errors_FC_BC[key]['115'] = errors_FC_BC[key]['118'] = df[df.soort_bouw.isna()].shape[0]  # zelfde error? gebouwtype vs type bouw?
-errors_FC_BC[key]['116'] = df[df.FTU_type.isna()].shape[0]
-errors_FC_BC[key]['117'] = df[df['Toelichting status'].isna() & df.opleverstatus.isin(['4', '12'])].shape[0]
-errors_FC_BC[key]['119'] = df[df['Toelichting status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].shape[0]
+errors_FC_BC[key]['101'] = df[df.KabelID.isna() & ~df.opleverdatum.isna() & (df.Postcode.isna() | df.Huisnummer.isna())].sleutel.to_list()
+errors_FC_BC[key]['102'] = df[df.Plandatum.isna()].sleutel.to_list()
+errors_FC_BC[key]['103'] = df[df.opleverdatum.isna() &
+                              df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99'])].sleutel.to_list()
+errors_FC_BC[key]['104'] = df[df.opleverstatus.isna()].sleutel.to_list()
+errors_FC_BC[key]['114'] = df[df.toestemming.isna()].sleutel.to_list()
+errors_FC_BC[key]['115'] = errors_FC_BC[key]['118'] = df[df.soort_bouw.isna()].sleutel.to_list()  # zelfde error? gebouwtype vs type bouw?
+errors_FC_BC[key]['116'] = df[df.FTU_type.isna()].sleutel.to_list()
+errors_FC_BC[key]['117'] = df[df['Toelichting status'].isna() & df.opleverstatus.isin(['4', '12'])].sleutel.to_list()
+errors_FC_BC[key]['119'] = df[df['Toelichting status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].sleutel.to_list()
 
 errors_FC_BC[key]['120'] = 0  # doorvoerafhankelijk niet aanwezig
-errors_FC_BC[key]['121'] = df[(df.Postcode.isna() & ~df.Huisnummer.isna()) | (~df.Postcode.isna() & df.Huisnummer.isna())].shape[0]
+errors_FC_BC[key]['121'] = df[(df.Postcode.isna() & ~df.Huisnummer.isna()) |
+                              (~df.Postcode.isna() & df.Huisnummer.isna())].sleutel.to_list()
 errors_FC_BC[key]['122'] = df[~((df.Kast.isna() & df.Kastrij.isna() & df.ODFpos.isna() &  # kloppen deze velden?
                                  df.CATVpos.isna() & df.ODF.isna()) |
                                 (~df.Kast.isna() & ~df.Kastrij.isna() & ~df.ODFpos.isna() &
-                                 ~df.CATVpos.isna() & ~df.Areapop.isna() & ~df.ODF.isna()))].shape[0]
-errors_FC_BC[key]['123'] = df[df.ProjectCode.isna()].shape[0]
-errors_FC_BC[key]['301'] = df[~df.opleverdatum.isna() & df.opleverstatus.isin(['0', '14'])].shape[0]
-errors_FC_BC[key]['303'] = df[df.KabelID.isna() & (df.Postcode.isna() | df.Huisnummer.isna())].shape[0]
+                                 ~df.CATVpos.isna() & ~df.Areapop.isna() & ~df.ODF.isna()))].sleutel.to_list()
+errors_FC_BC[key]['123'] = df[df.ProjectCode.isna()].sleutel.to_list()
+errors_FC_BC[key]['301'] = df[~df.opleverdatum.isna() & df.opleverstatus.isin(['0', '14'])].sleutel.to_list()
+errors_FC_BC[key]['303'] = df[df.KabelID.isna() & (df.Postcode.isna() | df.Huisnummer.isna())].sleutel.to_list()
 errors_FC_BC[key]['304'] = 0  # geen column Kavel...
-errors_FC_BC[key]['306'] = df[~df.KabelID.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].shape[0]
+errors_FC_BC[key]['306'] = df[~df.KabelID.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
 errors_FC_BC[key]['308'] = 0  # geen HLopleverdatum...
 errors_FC_BC[key]['309'] = 0  # geen doorvoerafhankelijk aanwezig...
 
-errors_FC_BC[key]['310'] = 0  # df[~df.KabelID.isna() & df.Areapop.isna()].shape[0]  # strengID != KabelID?
-errors_FC_BC[key]['311'] = df[df.redenna.isna() & ~df.opleverstatus.isin(['2', '10', '50'])].shape[0]
+errors_FC_BC[key]['310'] = 0  # df[~df.KabelID.isna() & df.Areapop.isna()].sleutel.to_list()  # strengID != KabelID?
+errors_FC_BC[key]['311'] = df[df.redenna.isna() & ~df.opleverstatus.isin(['2', '10', '50'])].sleutel.to_list()
 errors_FC_BC[key]['501'] = sum([1 for el in df.Postcode if (len(el) != 6) | (not el[0:4].isnumeric()) |
                                                            (el[4].isnumeric()) | (el[5].isnumeric())])
 errors_FC_BC[key]['502'] = 0  # niet te checken, geen toegang tot CLR
@@ -131,7 +134,7 @@ errors_FC_BC[key]['503'] = 0  # date is already present in different format...yy
 errors_FC_BC[key]['504'] = 0  # date is already present in different format...yyyy-mm-dd??
 errors_FC_BC[key]['506'] = df[~df.opleverstatus.isin(['0', '1', '2', '4', '5', '6', '7,' '8', '9', '10', '11', '12', '13',
                                                       '14', '15', '30', '31', '33', '34', '35', '50', '90', '91', '96',
-                                                      '97', '98', '99'])].shape[0]
+                                                      '97', '98', '99'])].sleutel.to_list()
 errors_FC_BC[key]['508'] = 0  # niet te checken, geen toegang tot Areapop
 errors_FC_BC[key]['509'] = sum([1 for el in df.Kastrij if (len(el) > 2) | (len(el) < 1) | (not el.isnumeric())])
 errors_FC_BC[key]['510'] = sum([1 for el in df.Kast if (len(el) > 4) | (len(el) < 1) | (not el.isnumeric())])
@@ -141,13 +144,14 @@ errors_FC_BC[key]['512'] = sum([1 for el in df.ODFpos if (len(el) > 2) | (len(el
 errors_FC_BC[key]['513'] = sum([1 for el in df.CATV if (len(el) > 5) | (len(el) < 1) | (not el.isnumeric())])
 errors_FC_BC[key]['514'] = sum([1 for el in df.CATVpos if (len(el) > 3) | (len(el) < 1) |
                                                           (not el.isnumeric())])  # drie posities, 999, zie err711
-errors_FC_BC[key]['516'] = sum([1 for el in df.ProjectCode if (not str(el).isnumeric())])  # cannot check if projectcode is valid...
+errors_FC_BC[key]['516'] = sum([1 for el in df.ProjectCode if (not str(el).isnumeric()) &
+                                                              (~pd.isnull(el))])  # cannot check if projectcode is valid...
 errors_FC_BC[key]['517'] = 0  # date is already present in different format...yyyy-mm-dd??
-errors_FC_BC[key]['518'] = df[~df.toestemming.isin(['Ja', 'Nee', np.nan])].shape[0]
-errors_FC_BC[key]['519'] = df[~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend'])].shape[0]
+errors_FC_BC[key]['518'] = df[~df.toestemming.isin(['Ja', 'Nee', np.nan])].sleutel.to_list()
+errors_FC_BC[key]['519'] = df[~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend'])].sleutel.to_list()
 errors_FC_BC[key]['520'] = df[(df.FTU_type.isna() & df.opleverstatus.isin(['2', '10'])) |
                               (~df.FTU_type.isin(['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02',
-                                                  'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend']))].shape[0]
+                                                  'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend']))].sleutel.to_list()
 errors_FC_BC[key]['521'] = sum([1 for el in df[~df['Toelichting status'].isna()]['Toelichting status'] if len(el) < 3])
 
 errors_FC_BC[key]['522'] = 0  # Civieldatum not present in our FC dump
@@ -155,10 +159,11 @@ errors_FC_BC[key]['524'] = 0  # Kavel not present in our FC dump
 errors_FC_BC[key]['527'] = 0  # HL opleverdatum not present in our FC dump
 errors_FC_BC[key]['528'] = df[~df.redenna.isin([np.nan, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9',
                                                 'R10', 'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19',
-                                                'R20', 'R21', 'R22'])].shape[0]
+                                                'R20', 'R21', 'R22'])].sleutel.to_list()
 errors_FC_BC[key]['531'] = 0  # strengID niet aanwezig in deze FCdump
-errors_FC_BC[key]['532'] = sum([1 for el1, el2 in zip(df.ODFpos, df.CATVpos) if ((int(el2) - int(el1) != 1) & (int(el2) != 999)) |
-                                                                                (int(el1) % 2 == 0)])
+if df[~df.CATVpos.isin(['999'])].shape[0] > 0:
+    errors_FC_BC[key]['532'] = sum([1 for el1, el2 in zip(df.ODFpos, df.CATVpos) if ((int(el2) - int(el1) != 1) & (int(el2) != '999')) |
+                                                                                    (int(el1) % 2 == 0)])
 errors_FC_BC[key]['533'] = 0  # Doorvoerafhankelijkheid niet aanwezig in deze FCdump
 errors_FC_BC[key]['534'] = 0  # geen toegang tot CLR om te kunnen checken
 errors_FC_BC[key]['535'] = sum([1 for el in df[~df['Toelichting status'].isna()]['Toelichting status'] if ',' in el])
@@ -169,6 +174,30 @@ errors_FC_BC[key]['701'] = 0  # Kan niet gecheckt worden, hebben we vorige waard
 errors_FC_BC[key]['702'] = df[~df.ODF.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].shape[0]
 errors_FC_BC[key]['707'] = 0  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
 errors_FC_BC[key]['708'] = df[(df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) |
-                              (df.opleverstatus.isin(['91']) & ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))].shape[0]
-errors_FC_BC[key]['709'] = df[(df.ODF + df.ODFpos).duplicated()].shape[0]  # klopt deze aanname voor pop positie?
-errors_FC_BC[key]['710'] = df[(df.KabelID + df.Adres).duplicated()].shape[0]  # klopt deze aanname voor pop positie?
+                              (df.opleverstatus.isin(['91']) &
+                               ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))].sleutel.to_list()
+# errors_FC_BC[key]['709'] = df.shape[0] -
+#   (df.ODF + df.ODFpos).drop_duplicates(keep=False).sleutel.to_list()  # klopt deze aanname voor pop positie?
+# errors_FC_BC[key]['710'] = df[(df.KabelID + df.Adres).duplicated()].sleutel.to_list()
+# errors_FC_BC[key]['711'] = df[~df.CATV.isin(['999']) |
+#   ~df.CATVpos.isin(['999'])].sleutel.to_list()  # welk type PoP heeft 999...hoe weten we dat?
+# errors_FC_BC[key]['713'] = 0  # type bouw zit niet in onze FC dump
+# if df[df.ODF.isin(['999']) & df.ODFpos.isin(['999']) & df.CATVpos.isin(['999']) & df.CATVpos.isin(['999'])].shape[0] > 0:
+#     errors_FC_BC[key]['714'] = df[~df.ODF.isin(['999']) | ~df.ODFpos.isin(['999']) |
+#   ~df.CATVpos.isin(['999']) | ~df.CATVpos.isin(['999'])]
+
+# errors_FC_BC[key]['716'] = 0  # niet te checken, geen toegang tot SIMA
+# errors_FC_BC[key]['717'] = 0  # type bouw zit niet in onze FC dump
+# errors_FC_BC[key]['719'] = 0  # kan alleen gecheckt worden met geschiedenis
+# errors_FC_BC[key]['721'] = 0  # niet te checken, geen Doorvoerafhankelijkheid in FC dump
+# errors_FC_BC[key]['723'] = df[(df.redenna.isin(['R15', 'R16', 'R17']) & ~df.opleverstatus.isin(['90'])) |
+#                               (df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(['91'])) |
+#                               (df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))].sleutel.to_list()
+# errors_FC_BC[key]['724'] = df[(~df.opleverdatum.isna() & df.redenna.isin(['R0', 'R19', 'R22']))].sleutel.to_list()
+# errors_FC_BC[key]['725'] = 0  # geen zicht op vraagbundelingsproject of niet
+# errors_FC_BC[key]['726'] = 0  # niet te checken, geen HLopleverdatum aanwezig
+# errors_FC_BC[key]['727'] = df[df.opleverstatus.isin(['50'])].sleutel.to_list()
+# errors_FC_BC[key]['728'] = 0  # voorkennis nodig over poptype
+
+# errors_FC_BC[key]['729'] = 0  # kan niet checken, vorige staat FC voor nodig
+# errors_FC_BC[key]['90x'] = 0  # kan niet checken, extra info over bestand nodig!

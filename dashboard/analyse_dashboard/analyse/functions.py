@@ -23,7 +23,10 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     for fn in fn_l:
         df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
         df = df.replace('', np.nan).fillna(np.nan)
-        df['title'] = key = df['title'].iloc[0][0:-13]
+        if df['title'].iloc[0][0:-13] != 'Bergen op Zoom Noord\xa0  wijk 01\xa0+ Halsteren':
+            df['title'] = key = df['title'].iloc[0][0:-13]
+        else:
+            df['title'] = key = 'Bergen op Zoom Noord en Halsteren'
         # df = df[~df.sleutel.isna()]  # generate this as error output?
         df.rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
                            'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
@@ -164,7 +167,7 @@ def get_data_targets(path_data):
             'Spijkenisse': 'KPN Spijkernisse',
             'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
             # FT0 in 2020 --> eind datum schatten
-            'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord  wijk 01 + Halsteren',  # niet in FC
+            'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord en Halsteren',  # niet in FC
             'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
             'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag - Haagse Hout-Bezuidenhout West',  # niet in FC??
             'Den Haag - Vrederust en Bouwlust': 'Den Haag - Vrederust en Bouwlust',  # niet in FC??
