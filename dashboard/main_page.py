@@ -220,12 +220,6 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
-                    # html.Div(
-                    #         [dcc.Graph(id="graph_targets")],
-                    #         id='graph_targets_c',
-                    #         className="pretty_container column",
-                    #         hidden=True,
-                    # ),
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
                             id='Bar_LB_c',
@@ -313,7 +307,6 @@ def update_dropdown(value):
      Output("ww_c", 'hidden'),
      Output('FTU_table_c', 'hidden'),
      Output("graph_prog_c", "hidden"),
-     Output("graph_targets_c", "hidden"),
      Output("table_info", "hidden"),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
@@ -347,7 +340,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
     return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
-            not hidden, not hidden, not hidden, not hidden, not hidden,
+            not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
 
@@ -355,7 +348,6 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
 @app.callback(
     [
      Output("graph_prog", 'figure'),
-     Output("graph_targets", 'figure'),
      Output("table_info", 'children'),
      Output("overzicht_button", 'n_clicks'),
      ],
@@ -367,11 +359,10 @@ def middle_top_graphs(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_bish = generate_graphs(0, drop_selectie, None)
     fig_prog = generate_graphs(1, drop_selectie, None)
     table_info = generate_graphs(8, drop_selectie, None)
 
-    return [fig_prog, fig_bish, table_info, -1]
+    return [fig_prog, table_info, -1]
 
 
 # update click bar charts
@@ -540,10 +531,6 @@ def generate_graphs(flag, drop_selectie, mask_all):
         date_an = api.get('/Graphs?id=update_date')[0]['date']
         date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
         fig = min([date_an, date_con])
-
-    # BIS/HAS
-    if flag == 0:
-        fig = api.get('/Graphs?id=' + drop_selectie)[0]['figure']
 
     # prognose
     if flag == 1:
