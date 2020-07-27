@@ -147,6 +147,26 @@ def get_body():
                         className="pretty_container column",
                         hidden=False,
                     ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_5"),
+                            html.P([html.Strong('Totaal Schouw')]),
+                            html.P(id="info_globaal_05", children=generate_graphs(86, None, None))
+                        ],
+                        id="info_globaal_container5",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_6"),
+                            html.P([html.Strong('Totaal BIS')]),
+                            html.P(id="info_globaal_06", children=generate_graphs(87, None, None))
+                        ],
+                        id="info_globaal_container6",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
                 ],
                 id="info-container1",
                 className="container-display",
@@ -220,12 +240,6 @@ def get_body():
                             className="pretty_container column",
                             hidden=True,
                     ),
-                    # html.Div(
-                    #         [dcc.Graph(id="graph_targets")],
-                    #         id='graph_targets_c',
-                    #         className="pretty_container column",
-                    #         hidden=True,
-                    # ),
                     html.Div(
                             [dcc.Graph(id="Bar_LB")],
                             id='Bar_LB_c',
@@ -309,11 +323,12 @@ def update_dropdown(value):
      Output("info_globaal_container2", 'hidden'),
      Output("info_globaal_container3", 'hidden'),
      Output("info_globaal_container4", 'hidden'),
+     Output("info_globaal_container5", 'hidden'),
+     Output('info_globaal_container6', 'hidden'),
      Output("graph_speed_c", 'hidden'),
      Output("ww_c", 'hidden'),
      Output('FTU_table_c', 'hidden'),
      Output("graph_prog_c", "hidden"),
-     Output("graph_targets_c", "hidden"),
      Output("table_info", "hidden"),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
@@ -347,7 +362,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
     return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
-            not hidden, not hidden, not hidden, not hidden, not hidden,
+            not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
 
@@ -355,7 +370,6 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
 @app.callback(
     [
      Output("graph_prog", 'figure'),
-     Output("graph_targets", 'figure'),
      Output("table_info", 'children'),
      Output("overzicht_button", 'n_clicks'),
      ],
@@ -367,11 +381,10 @@ def middle_top_graphs(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_bish = generate_graphs(0, drop_selectie, None)
     fig_prog = generate_graphs(1, drop_selectie, None)
     table_info = generate_graphs(8, drop_selectie, None)
 
-    return [fig_prog, fig_bish, table_info, -1]
+    return [fig_prog, table_info, -1]
 
 
 # update click bar charts
@@ -447,6 +460,8 @@ def FTU_table_editable(ww):
      Output('info_globaal_02', 'children'),
      Output('info_globaal_03', 'children'),
      Output('info_globaal_04', 'children'),
+     Output('info_globaal_05', 'children'),
+     Output('info_globaal_06', 'children'),
      Output('graph_targets_ov', 'figure'),
      Output('graph_targets_m', 'figure'),
      Output('project_performance', 'figure'),
@@ -467,9 +482,9 @@ def FTU_update(data):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
     # to update overview graphs:
-    HC_HPend = next(firestore.Client().collection('Graphs').where('id', '==', 'jaaroverzicht').get()).to_dict()['HC_HPend']
-    doc = next(firestore.Client().collection('Graphs').where('id', '==', 'analysis2').get()).to_dict()
-    doc2 = next(firestore.Client().collection('Graphs').where('id', '==', 'analysis3').get()).to_dict()
+    HC_HPend = firestore.Client().collection('Graphs').document('jaaroverzicht').get().to_dict()['HC_HPend']
+    doc = firestore.Client().collection('Graphs').document('analysis2').get().to_dict()
+    doc2 = firestore.Client().collection('Graphs').document('analysis3').get().to_dict()
     x_d = pd.to_datetime(doc['x_d'])
     tot_l = doc['tot_l']
     HP = doc['HP']
@@ -541,9 +556,11 @@ def generate_graphs(flag, drop_selectie, mask_all):
         date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
         fig = min([date_an, date_con])
 
-    # BIS/HAS
-    if flag == 0:
-        fig = api.get('/Graphs?id=' + drop_selectie)[0]['figure']
+    if flag == 86:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['Schouw']
+
+    if flag == 87:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['BIS']
 
     # prognose
     if flag == 1:
