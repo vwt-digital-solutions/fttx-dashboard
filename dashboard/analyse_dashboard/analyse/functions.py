@@ -1036,7 +1036,7 @@ def get_intersect(a1, a2, b1, b2):
     return (x/z, y/z)
 
 
-def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
+def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, Schouw, BIS):
     n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
     n_d = int((pd.Timestamp.now() - x_d[0]).days)
     n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
