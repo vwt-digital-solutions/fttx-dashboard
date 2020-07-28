@@ -10,14 +10,14 @@ import hashlib
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
-    fn_l = os.listdir(path_data + 'jsonFC/')
+    fn_l = os.listdir(path_data + '../jsonFC/')
     client = storage.Client()
     bucket = client.get_bucket('vwt-d-gew1-it-fiberconnect-int-preprocess-stg')
     blobs = bucket.list_blobs()
     for blob in blobs:
         if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-            blob.download_to_filename(path_data + 'jsonFC/' + blob.name.split('/')[-1])
-    fn_l = os.listdir(path_data + 'jsonFC/')
+            blob.download_to_filename(path_data + '../jsonFC/' + blob.name.split('/')[-1])
+    fn_l = os.listdir(path_data + '../jsonFC/')
 
     df_l = {}
     for fn in fn_l:
@@ -293,9 +293,9 @@ def calculate_projectspecs(df_l, year):
         else:
             HC_HPend_l[key] = 0
         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
-        HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
-        BIS_d[key] = len(df_l[key][~df_l[key]['opleverdatum'].isna()])
-        Schouw_d[key] = len(df_l[key].opleverstatus != '0')
+        HPend_l[key] = len(df_l[key][~df_l[key].toestemming.isna()])
+        BIS_d[key] = len(df_l[key].opleverstatus != '0')
+        Schouw_d[key] = len(df_l[key][~df_l[key]['toestemming'].isna()])
     HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
     Schouw = sum(Schouw_d.values())
     BIS = sum(BIS_d.values())
@@ -1036,7 +1036,7 @@ def get_intersect(a1, a2, b1, b2):
     return (x/z, y/z)
 
 
-def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, Schouw, BIS):
+def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
     n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
     n_d = int((pd.Timestamp.now() - x_d[0]).days)
     n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7

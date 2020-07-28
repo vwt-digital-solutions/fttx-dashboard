@@ -362,7 +362,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
     return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
-            not hidden, not hidden, not hidden, not hidden,
+            hidden, hidden, not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
 
@@ -521,7 +521,7 @@ def FTU_update(data):
     graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='M')  # 2019-12-30 -- 2020-12-21
     performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
-    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, Schouw, BIS)
+    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
 
     out0 = 'HPend afgesproken: ' + generate_graphs(80, None, None)
     out1 = 'HPend gerealiseerd: ' + generate_graphs(81, None, None)
