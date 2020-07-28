@@ -21,7 +21,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
 
     df_l = {}
     for fn in fn_l:
-        df = pd.DataFrame(pd.read_json(path_data + 'jsonFC/' + fn, orient='records')['data'].to_list())
+        df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
         df = df.replace('', np.nan).fillna(np.nan)
         if df['title'].iloc[0][0:-13] != 'Bergen op Zoom Noord\xa0  wijk 01\xa0+ Halsteren':
             df['title'] = key = df['title'].iloc[0][0:-13]
@@ -48,7 +48,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
             df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
         if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
-            os.remove(path_data + 'jsonFC/' + fn)
+            os.remove(path_data + '../jsonFC/' + fn)
 
     # hash sleutel code
     if flag == 0:
@@ -293,7 +293,7 @@ def calculate_projectspecs(df_l, year):
         else:
             HC_HPend_l[key] = 0
         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
-        HPend_l[key] = len(df_l[key][~df_l[key].toestemming.isna()])
+        HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
         BIS_d[key] = len(df_l[key].opleverstatus != '0')
         Schouw_d[key] = len(df_l[key][~df_l[key]['toestemming'].isna()])
     HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
