@@ -284,10 +284,7 @@ def calculate_projectspecs(df_l, year):
     HC_HPend_l = {}
     Schouw_BIS = {}
     HPend_l = {}
-    Schouw = {}
-    BIS = {}
-    Schouw_d = {}
-    BIS_d = {}
+    HAS_werkvoorraad_d = calculate_y_voorraad_act(df_l)
     for key in df_l:
         df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
         if not df_HPend.empty:
@@ -305,13 +302,11 @@ def calculate_projectspecs(df_l, year):
             HC_HPend_l[key] = 0
         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
         HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
-        BIS_d[key] = len(df_l[key].opleverstatus != '0')
-        Schouw_d[key] = len(df_l[key][~df_l[key]['toestemming'].isna()])
-    HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
-    Schouw = sum(Schouw_d.values())
-    BIS = sum(BIS_d.values())
 
-    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, Schouw, BIS
+    HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
+    HAS_werkvoorraad = sum(HAS_werkvoorraad_d.values())
+
+    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad
 
 
 def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
@@ -381,7 +376,7 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
     return df_prog, df_target, df_real, df_plan
 
 
-def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res):
+def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res):
     if 'W' in res:
         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
@@ -420,7 +415,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, 
     if 'M' == res:
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
                              plan=str(round(sum(plan[n_now:]) - real[n_now])), prog=str(round(sum(prog[n_now:]) - real[n_now])),
-                             HC_HPend=str(HC_HPend), Schouw=str(Schouw), BIS=str(BIS), prog_c='pretty_container')
+                             HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
             jaaroverzicht['prog_c'] = 'pretty_container_red'
 
@@ -1080,7 +1075,7 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
 
 def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
                          df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                         Schouw_BIS, HPend_l, Schouw, BIS, n_err):
+                         Schouw_BIS, HPend_l, HAS_werkvoorraad, n_err):
     for key in y_target_l:
         if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
             date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
@@ -1113,7 +1108,7 @@ def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_r
     record = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
                   y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
                   x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
-                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l, Schouw=Schouw, BIS=BIS)
+                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l, HAS_werkvoorraad=HAS_werkvoorraad)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
     record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
     firestore.Client().collection('Graphs').document(record['id']).set(record)

@@ -30,7 +30,7 @@ print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 # %% Analysis
 t_start = time.time()
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
-HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, Schouw, BIS = calculate_projectspecs(df_l, '2020')
+HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = calculate_projectspecs(df_l, '2020')
 y_voorraad_act = calculate_y_voorraad_act(df_l)
 rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = prognose(df_l, t_s, x_d, tot_l, date_FTU0)
 y_target_l, t_diff = targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
@@ -39,7 +39,7 @@ n_err, errors_FC_BC = error_check_FCBC(df_l)
 # write analysis result to Graphs collection
 analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
                      df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l, Schouw_BIS,
-                     HPend_l, Schouw, BIS, n_err)
+                     HPend_l, HAS_werkvoorraad, n_err)
 
 print('do analyses: ' + str((time.time() - t_start) / 60) + ' min')
 
@@ -51,8 +51,8 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 set_filters(df_l)
 map_redenen()
 # add_token_mapbox(config.mapbox_token)
-graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='W-MON')  # 2019-12-30 -- 2020-12-21
-graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='M')  # 2019-12-30 -- 2020-12-21
+graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='W-MON')  # 2019-12-30 -- 2020-12-21
+graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')  # 2019-12-30 -- 2020-12-21
 performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
 prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
 info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
