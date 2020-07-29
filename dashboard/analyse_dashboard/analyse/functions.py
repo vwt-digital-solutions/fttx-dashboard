@@ -972,11 +972,11 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                      'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
                      }],
            'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': 'HPend meer dan KPN target [%]', 'range': [x_min, x_max],
+                      'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
                                 'zeroline': False},
-                      'yaxis': {'title': 'Werkvoorraad Schouw & BIS [%]', 'range': [y_min, y_max], 'zeroline': False},
+                      'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max], 'zeroline': False},
                       'showlegend': False,
-                      'title': {'text': 'Krijg alle projecten in het groene vlak doormiddel van de pijlen te volgen'},
+                      'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
                       'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
                                            text='Verhoog schouw of BIS capaciteit', alignment='left',
                                            showarrow=True, arrowhead=2)] +
