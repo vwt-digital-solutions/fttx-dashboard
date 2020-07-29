@@ -7,7 +7,7 @@ from gobits import Gobits
 from google.cloud import pubsub, firestore
 from functions import get_data_FC, get_data_planning, get_data_targets
 from functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
-from functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names
+from functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names, error_check_FCBC
 from functions import graph_overview, masks_phases, map_redenen, analyse_to_firestore, set_date_update
 
 
@@ -58,10 +58,11 @@ def analyse(request):
         rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = prognose(df_l, t_s, x_d, tot_l, date_FTU0)
         y_target_l, t_diff = targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
         df_prog, df_target, df_real, df_plan = overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l)
+        n_err, errors_FC_BC = error_check_FCBC(df_l)
         # write analysis result to Graphs collection
-        analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target,
-                             df_real, df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act,
-                             HC_HPend_l, Schouw_BIS, HPend_l, Schouw, BIS)
+        analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
+                             df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l, Schouw_BIS,
+                             HPend_l, Schouw, BIS, n_err)
         logging.info('analyses done')
 
         # to fill collection Graphs
@@ -71,7 +72,7 @@ def analyse(request):
         graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='M')  # 2019-12-30 -- 2020-12-21
         performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
         prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
-        info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
+        info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
         set_date_update()
 
         return 'OK', 204

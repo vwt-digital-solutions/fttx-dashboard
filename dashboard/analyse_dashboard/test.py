@@ -39,7 +39,7 @@ n_err, errors_FC_BC = error_check_FCBC(df_l)
 # write analysis result to Graphs collection
 analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
                      df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l, Schouw_BIS,
-                     HPend_l, Schouw, BIS)
+                     HPend_l, Schouw, BIS, n_err)
 
 print('do analyses: ' + str((time.time() - t_start) / 60) + ' min')
 
@@ -55,7 +55,7 @@ graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res=
 graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='M')  # 2019-12-30 -- 2020-12-21
 performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
 prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
-info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
+info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 t_start = time.time()
 for i, pkey in enumerate(config.subset_KPN_2020):

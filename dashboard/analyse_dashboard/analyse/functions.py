@@ -1042,12 +1042,12 @@ def get_intersect(a1, a2, b1, b2):
     return (x/z, y/z)
 
 
-def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
+def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
     n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
     n_d = int((pd.Timestamp.now() - x_d[0]).days)
     n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
     col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
-           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel']
+           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel', 'Errors FC - BC']
     records = []
     for key in d_real_l:
         if d_real_l[key].max()[0] < 100:
@@ -1067,6 +1067,7 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
                 record[col[5]] = 0
             record[col[6]] = record[col[5]] - record[col[4]]
             record[col[7]] = round(HC_HPend_l[key])
+            record[col[8]] = n_err[key]
             records += [record]
     df_table = pd.DataFrame(records).to_json(orient='records')
     firestore.Client().collection('Graphs').document('info_table').set(dict(id='info_table', table=df_table, col=col))
@@ -1074,7 +1075,7 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
 
 def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
                          df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                         Schouw_BIS, HPend_l, Schouw, BIS):
+                         Schouw_BIS, HPend_l, Schouw, BIS, n_err):
     for key in y_target_l:
         if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
             date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
@@ -1109,7 +1110,7 @@ def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_r
                   x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
                   Schouw_BIS=Schouw_BIS, HPend_l=HPend_l, Schouw=Schouw, BIS=BIS)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
-    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri)
+    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
