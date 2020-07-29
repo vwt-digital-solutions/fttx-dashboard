@@ -150,20 +150,10 @@ def get_body():
                     html.Div(
                         [
                             html.H6(id="info_globaal_5"),
-                            html.P([html.Strong('Totaal Schouw')]),
+                            html.P([html.Strong('Werkvoorraad HAS')]),
                             html.P(id="info_globaal_05", children=generate_graphs(86, None, None))
                         ],
                         id="info_globaal_container5",
-                        className="pretty_container column",
-                        hidden=False,
-                    ),
-                    html.Div(
-                        [
-                            html.H6(id="info_globaal_6"),
-                            html.P([html.Strong('Totaal BIS')]),
-                            html.P(id="info_globaal_06", children=generate_graphs(87, None, None))
-                        ],
-                        id="info_globaal_container6",
                         className="pretty_container column",
                         hidden=False,
                     ),
@@ -324,7 +314,6 @@ def update_dropdown(value):
      Output("info_globaal_container3", 'hidden'),
      Output("info_globaal_container4", 'hidden'),
      Output("info_globaal_container5", 'hidden'),
-     Output('info_globaal_container6', 'hidden'),
      Output("graph_speed_c", 'hidden'),
      Output("ww_c", 'hidden'),
      Output('FTU_table_c', 'hidden'),
@@ -464,7 +453,6 @@ def FTU_table_editable(ww):
      Output('graph_targets_m', 'figure'),
      Output('project_performance', 'figure'),
      Output('info_globaal_05', 'children'),
-     Output('info_globaal_06', 'children'),
      ],
     [
      Input('table_FTU', 'data'),
@@ -490,8 +478,7 @@ def FTU_update(data):
     HP = doc['HP']
     HC_HPend_l = doc['HC_HPend_l']
     Schouw_BIS = doc['Schouw_BIS']
-    Schouw = doc['Schouw']
-    BIS = doc['BIS']
+    HAS_werkvoorraad = doc['HAS_werkvoorraad']
     HPend_l = doc['HPend_l']
     d_real_l = doc2['d_real_l']
     d_real_li = doc2['d_real_li']
@@ -517,8 +504,8 @@ def FTU_update(data):
     y_target_l, t_diff = targets(x_prog, x_d, t_shift, FTU0, FTU1, rc1, d_real_l)
 
     df_prog, df_target, df_real, df_plan = overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l)
-    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='W-MON')  # 2019-12-30 -- 2020-12-21
-    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, Schouw, BIS, res='M')  # 2019-12-30 -- 2020-12-21
+    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='W-MON')  # 2019-12-30 -- 2020-12-21
+    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')  # 2019-12-30 -- 2020-12-21
     performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
     info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
@@ -532,9 +519,8 @@ def FTU_update(data):
     out6 = generate_graphs(41, None, None)
     out7 = generate_graphs(2, None, None)
     out8 = generate_graphs(86, None, None)
-    out9 = generate_graphs(87, None, None)
 
-    return [out0, out1, out2, out3, out4, out5, out6, out7, out8, out9]
+    return [out0, out1, out2, out3, out4, out5, out6, out7, out8]
 
 
 # HELPER FUNCTIES
@@ -561,10 +547,7 @@ def generate_graphs(flag, drop_selectie, mask_all):
         fig = min([date_an, date_con])
 
     if flag == 86:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['Schouw']
-
-    if flag == 87:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['BIS']
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['HAS_werkvoorraad']
 
     # prognose
     if flag == 1:
