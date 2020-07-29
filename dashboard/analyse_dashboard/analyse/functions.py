@@ -34,7 +34,12 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
                            'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
                            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
                            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                           'HASdatum': 'hasdatum', 'title': 'project'}, inplace=True)
+                           'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
+                           'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
+                           'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
+                           'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
+                           'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
+                           'SchouwDatum': 'schouwdatum'}, inplace=True)
         if flag == 0:
             df = df[col]
         df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
@@ -1152,10 +1157,6 @@ def add_token_mapbox(token):
     record = dict(id='token_mapbox',
                   token=token)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
-
-
-def error_check_FC_BC(df_l):
-    return 0
 
 
 def from_rd(x: int, y: int) -> tuple:
