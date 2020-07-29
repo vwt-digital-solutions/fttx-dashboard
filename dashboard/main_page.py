@@ -350,7 +350,7 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
 
-    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
+    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
             hidden, hidden, not hidden, not hidden, not hidden, not hidden,
             fig['geo'], fig['table'], hidden1, hidden1]
 
