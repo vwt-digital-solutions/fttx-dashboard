@@ -15,8 +15,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     bucket = client.get_bucket('vwt-d-gew1-it-fiberconnect-int-preprocess-stg')
     blobs = bucket.list_blobs()
     for blob in blobs:
-        # if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-        if '20200728' in blob.name:
+        if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
             blob.download_to_filename(path_data + '../jsonFC/' + blob.name.split('/')[-1])
     fn_l = os.listdir(path_data + '../jsonFC/')
 
