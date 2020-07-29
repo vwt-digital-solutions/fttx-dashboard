@@ -490,6 +490,7 @@ def FTU_update(data):
     cutoff = doc['cutoff']
     y_voorraad_act = doc['y_voorraad_act']
     x_prog = np.array(doc['x_prog'])
+    n_err = doc2['n_err']
     for key in y_prog_l:
         y_prog_l[key] = np.array(y_prog_l[key])
         y_target_l[key] = np.array(y_target_l[key])
@@ -508,7 +509,7 @@ def FTU_update(data):
     graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')  # 2019-12-30 -- 2020-12-21
     performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
-    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
+    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 
     out0 = 'HPend afgesproken: ' + generate_graphs(80, None, None)
     out1 = 'HPend gerealiseerd: ' + generate_graphs(81, None, None)
