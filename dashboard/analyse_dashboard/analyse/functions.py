@@ -20,46 +20,40 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     fn_l = os.listdir(path_data + '../jsonFC/')
 
     df_l = {}
-    for fn in fn_l[1:]:
-        try:
-            df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
-        except NameError:
-            df = pd.DataFrame()
+    for fn in fn_l:
+        df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
+        df = df.replace('', np.nan).fillna(np.nan)
+        if df['title'].iloc[0][0:-13] != 'Bergen op Zoom Noord\xa0  wijk 01\xa0+ Halsteren':
+            df['title'] = key = df['title'].iloc[0][0:-13]
         else:
-            df = pd.DataFrame()
-        if not df.empty:
-            df = df.replace('', np.nan).fillna(np.nan)
-            if df['title'].iloc[0][0:-13] != 'Bergen op Zoom Noord\xa0  wijk 01\xa0+ Halsteren':
-                df['title'] = key = df['title'].iloc[0][0:-13]
-            else:
-                df['title'] = key = 'Bergen op Zoom Noord en Halsteren'
-            # df = df[~df.sleutel.isna()]  # generate this as error output?
-            df.rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
-                               'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
-                               'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
-                               'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
-                               'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
-                               'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                               'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
-                               'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
-                               'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
-                               'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
-                               'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
-                               'SchouwDatum': 'schouwdatum'}, inplace=True)
-            if flag == 0:
-                df = df[col]
-            df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
-                [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
-            df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
-                [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
-            if (key in subset) and (key not in df_l.keys()):
-                df_l[key] = df
-            if (key in subset) and (key in df_l.keys()):
-                df_l[key] = df_l[key].append(df, ignore_index=True)
-                df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
+            df['title'] = key = 'Bergen op Zoom Noord en Halsteren'
+        # df = df[~df.sleutel.isna()]  # generate this as error output?
+        df.rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
+                           'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
+                           'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
+                           'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
+                           'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
+                           'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
+                           'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
+                           'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
+                           'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
+                           'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
+                           'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
+                           'SchouwDatum': 'schouwdatum'}, inplace=True)
+        if flag == 0:
+            df = df[col]
+        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
+            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
+        df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
+            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
+        if (key in subset) and (key not in df_l.keys()):
+            df_l[key] = df
+        if (key in subset) and (key in df_l.keys()):
+            df_l[key] = df_l[key].append(df, ignore_index=True)
+            df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
 
-            if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
-                os.remove(path_data + '../jsonFC/' + fn)
+        if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
+            os.remove(path_data + '../jsonFC/' + fn)
 
     # hash sleutel code
     if flag == 0:
