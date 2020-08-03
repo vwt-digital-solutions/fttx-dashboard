@@ -10,7 +10,6 @@ from functions import targets, prognose, overview, calculate_projectspecs, calcu
 from functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names, error_check_FCBC
 from functions import graph_overview, masks_phases, analyse_to_firestore, set_date_update
 from functions import overview_reden_na, individual_reden_na
-from analyse.config import clusters_reden_na
 
 
 logging.basicConfig(level=logging.INFO)
@@ -77,8 +76,8 @@ def analyse(request):
         prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
         info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
         set_date_update()
-        overview_reden_na(df_l, clusters_reden_na)
-        individual_reden_na(df_l, clusters_reden_na)
+        overview_reden_na(df_l, config.clusters_reden_na)
+        individual_reden_na(df_l, config.clusters_reden_na)
 
         return 'OK', 204
 
