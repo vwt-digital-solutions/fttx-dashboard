@@ -61,8 +61,6 @@ def analyse(request):
         y_target_l, t_diff = targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
         df_prog, df_target, df_real, df_plan = overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l)
         n_err, errors_FC_BC = error_check_FCBC(df_l)
-        overview_reden_na(df_l)
-        individual_reden_na(df_l)
 
         # write analysis result to Graphs collection
         analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target,
