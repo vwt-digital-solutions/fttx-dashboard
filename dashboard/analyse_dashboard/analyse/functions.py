@@ -1340,7 +1340,7 @@ def cluster_reden_na(label, clusters):
 
 
 def pie_chart_reden_na(df, clusters, key):
-    df_na = df[df['redenna'].isna() is False]
+    df_na = df[~df['redenna'].isna()]
 
     df_na['cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
 
