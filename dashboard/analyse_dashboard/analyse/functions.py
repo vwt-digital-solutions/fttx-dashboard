@@ -1325,3 +1325,74 @@ def error_check_FCBC(df_l):
         n_err[key] = len(err_all)
 
     return n_err, errors_FC_BC
+
+
+def cluster_reden_na(label, clusters):
+    for k, v in clusters.items():
+        if label in v:
+            return k
+
+
+def pie_chart_reden_na(df, clusters, key):
+    df_na = df[~df['redenna'].isna()]
+
+    df_na['cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
+
+    df_na = df_na.groupby('cluster_redenna').size()
+    df_na = df_na.to_frame(name='count').reset_index()
+    labels = df_na['cluster_redenna'].tolist()
+    values = df_na['count'].tolist()
+
+    data = {
+                'labels': labels,
+                'values': values,
+                'marker': {
+                            'colors':
+                            [
+                                'rgb(0, 204, 0)',
+                                'rgb(204, 0, 0)',
+                                'rgb(255, 255, 0)'
+                            ]
+                          }
+           }
+    document = 'pie_na_' + key
+    return data, document
+
+
+def overview_reden_na(df_l, clusters):
+    full_df = pd.concat(df_l.values())
+    data, document = pie_chart_reden_na(full_df, clusters, 'overview')
+    layout = get_pie_layout()
+    fig = {
+                'data': data,
+                'layout': layout
+          }
+    record = dict(id=document, figure=fig)
+    to_firestore("Graphs", document, record)
+
+
+def individual_reden_na(df_l, clusters):
+    for project, df in df_l.items():
+        data, document = pie_chart_reden_na(df, clusters, project)
+        layout = get_pie_layout()
+        fig = {
+                'data': data,
+                'layout': layout
+            }
+        record = dict(id=document, figure=fig)
+        to_firestore('Graphs', document, record)
+
+
+def to_firestore(collection, document, record):
+    firestore.Client().collection(collection).document(document).set(record)
+
+
+def get_pie_layout():
+    layout = {
+                #   'clickmode': 'event+select',
+                'showlegend': True,
+                'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+                'title': {'text': 'Opgegeven reden na'},
+                'height': 350,
+             }
+    return layout

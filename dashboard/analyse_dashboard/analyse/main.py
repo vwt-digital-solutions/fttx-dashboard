@@ -8,7 +8,9 @@ from google.cloud import pubsub, firestore
 from functions import get_data_FC, get_data_planning, get_data_targets
 from functions import targets, prognose, overview, calculate_projectspecs, calculate_y_voorraad_act
 from functions import set_filters, prognose_graph, performance_matrix, info_table, set_bar_names, error_check_FCBC
-from functions import graph_overview, masks_phases, map_redenen, analyse_to_firestore, set_date_update
+from functions import graph_overview, masks_phases, analyse_to_firestore, set_date_update
+from functions import overview_reden_na, individual_reden_na
+from analyse.config import clusters_reden_na
 
 
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +61,7 @@ def analyse(request):
         y_target_l, t_diff = targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
         df_prog, df_target, df_real, df_plan = overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l)
         n_err, errors_FC_BC = error_check_FCBC(df_l)
+
         # write analysis result to Graphs collection
         analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target,
                              df_real, df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act,
@@ -67,13 +70,15 @@ def analyse(request):
 
         # to fill collection Graphs
         set_filters(df_l)
-        map_redenen()
+
         graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='W-MON')  # 2019-12-30 -- 2020-12-21
         graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')  # 2019-12-30 -- 2020-12-21
         performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
         prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
         info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
         set_date_update()
+        overview_reden_na(df_l, clusters_reden_na)
+        individual_reden_na(df_l, clusters_reden_na)
 
         return 'OK', 204
 

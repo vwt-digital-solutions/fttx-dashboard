@@ -175,6 +175,12 @@ def get_body():
                             className="pretty_container column",
                             hidden=False,
                     ),
+                    html.Div(
+                            [dcc.Graph(id="Pie_NA_o", figure=generate_graphs(11, None, None))],
+                            id='Pie_NA_oid',
+                            className="pretty_container column",
+                            hidden=False,
+                    ),
                 ],
                 id="main_graphs0",
                 className="container-display",
@@ -239,6 +245,12 @@ def get_body():
                     html.Div(
                             [dcc.Graph(id="Bar_HB")],
                             id='Bar_HB_c',
+                            className="pretty_container column",
+                            hidden=True,
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Pie_NA_c")],
+                            id='Pie_NA_cid',
                             className="pretty_container column",
                             hidden=True,
                     ),
@@ -321,6 +333,8 @@ def update_dropdown(value):
      Output("table_info", "hidden"),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
+     Output("Pie_NA_oid", "hidden"),
+     Output("Pie_NA_cid", "hidden"),
      Output("geo_plot", 'figure'),
      Output("table_c", 'children'),
      Output("geo_plot_c", "hidden"),
@@ -349,10 +363,29 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
     else:
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
-
-    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
-            hidden, hidden, not hidden, not hidden, not hidden, not hidden,
-            fig['geo'], fig['table'], hidden1, hidden1]
+    return [
+                hidden,  # graph_targets_overall_c
+                hidden,  # graph_targets_overallM_c
+                hidden,  # info_globaal_container0
+                hidden,  # info_globaal_container1
+                hidden,  # info_globaal_container2
+                hidden,  # info_globaal_container3
+                hidden,  # info_globaal_container4
+                hidden,  # info_globaal_container5
+                hidden,  # graph_speed_c
+                hidden,  # ww_c
+                hidden,  # FTU_table_c
+                not hidden,  # graph_prog_c
+                not hidden,  # table_info
+                not hidden,  # Bar_LB_c
+                not hidden,  # Bar_HB_c
+                hidden,  # Pie_NA_oid
+                not hidden,  # Pie_NA_cid
+                fig['geo'],  # geo_plot
+                fig['table'],  # table_c
+                hidden1,  # geo_plot_c
+                hidden1  # table_c
+            ]
 
 
 # update middle-top charts given dropdown selection
@@ -381,6 +414,7 @@ def middle_top_graphs(drop_selectie):
     [
      Output("Bar_LB", "figure"),
      Output("Bar_HB", "figure"),
+     Output("Pie_NA_c", "figure"),
      Output("aggregate_data", 'data'),
      Output("aggregate_data2", 'data'),
      Output("detail_button", "n_clicks")
@@ -424,8 +458,9 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     barLB = generate_graphs(5, drop_selectie, mask_all)
     barHB = generate_graphs(6, drop_selectie, mask_all)
+    pieNA = generate_graphs(10, drop_selectie, mask_all)
 
-    return [barLB, barHB, mask_all, drop_selectie, 0]
+    return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
 
 
 # update FTU table for editing
@@ -769,4 +804,19 @@ def generate_graphs(flag, drop_selectie, mask_all):
             editable=False,
         )
 
+    if flag == 10:
+        fig = get_pie(drop_selectie)
+    if flag == 11:
+        fig = get_pie('overview')
+    return fig
+
+
+def get_pie(key):
+    fig = api.get('/Graphs?id=pie_na_' + key)
+    data = fig[0]['figure']['data']
+    trace = go.Pie(data)
+    layout = fig[0]['figure']['layout']
+    data = [trace]
+    fig = dict(data=data,
+               layout=layout)
     return fig
