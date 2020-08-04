@@ -1333,10 +1333,10 @@ def cluster_reden_na(label, clusters):
             return k
 
 
-def pie_chart_reden_na(df, clusters, key):
-    df_na = df[~df['redenna'].isna()]
+def pie_chart_reden_na(df_na, clusters, key):
 
     df_na['cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
+    df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
 
     df_na = df_na.groupby('cluster_redenna').size()
     df_na = df_na.to_frame(name='count').reset_index()
@@ -1350,8 +1350,8 @@ def pie_chart_reden_na(df, clusters, key):
                             'colors':
                             [
                                 'rgb(0, 204, 0)',
-                                'rgb(204, 0, 0)',
-                                'rgb(255, 255, 0)'
+                                'rgb(255, 255, 0)',
+                                'rgb(204, 0, 0)'
                             ]
                           }
            }
