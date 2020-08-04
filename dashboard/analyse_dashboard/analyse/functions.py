@@ -34,7 +34,12 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
                            'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
                            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
                            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                           'HASdatum': 'hasdatum', 'title': 'project'}, inplace=True)
+                           'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
+                           'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
+                           'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
+                           'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
+                           'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
+                           'SchouwDatum': 'schouwdatum'}, inplace=True)
         if flag == 0:
             df = df[col]
         df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
@@ -273,6 +278,7 @@ def calculate_projectspecs(df_l, year):
     HC_HPend_l = {}
     Schouw_BIS = {}
     HPend_l = {}
+    HAS_werkvoorraad_d = calculate_y_voorraad_act(df_l)
     for key in df_l:
         df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
         if not df_HPend.empty:
@@ -290,9 +296,11 @@ def calculate_projectspecs(df_l, year):
             HC_HPend_l[key] = 0
         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
         HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
-    HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
 
-    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l
+    HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
+    HAS_werkvoorraad = sum(HAS_werkvoorraad_d.values())
+
+    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad
 
 
 def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
@@ -362,7 +370,7 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
     return df_prog, df_target, df_real, df_plan
 
 
-def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res):
+def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res):
     if 'W' in res:
         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
@@ -401,7 +409,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res):
     if 'M' == res:
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
                              plan=str(round(sum(plan[n_now:]) - real[n_now])), prog=str(round(sum(prog[n_now:]) - real[n_now])),
-                             HC_HPend=str(HC_HPend), prog_c='pretty_container')
+                             HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
             jaaroverzicht['prog_c'] = 'pretty_container_red'
 
@@ -964,11 +972,11 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                      'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
                      }],
            'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': 'HPend meer dan KPN target [%]', 'range': [x_min, x_max],
+                      'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
                                 'zeroline': False},
-                      'yaxis': {'title': 'Werkvoorraad Schouw & BIS [%]', 'range': [y_min, y_max], 'zeroline': False},
+                      'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max], 'zeroline': False},
                       'showlegend': False,
-                      'title': {'text': 'Krijg alle projecten in het groene vlak doormiddel van de pijlen te volgen'},
+                      'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
                       'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
                                            text='Verhoog schouw of BIS capaciteit', alignment='left',
                                            showarrow=True, arrowhead=2)] +
@@ -1028,12 +1036,12 @@ def get_intersect(a1, a2, b1, b2):
     return (x/z, y/z)
 
 
-def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l):
+def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
     n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
     n_d = int((pd.Timestamp.now() - x_d[0]).days)
     n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
     col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
-           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel']
+           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel', 'Errors FC - BC']
     records = []
     for key in d_real_l:
         if d_real_l[key].max()[0] < 100:
@@ -1053,13 +1061,15 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
                 record[col[5]] = 0
             record[col[6]] = record[col[5]] - record[col[4]]
             record[col[7]] = round(HC_HPend_l[key])
+            record[col[8]] = n_err[key]
             records += [record]
     df_table = pd.DataFrame(records).to_json(orient='records')
     firestore.Client().collection('Graphs').document('info_table').set(dict(id='info_table', table=df_table, col=col))
 
 
 def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-                         df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l, Schouw_BIS, HPend_l):
+                         df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                         Schouw_BIS, HPend_l, HAS_werkvoorraad, n_err):
     for key in y_target_l:
         if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
             date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
@@ -1092,9 +1102,9 @@ def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_r
     record = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
                   y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
                   x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
-                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
+                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l, HAS_werkvoorraad=HAS_werkvoorraad)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
-    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri)
+    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
@@ -1145,10 +1155,6 @@ def add_token_mapbox(token):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-def error_check_FC_BC(df_l):
-    return 0
-
-
 def from_rd(x: int, y: int) -> tuple:
     x0 = 155000
     y0 = 463000
@@ -1189,40 +1195,40 @@ def error_check_FCBC(df_l):
         df = df_l[key]
         errors_FC_BC[key] = {}
         if not df.empty:
-            errors_FC_BC[key]['101'] = df[df.KabelID.isna() & ~df.opleverdatum.isna() & (df.Postcode.isna() |
-                                          df.Huisnummer.isna())].sleutel.to_list()
-            errors_FC_BC[key]['102'] = df[df.Plandatum.isna()].sleutel.to_list()
+            errors_FC_BC[key]['101'] = df[df.kabelid.isna() & ~df.opleverdatum.isna() & (df.postcode.isna() |
+                                          df.huisnummer.isna())].sleutel.to_list()
+            errors_FC_BC[key]['102'] = df[df.plandatum.isna()].sleutel.to_list()
             errors_FC_BC[key]['103'] = df[df.opleverdatum.isna() &
                                           df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['104'] = df[df.opleverstatus.isna()].sleutel.to_list()
             # errors_FC_BC[key]['114'] = df[df.toestemming.isna()].sleutel.to_list()
             errors_FC_BC[key]['115'] = errors_FC_BC[key]['118'] = df[df.soort_bouw.isna()].sleutel.to_list()  # soort_bouw hoort bij?
-            errors_FC_BC[key]['116'] = df[df.FTU_type.isna()].sleutel.to_list()
-            errors_FC_BC[key]['117'] = df[df['Toelichting status'].isna() & df.opleverstatus.isin(['4', '12'])].sleutel.to_list()
-            errors_FC_BC[key]['119'] = df[df['Toelichting status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].sleutel.to_list()
+            errors_FC_BC[key]['116'] = df[df.ftu_type.isna()].sleutel.to_list()
+            errors_FC_BC[key]['117'] = df[df['toelichting_status'].isna() & df.opleverstatus.isin(['4', '12'])].sleutel.to_list()
+            errors_FC_BC[key]['119'] = df[df['toelichting_status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].sleutel.to_list()
 
             errors_FC_BC[key]['120'] = []  # doorvoerafhankelijk niet aanwezig
-            errors_FC_BC[key]['121'] = df[(df.Postcode.isna() & ~df.Huisnummer.isna()) |
-                                          (~df.Postcode.isna() & df.Huisnummer.isna())].sleutel.to_list()
-            errors_FC_BC[key]['122'] = df[~((df.Kast.isna() & df.Kastrij.isna() & df.ODFpos.isna() &  # kloppen deze velden?
-                                            df.CATVpos.isna() & df.ODF.isna()) |
-                                            (~df.Kast.isna() & ~df.Kastrij.isna() & ~df.ODFpos.isna() &
-                                            ~df.CATVpos.isna() & ~df.Areapop.isna() & ~df.ODF.isna()))].sleutel.to_list()
-            errors_FC_BC[key]['123'] = df[df.ProjectCode.isna()].sleutel.to_list()
+            errors_FC_BC[key]['121'] = df[(df.postcode.isna() & ~df.huisnummer.isna()) |
+                                          (~df.postcode.isna() & df.huisnummer.isna())].sleutel.to_list()
+            errors_FC_BC[key]['122'] = df[~((df.kast.isna() & df.kastrij.isna() & df.odfpos.isna() &  # kloppen deze velden?
+                                            df.catvpos.isna() & df.odf.isna()) |
+                                            (~df.kast.isna() & ~df.kastrij.isna() & ~df.odfpos.isna() &
+                                            ~df.catvpos.isna() & ~df.areapop.isna() & ~df.odf.isna()))].sleutel.to_list()
+            errors_FC_BC[key]['123'] = df[df.projectcode.isna()].sleutel.to_list()
             errors_FC_BC[key]['301'] = df[~df.opleverdatum.isna() & df.opleverstatus.isin(['0', '14'])].sleutel.to_list()
-            errors_FC_BC[key]['303'] = df[df.KabelID.isna() & (df.Postcode.isna() | df.Huisnummer.isna())].sleutel.to_list()
+            errors_FC_BC[key]['303'] = df[df.kabelid.isna() & (df.postcode.isna() | df.huisnummer.isna())].sleutel.to_list()
             errors_FC_BC[key]['304'] = []  # geen column Kavel...
-            errors_FC_BC[key]['306'] = df[~df.KabelID.isna() &
+            errors_FC_BC[key]['306'] = df[~df.kabelid.isna() &
                                           df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['308'] = []  # geen HLopleverdatum...
             errors_FC_BC[key]['309'] = []  # geen doorvoerafhankelijk aanwezig...
 
             errors_FC_BC[key]['310'] = []  # df[~df.KabelID.isna() & df.Areapop.isna()].sleutel.to_list()  # strengID != KabelID?
             errors_FC_BC[key]['311'] = df[df.redenna.isna() & ~df.opleverstatus.isin(['2', '10', '50'])].sleutel.to_list()
-            errors_FC_BC[key]['501'] = [df.sleutel[el] for el in df[~df.Postcode.isna()].index if (len(df.Postcode[el]) != 6) |
-                                                                                                  (not df.Postcode[el][0:4].isnumeric()) |
-                                                                                                  (df.Postcode[el][4].isnumeric()) |
-                                                                                                  (df.Postcode[el][5].isnumeric())]
+            errors_FC_BC[key]['501'] = [df.sleutel[el] for el in df[~df.postcode.isna()].index if (len(df.postcode[el]) != 6) |
+                                                                                                  (not df.postcode[el][0:4].isnumeric()) |
+                                                                                                  (df.postcode[el][4].isnumeric()) |
+                                                                                                  (df.postcode[el][5].isnumeric())]
             errors_FC_BC[key]['502'] = []  # niet te checken, geen toegang tot CLR
             errors_FC_BC[key]['503'] = []  # date is already present in different format...yyyy-mm-dd??
             errors_FC_BC[key]['504'] = []  # date is already present in different format...yyyy-mm-dd??
@@ -1230,35 +1236,35 @@ def error_check_FCBC(df_l):
                                                                   '14', '15', '30', '31', '33', '34', '35', '50', '90', '91', '96',
                                                                   '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['508'] = []  # niet te checken, geen toegang tot Areapop
-            errors_FC_BC[key]['509'] = [df.sleutel[el] for el in df[~df.Kastrij.isna()].index if (len(df.Kastrij[el]) > 2) |
-                                                                                                 (len(df.Kastrij[el]) < 1) |
-                                                                                                 (not df.Kastrij[el].isnumeric())]
-            errors_FC_BC[key]['510'] = [df.sleutel[el] for el in df.Kast.index if (len(df.Kast[el]) > 4) |
-                                                                                  (len(df.Kast[el]) < 1) |
-                                                                                  (not df.Kast[el].isnumeric())]
+            errors_FC_BC[key]['509'] = [df.sleutel[el] for el in df[~df.kastrij.isna()].index if (len(df.kastrij[el]) > 2) |
+                                                                                                 (len(df.kastrij[el]) < 1) |
+                                                                                                 (not df.kastrij[el].isnumeric())]
+            errors_FC_BC[key]['510'] = [df.sleutel[el] for el in df[~df.kast.isna()].index if (len(df.kast[el]) > 4) |
+                                                                                              (len(df.kast[el]) < 1) |
+                                                                                              (not df.kast[el].isnumeric())]
 
-            errors_FC_BC[key]['511'] = [df.sleutel[el] for el in df[~df.ODF.isna()].index if (len(df.ODF[el]) > 5) |
-                                                                                             (len(df.ODF[el]) < 1) |
-                                                                                             (not df.ODF[el].isnumeric())]
-            errors_FC_BC[key]['512'] = [df.sleutel[el] for el in df[~df.ODFpos.isna()].index if (len(df.ODFpos[el]) > 2) |
-                                                                                                (len(df.ODFpos[el]) < 1) |
-                                                                                                (not df.ODFpos[el].isnumeric())]
-            errors_FC_BC[key]['513'] = [df.sleutel[el] for el in df[~df.CATV.isna()].index if (len(df.CATV[el]) > 5) |
-                                                                                              (len(df.CATV[el]) < 1) |
-                                                                                              (not df.CATV[el].isnumeric())]
-            errors_FC_BC[key]['514'] = [df.sleutel[el] for el in df[~df.CATVpos.isna()].index if (len(df.CATVpos[el]) > 3) |
-                                                                                                 (len(df.CATVpos[el]) < 1) |
-                                                                                                 (not df.CATVpos[el].isnumeric())]
-            errors_FC_BC[key]['516'] = [df.sleutel[el] for el in df[df.ProjectCode.isna()].index
-                                        if (not str(df.ProjectCode[el]).isnumeric()) & (~pd.isnull(df.ProjectCode[el]))]  # cannot check
+            errors_FC_BC[key]['511'] = [df.sleutel[el] for el in df[~df.odf.isna()].index if (len(df.odf[el]) > 5) |
+                                                                                             (len(df.odf[el]) < 1) |
+                                                                                             (not df.odf[el].isnumeric())]
+            errors_FC_BC[key]['512'] = [df.sleutel[el] for el in df[~df.odfpos.isna()].index if (len(df.odfpos[el]) > 2) |
+                                                                                                (len(df.odfpos[el]) < 1) |
+                                                                                                (not df.odfpos[el].isnumeric())]
+            errors_FC_BC[key]['513'] = [df.sleutel[el] for el in df[~df.catv.isna()].index if (len(df.catv[el]) > 5) |
+                                                                                              (len(df.catv[el]) < 1) |
+                                                                                              (not df.catv[el].isnumeric())]
+            errors_FC_BC[key]['514'] = [df.sleutel[el] for el in df[~df.catvpos.isna()].index if (len(df.catvpos[el]) > 3) |
+                                                                                                 (len(df.catvpos[el]) < 1) |
+                                                                                                 (not df.catvpos[el].isnumeric())]
+            errors_FC_BC[key]['516'] = [df.sleutel[el] for el in df[df.projectcode.isna()].index
+                                        if (not str(df.projectcode[el]).isnumeric()) & (~pd.isnull(df.projectcode[el]))]  # cannot check
             errors_FC_BC[key]['517'] = []  # date is already present in different format...yyyy-mm-dd??
             errors_FC_BC[key]['518'] = df[~df.toestemming.isin(['Ja', 'Nee', np.nan])].sleutel.to_list()
             errors_FC_BC[key]['519'] = df[~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend'])].sleutel.to_list()
-            errors_FC_BC[key]['520'] = df[(df.FTU_type.isna() & df.opleverstatus.isin(['2', '10'])) |
-                                          (~df.FTU_type.isin(['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02',
+            errors_FC_BC[key]['520'] = df[(df.ftu_type.isna() & df.opleverstatus.isin(['2', '10'])) |
+                                          (~df.ftu_type.isin(['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02',
                                                               'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend']))].sleutel.to_list()
-            errors_FC_BC[key]['521'] = [df.sleutel[el] for el in df[~df['Toelichting status'].isna()]['Toelichting status'].index
-                                        if len(df[~df['Toelichting status'].isna()]['Toelichting status'][el]) < 3]
+            errors_FC_BC[key]['521'] = [df.sleutel[el] for el in df[~df['toelichting_status'].isna()]['toelichting_status'].index
+                                        if len(df[~df['toelichting_status'].isna()]['toelichting_status'][el]) < 3]
 
             errors_FC_BC[key]['522'] = []  # Civieldatum not present in our FC dump
             errors_FC_BC[key]['524'] = []  # Kavel not present in our FC dump
@@ -1274,19 +1280,19 @@ def error_check_FCBC(df_l):
             #                                    (int(df.ODFpos[el]) % 2 == [])]
             errors_FC_BC[key]['533'] = []  # Doorvoerafhankelijkheid niet aanwezig in deze FCdump
             errors_FC_BC[key]['534'] = []  # geen toegang tot CLR om te kunnen checken
-            errors_FC_BC[key]['535'] = [df.sleutel[el] for el in df[~df['Toelichting status'].isna()]['Toelichting status'].index
-                                        if ',' in df['Toelichting status'][el]]
-            errors_FC_BC[key]['536'] = [df.sleutel[el] for el in df[~df.KabelID.isna()].KabelID.index if len(df.KabelID[el]) < 3]
+            errors_FC_BC[key]['535'] = [df.sleutel[el] for el in df[~df['toelichting_status'].isna()]['toelichting_status'].index
+                                        if ',' in df['toelichting_status'][el]]
+            errors_FC_BC[key]['536'] = [df.sleutel[el] for el in df[~df.kabelid.isna()].kabelid.index if len(df.kabelid[el]) < 3]
 
             errors_FC_BC[key]['537'] = []  # Blok not present in our FC dump
             errors_FC_BC[key]['701'] = []  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
-            errors_FC_BC[key]['702'] = df[~df.ODF.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
+            errors_FC_BC[key]['702'] = df[~df.odf.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['707'] = []  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
             errors_FC_BC[key]['708'] = df[(df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) |
                                           (df.opleverstatus.isin(['91']) &
                                           ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))].sleutel.to_list()
             # errors_FC_BC[key]['709'] = df[(df.ODF + df.ODFpos).duplicated(keep='last')].sleutel.to_list()  # klopt dit?
-            errors_FC_BC[key]['710'] = df[(df.KabelID + df.Adres).duplicated()].sleutel.to_list()
+            errors_FC_BC[key]['710'] = df[(df.kabelid + df.adres).duplicated()].sleutel.to_list()
             # errors_FC_BC[key]['711'] = df[~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999'])].sleutel.to_list()  # wanneer PoP 999?
             errors_FC_BC[key]['713'] = []  # type bouw zit niet in onze FC dump
             # if df[df.ODF.isin(['999']) & df.ODFpos.isin(['999']) & df.CATVpos.isin(['999']) & df.CATVpos.isin(['999'])].shape[0] > 0:
@@ -1319,3 +1325,74 @@ def error_check_FCBC(df_l):
         n_err[key] = len(err_all)
 
     return n_err, errors_FC_BC
+
+
+def cluster_reden_na(label, clusters):
+    for k, v in clusters.items():
+        if label in v:
+            return k
+
+
+def pie_chart_reden_na(df_na, clusters, key):
+
+    df_na['cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
+    df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+
+    df_na = df_na.groupby('cluster_redenna').size()
+    df_na = df_na.to_frame(name='count').reset_index()
+    labels = df_na['cluster_redenna'].tolist()
+    values = df_na['count'].tolist()
+
+    data = {
+                'labels': labels,
+                'values': values,
+                'marker': {
+                            'colors':
+                            [
+                                'rgb(0, 204, 0)',
+                                'rgb(255, 255, 0)',
+                                'rgb(204, 0, 0)'
+                            ]
+                          }
+           }
+    document = 'pie_na_' + key
+    return data, document
+
+
+def overview_reden_na(df_l, clusters):
+    full_df = pd.concat(df_l.values())
+    data, document = pie_chart_reden_na(full_df, clusters, 'overview')
+    layout = get_pie_layout()
+    fig = {
+                'data': data,
+                'layout': layout
+          }
+    record = dict(id=document, figure=fig)
+    to_firestore("Graphs", document, record)
+
+
+def individual_reden_na(df_l, clusters):
+    for project, df in df_l.items():
+        data, document = pie_chart_reden_na(df, clusters, project)
+        layout = get_pie_layout()
+        fig = {
+                'data': data,
+                'layout': layout
+            }
+        record = dict(id=document, figure=fig)
+        to_firestore('Graphs', document, record)
+
+
+def to_firestore(collection, document, record):
+    firestore.Client().collection(collection).document(document).set(record)
+
+
+def get_pie_layout():
+    layout = {
+                #   'clickmode': 'event+select',
+                'showlegend': True,
+                'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+                'title': {'text': 'Opgegeven reden na'},
+                'height': 350,
+             }
+    return layout

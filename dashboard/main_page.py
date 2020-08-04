@@ -147,6 +147,16 @@ def get_body():
                         className="pretty_container column",
                         hidden=False,
                     ),
+                    html.Div(
+                        [
+                            html.H6(id="info_globaal_5"),
+                            html.P([html.Strong('Werkvoorraad HAS')]),
+                            html.P(id="info_globaal_05", children=generate_graphs(86, None, None))
+                        ],
+                        id="info_globaal_container5",
+                        className="pretty_container column",
+                        hidden=False,
+                    ),
                 ],
                 id="info-container1",
                 className="container-display",
@@ -162,6 +172,12 @@ def get_body():
                     html.Div(
                             [dcc.Graph(id='graph_targets_m', figure=generate_graphs(41, None, None))],
                             id='graph_targets_overallM_c',
+                            className="pretty_container column",
+                            hidden=False,
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Pie_NA_o", figure=generate_graphs(11, None, None))],
+                            id='Pie_NA_oid',
                             className="pretty_container column",
                             hidden=False,
                     ),
@@ -229,6 +245,12 @@ def get_body():
                     html.Div(
                             [dcc.Graph(id="Bar_HB")],
                             id='Bar_HB_c',
+                            className="pretty_container column",
+                            hidden=True,
+                    ),
+                    html.Div(
+                            [dcc.Graph(id="Pie_NA_c")],
+                            id='Pie_NA_cid',
                             className="pretty_container column",
                             hidden=True,
                     ),
@@ -303,6 +325,7 @@ def update_dropdown(value):
      Output("info_globaal_container2", 'hidden'),
      Output("info_globaal_container3", 'hidden'),
      Output("info_globaal_container4", 'hidden'),
+     Output("info_globaal_container5", 'hidden'),
      Output("graph_speed_c", 'hidden'),
      Output("ww_c", 'hidden'),
      Output('FTU_table_c', 'hidden'),
@@ -310,6 +333,8 @@ def update_dropdown(value):
      Output("table_info", "hidden"),
      Output("Bar_LB_c", "hidden"),
      Output("Bar_HB_c", "hidden"),
+     Output("Pie_NA_oid", "hidden"),
+     Output("Pie_NA_cid", "hidden"),
      Output("geo_plot", 'figure'),
      Output("table_c", 'children'),
      Output("geo_plot_c", "hidden"),
@@ -338,10 +363,29 @@ def update_graphs(n_o, n_d, drop_selectie, mask_all):
     else:
         hidden1 = True
         fig = dict(geo={'data': None, 'layout': dict()}, table=None)
-
-    return [hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden, hidden,
-            not hidden, not hidden, not hidden, not hidden,
-            fig['geo'], fig['table'], hidden1, hidden1]
+    return [
+                hidden,  # graph_targets_overall_c
+                hidden,  # graph_targets_overallM_c
+                hidden,  # info_globaal_container0
+                hidden,  # info_globaal_container1
+                hidden,  # info_globaal_container2
+                hidden,  # info_globaal_container3
+                hidden,  # info_globaal_container4
+                hidden,  # info_globaal_container5
+                hidden,  # graph_speed_c
+                hidden,  # ww_c
+                hidden,  # FTU_table_c
+                not hidden,  # graph_prog_c
+                not hidden,  # table_info
+                not hidden,  # Bar_LB_c
+                not hidden,  # Bar_HB_c
+                hidden,  # Pie_NA_oid
+                not hidden,  # Pie_NA_cid
+                fig['geo'],  # geo_plot
+                fig['table'],  # table_c
+                hidden1,  # geo_plot_c
+                hidden1  # table_c
+            ]
 
 
 # update middle-top charts given dropdown selection
@@ -370,6 +414,7 @@ def middle_top_graphs(drop_selectie):
     [
      Output("Bar_LB", "figure"),
      Output("Bar_HB", "figure"),
+     Output("Pie_NA_c", "figure"),
      Output("aggregate_data", 'data'),
      Output("aggregate_data2", 'data'),
      Output("detail_button", "n_clicks")
@@ -413,8 +458,9 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     barLB = generate_graphs(5, drop_selectie, mask_all)
     barHB = generate_graphs(6, drop_selectie, mask_all)
+    pieNA = generate_graphs(10, drop_selectie, mask_all)
 
-    return [barLB, barHB, mask_all, drop_selectie, 0]
+    return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
 
 
 # update FTU table for editing
@@ -441,6 +487,7 @@ def FTU_table_editable(ww):
      Output('graph_targets_ov', 'figure'),
      Output('graph_targets_m', 'figure'),
      Output('project_performance', 'figure'),
+     Output('info_globaal_05', 'children'),
      ],
     [
      Input('table_FTU', 'data'),
@@ -458,14 +505,15 @@ def FTU_update(data):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
     # to update overview graphs:
-    HC_HPend = next(firestore.Client().collection('Graphs').where('id', '==', 'jaaroverzicht').get()).to_dict()['HC_HPend']
-    doc = next(firestore.Client().collection('Graphs').where('id', '==', 'analysis2').get()).to_dict()
-    doc2 = next(firestore.Client().collection('Graphs').where('id', '==', 'analysis3').get()).to_dict()
+    HC_HPend = firestore.Client().collection('Graphs').document('jaaroverzicht').get().to_dict()['HC_HPend']
+    doc = firestore.Client().collection('Graphs').document('analysis2').get().to_dict()
+    doc2 = firestore.Client().collection('Graphs').document('analysis3').get().to_dict()
     x_d = pd.to_datetime(doc['x_d'])
     tot_l = doc['tot_l']
     HP = doc['HP']
     HC_HPend_l = doc['HC_HPend_l']
     Schouw_BIS = doc['Schouw_BIS']
+    HAS_werkvoorraad = doc['HAS_werkvoorraad']
     HPend_l = doc['HPend_l']
     d_real_l = doc2['d_real_l']
     d_real_li = doc2['d_real_li']
@@ -477,6 +525,7 @@ def FTU_update(data):
     cutoff = doc['cutoff']
     y_voorraad_act = doc['y_voorraad_act']
     x_prog = np.array(doc['x_prog'])
+    n_err = doc2['n_err']
     for key in y_prog_l:
         y_prog_l[key] = np.array(y_prog_l[key])
         y_target_l[key] = np.array(y_target_l[key])
@@ -491,11 +540,11 @@ def FTU_update(data):
     y_target_l, t_diff = targets(x_prog, x_d, t_shift, FTU0, FTU1, rc1, d_real_l)
 
     df_prog, df_target, df_real, df_plan = overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l)
-    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='W-MON')  # 2019-12-30 -- 2020-12-21
-    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, res='M')  # 2019-12-30 -- 2020-12-21
+    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='W-MON')  # 2019-12-30 -- 2020-12-21
+    graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')  # 2019-12-30 -- 2020-12-21
     performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
-    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l)
+    info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 
     out0 = 'HPend afgesproken: ' + generate_graphs(80, None, None)
     out1 = 'HPend gerealiseerd: ' + generate_graphs(81, None, None)
@@ -505,8 +554,9 @@ def FTU_update(data):
     out5 = generate_graphs(42, None, None)
     out6 = generate_graphs(41, None, None)
     out7 = generate_graphs(2, None, None)
+    out8 = generate_graphs(86, None, None)
 
-    return [out0, out1, out2, out3, out4, out5, out6, out7]
+    return [out0, out1, out2, out3, out4, out5, out6, out7, out8]
 
 
 # HELPER FUNCTIES
@@ -531,6 +581,9 @@ def generate_graphs(flag, drop_selectie, mask_all):
         date_an = api.get('/Graphs?id=update_date')[0]['date']
         date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
         fig = min([date_an, date_con])
+
+    if flag == 86:
+        fig = api.get('/Graphs?id=jaaroverzicht')[0]['HAS_werkvoorraad']
 
     # prognose
     if flag == 1:
@@ -751,4 +804,19 @@ def generate_graphs(flag, drop_selectie, mask_all):
             editable=False,
         )
 
+    if flag == 10:
+        fig = get_pie(drop_selectie)
+    if flag == 11:
+        fig = get_pie('overview')
+    return fig
+
+
+def get_pie(key):
+    fig = api.get('/Graphs?id=pie_na_' + key)
+    data = fig[0]['figure']['data']
+    trace = go.Pie(data)
+    layout = fig[0]['figure']['layout']
+    data = [trace]
+    fig = dict(data=data,
+               layout=layout)
     return fig
