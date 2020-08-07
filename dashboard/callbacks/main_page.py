@@ -14,6 +14,8 @@ from app import app
 
 # update value dropdown given selection in scatter chart
 from components.graph import graph
+from data.figure import figure_data
+from data.jaaroverzicht import jaaroverzicht_data
 
 
 @app.callback(
@@ -260,14 +262,14 @@ def FTU_update(data):
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
     info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 
-    out0 = 'HPend afgesproken: ' + graph(80, None, None)
-    out1 = 'HPend gerealiseerd: ' + graph(81, None, None)
-    out2 = 'HPend gepland vanaf nu: ' + graph(82, None, None)
-    out3 = 'HPend voorspeld vanaf nu: ' + graph(83, None, None)['prog']
-    out4 = graph(84, None, None)
-    out5 = graph(42, None, None)
-    out6 = graph(41, None, None)
-    out7 = graph(2, None, None)
+    out0 = 'HPend afgesproken: ' + jaaroverzicht_data('target')
+    out1 = 'HPend gerealiseerd: ' + jaaroverzicht_data('real')
+    out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht_data('plan')
+    out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht_data('prog')
+    out4 = jaaroverzicht_data('HC_HPend')
+    out5 = figure_data('graph_targets_M')
+    out6 = figure_data('graph_targets_W')
+    out7 = figure_data('project_performance')
     out8 = graph(86, None, None)
 
     return [out0, out1, out2, out3, out4, out5, out6, out7, out8]

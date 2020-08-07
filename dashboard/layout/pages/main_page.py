@@ -3,8 +3,11 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 
 from app import app
+from components.figure import figure
 from components.global_info import global_info
-from components.graph import graph, graph_new, jaaroverzicht_graph
+from components.graph import graph
+from data.figure import figure_data
+from data.jaaroverzicht import jaaroverzicht_data
 
 layout = dict(
     autosize=True,
@@ -19,7 +22,6 @@ layout = dict(
 
 # APP LAYOUT
 def get_body():
-    graph_new("jaaroverzicht")
     page = html.Div(
         [
             dcc.Store(id="aggregate_data",
@@ -89,36 +91,30 @@ def get_body():
             html.Div(
                 [
                     global_info("info_globaal_container0", title='Outlook (KPN)', text="HPend afgesproken: ",
-                                value=jaaroverzicht_graph('target')),
+                                value=jaaroverzicht_data('target')),
                     global_info("info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-                                value=jaaroverzicht_graph('real')),
+                                value=jaaroverzicht_data('real')),
                     global_info("info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-                                value=jaaroverzicht_graph('plan')),
+                                value=jaaroverzicht_data('plan')),
                     global_info("info_globaal_container3", title='Voorspelling (VQD)',
-                                text="HPend voorspeld vanaf nu: ", value=jaaroverzicht_graph('prog'),
-                                className=jaaroverzicht_graph("prog_c") + "  column"),
+                                text="HPend voorspeld vanaf nu: ", value=jaaroverzicht_data('prog'),
+                                className=jaaroverzicht_data("prog_c") + "  column"),
                     global_info("info_globaal_container4", title='Actuele HC / HPend',
-                                value=jaaroverzicht_graph('HC_HPend')),
+                                value=jaaroverzicht_data('HC_HPend')),
                     global_info("info_globaal_container5", title='Werkvoorraad HAS',
-                                value=jaaroverzicht_graph('HAS_werkvoorraad')),
+                                value=jaaroverzicht_data('HAS_werkvoorraad')),
                 ],
                 id="info-container1",
                 className="container-display",
             ),
             html.Div(
                 [
-                    html.Div(
-                        [dcc.Graph(id='graph_targets_ov', figure=graph(42, None, None))],
-                        id='graph_targets_overall_c',
-                        className="pretty_container column",
-                        hidden=False,
-                    ),
-                    html.Div(
-                        [dcc.Graph(id='graph_targets_m', figure=graph(41, None, None))],
-                        id='graph_targets_overallM_c',
-                        className="pretty_container column",
-                        hidden=False,
-                    ),
+                    figure(container_id="graph_targets_overall_c",
+                           graph_id="graph_targets_ov",
+                           figure=figure_data('graph_targets_M')),
+                    figure(container_id="graph_targets_overallM_c",
+                           graph_id="graph_targets_m",
+                           figure=figure_data('graph_targets_W')),
                     html.Div(
                         [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
                         id='Pie_NA_oid',
@@ -131,13 +127,9 @@ def get_body():
             ),
             html.Div(
                 [
-                    html.Div(
-                        [dcc.Graph(figure=graph(2, None, None),
-                                   id='project_performance')],
-                        id='graph_speed_c',
-                        className="pretty_container column",
-                        hidden=False,
-                    ),
+                    figure(container_id="graph_speed_c",
+                           graph_id="project_performance",
+                           figure=figure_data('project_performance')),
                     html.Div([
                         html.Div(id='ww_c',
                                  children=dcc.Input(id='ww', value=' ', type='text'),

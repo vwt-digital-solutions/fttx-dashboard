@@ -7,32 +7,7 @@ import json
 import dash_table
 
 
-def graph_new(url_id, target=None):
-    fig = api.get(f'/Graphs?id={url_id}')[0]['target']
-    print(fig)
-    return fig
-
-
-def jaaroverzicht_graph(value):
-    return api.get('/Graphs?id=jaaroverzicht')[0][value]
-
-
 def graph(flag, drop_selectie, mask_all):
-    if flag == 80:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['target']
-
-    if flag == 81:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['real']
-
-    if flag == 82:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['plan']
-
-    if flag == 83:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]
-
-    if flag == 84:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['HC_HPend']
-
     if flag == 85:
         date_an = api.get('/Graphs?id=update_date')[0]['date']
         date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
@@ -47,20 +22,9 @@ def graph(flag, drop_selectie, mask_all):
         for i, item in enumerate(fig['data']):
             fig['data'][i]['x'] = pd.to_datetime(item['x'])
 
-    # project speed
-    if flag == 2:
-        fig = api.get('/Graphs?id=project_performance')[0]['figure']
-
     # labels
     if flag == 3:
         fig = api.get('/Graphs?id=pnames')[0]['filters']
-
-    # targets
-    if flag == 41:
-        fig = api.get('/Graphs?id=graph_targets_W')[0]['figure']
-
-    if flag == 42:
-        fig = api.get('/Graphs?id=graph_targets_M')[0]['figure']
 
     # clickbar LB
     if flag == 5:

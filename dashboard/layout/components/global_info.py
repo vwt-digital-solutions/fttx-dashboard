@@ -1,7 +1,7 @@
 import dash_html_components as html
 
 
-def global_info(id_, title="", text="", value="", className="pretty_container column"):
+def global_info(id_="", title="", text="", value="", className="pretty_container column"):
     return html.Div(
         [
             html.P([html.Strong(title)]),
