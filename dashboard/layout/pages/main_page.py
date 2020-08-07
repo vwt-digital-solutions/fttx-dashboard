@@ -90,7 +90,9 @@ def get_body():
             ),
             html.Div(
                 [
-                    global_info("info_globaal_container0", title='Outlook (KPN)', text="HPend afgesproken: ",
+                    global_info("info_globaal_container0",
+                                title='Outlook (KPN)',
+                                text="HPend afgesproken: ",
                                 value=jaaroverzicht_data('target')),
                     global_info("info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
                                 value=jaaroverzicht_data('real')),

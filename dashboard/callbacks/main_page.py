@@ -270,6 +270,6 @@ def FTU_update(data):
     out5 = figure_data('graph_targets_M')
     out6 = figure_data('graph_targets_W')
     out7 = figure_data('project_performance')
-    out8 = graph(86, None, None)
+    out8 = jaaroverzicht_data("HAS_werkvoorraad")
 
     return [out0, out1, out2, out3, out4, out5, out6, out7, out8]

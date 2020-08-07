@@ -13,9 +13,6 @@ def graph(flag, drop_selectie, mask_all):
         date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
         fig = min([date_an, date_con])
 
-    if flag == 86:
-        fig = api.get('/Graphs?id=jaaroverzicht')[0]['HAS_werkvoorraad']
-
     # prognose
     if flag == 1:
         fig = api.get('/Graphs?id=' + 'project_' + drop_selectie)[0]['figure']
