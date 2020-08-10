@@ -13,7 +13,7 @@ import numpy as np
 from app import app
 
 # update value dropdown given selection in scatter chart
-from components.graph import graph
+from layout.components.graph import graph
 from data.figure import figure_data
 from data.jaaroverzicht import jaaroverzicht_data
 
