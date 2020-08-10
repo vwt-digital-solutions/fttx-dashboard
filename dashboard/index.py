@@ -1,7 +1,7 @@
 import dash_core_components as dcc
 import dash_html_components as html
 
-import default
+from layout import default
 from app import app
 from dash.dependencies import Input, Output
 from config_pages import config_pages
