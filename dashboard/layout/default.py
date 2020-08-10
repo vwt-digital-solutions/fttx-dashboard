@@ -1,6 +1,6 @@
 import dash_html_components as html
 
-from components.nav_bar import nav_bar
+from layout.components.nav_bar import nav_bar
 
 
 def get_layout(pathname="/", brand="", children=None):

@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from pages import main_page
+from layout.pages import main_page
 
 config_pages = OrderedDict(
     [

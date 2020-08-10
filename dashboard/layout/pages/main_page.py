@@ -3,9 +3,9 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 
 from app import app
-from components.figure import figure
-from components.global_info import global_info
-from components.graph import graph
+from layout.components.figure import figure
+from layout.components.global_info import global_info
+from layout.components.graph import graph
 from data.figure import figure_data
 from data.jaaroverzicht import jaaroverzicht_data
 

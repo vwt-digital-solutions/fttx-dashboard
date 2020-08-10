@@ -1,4 +1,4 @@
-from analyse.functions import from_rd
+from analyse_dashboard.analyse.functions import from_rd
 from data import api
 import pandas as pd
 import plotly.graph_objs as go

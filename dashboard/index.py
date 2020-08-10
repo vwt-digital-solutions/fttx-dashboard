@@ -5,7 +5,7 @@ from layout import default
 from app import app
 from dash.dependencies import Input, Output
 from config_pages import config_pages
-from pages import error
+from layout.pages import error
 from callbacks import *  # noqa: F403, F401
 
 app.layout = html.Div([
