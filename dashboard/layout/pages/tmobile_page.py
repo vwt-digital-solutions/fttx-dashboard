@@ -30,8 +30,7 @@ def get_body():
                       data=None),
             dcc.Store(id="aggregate_data3",
                       data=None),
-            header("Status projecten KPN in 2020"),
-
+            header("Status projecten T-Mobile in 2020"),
             html.Div(
                 [
                     global_info("info_globaal_container0",

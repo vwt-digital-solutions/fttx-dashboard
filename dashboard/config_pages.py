@@ -1,6 +1,5 @@
 from collections import OrderedDict
-
-from layout.pages import main_page
+from layout.pages import main_page, tmobile_page
 
 config_pages = OrderedDict(
     [
@@ -9,5 +8,10 @@ config_pages = OrderedDict(
             'link': ["/", '/main_page', '/main_page/'],
             'body': main_page
         }),
+        ('tmobile', {
+            'name': 'T-Mobile',
+            'link': ['/tmobile', '/tmobile/'],
+            'body': tmobile_page
+        })
     ]
 )
