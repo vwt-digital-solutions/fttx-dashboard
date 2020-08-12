@@ -4,7 +4,7 @@ import dash_html_components as html
 
 from layout.components.figure import figure
 from layout.components.global_info import global_info
-from layout.components.graph import graph
+from data.graph import graph
 from data.figure import figure_data
 from data.jaaroverzicht import jaaroverzicht_data
 from layout.components.header import header
@@ -56,10 +56,10 @@ def get_body():
                 [
                     figure(container_id="graph_targets_overall_c",
                            graph_id="graph_targets_ov",
-                           figure=figure_data('graph_targets_M')),
+                           figure=figure_data('graph_targets_W')),
                     figure(container_id="graph_targets_overallM_c",
                            graph_id="graph_targets_m",
-                           figure=figure_data('graph_targets_W')),
+                           figure=figure_data('graph_targets_M')),
                     html.Div(
                         [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
                         id='Pie_NA_oid',

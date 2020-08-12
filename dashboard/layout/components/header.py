@@ -1,6 +1,6 @@
 import dash_html_components as html
 
-from layout.components.graph import graph
+from data.graph import graph
 
 from app import app
 
