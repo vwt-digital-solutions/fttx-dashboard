@@ -54,12 +54,12 @@ def get_body():
             ),
             html.Div(
                 [
-                    figure(container_id="graph_targets_overall_c",
-                           graph_id="graph_targets_ov",
-                           figure=figure_data('graph_targets_W')),
                     figure(container_id="graph_targets_overallM_c",
                            graph_id="graph_targets_m",
                            figure=figure_data('graph_targets_M')),
+                    figure(container_id="graph_targets_overall_c",
+                           graph_id="graph_targets_ov",
+                           figure=figure_data('graph_targets_W')),
                     html.Div(
                         [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
                         id='Pie_NA_oid',
