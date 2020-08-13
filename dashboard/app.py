@@ -1,11 +1,10 @@
 import os
+import utils
 import dash
 import flask
 import config
-import base64
 import dash_bootstrap_components as dbc
 
-from google.cloud import kms_v1
 from authentication.azure_auth import AzureOAuth
 from flask_caching import Cache
 from flask_sslify import SSLify
@@ -38,18 +37,10 @@ app.title = "FttX operationeel"
 
 # Azure AD authentication
 if config.authentication:
-    encrypted_session_secret = base64.b64decode(
-        config.authentication['encrypted_session_secret'])
-    kms_client = kms_v1.KeyManagementServiceClient()
-    crypto_key_name = kms_client.crypto_key_path_path(
-        config.authentication['kms_project'],
-        config.authentication['kms_region'],
-        config.authentication['kms_keyring'],
-        'flask-session-secret')
-    decrypt_response = kms_client.decrypt(
-        crypto_key_name, encrypted_session_secret)
-    config.authentication['session_secret'] = \
-        decrypt_response.plaintext.decode("utf-8")
+
+    session_secret = utils.get_secret(
+        config.authentication['gcp_project'],
+        config.authentication['secret_name'])
 
     auth = AzureOAuth(
         app,
@@ -59,7 +50,7 @@ if config.authentication:
         config.authentication['expected_audience'],
         config.authentication['jwks_url'],
         config.authentication['tenant'],
-        config.authentication['session_secret'],
+        session_secret,
         config.authentication['role'],
         config.authentication['required_scopes']
     )
