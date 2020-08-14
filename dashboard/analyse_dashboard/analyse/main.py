@@ -7,7 +7,7 @@ from gobits import Gobits
 from google.cloud import pubsub, firestore
 from functions import get_timeline, get_start_time, get_data, get_total_objects
 from functions import preprocess_data, Analysis
-from functions import get_data_FC, get_data_planning, get_data_targets
+from functions import get_data_planning, get_data_targets
 from functions import overview
 from functions import set_filters, set_bar_names, error_check_FCBC
 from functions import masks_phases, set_date_update
@@ -38,14 +38,7 @@ def publish_json(gobits, msg_data, rowcount, rowmax, topic_project_id, topic_nam
 
 def analyse(request):
     try:
-        data = [
-            el['label'] for el in firestore.Client().collection('Graphs').document('pnames').get().to_dict()['filters']
-        ]
-        gobits = Gobits.from_request(request=request)
-        i = 1
-        for msg in data:
-            publish_json(gobits, msg_data=msg, rowcount=i, rowmax=len(data), **config.TOPIC_SETTINGS)
-            i += 1
+        publish_project_data(request)
 
         # Get data from state collection Projects
         df_l = get_data(config.subset_KPN_2020, config.col, None, None, 0)
@@ -96,7 +89,7 @@ def graph(request):
         envelope = json.loads(request.data.decode('utf-8'))
         bytes = base64.b64decode(envelope['message']['data'])
         project = json.loads(bytes)
-        df_l, _, _, _ = get_data_FC([project], config.col, None, None, 0)
+        df_l = get_data([project], config.col, None, None, 0)
         bar_m = masks_phases(project, df_l)
         set_bar_names(bar_m)
         logging.info(f'masks bar uploaded for {project}')
