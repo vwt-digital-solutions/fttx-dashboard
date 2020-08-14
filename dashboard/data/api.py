@@ -5,6 +5,7 @@ from flask_dance.contrib.azure import azure
 
 
 def get(path):
+    print(f"getting {path}")
     headers = {'Authorization': 'Bearer ' + azure.access_token}
     url = config.api_url + path
     response = requests.get(url, headers=headers)
