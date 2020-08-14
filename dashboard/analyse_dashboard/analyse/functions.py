@@ -67,37 +67,171 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     return df_l
 
 
-def get_data_FC(subset, col, gpath_i, path_data, flag):
-    if gpath_i is None:
-        df_l = get_data_projects(subset, col)
-    else:
-        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag)
+# y_target_l - transform mbv ftu0 ftu1
+# y_prog_l, y_target_l, rc1, rc2 - to list
+# t_shift  - to str
+# d_real_r, d_real_l_ri -> to list
+# x_prog - to int
+# x_d - to datetime
+class Record():
+    def __init__(self, record, collection):
+        self.record = None
+        self.transform(record)
+        self.collection = collection
 
-    t_s = {}
-    tot_l = {}
-    for key in df_l:
-        if df_l[key][~df_l[key].opleverdatum.isna()].empty:
-            t_s[key] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
-        else:
-            df_l[key] = df_l[key][(df_l[key]['opleverdatum'] >= '2019-01-01') |
-                                  (df_l[key]['opleverdatum'].isna())]  # dates before 2019 are faulty?!
-            t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
+    def transform(self, record):
+        self.record = record
 
-        tot_l[key] = len(df_l[key])
-    x_d = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
-    tot_l['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9.465  # not yet in FC, total from excel bouwstromen
-    tot_l['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
-    tot_l['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
-
-    return df_l, t_s, x_d, tot_l
+    def to_firestore(self, graph_name, client):
+        document = firestore.Client().collection(self.collection).document(graph_name)
+        document.set(dict(record=self.record,
+                     client=client,
+                     graph_name=graph_name)
+                     )
 
 
-def get_data_planning(path_data, subset_KPN_2020):
+class IntRecord(Record):
+
+    def transform(self, record):
+        self.record = [int(el) for el in record]
+
+
+class DateRecord(Record):
+
+    def transform(self, record):
+        self.record = [el.strftime('%Y-%m-%d') for el in record]
+
+
+class ListRecord(Record):
+
+    def transform(self, record):
+        self.record = {}
+        for k, v in record.items():
+            self.record[k] = list(v)
+
+
+class StringRecord(Record):
+    def transform(self, record):
+        self.record = {}
+        for k, v in record.items():
+            self.record[k] = str(v)
+
+
+class RecordDict(Record):
+    def to_firestore(self, graph_name, client):
+        for k, v in self.record.items():
+            document = firestore.Client().collection(self.collection).document(k)
+            document.set(dict(record=self.record,
+                              client=client,
+                              graph_name=k))
+
+
+# y_target_l - transform mbv ftu0 ftu1
+# y_prog_l, y_target_l, rc1, rc2 - to list
+# t_shift  - to str
+# d_real_r, d_real_l_ri -> to list
+# x_prog - to int
+# x_d - to datetime
+class Analysis():
+
+    def __init__(self, client):
+        self._client = client
+
+    def set_input_fields(self, date_FTU0, date_FTU1, x_d):
+        self.date_FTU0 = Record(date_FTU0, collection='Data')
+        self.date_FTU1 = Record(date_FTU1, collection='Data')
+        self.x_d = DateRecord(x_d, collection="Data")
+
+    def prognose(self, df_l, start_time, timeline, total_objects, date_FTU0):
+        print("Prognose")
+        results = prognose(df_l, start_time, timeline, total_objects, date_FTU0)
+        self.rc1 = ListRecord(results[0], collection='Data')
+        self.rc2 = ListRecord(results[1], collection='Data')
+        d_real_l_r = {k: v["Aantal"] for k, v in results[2].items()}
+        self.d_real_l_r = ListRecord(d_real_l_r, collection="Data")
+        d_real_l_ri = {k: v.index for k, v in results[2].items()}
+        self.d_real_l_ri = ListRecord(d_real_l_ri, collection="Data")
+        self.y_prog_l = ListRecord(results[3], collection='Data')
+        self.x_prog = IntRecord(results[4], collection='Data')
+        self.t_shift = StringRecord(results[5], collection='Data')
+        self.cutoff = Record(results[6], collection='Data')
+        return results
+
+    def targets(self, x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
+        print("Targets")
+        results = targets(x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
+        self.y_target_l = ListRecord(results[0], collection='Data')
+        return results
+
+    def error_check_FCBC(self, df_l):
+        print("Error check")
+        results = error_check_FCBC(df_l)
+        self.n_err = Record(results[0], collection='Data')
+        self.errors_FC_BC = Record(results[1], collection='Data')
+        print("error check done")
+        return results
+
+    def calculate_projectspecs(self, df_l):
+        print("Projectspecs")
+        results = calculate_projectspecs(df_l)
+        self.HC_HPend = Record(results[0], collection='Data')
+        self.HC_HPend_l = Record(results[1], collection='Data')
+        self.Schouw_BIS = Record(results[2], collection='Data')
+        self.HPend_l = Record(results[3], collection='Data')
+        self.HAS_werkvoorraad = Record(results[4], collection='Data')
+        return results
+
+    def calculate_graph_overview(self, df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad):
+        graph_targets_W = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='W-MON')
+        graph_targets_M, jaaroverzicht = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')
+        self.graph_targets_W = Record(graph_targets_W, collection='Graphs')
+        self.graph_targets_M = Record(graph_targets_M, collection='Graphs')
+        self.jaaroverzicht = Record(jaaroverzicht, collection='Data')
+
+    def performance_matrix(self, x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
+        graph = performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
+        self.project_performance = Record(graph, collection="Graphs")
+
+    def calculate_y_voorraad_act(self, df_l):
+        results = calculate_y_voorraad_act(df_l)
+        self.y_voorraad_act = Record(results, collection='Data')
+        return results
+
+    def prognose_graph(self, x_d, y_prog_l, d_real_l, y_target_l):
+        result_dict = prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
+        self.prognose_graph_dict = RecordDict(result_dict, collection="Graphs")
+
+    def info_table(self, tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
+        record = info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
+        self.info_table = Record(record, collection="Graphs")
+
+    def reden_na(self, df_l, clusters):
+        overview_record = overview_reden_na(df_l, clusters)
+        record_dict = individual_reden_na(df_l, clusters)
+        self.reden_na_overview = Record(overview_record, collection="Graphs")
+        self.reden_na_projects = RecordDict(record_dict, collection="Graphs")
+
+    def to_firestore(self):
+        for field_name, data in self.__dict__.items():
+            if not field_name[0] == "_":
+                try:
+                    data.to_firestore(field_name, self._client)
+                    print(f"Wrote {field_name} to firestore")
+                except TypeError:
+                    print(f"Could not write {field_name} to firestore.")
+
+
+def extract_data_planning(path_data):
     if 'gs://' in path_data:
         xls = pd.ExcelFile(path_data)
     else:
         xls = pd.ExcelFile(path_data + 'Data_20200101_extra/Forecast JUNI 2020_def.xlsx')
     df = pd.read_excel(xls, 'FTTX ').fillna(0)
+    return df
+
+
+# TODO: Transform this function to use more elegant pandas ETL-style process
+def transform_data_planning(df):
     HP = dict(HPendT=[0] * 52)
     for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
         if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
@@ -119,10 +253,65 @@ def get_data_planning(path_data, subset_KPN_2020):
                 HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
                 HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-
     return HP
 
 
+def get_data_planning(path_data, subset_KPN_2020):
+    df = extract_data_planning(path_data)
+    HP = transform_data_planning(df)
+    return HP
+
+
+def get_data_targets(path_data):
+    doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
+    date_FTU0 = doc['FTU0']
+    date_FTU1 = doc['FTU1']
+    return date_FTU0, date_FTU1
+
+
+# Function to use only when data_targets in database need to be reset.
+# TODO: Create function structure that can reinitialise the database, partially as well as completely.
+def get_data_targets_init(path_data):
+    map_key2 = {
+        # FT0 en FT1
+        'Arnhem Klarendal': 'Arnhem Klarendal',
+        'Arnhem Gulden Bodem Schaarsbergen': 'Arnhem Gulden Bodem Schaarsbergen',
+        'Breda Tuinzicht': 'Breda Tuinzicht',
+        'Breda Brabantpark': 'Breda Brabantpark',
+        'Bergen op Zoom Oost': 'Bergen op Zoom Oost',
+        'Bergen op Zoom Oude Stad + West wijk 03': 'Bergen op Zoom oude stad',
+        'Nijmegen Oosterhout': 'Nijmegen Oosterhout',
+        'Nijmegen centrum Bottendaal': 'Nijmegen Bottendaal',
+        'Nijmegen Biezen Wolfskuil Hatert': 'Nijmegen Biezen-Wolfskuil-Hatert ',
+        'Den Haag-Wijk 34 Eskamp-Morgenstond-West': 'Den Haag Morgenstond west',
+        'Spijkenisse': 'KPN Spijkernisse',
+        'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
+        # FT0 in 2020 --> eind datum schatten
+        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord en Halsteren',  # niet in FC
+        'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
+        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag - Haagse Hout-Bezuidenhout West',  # niet in FC??
+        'Den Haag - Vrederust en Bouwlust': 'Den Haag - Vrederust en Bouwlust',  # niet in FC??
+        'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
+        # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
+        # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
+        # afgerond in FC...FTU0/FTU1 schatten
+        # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
+    }
+    fn_targets = 'Data_20200101_extra/20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx'
+    df_targetsKPN = pd.read_excel(path_data + fn_targets, sheet_name='KPN')
+    date_FTU0 = {}
+    date_FTU1 = {}
+    for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
+        if key in map_key2:
+            if not pd.isnull(df_targetsKPN.loc[i, '1e FTU']):
+                date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+            if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
+                date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+
+    return date_FTU0, date_FTU1
+
+
+# Legacy
 def get_data_meters(path_data):
     map_key = {
         'Data Oosterhout': 'Nijmegen Oosterhout',
@@ -151,49 +340,180 @@ def get_data_meters(path_data):
     return d_sheets
 
 
-def get_data_targets(path_data):
-    if path_data is None:
-        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
-        date_FTU0 = doc['FTU0']
-        date_FTU1 = doc['FTU1']
+def get_data(subset, col, gpath_i, path_data, flag):
+    if gpath_i is None:
+        df_l = get_data_projects(subset, col)
     else:
-        map_key2 = {
-            # FT0 en FT1
-            'Arnhem Klarendal': 'Arnhem Klarendal',
-            'Arnhem Gulden Bodem Schaarsbergen': 'Arnhem Gulden Bodem Schaarsbergen',
-            'Breda Tuinzicht': 'Breda Tuinzicht',
-            'Breda Brabantpark': 'Breda Brabantpark',
-            'Bergen op Zoom Oost': 'Bergen op Zoom Oost',
-            'Bergen op Zoom Oude Stad + West wijk 03': 'Bergen op Zoom oude stad',
-            'Nijmegen Oosterhout': 'Nijmegen Oosterhout',
-            'Nijmegen centrum Bottendaal': 'Nijmegen Bottendaal',
-            'Nijmegen Biezen Wolfskuil Hatert': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-            'Den Haag-Wijk 34 Eskamp-Morgenstond-West': 'Den Haag Morgenstond west',
-            'Spijkenisse': 'KPN Spijkernisse',
-            'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
-            # FT0 in 2020 --> eind datum schatten
-            'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord en Halsteren',  # niet in FC
-            'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-            'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag - Haagse Hout-Bezuidenhout West',  # niet in FC??
-            'Den Haag - Vrederust en Bouwlust': 'Den Haag - Vrederust en Bouwlust',  # niet in FC??
-            'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
-            # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
-            # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
-            # afgerond in FC...FTU0/FTU1 schatten
-            # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
-        }
-        fn_targets = 'Data_20200101_extra/20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx'
-        df_targetsKPN = pd.read_excel(path_data + fn_targets, sheet_name='KPN')
-        date_FTU0 = {}
-        date_FTU1 = {}
-        for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
-            if key in map_key2:
-                if not pd.isnull(df_targetsKPN.loc[i, '1e FTU']):
-                    date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
-                if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
-                    date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag)
+    return df_l
 
-    return date_FTU0, date_FTU1
+
+def get_start_time(df_l):
+    # What does t_s stand for? Would prefer to use a descriptive variable name.
+    t_s = {}
+    for key in df_l:
+        if df_l[key][~df_l[key].opleverdatum.isna()].empty:
+            t_s[key] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
+        else:  # I'm not sure its desireable to hard-set dates like this. Might lead to unexpected behaviour.
+            t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
+    return t_s
+
+
+def get_timeline(t_s):
+    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    return x_axis
+
+
+def get_total_objects(df_l):  # Don't think this is necessary to calculate at this point, should be done later.
+    total_objects = {k: len(v) for k, v in df_l.items()}
+    # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
+    total_objects['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9.465  # not yet in FC, total from excel bouwstromen
+    total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
+    total_objects['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
+    return total_objects
+
+
+# def calculate_projectspecs(df_l, year):
+#     # to calculate HC / HPend ratio:
+#     HC = {}
+#     HPend = {}
+#     HC_HPend_l = {}
+#     Schouw_BIS = {}
+#     HPend_l = {}
+#     HAS_werkvoorraad_d = calculate_y_voorraad_act(df_l)
+#     for key in df_l:
+#         df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
+#         if not df_HPend.empty:
+#             df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
+#                                 (df_HPend.opleverdatum <= year + '-12-31')]
+#             HPend[key] = len(df_HPend)
+#             HC[key] = len(df_HPend[(df_HPend.opleverstatus == '2')])
+#         else:
+#             HC[key] = 0
+#             HPend[key] = 0
+#         opgeleverd = len(df_l[key][~df_l[key].opleverdatum.isna()])
+#         if opgeleverd > 0:
+#             HC_HPend_l[key] = len(df_l[key][df_l[key].opleverstatus == '2']) / opgeleverd * 100
+#         else:
+#             HC_HPend_l[key] = 0
+#         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
+#         HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
+
+#     HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
+#     HAS_werkvoorraad = sum(HAS_werkvoorraad_d.values())
+
+#     return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad
+
+
+# Function that adds columns to the source data, to be used in project specs
+# hpend is a boolean column indicating whether an object has been delivered
+# homes_completed is a boolean column indicating a home has been completed
+# bis_gereed is a boolean column indicating whther the BIS for an object has been finished
+def add_relevant_columns(df_l, year):
+    for k, v in df_l.items():
+        v['hpend'] = v.opleverdatum.apply(lambda x: object_is_hpend(x, '2020'))
+        v['homes_completed'] = v.opleverstatus == '2'
+        v['bis_gereed'] = v.opleverstatus != '0'
+    return df_l
+
+
+def object_is_hpend(opleverdatum, year):
+    # Will return TypeError if opleverdatum is nan, in which case object is not hpend
+    try:
+        is_hpend = (opleverdatum >= year + '-01-01') & (opleverdatum <= year + '-12-31')
+    except TypeError:
+        is_hpend = False
+    return is_hpend
+
+
+# Calculates the amount of homes completed per project in a dictionary
+def get_homes_completed(df_l):
+    return {k: sum(v.homes_completed) for k, v in df_l.items()}
+
+
+# Calculate the amount of objects per project that have been
+# Permanently passed or completed
+def get_HPend(df_l):
+    return {k: sum(v.hpend) for k, v in df_l.items()}
+
+
+# Objects that are ready for HAS
+# These are obejcts for which:
+# - a permission has been filled in (granted or rejected)
+# - The BIS (basic infrastructure) is in place
+def get_has_ready(df_l):
+    return {k: len(v[~v.toestemming.isna() & v.bis_gereed]) for k, v in df_l.items()}
+
+
+# Total ratio of completed objects v.s. completed + permantently passed objects.
+def get_hc_hpend_ratio_total(hc, hpend):
+    return round(sum(hc.values()) / sum(hpend.values()), 2)
+
+
+# Calculates the ratio between homes completed v.s. completed + permantently passed objects per project
+def get_hc_hpend_ratio(df_l):
+    ratio_per_project = {}
+    for project, data in df_l.items():
+        try:
+            ratio_per_project[project] = sum(data.homes_completed) / sum(data.hpend) * 100
+        except ZeroDivisionError:
+            # Dirty fix, check if it can be removed.
+            ratio_per_project[project] = 0
+    return ratio_per_project
+
+
+def get_has_werkvoorraad(df_l):
+    return sum(calculate_y_voorraad_act(df_l).values())
+
+
+# Function to add relevant data to the source data_frames
+# TODO: Convert dict of dataframes to single dataframe, and add this in further steps.
+def preprocess_data(df_l, year):
+    df_l = add_relevant_columns(df_l, year)
+    return df_l
+
+
+def calculate_projectspecs(df_l):
+    homes_completed = get_homes_completed(df_l)
+    homes_ended = get_HPend(df_l)
+    has_ready = get_has_ready(df_l)
+    hc_hpend_ratio = get_hc_hpend_ratio(df_l)
+    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
+    werkvoorraad = get_has_werkvoorraad(df_l)
+
+    return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad
+
+
+def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
+    # to add target info KPN in days uitgaande van FTU0 en FTU1
+    y_target_l = {}
+    t_diff = {}
+    for key in t_shift:
+        if (key in date_FTU0) & (key in date_FTU1):
+            t_start = x_prog[x_d == date_FTU0[key]][0]
+            t_max = x_prog[x_d == date_FTU1[key]][0]
+            t_diff[key] = t_max - t_start - 14  # two weeks round up
+            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
+        if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
+            t_start = x_prog[x_d == date_FTU0[key]][0]
+            t_diff[key] = (100 / (sum(rc1.values()) / len(rc1.values())) - 14)[0]  # two weeks round up
+            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
+        if (key not in date_FTU0):  # project has finished, estimate target on what has been done
+            t_start = d_real_l[key].index.min()
+            t_max = d_real_l[key].index.max()
+            t_diff[key] = t_max - t_start - 14  # two weeks round up
+            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
+
+        b = -(rc * (t_start + 14))  # two weeks startup
+        y_target = b + rc * x_prog
+        y_target[y_target > 100] = 100
+        y_target_l[key] = y_target
+
+    for key in y_target_l:
+        y_target_l[key][y_target_l[key] > 100] = 100
+        y_target_l[key][y_target_l[key] < 0] = 0
+
+    return y_target_l, t_diff
 
 
 def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
@@ -269,70 +589,6 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
         y_prog_l[key][y_prog_l[key] < 0] = 0
 
     return rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff
-
-
-def calculate_projectspecs(df_l, year):
-    # to calculate HC / HPend ratio:
-    HC = {}
-    HPend = {}
-    HC_HPend_l = {}
-    Schouw_BIS = {}
-    HPend_l = {}
-    HAS_werkvoorraad_d = calculate_y_voorraad_act(df_l)
-    for key in df_l:
-        df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
-        if not df_HPend.empty:
-            df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
-                                (df_HPend.opleverdatum <= year + '-12-31')]
-            HPend[key] = len(df_HPend)
-            HC[key] = len(df_HPend[(df_HPend.opleverstatus == '2')])
-        else:
-            HC[key] = 0
-            HPend[key] = 0
-        opgeleverd = len(df_l[key][~df_l[key].opleverdatum.isna()])
-        if opgeleverd > 0:
-            HC_HPend_l[key] = len(df_l[key][df_l[key].opleverstatus == '2']) / opgeleverd * 100
-        else:
-            HC_HPend_l[key] = 0
-        Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
-        HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
-
-    HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
-    HAS_werkvoorraad = sum(HAS_werkvoorraad_d.values())
-
-    return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad
-
-
-def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
-    # to add target info KPN in days uitgaande van FTU0 en FTU1
-    y_target_l = {}
-    t_diff = {}
-    for key in t_shift:
-        if (key in date_FTU0) & (key in date_FTU1):
-            t_start = x_prog[x_d == date_FTU0[key]][0]
-            t_max = x_prog[x_d == date_FTU1[key]][0]
-            t_diff[key] = t_max - t_start - 14  # two weeks round up
-            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
-        if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
-            t_start = x_prog[x_d == date_FTU0[key]][0]
-            t_diff[key] = (100 / (sum(rc1.values()) / len(rc1.values())) - 14)[0]  # two weeks round up
-            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
-        if (key not in date_FTU0):  # project has finished, estimate target on what has been done
-            t_start = d_real_l[key].index.min()
-            t_max = d_real_l[key].index.max()
-            t_diff[key] = t_max - t_start - 14  # two weeks round up
-            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
-
-        b = -(rc * (t_start + 14))  # two weeks startup
-        y_target = b + rc * x_prog
-        y_target[y_target > 100] = 100
-        y_target_l[key] = y_target
-
-    for key in y_target_l:
-        y_target_l[key][y_target_l[key] > 100] = 100
-        y_target_l[key][y_target_l[key] < 0] = 0
-
-    return y_target_l, t_diff
 
 
 def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
@@ -469,10 +725,10 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
           }
     if 'W' in res:
         record = dict(id='graph_targets_W', figure=fig)
+        return record
     if 'M' == res:
-        firestore.Client().collection('Graphs').document('jaaroverzicht').set(jaaroverzicht)
         record = dict(id='graph_targets_M', figure=fig)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+        return record, jaaroverzicht
 
 
 def meters(d_sheets, tot_l, x_d, y_target_l):
@@ -616,6 +872,7 @@ def meters_graph(x_target, y_target, y_prog_l, y_BIS, y_HASm, y_HAS, y_schouw, a
 
 
 def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+    record_dict = {}
     for key in y_prog_l:
         fig = {'data': [{
                          'x': list(x_d.strftime('%Y-%m-%d')),
@@ -650,9 +907,9 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                                           'line': dict(color='rgb(170, 170, 170)'),
                                           'name': 'Outlook (KPN)',
                                           }]
-
         record = dict(id='project_' + key, figure=fig)
-        firestore.Client().collection('Graphs').document(record['id']).set(record)
+        record_dict[key] = record
+    return record_dict
 
 
 def map_redenen():
@@ -1007,7 +1264,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                       }
            }
     record = dict(id='project_performance', figure=fig)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+    return record
 
 
 def set_filters(df_l):
@@ -1064,48 +1321,8 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
             record[col[8]] = n_err[key]
             records += [record]
     df_table = pd.DataFrame(records).to_json(orient='records')
-    firestore.Client().collection('Graphs').document('info_table').set(dict(id='info_table', table=df_table, col=col))
-
-
-def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-                         df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                         Schouw_BIS, HPend_l, HAS_werkvoorraad, n_err):
-    for key in y_target_l:
-        if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
-            date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
-                                           (100 / (sum(rc1.values()) / len(rc1.values())))[0]))].strftime('%Y-%m-%d')
-        if (key not in date_FTU0):  # project has finished, estimate target on what has been done
-            date_FTU0[key] = x_d[d_real_l[key].index.min()].strftime('%Y-%m-%d')
-            date_FTU1[key] = x_d[d_real_l[key].index.max()].strftime('%Y-%m-%d')
-
-    record = dict(id='analysis', FTU0=date_FTU0, FTU1=date_FTU1)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
-
-    y_prog_l_r = {}
-    y_target_l_r = {}
-    t_shift_r = {}
-    d_real_l_r = {}
-    d_real_l_ri = {}
-    rc1_r = {}
-    rc2_r = {}
-    for key in y_prog_l:
-        y_prog_l_r[key] = list(y_prog_l[key])
-        y_target_l_r[key] = list(y_target_l[key])
-        t_shift_r[key] = str(t_shift[key])
-        if key in d_real_l:
-            d_real_l_r[key] = list(d_real_l[key]['Aantal'])
-            d_real_l_ri[key] = list(d_real_l[key].index)
-        if key in rc1:
-            rc1_r[key] = list(rc1[key])
-        if key in rc2:
-            rc2_r[key] = list(rc2[key])
-    record = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
-                  y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
-                  x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
-                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l, HAS_werkvoorraad=HAS_werkvoorraad)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
-    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+    record = dict(id='info_table', table=df_table, col=col)
+    return record
 
 
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
@@ -1368,10 +1585,11 @@ def overview_reden_na(df_l, clusters):
                 'layout': layout
           }
     record = dict(id=document, figure=fig)
-    to_firestore("Graphs", document, record)
+    return record
 
 
 def individual_reden_na(df_l, clusters):
+    record_dict = {}
     for project, df in df_l.items():
         data, document = pie_chart_reden_na(df, clusters, project)
         layout = get_pie_layout()
@@ -1380,7 +1598,8 @@ def individual_reden_na(df_l, clusters):
                 'layout': layout
             }
         record = dict(id=document, figure=fig)
-        to_firestore('Graphs', document, record)
+        record_dict[document] = record
+    return record_dict
 
 
 def to_firestore(collection, document, record):
