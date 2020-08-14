@@ -83,7 +83,7 @@ class Record():
         self.record = record
 
     def to_firestore(self, graph_name, client):
-        document = firestore.Client().collection(self.collection).document(graph_name)
+        document = firestore.Client().collection(self.collection).document(self.record['id'])
         document.set(dict(record=self.record,
                      client=client,
                      graph_name=graph_name)
@@ -120,7 +120,7 @@ class StringRecord(Record):
 class RecordDict(Record):
     def to_firestore(self, graph_name, client):
         for k, v in self.record.items():
-            document = firestore.Client().collection(self.collection).document(k)
+            document = firestore.Client().collection(self.collection).document(self.record['id'])
             document.set(dict(record=self.record,
                               client=client,
                               graph_name=k))
