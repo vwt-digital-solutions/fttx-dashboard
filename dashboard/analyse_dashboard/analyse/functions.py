@@ -6,6 +6,173 @@ import time
 import json
 import datetime
 import hashlib
+import unicodedata
+
+
+def make_frame_dict(files, source):
+    dataframe_dict = {}
+    for filename in files:
+        df = pd.DataFrame(pd.read_json(source + '../jsonFC/' + filename, orient='records')['data'].to_list())
+        project = unicodedata.normalize("NKFD", df['title'].iloc[0][0:-13])
+        dataframe_dict[project] = df
+    return dataframe_dict
+
+
+class Customer():
+
+    def __init__(self, name, bucket, col, projects, target_document, planning_location):
+
+        self.name = name
+        self.bucket = bucket
+        self.columns = col
+        self.projects = projects
+        self.target_document = target_document
+        self.planning_location = planning_location
+
+    def set_etl_processes(self):
+        self.etl_project_data = ETL_project_data
+        self.etl_planning_data = ETL_planning_data
+        self.etl_target_data = ETL_target_data
+
+    def get_data(self):
+        etl = self.etl_project_data(self.bucket, self.projects, self.columns)
+        etl.extract()
+        etl.transform()
+        return etl.data
+
+    def get_data_planning(self):
+        etl = self.etl_planning_data(self.planning_location)
+        etl.extract()
+        etl.transform()
+        return etl.data
+
+    def get_data_targets(self):
+        etl = self.etl_target_targets(self.target_document)
+        etl.extract()
+        etl.transform()
+        return etl.FTU0, etl.FTU1
+
+
+class ETL_target_data():
+
+    def __init__(self, target_document, initialise=False):
+        self.target_document = target_document
+
+    def extract(self):
+        doc = firestore.Client().collection('Graphs').document('analysis').get(self.target_document).to_dict()
+        self.FTU0 = doc['FTU0']
+        self.FTU1 = doc['FTU1']
+
+    def transform(self):
+        pass
+
+
+class ETL_planning_data():
+
+    def __init__(self, location):
+        self.location = location
+
+    def extract(self):
+        if 'gs://' in self.location:
+            xls = pd.ExcelFile(self.location)
+        else:
+            xls = pd.ExcelFile(self.location + 'Data_20200101_extra/Forecast JUNI 2020_def.xlsx')
+        df = pd.read_excel(xls, 'FTTX ').fillna(0)
+        self.data = df
+
+    def transform(self, df):
+        HP = dict(HPendT=[0] * 52)
+        df = self.data
+        for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
+            if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
+                HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
+                HP['HPendT'] = [sum(x) for x in zip(HP['HPendT'], HP[df.loc[el, ('Unnamed: 0')]])]
+                if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Oude Stad':
+                    HP['Bergen op Zoom oude stad'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
+                    HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
+                    HP['Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
+                    HP['Den Haag - Haagse Hout-Bezuidenhout West'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
+                    HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
+                    HP['Den Haag - Vrederust en Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == '':
+                    HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
+                    HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+        self.data = df
+
+
+class ETL_project_data():
+
+    def __init__(self, bucket, projects, col):
+        self.bucket = bucket
+        self.projects = projects
+        self.columns = col
+
+    def extract(self, local_file_location):
+        bucket = storage.Client.get_bucket(self.bucket)
+        blobs = bucket.list_blobs()
+        for blob in blobs:
+            if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
+                blob.download_to_filename(local_file_location + '../jsonFC/' + blob.name.split('/')[-1])
+        files = os.listdir(local_file_location + '../jsonFC/')
+        self.data = make_frame_dict(files, local_file_location)
+
+    def transform(self, flag=0):
+        for project, df in self.data.items():
+            df = self.rename_columns(df)
+            if flag == 0:
+                df = df[self.columns]
+            df = self.set_hasdatum(df)
+            df = self.set_opleverdatum(df)
+            if (project in self.projects) and (project not in self.data.keys()):
+                self.data[project] = df
+            if (project in self.projects) and (project in self.data.keys()):
+                self.data.keys[project] = self.data.keys[project].append(df, ignore_index=True)
+                self.data.keys[project] = self.data.keys[project].drop_duplicates(keep='first')
+                # generate this as error output?
+
+            # Hope this doesn't do anything anymore. Really weird fix.
+            # if project not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
+            #     os.remove(path_data + '../jsonFC/' + fn)
+
+        # I don't understand the flag variable. Does it do anything? Function is always called with flag 0
+        if flag == 0:
+            for key in self.data:
+                self.data[project].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in self.data[key].sleutel]
+
+        for key in self.projects:
+            if key not in self.data:
+                self.data[project] = pd.DataFrame(columns=self.columns)
+
+    def set_opleverdatum(self, df):
+        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
+            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
+
+    def set_hasdatum(self, df):
+        df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
+            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
+        return df
+
+    def rename_columns(self, df):
+        df.rename(columns={
+                            'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
+                            'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
+                            'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
+                            'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
+                            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
+                            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
+                            'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
+                            'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
+                            'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
+                            'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
+                            'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
+                            'SchouwDatum': 'schouwdatum'}, inplace=True)
+        return df
 
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
@@ -67,12 +234,6 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     return df_l
 
 
-# y_target_l - transform mbv ftu0 ftu1
-# y_prog_l, y_target_l, rc1, rc2 - to list
-# t_shift  - to str
-# d_real_r, d_real_l_ri -> to list
-# x_prog - to int
-# x_d - to datetime
 class Record():
     def __init__(self, record, collection):
         self.record = None
@@ -126,12 +287,6 @@ class RecordDict(Record):
                               graph_name=k))
 
 
-# y_target_l - transform mbv ftu0 ftu1
-# y_prog_l, y_target_l, rc1, rc2 - to list
-# t_shift  - to str
-# d_real_r, d_real_l_ri -> to list
-# x_prog - to int
-# x_d - to datetime
 class Analysis():
 
     def __init__(self, client):

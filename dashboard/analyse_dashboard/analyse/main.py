@@ -5,12 +5,14 @@ import json
 import base64
 from gobits import Gobits
 from google.cloud import pubsub, firestore
+from functions import Client
 from functions import get_timeline, get_start_time, get_data, get_total_objects
 from functions import preprocess_data, Analysis
 from functions import get_data_planning, get_data_targets
 from functions import overview
 from functions import set_filters, set_bar_names, error_check_FCBC
 from functions import masks_phases, set_date_update
+import os
 
 
 logging.basicConfig(level=logging.INFO)
@@ -39,7 +41,15 @@ def publish_json(gobits, msg_data, rowcount, rowmax, topic_project_id, topic_nam
 def analyse(request):
     try:
         publish_project_data(request)
-
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = 'gpath_i'
+        # TODO: Figure out a good set of input arguments. Or move all input arguments of client to config
+        kpn = Client(name='kpn',
+                     bucket='vwt-d-gew1-it-fiberconnect-int-preprocess-stg',
+                     col=config.col,
+                     projects=config.subset_KPN_2020,
+                     planning_location=config.path_data_b,
+                     target_document='analysis')
+        kpn.extract()
         # Get data from state collection Projects
         df_l = get_data(config.subset_KPN_2020, config.col, None, None, 0)
         start_time = get_start_time(df_l)
