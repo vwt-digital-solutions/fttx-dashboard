@@ -29,7 +29,7 @@ def get_body():
             html.Div(
                 [
                     global_info("tmobile-voorraadvormend",
-                                title='Voorraadvormend',
+                                title='Werkvoorraad HAS',
                                 value="1264"),
 
                 ],
