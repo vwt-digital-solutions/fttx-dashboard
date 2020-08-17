@@ -15,6 +15,14 @@ app.layout = html.Div([
 ])
 
 
+def get_page(page):
+    try:
+        page_body = importlib.import_module(f"layout.pages.{page}.{page}")
+    except ImportError:
+        page_body = importlib.import_module(f"layout.pages.{page}")
+    return page_body
+
+
 # CALBACKS
 @app.callback(
     Output('page-content', 'children'),
@@ -28,7 +36,7 @@ def display_page(pathname):
 
     for page in config_pages:
         if pathname in config_pages[page]['link']:
-            page_body = importlib.import_module(f"layout.pages.{page}")
+            page_body = get_page(page)
             break
 
     return [layout(pathname=pathname, brand="FttX", children=page_body.get_body())]

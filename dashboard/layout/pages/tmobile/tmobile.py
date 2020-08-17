@@ -3,6 +3,7 @@ import dash_html_components as html
 
 from layout.components.global_info import global_info
 from layout.components.header import header
+from layout.pages.tmobile.sales_graph import get_html
 
 layout = dict(
     autosize=True,
@@ -35,6 +36,11 @@ def get_body():
                 ],
                 id="info-container1",
                 className="container-display",
+            ),
+            html.Div(
+                className="container-display",
+                children=[get_html('Sales, HAsses & Activations (by week)'),
+                          get_html('Sales, HAsses & Activations (by day)')]
             )
         ],
         id="mainContainer",
