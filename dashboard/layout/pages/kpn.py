@@ -2,11 +2,11 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
 
+from data import collection
 from layout.components.figure import figure
-from layout.components.global_info import global_info
 from data.graph import graph
 from data.figure import figure_data
-from data.jaaroverzicht import jaaroverzicht_data
+from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 
 layout = dict(
@@ -22,6 +22,26 @@ layout = dict(
 
 # APP LAYOUT
 def get_body():
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+
+    jaaroverzicht_list = [
+        dict(id_="info_globaal_container0",
+             title='Outlook (KPN)',
+             text="HPend afgesproken: ",
+             value=jaaroverzicht['target']),
+        dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
+             value=jaaroverzicht['real']),
+        dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
+             value=jaaroverzicht['plan']),
+        dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
+             text="HPend voorspeld vanaf nu: ", value=jaaroverzicht['prog'],
+             className=jaaroverzicht["prog_c"] + "  column"),
+        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
+             value=jaaroverzicht['HC_HPend']),
+        dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
+             value=jaaroverzicht['HAS_werkvoorraad']),
+    ]
+
     page = html.Div(
         [
             dcc.Store(id="aggregate_data",
@@ -31,27 +51,9 @@ def get_body():
             dcc.Store(id="aggregate_data3",
                       data=None),
             header("Status projecten KPN in 2020"),
-            html.Div(
-                [
-                    global_info("info_globaal_container0",
-                                title='Outlook (KPN)',
-                                text="HPend afgesproken: ",
-                                value=jaaroverzicht_data('target')),
-                    global_info("info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-                                value=jaaroverzicht_data('real')),
-                    global_info("info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-                                value=jaaroverzicht_data('plan')),
-                    global_info("info_globaal_container3", title='Voorspelling (VQD)',
-                                text="HPend voorspeld vanaf nu: ", value=jaaroverzicht_data('prog'),
-                                className=jaaroverzicht_data("prog_c") + "  column"),
-                    global_info("info_globaal_container4", title='Actuele HC / HPend',
-                                value=jaaroverzicht_data('HC_HPend')),
-                    global_info("info_globaal_container5", title='Werkvoorraad HAS',
-                                value=jaaroverzicht_data('HAS_werkvoorraad')),
-                ],
-                id="info-container1",
-                className="container-display",
-            ),
+            global_info_list(jaaroverzicht_list,
+                             id="info-container1",
+                             className="container-display"),
             html.Div(
                 [
                     figure(container_id="graph_targets_overallM_c",
@@ -61,7 +63,9 @@ def get_body():
                            graph_id="graph_targets_ov",
                            figure=figure_data('graph_targets_W')),
                     html.Div(
-                        [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
+                        [dcc.Graph(id="Pie_NA_o", figure=collection.get_graph(collection="Graphs",
+                                                                              client="KPN",
+                                                                              graph_name="reden_na_overview"))],
                         id='Pie_NA_oid',
                         className="pretty_container column",
                         hidden=False,
