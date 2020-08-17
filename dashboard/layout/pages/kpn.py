@@ -63,22 +63,23 @@ def get_body():
                            graph_id="graph_targets_ov",
                            figure=figure_data('graph_targets_W')),
                     html.Div(
-                        [dcc.Graph(id="Pie_NA_o", figure=collection.get_graph(collection="Graphs",
-                                                                              client="KPN",
-                                                                              graph_name="reden_na_overview"))],
+                        [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
                         id='Pie_NA_oid',
                         className="pretty_container column",
                         hidden=False,
                     ),
+
                 ],
                 id="main_graphs0",
                 className="container-display",
             ),
             html.Div(
                 [
+
                     figure(container_id="graph_speed_c",
                            graph_id="project_performance",
-                           figure=figure_data('project_performance')),
+                           figure=collection.get_graph(collection="Graphs", client="KPN",
+                                                       graph_name="project_performance")),
                     html.Div([
                         html.Div(id='ww_c',
                                  children=dcc.Input(id='ww', value=' ', type='text'),
