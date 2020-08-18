@@ -4,7 +4,7 @@ import dash_html_components as html
 
 from data import collection
 from layout.components.figure import figure
-from data.graph import graph
+from data.graph import graph, pie_chart
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 
@@ -62,7 +62,7 @@ def get_body():
                            graph_id="graph_targets_W",
                            figure=collection.get_graph(client="KPN", graph_name="graph_targets_W")),
                     html.Div(
-                        [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
+                        [dcc.Graph(id="Pie_NA_o", figure=pie_chart())],
                         id='Pie_NA_oid',
                         className="pretty_container column",
                         hidden=False,

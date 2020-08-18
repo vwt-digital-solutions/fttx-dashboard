@@ -13,7 +13,7 @@ import numpy as np
 from app import app
 
 # update value dropdown given selection in scatter chart
-from data.graph import graph
+from data.graph import graph, pie_chart
 from data.figure import figure_data
 from data.jaaroverzicht import jaaroverzicht_data
 from data import collection
@@ -176,7 +176,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     barLB = graph(5, drop_selectie, mask_all)
     barHB = graph(6, drop_selectie, mask_all)
-    pieNA = graph(10, drop_selectie, mask_all)
+    pieNA = pie_chart(drop_selectie)
 
     return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
 

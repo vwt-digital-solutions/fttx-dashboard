@@ -227,13 +227,13 @@ def graph(flag, drop_selectie, mask_all):
         )
 
     if flag == 10:
-        fig = get_pie(drop_selectie)
+        fig = pie_chart(drop_selectie)
     if flag == 11:
-        fig = get_pie('overview')
+        fig = pie_chart('overview')
     return fig
 
 
-def get_pie(key):
+def pie_chart(key="overview"):
     fig = api.get('/Graphs?id=pie_na_' + key)
     data = fig[0]['figure']['data']
     trace = go.Pie(data)
