@@ -40,7 +40,7 @@ def get_body():
             html.Div(
                 className="container-display",
                 children=[get_html('Sales, HAsses & Activations (by week)'),
-                          get_html('Sales, HAsses & Activations (by day)')]
+                          get_html('Sales, HAsses & Activations (by month)', flag=2)]
             )
         ],
         id="mainContainer",
