@@ -124,7 +124,8 @@ class RecordDict(Record):
             print(f"Writing {graph_name+'_'+k} to {client}, in collection {self.collection}")
             document.set(dict(record=v,
                               client=client,
-                              graph_name=k))
+                              graph_name=graph_name,
+                              project=k))
 
 
 # y_target_l - transform mbv ftu0 ftu1
