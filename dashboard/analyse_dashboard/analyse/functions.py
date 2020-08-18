@@ -84,10 +84,10 @@ class Record():
 
     def to_firestore(self, graph_name, client):
         document = firestore.Client().collection(self.collection).document(graph_name)
-        document.set(dict(record=self.record,
-                     client=client,
-                     graph_name=graph_name)
-                     )
+        firestore_dict = dict(record=self.record,
+                              client=client,
+                              graph_name=graph_name)
+        document.set(firestore_dict)
 
 
 class IntRecord(Record):
@@ -120,10 +120,12 @@ class StringRecord(Record):
 class RecordDict(Record):
     def to_firestore(self, graph_name, client):
         for k, v in self.record.items():
-            document = firestore.Client().collection(self.collection).document(k)
-            document.set(dict(record=self.record,
+            document = firestore.Client().collection(self.collection).document(graph_name+"_"+k)
+            print(f"Writing {graph_name+'_'+k} to {client}, in collection {self.collection}")
+            document.set(dict(record=v,
                               client=client,
-                              graph_name=k))
+                              graph_name=graph_name,
+                              project=k))
 
 
 # y_target_l - transform mbv ftu0 ftu1
