@@ -28,9 +28,10 @@ class Customer():
         self.projects = projects
         self.target_document = target_document
         self.planning_location = planning_location
+        self.local_folder = "../"+name+'_data/'
 
     def set_etl_processes(self):
-        self.etl_project_data = ETL_project_data
+        self.etl_project_data = ETL_project_data_database
         self.etl_planning_data = ETL_planning_data
         self.etl_target_data = ETL_target_data
 
@@ -47,7 +48,7 @@ class Customer():
         return etl.data
 
     def get_data_targets(self):
-        etl = self.etl_target_targets(self.target_document)
+        etl = self.etl_target_data(self.target_document)
         etl.extract()
         etl.transform()
         return etl.FTU0, etl.FTU1
@@ -58,8 +59,9 @@ class ETL_target_data():
     def __init__(self, target_document, initialise=False):
         self.target_document = target_document
 
+    # TODO where does the data come from?
     def extract(self):
-        doc = firestore.Client().collection('Graphs').document('analysis').get(self.target_document).to_dict()
+        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
         self.FTU0 = doc['FTU0']
         self.FTU1 = doc['FTU1']
 
@@ -80,7 +82,7 @@ class ETL_planning_data():
         df = pd.read_excel(xls, 'FTTX ').fillna(0)
         self.data = df
 
-    def transform(self, df):
+    def transform(self):
         HP = dict(HPendT=[0] * 52)
         df = self.data
         for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
@@ -113,8 +115,8 @@ class ETL_project_data():
         self.projects = projects
         self.columns = col
 
-    def extract(self, local_file_location):
-        bucket = storage.Client.get_bucket(self.bucket)
+    def extract(self, local_file_location, local=True):
+        bucket = storage.Client().get_bucket(self.bucket)
         blobs = bucket.list_blobs()
         for blob in blobs:
             if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
@@ -122,7 +124,7 @@ class ETL_project_data():
         files = os.listdir(local_file_location + '../jsonFC/')
         self.data = make_frame_dict(files, local_file_location)
 
-    def transform(self, flag=0):
+    def transform_bucket_data(self, flag=0):
         for project, df in self.data.items():
             df = self.rename_columns(df)
             if flag == 0:
@@ -132,8 +134,8 @@ class ETL_project_data():
             if (project in self.projects) and (project not in self.data.keys()):
                 self.data[project] = df
             if (project in self.projects) and (project in self.data.keys()):
-                self.data.keys[project] = self.data.keys[project].append(df, ignore_index=True)
-                self.data.keys[project] = self.data.keys[project].drop_duplicates(keep='first')
+                self.data[project] = self.data[project].append(df, ignore_index=True)
+                self.data[project] = self.data[project].drop_duplicates(keep='first')
                 # generate this as error output?
 
             # Hope this doesn't do anything anymore. Really weird fix.
@@ -173,6 +175,34 @@ class ETL_project_data():
                             'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
                             'SchouwDatum': 'schouwdatum'}, inplace=True)
         return df
+
+
+class ETL_project_data_database(ETL_project_data):
+
+    def extract(self):
+        t = time.time()
+        df_l = {}
+        for key in self.projects:
+            docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
+            records = []
+            for doc in docs:
+                records += [doc.to_dict()]
+            if records != []:
+                df_l[key] = pd.DataFrame(records)[self.columns].fillna(np.nan)
+            else:
+                df_l[key] = pd.DataFrame(columns=self.columns).fillna(np.nan)
+            # to correct for datetime value at HUB
+            df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
+                [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
+            df_l[key].loc[~df_l[key]['hasdatum'].isna(), ('hasdatum')] = \
+                [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
+
+            print(key)
+            print('Time: ' + str((time.time() - t)/60) + ' minutes')
+        self.data = df_l
+
+    def transform(self):
+        self.data = self.data
 
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
@@ -526,38 +556,6 @@ def get_total_objects(df_l):  # Don't think this is necessary to calculate at th
     total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
     total_objects['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
     return total_objects
-
-
-# def calculate_projectspecs(df_l, year):
-#     # to calculate HC / HPend ratio:
-#     HC = {}
-#     HPend = {}
-#     HC_HPend_l = {}
-#     Schouw_BIS = {}
-#     HPend_l = {}
-#     HAS_werkvoorraad_d = calculate_y_voorraad_act(df_l)
-#     for key in df_l:
-#         df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
-#         if not df_HPend.empty:
-#             df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
-#                                 (df_HPend.opleverdatum <= year + '-12-31')]
-#             HPend[key] = len(df_HPend)
-#             HC[key] = len(df_HPend[(df_HPend.opleverstatus == '2')])
-#         else:
-#             HC[key] = 0
-#             HPend[key] = 0
-#         opgeleverd = len(df_l[key][~df_l[key].opleverdatum.isna()])
-#         if opgeleverd > 0:
-#             HC_HPend_l[key] = len(df_l[key][df_l[key].opleverstatus == '2']) / opgeleverd * 100
-#         else:
-#             HC_HPend_l[key] = 0
-#         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
-#         HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
-
-#     HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
-#     HAS_werkvoorraad = sum(HAS_werkvoorraad_d.values())
-
-#     return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad
 
 
 # Function that adds columns to the source data, to be used in project specs
