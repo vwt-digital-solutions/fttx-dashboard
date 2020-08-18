@@ -32,8 +32,8 @@ def update_dropdown(value):
 # update graphs
 @app.callback(
     [
-        Output("graph_targets_overall_c", 'hidden'),
-        Output("graph_targets_overallM_c", 'hidden'),
+        Output("graph_targets_W_container", 'hidden'),
+        Output("graph_targets_M_container", 'hidden'),
         Output("info_globaal_container0", 'hidden'),
         Output("info_globaal_container1", 'hidden'),
         Output("info_globaal_container2", 'hidden'),

@@ -55,10 +55,10 @@ def get_body():
                              className="container-display"),
             html.Div(
                 [
-                    figure(container_id="graph_targets_overallM_c",
+                    figure(container_id="graph_targets_M_container",
                            graph_id="graph_targets_M",
                            figure=collection.get_graph(client="KPN", graph_name="graph_targets_M")),
-                    figure(container_id="graph_targets_overallM_c",
+                    figure(container_id="graph_targets_W_container",
                            graph_id="graph_targets_W",
                            figure=collection.get_graph(client="KPN", graph_name="graph_targets_W")),
                     html.Div(

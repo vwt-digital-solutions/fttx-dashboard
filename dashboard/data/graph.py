@@ -5,6 +5,7 @@ import plotly.graph_objs as go
 from elements import table_styles
 import json
 import dash_table
+from data import collection
 
 
 def graph(flag, drop_selectie, mask_all):
@@ -189,8 +190,9 @@ def graph(flag, drop_selectie, mask_all):
         fig['table'] = df_table
 
     if flag == 8:
-        df = pd.read_json(api.get('/Graphs?id=info_table')[0]['table'], orient='records')
-        df = df[api.get('/Graphs?id=info_table')[0]['col']]
+        info_table = collection.get_document(collection="Graphs", client="KPN", graph_name="info_table")
+        df = pd.read_json(info_table['table'], orient='records')
+        df = df[info_table['col']]
         fig = dash_table.DataTable(
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict("rows"),
