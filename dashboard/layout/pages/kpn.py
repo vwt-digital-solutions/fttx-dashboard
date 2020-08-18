@@ -5,7 +5,6 @@ import dash_html_components as html
 from data import collection
 from layout.components.figure import figure
 from data.graph import graph
-from data.figure import figure_data
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 
@@ -57,18 +56,17 @@ def get_body():
             html.Div(
                 [
                     figure(container_id="graph_targets_overallM_c",
-                           graph_id="graph_targets_m",
-                           figure=figure_data('graph_targets_M')),
-                    figure(container_id="graph_targets_overall_c",
-                           graph_id="graph_targets_ov",
-                           figure=figure_data('graph_targets_W')),
+                           graph_id="graph_targets_M",
+                           figure=collection.get_graph(client="KPN", graph_name="graph_targets_M")),
+                    figure(container_id="graph_targets_overallM_c",
+                           graph_id="graph_targets_W",
+                           figure=collection.get_graph(client="KPN", graph_name="graph_targets_W")),
                     html.Div(
                         [dcc.Graph(id="Pie_NA_o", figure=graph(11, None, None))],
                         id='Pie_NA_oid',
                         className="pretty_container column",
                         hidden=False,
                     ),
-
                 ],
                 id="main_graphs0",
                 className="container-display",
@@ -78,7 +76,7 @@ def get_body():
 
                     figure(container_id="graph_speed_c",
                            graph_id="project_performance",
-                           figure=collection.get_graph(collection="Graphs", client="KPN",
+                           figure=collection.get_graph(client="KPN",
                                                        graph_name="project_performance")),
                     html.Div([
                         html.Div(id='ww_c',

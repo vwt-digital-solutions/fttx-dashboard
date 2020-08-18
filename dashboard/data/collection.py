@@ -20,11 +20,11 @@ def get_document(collection, **url_params):
 
 
 def get_graph(**kwargs):
-    return get_document(**kwargs).get('figure', {
-            'data': [
-                {'x': [1, 2, 3], 'y': [4, 1, 2]},
-            ],
-            'layout': {
-                'title': 'Graph not found'
-            }
-        })
+    return get_document(collection="Graphs", **kwargs).get('figure', {
+        'data': [
+            {'x': [1, 2, 3], 'y': [4, 1, 2]},
+        ],
+        'layout': {
+            'title': 'Graph not found'
+        }
+    })
