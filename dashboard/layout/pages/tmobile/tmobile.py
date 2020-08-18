@@ -1,9 +1,10 @@
 import dash_core_components as dcc
 import dash_html_components as html
 
-from layout.components.global_info import global_info
+from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 from layout.pages.tmobile.sales_graph import get_html
+
 
 layout = dict(
     autosize=True,
@@ -18,6 +19,24 @@ layout = dict(
 
 # APP LAYOUT
 def get_body():
+
+    jaaroverzicht_list = [
+        dict(id_="info_globaal_container0",
+             title='Outlook (KPN)',
+             text="HPend afgesproken: ",
+             value='1000'),
+        dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
+             value='1200'),
+        dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
+             value='1300'),
+        dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
+             text="HPend voorspeld vanaf nu: ", value='1400'),
+        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
+             value='1500'),
+        dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
+             value='1600'),
+    ]
+
     page = html.Div(
         [
             dcc.Store(id="aggregate_data",
@@ -27,16 +46,9 @@ def get_body():
             dcc.Store(id="aggregate_data3",
                       data=None),
             header("Status projecten T-Mobile in 2020"),
-            html.Div(
-                [
-                    global_info("tmobile-voorraadvormend",
-                                title='Werkvoorraad HAS',
-                                value="1264"),
-
-                ],
-                id="info-container1",
-                className="container-display",
-            ),
+            global_info_list(jaaroverzicht_list,
+                             id="info-container1",
+                             className="container-display"),
             html.Div(
                 className="container-display",
                 children=[get_html('Sales, HAsses & Activations (by week)'),
