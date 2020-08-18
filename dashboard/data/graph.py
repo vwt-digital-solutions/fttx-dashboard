@@ -8,17 +8,32 @@ import dash_table
 from data import collection
 
 
+def info_table():
+    document = collection.get_document(collection="Graphs", client="KPN", graph_name="info_table")
+    df = pd.read_json(document['table'], orient='records')
+    df = df[document['col']]
+    fig = dash_table.DataTable(
+        columns=[{"name": i, "id": i} for i in df.columns],
+        data=df.to_dict("rows"),
+        filter_action="native",
+        sort_action="native",
+        style_table={'overflowX': 'auto'},
+        style_header=table_styles['header'],
+        style_cell=table_styles['cell']['action'],
+        style_filter=table_styles['filter'],
+        css=[{
+            'selector': 'table',
+            'rule': 'width: 100%;'
+        }],
+    )
+    return fig
+
+
 def graph(flag, drop_selectie, mask_all):
     if flag == 85:
         date_an = api.get('/Graphs?id=update_date')[0]['date']
         date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
         fig = min([date_an, date_con])
-
-    # prognose
-    if flag == 1:
-        fig = api.get('/Graphs?id=' + 'project_' + drop_selectie)[0]['figure']
-        for i, item in enumerate(fig['data']):
-            fig['data'][i]['x'] = pd.to_datetime(item['x'])
 
     # labels
     if flag == 3:
@@ -188,25 +203,6 @@ def graph(flag, drop_selectie, mask_all):
             }],
         )
         fig['table'] = df_table
-
-    if flag == 8:
-        info_table = collection.get_document(collection="Graphs", client="KPN", graph_name="info_table")
-        df = pd.read_json(info_table['table'], orient='records')
-        df = df[info_table['col']]
-        fig = dash_table.DataTable(
-            columns=[{"name": i, "id": i} for i in df.columns],
-            data=df.to_dict("rows"),
-            filter_action="native",
-            sort_action="native",
-            style_table={'overflowX': 'auto'},
-            style_header=table_styles['header'],
-            style_cell=table_styles['cell']['action'],
-            style_filter=table_styles['filter'],
-            css=[{
-                'selector': 'table',
-                'rule': 'width: 100%;'
-            }],
-        )
 
     if flag == 9:
         df = pd.DataFrame(columns=['Project', 'FTU0', 'FTU1'])

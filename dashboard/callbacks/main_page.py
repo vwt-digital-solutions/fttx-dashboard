@@ -16,6 +16,8 @@ from app import app
 from data.graph import graph
 from data.figure import figure_data
 from data.jaaroverzicht import jaaroverzicht_data
+from data import collection
+from data.graph import info_table as graph_info_table
 
 
 @app.callback(
@@ -117,8 +119,10 @@ def middle_top_graphs(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_prog = graph(1, drop_selectie, None)
-    table_info = graph(8, drop_selectie, None)
+    fig_prog = collection.get_graph(client="KPN", graph_name="prognose_graph_dict", project=drop_selectie)
+    for i, item in enumerate(fig_prog['data']):
+        fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
+    table_info = graph_info_table()
 
     return [fig_prog, table_info, -1]
 
