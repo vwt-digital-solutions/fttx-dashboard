@@ -6,12 +6,12 @@ import base64
 from gobits import Gobits
 from google.cloud import pubsub, firestore
 from functions import get_timeline, get_start_time, get_data, get_total_objects
-from functions import preprocess_data, Analysis
+from functions import preprocess_data
 from functions import get_data_planning, get_data_targets
 from functions import overview
 from functions import set_filters, set_bar_names, error_check_FCBC
 from functions import masks_phases, set_date_update
-
+from Analysis import Analysis
 
 logging.basicConfig(level=logging.INFO)
 publisher = pubsub.PublisherClient()
@@ -51,7 +51,7 @@ def analyse(request):
 
         # Analysis
         analyse = Analysis('KPN')
-        analyse.set_inputfields(date_FTU0, date_FTU1, timeline)
+        analyse.set_input_fields(date_FTU0, date_FTU1, timeline)
         df_l = preprocess_data(df_l, '2020')
         HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
         y_voorraad_act = analyse.calculate_y_voorraad_act(df_l)

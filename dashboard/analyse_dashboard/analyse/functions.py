@@ -42,9 +42,9 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
                            'SchouwDatum': 'schouwdatum'}, inplace=True)
         if flag == 0:
             df = df[col]
-        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
+        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] = \
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
-        df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
+        df.loc[~df['hasdatum'].isna(), ('hasdatum')] = \
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
         if (key in subset) and (key not in df_l.keys()):
             df_l[key] = df
@@ -73,155 +73,6 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
 # d_real_r, d_real_l_ri -> to list
 # x_prog - to int
 # x_d - to datetime
-class Record():
-    def __init__(self, record, collection):
-        self.record = None
-        self.transform(record)
-        self.collection = collection
-
-    def transform(self, record):
-        self.record = record
-
-    def to_firestore(self, graph_name, client):
-        document = firestore.Client().collection(self.collection).document(graph_name)
-        firestore_dict = dict(record=self.record,
-                              client=client,
-                              graph_name=graph_name)
-        document.set(firestore_dict)
-
-
-class IntRecord(Record):
-
-    def transform(self, record):
-        self.record = [int(el) for el in record]
-
-
-class DateRecord(Record):
-
-    def transform(self, record):
-        self.record = [el.strftime('%Y-%m-%d') for el in record]
-
-
-class ListRecord(Record):
-
-    def transform(self, record):
-        self.record = {}
-        for k, v in record.items():
-            self.record[k] = list(v)
-
-
-class StringRecord(Record):
-    def transform(self, record):
-        self.record = {}
-        for k, v in record.items():
-            self.record[k] = str(v)
-
-
-class RecordDict(Record):
-    def to_firestore(self, graph_name, client):
-        for k, v in self.record.items():
-            document = firestore.Client().collection(self.collection).document(graph_name+"_"+k)
-            print(f"Writing {graph_name+'_'+k} to {client}, in collection {self.collection}")
-            document.set(dict(record=v,
-                              client=client,
-                              graph_name=graph_name,
-                              project=k))
-
-
-# y_target_l - transform mbv ftu0 ftu1
-# y_prog_l, y_target_l, rc1, rc2 - to list
-# t_shift  - to str
-# d_real_r, d_real_l_ri -> to list
-# x_prog - to int
-# x_d - to datetime
-class Analysis():
-
-    def __init__(self, client):
-        self._client = client
-
-    def set_input_fields(self, date_FTU0, date_FTU1, x_d):
-        self.date_FTU0 = Record(date_FTU0, collection='Data')
-        self.date_FTU1 = Record(date_FTU1, collection='Data')
-        self.x_d = DateRecord(x_d, collection="Data")
-
-    def prognose(self, df_l, start_time, timeline, total_objects, date_FTU0):
-        print("Prognose")
-        results = prognose(df_l, start_time, timeline, total_objects, date_FTU0)
-        self.rc1 = ListRecord(results[0], collection='Data')
-        self.rc2 = ListRecord(results[1], collection='Data')
-        d_real_l_r = {k: v["Aantal"] for k, v in results[2].items()}
-        self.d_real_l_r = ListRecord(d_real_l_r, collection="Data")
-        d_real_l_ri = {k: v.index for k, v in results[2].items()}
-        self.d_real_l_ri = ListRecord(d_real_l_ri, collection="Data")
-        self.y_prog_l = ListRecord(results[3], collection='Data')
-        self.x_prog = IntRecord(results[4], collection='Data')
-        self.t_shift = StringRecord(results[5], collection='Data')
-        self.cutoff = Record(results[6], collection='Data')
-        return results
-
-    def targets(self, x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
-        print("Targets")
-        results = targets(x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
-        self.y_target_l = ListRecord(results[0], collection='Data')
-        return results
-
-    def error_check_FCBC(self, df_l):
-        print("Error check")
-        results = error_check_FCBC(df_l)
-        self.n_err = Record(results[0], collection='Data')
-        self.errors_FC_BC = Record(results[1], collection='Data')
-        print("error check done")
-        return results
-
-    def calculate_projectspecs(self, df_l):
-        print("Projectspecs")
-        results = calculate_projectspecs(df_l)
-        self.HC_HPend = Record(results[0], collection='Data')
-        self.HC_HPend_l = Record(results[1], collection='Data')
-        self.Schouw_BIS = Record(results[2], collection='Data')
-        self.HPend_l = Record(results[3], collection='Data')
-        self.HAS_werkvoorraad = Record(results[4], collection='Data')
-        return results
-
-    def calculate_graph_overview(self, df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad):
-        graph_targets_W = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='W-MON')
-        graph_targets_M, jaaroverzicht = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res='M')
-        self.graph_targets_W = Record(graph_targets_W, collection='Graphs')
-        self.graph_targets_M = Record(graph_targets_M, collection='Graphs')
-        self.jaaroverzicht = Record(jaaroverzicht, collection='Data')
-
-    def performance_matrix(self, x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
-        graph = performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
-        self.project_performance = Record(graph, collection="Graphs")
-
-    def calculate_y_voorraad_act(self, df_l):
-        results = calculate_y_voorraad_act(df_l)
-        self.y_voorraad_act = Record(results, collection='Data')
-        return results
-
-    def prognose_graph(self, x_d, y_prog_l, d_real_l, y_target_l):
-        result_dict = prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
-        self.prognose_graph_dict = RecordDict(result_dict, collection="Graphs")
-
-    def info_table(self, tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
-        record = info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
-        self.info_table = Record(record, collection="Graphs")
-
-    def reden_na(self, df_l, clusters):
-        overview_record = overview_reden_na(df_l, clusters)
-        record_dict = individual_reden_na(df_l, clusters)
-        self.reden_na_overview = Record(overview_record, collection="Graphs")
-        self.reden_na_projects = RecordDict(record_dict, collection="Graphs")
-
-    def to_firestore(self):
-        for field_name, data in self.__dict__.items():
-            if not field_name[0] == "_":
-                try:
-                    data.to_firestore(field_name, self._client)
-                    print(f"Wrote {field_name} to firestore")
-                except TypeError:
-                    print(f"Could not write {field_name} to firestore.")
-
 
 def extract_data_planning(path_data):
     if 'gs://' in path_data:
@@ -594,7 +445,6 @@ def prognose(df_l, t_s, x_d, tot_l, date_FTU0):
 
 
 def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
-
     df_prog = pd.DataFrame(index=x_d, columns=['d'], data=0)
     for key in y_prog_l:
         y_prog = y_prog_l[key] / 100 * tot_l[key]
@@ -633,7 +483,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
         x_ticks = list(range(n_now - n_d, n_now + 5 - n_d))
-        x_ticks_text = [datetime.datetime.strptime('2020-W' + str(int(el-1)) + '-1', "%Y-W%W-%w").date().strftime(
+        x_ticks_text = [datetime.datetime.strptime('2020-W' + str(int(el - 1)) + '-1', "%Y-W%W-%w").date().strftime(
             '%Y-%m-%d') + '<br>W' + str(el) for el in x_ticks]
         x_range = [n_now - n_d - 0.5, n_now + 4.5 - n_d]
         y_range = [0, 3000]
@@ -666,7 +516,8 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
 
     if 'M' == res:
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
-                             plan=str(round(sum(plan[n_now:]) - real[n_now])), prog=str(round(sum(prog[n_now:]) - real[n_now])),
+                             plan=str(round(sum(plan[n_now:]) - real[n_now])),
+                             prog=str(round(sum(prog[n_now:]) - real[n_now])),
                              HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
             jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -676,9 +527,9 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    name='Huidige week',
                    type='bar',
                    marker=dict(color='rgb(0, 0, 0)'),
-                   width=0.5*width,
+                   width=0.5 * width,
                    )
-    bar_t = dict(x=[el - 0.5*width for el in x],
+    bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
                  name='Outlook (KPN)',
                  type='bar',
@@ -692,7 +543,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                   marker=dict(color='rgb(200, 200, 0)', symbol='diamond', size=15),
                   #   width=0.2,
                   )
-    bar_r = dict(x=[el + 0.5*width for el in x],
+    bar_r = dict(x=[el + 0.5 * width for el in x],
                  y=real,
                  name='Realisatie (FC)',
                  type='bar',
@@ -707,24 +558,24 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                   width=width,
                   )
     fig = {
-           'data': [bar_pr, bar_pl, bar_r, bar_t, bar_now],
-           'layout': {
-                      'barmode': 'stack',
-                      #   'clickmode': 'event+select',
-                      'showlegend': True,
-                      'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
-                      'height': 300,
-                      'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
-                      'title': {'text': text_title},
-                      'xaxis': {'range': x_range,
-                                'tickvals': x_ticks,
-                                'ticktext': x_ticks_text,
-                                'title': ' '},
-                      'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
-                      #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
-                      #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
-                      },
-          }
+        'data': [bar_pr, bar_pl, bar_r, bar_t, bar_now],
+        'layout': {
+            'barmode': 'stack',
+            #   'clickmode': 'event+select',
+            'showlegend': True,
+            'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
+            'height': 300,
+            'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+            'title': {'text': text_title},
+            'xaxis': {'range': x_range,
+                      'tickvals': x_ticks,
+                      'ticktext': x_ticks_text,
+                      'title': ' '},
+            'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
+            #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
+            #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
+        },
+    }
     if 'W' in res:
         record = dict(id='graph_targets_W', figure=fig)
         return record
@@ -789,7 +640,8 @@ def meters(d_sheets, tot_l, x_d, y_target_l):
         y_BIS[key] = (m_BIS.cumsum() / m_BIST * 100).to_list() + [0] * (len(y_target[key]) - len(m_BIS))
         y_HASm[key] = (m_HAS.cumsum() / m_HAST * 100).to_list() + [0] * (len(y_target[key]) - len(m_HAS))
         y_HAS[key] = ((w_HP + w_2).cumsum() / tot_l[key] * 100).to_list() + [0] * (len(y_target[key]) - len(w_HP))
-        y_schouw[key] = ((w_SLB + w_SHB).cumsum() / tot_l[key] * 100).to_list() + [0] * (len(y_target[key]) - len(w_SLB))
+        y_schouw[key] = ((w_SLB + w_SHB).cumsum() / tot_l[key] * 100).to_list() + [0] * (
+                    len(y_target[key]) - len(w_SLB))
 
     m_gegraven = [el1 + el2 for el1, el2 in zip(m_BIS_all, m_HAS_all)]
     rc_BIS, _ = np.polyfit(teams_BIS_all, m_gegraven, 1)  # aantal meters BIS per team per week
@@ -797,7 +649,8 @@ def meters(d_sheets, tot_l, x_d, y_target_l):
     w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
     advies = {}
     for key in y_target:
-        BIS_advies = round((y_target[key][w_now] - y_BIS[key][w_now]) / 100 * tot_l[key] * 7 / rc_BIS)  # gem 7m BIS per woning
+        BIS_advies = round(
+            (y_target[key][w_now] - y_BIS[key][w_now]) / 100 * tot_l[key] * 7 / rc_BIS)  # gem 7m BIS per woning
         if BIS_advies <= 0:
             BIS_advies = 'On target!'
         HAS_advies = round((y_target[key][w_now] - y_HAS[key][w_now]) / 100 * tot_l[key] / rc_HAS)
@@ -813,61 +666,61 @@ def meters_graph(x_target, y_target, y_prog_l, y_BIS, y_HASm, y_HAS, y_schouw, a
     for key in y_prog_l:
         if key in y_target:
             fig = {'data': [{
-                            'x': x_target,
-                            'y': y_schouw[key],
-                            'mode': 'markers',
-                            'marker': {'symbol': 'triangle-down', 'color': 'rgb(0, 200, 0)'},
-                            'name': 'Geschouwd',
-                            },
-                            {
-                            'x': x_target,
-                            'y': y_BIS[key],
-                            'mode': 'markers',
-                            'marker': {'symbol': 'x', 'color': 'rgb(0, 200, 0)'},
-                            'name': 'BIS-gegraven',
-                            },
-                            {
-                            'x': x_target,
-                            'y': y_HASm[key],
-                            'mode': 'markers',
-                            'marker': {'symbol': 'circle', 'color': 'rgb(0, 200, 0)'},
-                            'name': 'HAS-gegraven',
-                            },
-                            {
-                            'x': x_target,
-                            'y': y_HAS[key],
-                            'mode': 'markers',
-                            'marker': {'symbol': 'diamond', 'color': 'rgb(0, 200, 0)'},
-                            'name': 'HAS-opgeleverd',
-                            },
-                            {
-                            'x': x_target,
-                            'y': y_target[key],
-                            'mode': 'line',
-                            'line': dict(color='rgb(170, 170, 170)'),
-                            'name': 'Outlook (KPN)',
-                            }],
-                   'layout': {
-                              'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2019-12-30', '2020-12-28']},
-                              'yaxis': {'title': 'Fase afgerond [%]', 'range': [0, 110]},
-                              'title': {'text': 'Voortgang fase vs outlook KPN:'},
-                              'showlegend': True,
-                              'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                              'height': 350,
-                              'annotations': [dict(x='2020-10-12', y=50, text=advies[key], xref="x", yref="y",
-                                                   ax=0, ay=0, alignment='left')]
-                              }
-                   }
+                'x': x_target,
+                'y': y_schouw[key],
+                'mode': 'markers',
+                'marker': {'symbol': 'triangle-down', 'color': 'rgb(0, 200, 0)'},
+                'name': 'Geschouwd',
+            },
+                {
+                    'x': x_target,
+                    'y': y_BIS[key],
+                    'mode': 'markers',
+                    'marker': {'symbol': 'x', 'color': 'rgb(0, 200, 0)'},
+                    'name': 'BIS-gegraven',
+                },
+                {
+                    'x': x_target,
+                    'y': y_HASm[key],
+                    'mode': 'markers',
+                    'marker': {'symbol': 'circle', 'color': 'rgb(0, 200, 0)'},
+                    'name': 'HAS-gegraven',
+                },
+                {
+                    'x': x_target,
+                    'y': y_HAS[key],
+                    'mode': 'markers',
+                    'marker': {'symbol': 'diamond', 'color': 'rgb(0, 200, 0)'},
+                    'name': 'HAS-opgeleverd',
+                },
+                {
+                    'x': x_target,
+                    'y': y_target[key],
+                    'mode': 'line',
+                    'line': dict(color='rgb(170, 170, 170)'),
+                    'name': 'Outlook (KPN)',
+                }],
+                'layout': {
+                    'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2019-12-30', '2020-12-28']},
+                    'yaxis': {'title': 'Fase afgerond [%]', 'range': [0, 110]},
+                    'title': {'text': 'Voortgang fase vs outlook KPN:'},
+                    'showlegend': True,
+                    'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
+                    'height': 350,
+                    'annotations': [dict(x='2020-10-12', y=50, text=advies[key], xref="x", yref="y",
+                                         ax=0, ay=0, alignment='left')]
+                }
+            }
         else:
             fig = {'layout': {
-                              'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2019-12-30', '2020-12-28']},
-                              'yaxis': {'title': 'Fase afgerond [%]', 'range': [0, 110]},
-                              'title': {'text': 'Voortgang fase vs outlook KPN:'},
-                              'showlegend': True,
-                              'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                              'height': 350,
-                              }
-                   }
+                'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2019-12-30', '2020-12-28']},
+                'yaxis': {'title': 'Fase afgerond [%]', 'range': [0, 110]},
+                'title': {'text': 'Voortgang fase vs outlook KPN:'},
+                'showlegend': True,
+                'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
+                'height': 350,
+            }
+            }
 
         record = dict(id=key, figure=fig)
         firestore.Client().collection('Graphs').document(record['id']).set(record)
@@ -877,38 +730,38 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
     record_dict = {}
     for key in y_prog_l:
         fig = {'data': [{
-                         'x': list(x_d.strftime('%Y-%m-%d')),
-                         'y': list(y_prog_l[key]),
-                         'mode': 'lines',
-                         'line': dict(color='rgb(200, 200, 0)'),
-                         'name': 'Voorspelling (VQD)',
-                         }],
-               'layout': {
-                          'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
-                          'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                          'title': {'text': 'Voortgang project vs outlook KPN:'},
-                          'showlegend': True,
-                          'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                          'height': 350
-                           },
-               }
+            'x': list(x_d.strftime('%Y-%m-%d')),
+            'y': list(y_prog_l[key]),
+            'mode': 'lines',
+            'line': dict(color='rgb(200, 200, 0)'),
+            'name': 'Voorspelling (VQD)',
+        }],
+            'layout': {
+                'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
+                'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
+                'title': {'text': 'Voortgang project vs outlook KPN:'},
+                'showlegend': True,
+                'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
+                'height': 350
+            },
+        }
         if key in d_real_l:
             fig['data'] = fig['data'] + [{
-                                          'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
-                                          'y': d_real_l[key]['Aantal'].to_list(),
-                                          'mode': 'markers',
-                                          'line': dict(color='rgb(0, 200, 0)'),
-                                          'name': 'Realisatie (FC)',
-                                          }]
+                'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
+                'y': d_real_l[key]['Aantal'].to_list(),
+                'mode': 'markers',
+                'line': dict(color='rgb(0, 200, 0)'),
+                'name': 'Realisatie (FC)',
+            }]
 
         if key in y_target_l:
             fig['data'] = fig['data'] + [{
-                                          'x': list(x_d.strftime('%Y-%m-%d')),
-                                          'y': list(y_target_l[key]),
-                                          'mode': 'lines',
-                                          'line': dict(color='rgb(170, 170, 170)'),
-                                          'name': 'Outlook (KPN)',
-                                          }]
+                'x': list(x_d.strftime('%Y-%m-%d')),
+                'y': list(y_target_l[key]),
+                'mode': 'lines',
+                'line': dict(color='rgb(170, 170, 170)'),
+                'name': 'Outlook (KPN)',
+            }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
     return record_dict
@@ -916,33 +769,33 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
 
 def map_redenen():
     reden_l = dict(
-                    R0='Geplande aansluiting',
-                    R00='Geplande aansluiting',
-                    R1='Geen toestemming bewoner',
-                    R01='Geen toestemming bewoner',
-                    R2='Geen toestemming VVE / WOCO',
-                    R02='Geen toestemming VVE / WOCO',
-                    R3='Bewoner na 3 pogingen niet thuis',
-                    R4='Nieuwbouw (woning nog niet gereed)',
-                    R5='Hoogbouw obstructie (blokkeert andere bewoners)',
-                    R6='Hoogbouw obstructie (wordt geblokkeerd door andere bewoners)',
-                    R7='Technische obstructie',
-                    R8='Meterkast voldoet niet aan eisen',
-                    R9='Pand staat leeg',
-                    R10='Geen graafvergunning',
-                    R11='Aansluitkosten boven normbedrag niet gedekt',
-                    R12='Buiten het uitrolgebied',
-                    R13='Glasnetwerk van een andere operator',
-                    R14='Geen vezelcapaciteit',
-                    R15='Geen woning',
-                    R16='Sloopwoning (niet voorbereid)',
-                    R17='Complex met 1 aansluiting op ander adres',
-                    R18='Klant niet bereikbaar',
-                    R19='Bewoner niet thuis, wordt opnieuw ingepland',
-                    R20='Uitrol na vraagbundeling, klant neemt geen dienst',
-                    R21='Wordt niet binnen dit project aangesloten',
-                    R22='Vorst, niet planbaar',
-                    R_geen='Geen reden'
+        R0='Geplande aansluiting',
+        R00='Geplande aansluiting',
+        R1='Geen toestemming bewoner',
+        R01='Geen toestemming bewoner',
+        R2='Geen toestemming VVE / WOCO',
+        R02='Geen toestemming VVE / WOCO',
+        R3='Bewoner na 3 pogingen niet thuis',
+        R4='Nieuwbouw (woning nog niet gereed)',
+        R5='Hoogbouw obstructie (blokkeert andere bewoners)',
+        R6='Hoogbouw obstructie (wordt geblokkeerd door andere bewoners)',
+        R7='Technische obstructie',
+        R8='Meterkast voldoet niet aan eisen',
+        R9='Pand staat leeg',
+        R10='Geen graafvergunning',
+        R11='Aansluitkosten boven normbedrag niet gedekt',
+        R12='Buiten het uitrolgebied',
+        R13='Glasnetwerk van een andere operator',
+        R14='Geen vezelcapaciteit',
+        R15='Geen woning',
+        R16='Sloopwoning (niet voorbereid)',
+        R17='Complex met 1 aansluiting op ander adres',
+        R18='Klant niet bereikbaar',
+        R19='Bewoner niet thuis, wordt opnieuw ingepland',
+        R20='Uitrol na vraagbundeling, klant neemt geen dienst',
+        R21='Wordt niet binnen dit project aangesloten',
+        R22='Vorst, niet planbaar',
+        R_geen='Geen reden'
     )
     record = dict(id='reden_mapping', map=reden_l)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
@@ -958,7 +811,7 @@ def masks_phases(pkey, df_l):
                                 (df['soort_bouw'] == 'Laag')
     bar_m['SchouwenHB0-mask'] = (df['toestemming'].isna()) & \
                                 (df['soort_bouw'] != 'Laag')
-    bar_m['SchouwenHB1-mask'] = (~df['toestemming'].isna()) &\
+    bar_m['SchouwenHB1-mask'] = (~df['toestemming'].isna()) & \
                                 (df['soort_bouw'] != 'Laag')
     bar_m['BISLB0-mask'] = (df['opleverstatus'] == '0') & \
                            (df['soort_bouw'] == 'Laag')
@@ -1079,8 +932,8 @@ def consume(df_l):
             if (i + 1) % 500 == 0:
                 batch.commit()
         batch.commit()
-        print(key + ' ' + str(i+1))
-        print('Time: ' + str((time.time() - t)/60) + ' minutes')
+        print(key + ' ' + str(i + 1))
+        print('Time: ' + str((time.time() - t) / 60) + ' minutes')
 
 
 def get_data_projects(subset, col):
@@ -1102,7 +955,7 @@ def get_data_projects(subset, col):
             [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
 
         print(key)
-        print('Time: ' + str((time.time() - t)/60) + ' minutes')
+        print('Time: ' + str((time.time() - t) / 60) + ' minutes')
 
     return df_l
 
@@ -1136,36 +989,36 @@ def speed_graph(df_l, tot_l, rc1, rc2, cutoff):
     rc2_mean_t = sum(rc2_mean_t) / len(rc2_mean_t)
 
     fig = {'data': [{
-                     'x': [5, cutoff, cutoff, 100, 100, cutoff, cutoff, 5],
-                     'y': [rc1_mean_t*0, rc1_mean_t*0,
-                           rc2_mean_t*0, rc2_mean_t*0,
-                           rc2_mean_t, rc2_mean_t,
-                           rc1_mean_t, rc1_mean_t
-                           ],
-                     'name': 'Trace 2',
-                     'mode': 'lines',
-                     'fill': 'toself',
-                     'opacity': 1,
-                     'line': {'color': 'rgb(200, 0, 0)'}
-                     },
-                    {
-                     'x': list(perc_complete.values()),
-                     'y': list(rc.values()),
-                     'text': list(perc_complete.keys()),
-                     'name': 'Trace 1',
-                     'mode': 'markers',
-                     'marker': {'size': 15, 'color': 'rgb(200, 200, 0)'}
-                     }],
-           'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': 'Opgeleverd (HP & HC) [%]', 'range': [-2.5, 100]},
-                      'yaxis': {'title': 'Gemiddelde opleversnelheid [w/d]', 'range': [-5, 30]},
-                      'showlegend': False,
-                      'title': {'text': 'Een punt ofwel project binnen het rode vlak levert te langzaam op,' +
-                                        ' klik erop voor meer informatie!'},
-                      'height': 300,
-                      'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
-                      }
-           }
+        'x': [5, cutoff, cutoff, 100, 100, cutoff, cutoff, 5],
+        'y': [rc1_mean_t * 0, rc1_mean_t * 0,
+              rc2_mean_t * 0, rc2_mean_t * 0,
+              rc2_mean_t, rc2_mean_t,
+              rc1_mean_t, rc1_mean_t
+              ],
+        'name': 'Trace 2',
+        'mode': 'lines',
+        'fill': 'toself',
+        'opacity': 1,
+        'line': {'color': 'rgb(200, 0, 0)'}
+    },
+        {
+            'x': list(perc_complete.values()),
+            'y': list(rc.values()),
+            'text': list(perc_complete.keys()),
+            'name': 'Trace 1',
+            'mode': 'markers',
+            'marker': {'size': 15, 'color': 'rgb(200, 200, 0)'}
+        }],
+        'layout': {'clickmode': 'event+select',
+                   'xaxis': {'title': 'Opgeleverd (HP & HC) [%]', 'range': [-2.5, 100]},
+                   'yaxis': {'title': 'Gemiddelde opleversnelheid [w/d]', 'range': [-5, 30]},
+                   'showlegend': False,
+                   'title': {'text': 'Een punt ofwel project binnen het rode vlak levert te langzaam op,' +
+                                     ' klik erop voor meer informatie!'},
+                   'height': 300,
+                   'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+                   }
+    }
     record = dict(id='project_performance', figure=fig)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
@@ -1193,78 +1046,79 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
     y_max = 250  # + max([abs(min(y)), abs(max(y))])
     y_voorraad_p = 90
     fig = {'data': [
-                    {
-                     'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, x_min],
-                     'y': [y_min, y_min, y_voorraad_p, y_voorraad_p],
-                     'name': 'Trace 2',
-                     'mode': 'lines',
-                     'fill': 'toself',
-                     'opacity': 1,
-                     'line': {'color': 'rgb(200, 0, 0)'}
-                     },
-                    {
-                     'x': [1 / 70 * x_min, 1 / 70 * x_max, 1 / 70 * x_max, 15, 15, 1 / 70 * x_min],
-                     'y': [y_min, y_min, y_voorraad_p, y_voorraad_p, 150, 150],
-                     'name': 'Trace 2',
-                     'mode': 'lines',
-                     'fill': 'toself',
-                     'opacity': 1,
-                     'line': {'color': 'rgb(0, 200, 0)'}
-                     },
-                    {
-                     'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, 15,  15, 1 / 70 * x_max,
-                           1 / 70 * x_max,  x_max, x_max, x_min, x_min, 1 / 70 * x_min],
-                     'y': [y_voorraad_p, y_voorraad_p, 150, 150, y_voorraad_p, y_voorraad_p,
-                           y_min, y_min, y_max, y_max, y_voorraad_p, y_voorraad_p],
-                     'name': 'Trace 2',
-                     'mode': 'lines',
-                     'fill': 'toself',
-                     'opacity': 1,
-                     'line': {'color': 'rgb(200, 200, 0)'}
-                     },
-                    {
-                     'x':  x,
-                     'y': y,
-                     'text': names,
-                     'name': 'Trace 1',
-                     'mode': 'markers',
-                     'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
-                     }],
-           'layout': {'clickmode': 'event+select',
-                      'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
-                                'zeroline': False},
-                      'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max], 'zeroline': False},
-                      'showlegend': False,
-                      'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
-                      'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
-                                           text='Verhoog schouw of BIS capaciteit', alignment='left',
-                                           showarrow=True, arrowhead=2)] +
-                                     [dict(x=20, y=50, ax=0, ay=40, xref="x", yref="y",
-                                           text='Verhoog schouw of BIS capaciteit', alignment='left',
-                                           showarrow=True, arrowhead=2)] +
-                                     [dict(x=-23.5, y=135, ax=-100, ay=0, xref="x", yref="y",
-                                           text='Verhoog HAS capaciteit',
-                                           alignment='left', showarrow=True, arrowhead=2)] +
-                                     [dict(x=-23.5, y=65, ax=-100, ay=0, xref="x", yref="y",
-                                           text='Verruim afspraak KPN',
-                                           alignment='left', showarrow=True, arrowhead=2)] +
-                                     [dict(x=23.5, y=135, ax=100, ay=0, xref="x", yref="y",
-                                           text='Verlaag HAS capcaciteit',
-                                           alignment='right', showarrow=True, arrowhead=2)] +
-                                     [dict(x=23.5, y=65, ax=100, ay=0, xref="x", yref="y",
-                                           text='Verscherp afspraak KPN',
-                                           alignment='right', showarrow=True, arrowhead=2)] +
-                                     [dict(x=20, y=160, ax=0, ay=-40, xref="x", yref="y",
-                                           text='Verlaag schouw of BIS capaciteit', alignment='left',
-                                           showarrow=True, arrowhead=2)] +
-                                     [dict(x=-20, y=160, ax=0, ay=-40, xref="x", yref="y",
-                                           text='Verlaag schouw of BIS capaciteit', alignment='left',
-                                           showarrow=True, arrowhead=2)],
-                      'height': 500,
-                      'width': 1700,
-                      'margin': {'l': 60, 'r': 15, 'b': 40, 't': 40},
-                      }
-           }
+        {
+            'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, x_min],
+            'y': [y_min, y_min, y_voorraad_p, y_voorraad_p],
+            'name': 'Trace 2',
+            'mode': 'lines',
+            'fill': 'toself',
+            'opacity': 1,
+            'line': {'color': 'rgb(200, 0, 0)'}
+        },
+        {
+            'x': [1 / 70 * x_min, 1 / 70 * x_max, 1 / 70 * x_max, 15, 15, 1 / 70 * x_min],
+            'y': [y_min, y_min, y_voorraad_p, y_voorraad_p, 150, 150],
+            'name': 'Trace 2',
+            'mode': 'lines',
+            'fill': 'toself',
+            'opacity': 1,
+            'line': {'color': 'rgb(0, 200, 0)'}
+        },
+        {
+            'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, 15, 15, 1 / 70 * x_max,
+                  1 / 70 * x_max, x_max, x_max, x_min, x_min, 1 / 70 * x_min],
+            'y': [y_voorraad_p, y_voorraad_p, 150, 150, y_voorraad_p, y_voorraad_p,
+                  y_min, y_min, y_max, y_max, y_voorraad_p, y_voorraad_p],
+            'name': 'Trace 2',
+            'mode': 'lines',
+            'fill': 'toself',
+            'opacity': 1,
+            'line': {'color': 'rgb(200, 200, 0)'}
+        },
+        {
+            'x': x,
+            'y': y,
+            'text': names,
+            'name': 'Trace 1',
+            'mode': 'markers',
+            'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
+        }],
+        'layout': {'clickmode': 'event+select',
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
+                             'zeroline': False},
+                   'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
+                             'zeroline': False},
+                   'showlegend': False,
+                   'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
+                   'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
+                                        text='Verhoog schouw of BIS capaciteit', alignment='left',
+                                        showarrow=True, arrowhead=2)] +
+                                  [dict(x=20, y=50, ax=0, ay=40, xref="x", yref="y",
+                                        text='Verhoog schouw of BIS capaciteit', alignment='left',
+                                        showarrow=True, arrowhead=2)] +
+                                  [dict(x=-23.5, y=135, ax=-100, ay=0, xref="x", yref="y",
+                                        text='Verhoog HAS capaciteit',
+                                        alignment='left', showarrow=True, arrowhead=2)] +
+                                  [dict(x=-23.5, y=65, ax=-100, ay=0, xref="x", yref="y",
+                                        text='Verruim afspraak KPN',
+                                        alignment='left', showarrow=True, arrowhead=2)] +
+                                  [dict(x=23.5, y=135, ax=100, ay=0, xref="x", yref="y",
+                                        text='Verlaag HAS capcaciteit',
+                                        alignment='right', showarrow=True, arrowhead=2)] +
+                                  [dict(x=23.5, y=65, ax=100, ay=0, xref="x", yref="y",
+                                        text='Verscherp afspraak KPN',
+                                        alignment='right', showarrow=True, arrowhead=2)] +
+                                  [dict(x=20, y=160, ax=0, ay=-40, xref="x", yref="y",
+                                        text='Verlaag schouw of BIS capaciteit', alignment='left',
+                                        showarrow=True, arrowhead=2)] +
+                                  [dict(x=-20, y=160, ax=0, ay=-40, xref="x", yref="y",
+                                        text='Verlaag schouw of BIS capaciteit', alignment='left',
+                                        showarrow=True, arrowhead=2)],
+                   'height': 500,
+                   'width': 1700,
+                   'margin': {'l': 60, 'r': 15, 'b': 40, 't': 40},
+                   }
+    }
     record = dict(id='project_performance', figure=fig)
     return record
 
@@ -1285,14 +1139,14 @@ def get_intersect(a1, a2, b1, b2):
     b1: [x, y] a point on the second line
     b2: [x, y] another point on the second line
     """
-    s = np.vstack([a1, a2, b1, b2])      # s for stacked
+    s = np.vstack([a1, a2, b1, b2])  # s for stacked
     h = np.hstack((s, np.ones((4, 1))))  # h for homogeneous
-    l1 = np.cross(h[0], h[1])           # get first line
-    l2 = np.cross(h[2], h[3])           # get second line
-    x, y, z = np.cross(l1, l2)          # point of intersection
-    if z == 0:                          # lines are parallel
+    l1 = np.cross(h[0], h[1])  # get first line
+    l2 = np.cross(h[2], h[3])  # get second line
+    x, y, z = np.cross(l1, l2)  # point of intersection
+    if z == 0:  # lines are parallel
         return (float('inf'), float('inf'))
-    return (x/z, y/z)
+    return (x / z, y / z)
 
 
 def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
@@ -1300,7 +1154,8 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
     n_d = int((pd.Timestamp.now() - x_d[0]).days)
     n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
     col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
-           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w),  'Diff - W' + str(n_w), 'HC / HP actueel', 'Errors FC - BC']
+           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w), 'Diff - W' + str(n_w), 'HC / HP actueel',
+           'Errors FC - BC']
     records = []
     for key in d_real_l:
         if d_real_l[key].max()[0] < 100:
@@ -1415,82 +1270,101 @@ def error_check_FCBC(df_l):
         errors_FC_BC[key] = {}
         if not df.empty:
             errors_FC_BC[key]['101'] = df[df.kabelid.isna() & ~df.opleverdatum.isna() & (df.postcode.isna() |
-                                          df.huisnummer.isna())].sleutel.to_list()
+                                                                                         df.huisnummer.isna())].sleutel.to_list()
             errors_FC_BC[key]['102'] = df[df.plandatum.isna()].sleutel.to_list()
             errors_FC_BC[key]['103'] = df[df.opleverdatum.isna() &
-                                          df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99'])].sleutel.to_list()
+                                          df.opleverstatus.isin(
+                                              ['2', '10', '90', '91', '96', '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['104'] = df[df.opleverstatus.isna()].sleutel.to_list()
             # errors_FC_BC[key]['114'] = df[df.toestemming.isna()].sleutel.to_list()
-            errors_FC_BC[key]['115'] = errors_FC_BC[key]['118'] = df[df.soort_bouw.isna()].sleutel.to_list()  # soort_bouw hoort bij?
+            errors_FC_BC[key]['115'] = errors_FC_BC[key]['118'] = df[
+                df.soort_bouw.isna()].sleutel.to_list()  # soort_bouw hoort bij?
             errors_FC_BC[key]['116'] = df[df.ftu_type.isna()].sleutel.to_list()
-            errors_FC_BC[key]['117'] = df[df['toelichting_status'].isna() & df.opleverstatus.isin(['4', '12'])].sleutel.to_list()
-            errors_FC_BC[key]['119'] = df[df['toelichting_status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].sleutel.to_list()
+            errors_FC_BC[key]['117'] = df[
+                df['toelichting_status'].isna() & df.opleverstatus.isin(['4', '12'])].sleutel.to_list()
+            errors_FC_BC[key]['119'] = df[
+                df['toelichting_status'].isna() & df.redenna.isin(['R8', 'R9', 'R17'])].sleutel.to_list()
 
             errors_FC_BC[key]['120'] = []  # doorvoerafhankelijk niet aanwezig
             errors_FC_BC[key]['121'] = df[(df.postcode.isna() & ~df.huisnummer.isna()) |
                                           (~df.postcode.isna() & df.huisnummer.isna())].sleutel.to_list()
-            errors_FC_BC[key]['122'] = df[~((df.kast.isna() & df.kastrij.isna() & df.odfpos.isna() &  # kloppen deze velden?
-                                            df.catvpos.isna() & df.odf.isna()) |
-                                            (~df.kast.isna() & ~df.kastrij.isna() & ~df.odfpos.isna() &
-                                            ~df.catvpos.isna() & ~df.areapop.isna() & ~df.odf.isna()))].sleutel.to_list()
+            errors_FC_BC[key]['122'] = df[
+                ~((df.kast.isna() & df.kastrij.isna() & df.odfpos.isna() &  # kloppen deze velden?
+                   df.catvpos.isna() & df.odf.isna()) |
+                  (~df.kast.isna() & ~df.kastrij.isna() & ~df.odfpos.isna() &
+                   ~df.catvpos.isna() & ~df.areapop.isna() & ~df.odf.isna()))].sleutel.to_list()
             errors_FC_BC[key]['123'] = df[df.projectcode.isna()].sleutel.to_list()
-            errors_FC_BC[key]['301'] = df[~df.opleverdatum.isna() & df.opleverstatus.isin(['0', '14'])].sleutel.to_list()
-            errors_FC_BC[key]['303'] = df[df.kabelid.isna() & (df.postcode.isna() | df.huisnummer.isna())].sleutel.to_list()
+            errors_FC_BC[key]['301'] = df[
+                ~df.opleverdatum.isna() & df.opleverstatus.isin(['0', '14'])].sleutel.to_list()
+            errors_FC_BC[key]['303'] = df[
+                df.kabelid.isna() & (df.postcode.isna() | df.huisnummer.isna())].sleutel.to_list()
             errors_FC_BC[key]['304'] = []  # geen column Kavel...
             errors_FC_BC[key]['306'] = df[~df.kabelid.isna() &
                                           df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['308'] = []  # geen HLopleverdatum...
             errors_FC_BC[key]['309'] = []  # geen doorvoerafhankelijk aanwezig...
 
-            errors_FC_BC[key]['310'] = []  # df[~df.KabelID.isna() & df.Areapop.isna()].sleutel.to_list()  # strengID != KabelID?
-            errors_FC_BC[key]['311'] = df[df.redenna.isna() & ~df.opleverstatus.isin(['2', '10', '50'])].sleutel.to_list()
-            errors_FC_BC[key]['501'] = [df.sleutel[el] for el in df[~df.postcode.isna()].index if (len(df.postcode[el]) != 6) |
-                                                                                                  (not df.postcode[el][0:4].isnumeric()) |
-                                                                                                  (df.postcode[el][4].isnumeric()) |
-                                                                                                  (df.postcode[el][5].isnumeric())]
+            errors_FC_BC[key][
+                '310'] = []  # df[~df.KabelID.isna() & df.Areapop.isna()].sleutel.to_list()  # strengID != KabelID?
+            errors_FC_BC[key]['311'] = df[
+                df.redenna.isna() & ~df.opleverstatus.isin(['2', '10', '50'])].sleutel.to_list()
+            errors_FC_BC[key]['501'] = [df.sleutel[el] for el in df[~df.postcode.isna()].index if
+                                        (len(df.postcode[el]) != 6) |
+                                        (not df.postcode[el][0:4].isnumeric()) |
+                                        (df.postcode[el][4].isnumeric()) |
+                                        (df.postcode[el][5].isnumeric())]
             errors_FC_BC[key]['502'] = []  # niet te checken, geen toegang tot CLR
             errors_FC_BC[key]['503'] = []  # date is already present in different format...yyyy-mm-dd??
             errors_FC_BC[key]['504'] = []  # date is already present in different format...yyyy-mm-dd??
-            errors_FC_BC[key]['506'] = df[~df.opleverstatus.isin(['0', '1', '2', '4', '5', '6', '7,' '8', '9', '10', '11', '12', '13',
-                                                                  '14', '15', '30', '31', '33', '34', '35', '50', '90', '91', '96',
-                                                                  '97', '98', '99'])].sleutel.to_list()
+            errors_FC_BC[key]['506'] = df[
+                ~df.opleverstatus.isin(['0', '1', '2', '4', '5', '6', '7,' '8', '9', '10', '11', '12', '13',
+                                        '14', '15', '30', '31', '33', '34', '35', '50', '90', '91', '96',
+                                        '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['508'] = []  # niet te checken, geen toegang tot Areapop
-            errors_FC_BC[key]['509'] = [df.sleutel[el] for el in df[~df.kastrij.isna()].index if (len(df.kastrij[el]) > 2) |
-                                                                                                 (len(df.kastrij[el]) < 1) |
-                                                                                                 (not df.kastrij[el].isnumeric())]
+            errors_FC_BC[key]['509'] = [df.sleutel[el] for el in df[~df.kastrij.isna()].index if
+                                        (len(df.kastrij[el]) > 2) |
+                                        (len(df.kastrij[el]) < 1) |
+                                        (not df.kastrij[el].isnumeric())]
             errors_FC_BC[key]['510'] = [df.sleutel[el] for el in df[~df.kast.isna()].index if (len(df.kast[el]) > 4) |
-                                                                                              (len(df.kast[el]) < 1) |
-                                                                                              (not df.kast[el].isnumeric())]
+                                        (len(df.kast[el]) < 1) |
+                                        (not df.kast[el].isnumeric())]
 
             errors_FC_BC[key]['511'] = [df.sleutel[el] for el in df[~df.odf.isna()].index if (len(df.odf[el]) > 5) |
-                                                                                             (len(df.odf[el]) < 1) |
-                                                                                             (not df.odf[el].isnumeric())]
-            errors_FC_BC[key]['512'] = [df.sleutel[el] for el in df[~df.odfpos.isna()].index if (len(df.odfpos[el]) > 2) |
-                                                                                                (len(df.odfpos[el]) < 1) |
-                                                                                                (not df.odfpos[el].isnumeric())]
+                                        (len(df.odf[el]) < 1) |
+                                        (not df.odf[el].isnumeric())]
+            errors_FC_BC[key]['512'] = [df.sleutel[el] for el in df[~df.odfpos.isna()].index if
+                                        (len(df.odfpos[el]) > 2) |
+                                        (len(df.odfpos[el]) < 1) |
+                                        (not df.odfpos[el].isnumeric())]
             errors_FC_BC[key]['513'] = [df.sleutel[el] for el in df[~df.catv.isna()].index if (len(df.catv[el]) > 5) |
-                                                                                              (len(df.catv[el]) < 1) |
-                                                                                              (not df.catv[el].isnumeric())]
-            errors_FC_BC[key]['514'] = [df.sleutel[el] for el in df[~df.catvpos.isna()].index if (len(df.catvpos[el]) > 3) |
-                                                                                                 (len(df.catvpos[el]) < 1) |
-                                                                                                 (not df.catvpos[el].isnumeric())]
+                                        (len(df.catv[el]) < 1) |
+                                        (not df.catv[el].isnumeric())]
+            errors_FC_BC[key]['514'] = [df.sleutel[el] for el in df[~df.catvpos.isna()].index if
+                                        (len(df.catvpos[el]) > 3) |
+                                        (len(df.catvpos[el]) < 1) |
+                                        (not df.catvpos[el].isnumeric())]
             errors_FC_BC[key]['516'] = [df.sleutel[el] for el in df[df.projectcode.isna()].index
-                                        if (not str(df.projectcode[el]).isnumeric()) & (~pd.isnull(df.projectcode[el]))]  # cannot check
+                                        if (not str(df.projectcode[el]).isnumeric()) & (
+                                            ~pd.isnull(df.projectcode[el]))]  # cannot check
             errors_FC_BC[key]['517'] = []  # date is already present in different format...yyyy-mm-dd??
             errors_FC_BC[key]['518'] = df[~df.toestemming.isin(['Ja', 'Nee', np.nan])].sleutel.to_list()
-            errors_FC_BC[key]['519'] = df[~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend'])].sleutel.to_list()
+            errors_FC_BC[key]['519'] = df[
+                ~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend'])].sleutel.to_list()
             errors_FC_BC[key]['520'] = df[(df.ftu_type.isna() & df.opleverstatus.isin(['2', '10'])) |
                                           (~df.ftu_type.isin(['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02',
-                                                              'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend']))].sleutel.to_list()
-            errors_FC_BC[key]['521'] = [df.sleutel[el] for el in df[~df['toelichting_status'].isna()]['toelichting_status'].index
+                                                              'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01',
+                                                              'Onbekend']))].sleutel.to_list()
+            errors_FC_BC[key]['521'] = [df.sleutel[el] for el in
+                                        df[~df['toelichting_status'].isna()]['toelichting_status'].index
                                         if len(df[~df['toelichting_status'].isna()]['toelichting_status'][el]) < 3]
 
             errors_FC_BC[key]['522'] = []  # Civieldatum not present in our FC dump
             errors_FC_BC[key]['524'] = []  # Kavel not present in our FC dump
             errors_FC_BC[key]['527'] = []  # HL opleverdatum not present in our FC dump
-            errors_FC_BC[key]['528'] = df[~df.redenna.isin([np.nan, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9',
-                                                            'R10', 'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19',
-                                                            'R20', 'R21', 'R22'])].sleutel.to_list()
+            errors_FC_BC[key]['528'] = df[
+                ~df.redenna.isin([np.nan, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9',
+                                  'R10', 'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19',
+                                  'R20', 'R21', 'R22'])].sleutel.to_list()
             errors_FC_BC[key]['531'] = []  # strengID niet aanwezig in deze FCdump
             # if df[~df.CATVpos.isin(['999'])].shape[0] > 0:
             #     errors_FC_BC[key]['532'] = [df.sleutel[el] for el in df.ODFpos.index
@@ -1499,17 +1373,20 @@ def error_check_FCBC(df_l):
             #                                    (int(df.ODFpos[el]) % 2 == [])]
             errors_FC_BC[key]['533'] = []  # Doorvoerafhankelijkheid niet aanwezig in deze FCdump
             errors_FC_BC[key]['534'] = []  # geen toegang tot CLR om te kunnen checken
-            errors_FC_BC[key]['535'] = [df.sleutel[el] for el in df[~df['toelichting_status'].isna()]['toelichting_status'].index
+            errors_FC_BC[key]['535'] = [df.sleutel[el] for el in
+                                        df[~df['toelichting_status'].isna()]['toelichting_status'].index
                                         if ',' in df['toelichting_status'][el]]
-            errors_FC_BC[key]['536'] = [df.sleutel[el] for el in df[~df.kabelid.isna()].kabelid.index if len(df.kabelid[el]) < 3]
+            errors_FC_BC[key]['536'] = [df.sleutel[el] for el in df[~df.kabelid.isna()].kabelid.index if
+                                        len(df.kabelid[el]) < 3]
 
             errors_FC_BC[key]['537'] = []  # Blok not present in our FC dump
             errors_FC_BC[key]['701'] = []  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
-            errors_FC_BC[key]['702'] = df[~df.odf.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
+            errors_FC_BC[key]['702'] = df[
+                ~df.odf.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99'])].sleutel.to_list()
             errors_FC_BC[key]['707'] = []  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
             errors_FC_BC[key]['708'] = df[(df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) |
                                           (df.opleverstatus.isin(['91']) &
-                                          ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))].sleutel.to_list()
+                                           ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))].sleutel.to_list()
             # errors_FC_BC[key]['709'] = df[(df.ODF + df.ODFpos).duplicated(keep='last')].sleutel.to_list()  # klopt dit?
             errors_FC_BC[key]['710'] = df[(df.kabelid + df.adres).duplicated()].sleutel.to_list()
             # errors_FC_BC[key]['711'] = df[~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999'])].sleutel.to_list()  # wanneer PoP 999?
@@ -1523,9 +1400,12 @@ def error_check_FCBC(df_l):
             errors_FC_BC[key]['719'] = []  # kan alleen gecheckt worden met geschiedenis
             errors_FC_BC[key]['721'] = []  # niet te checken, geen Doorvoerafhankelijkheid in FC dump
             errors_FC_BC[key]['723'] = df[(df.redenna.isin(['R15', 'R16', 'R17']) & ~df.opleverstatus.isin(['90'])) |
-                                          (df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(['91'])) |
-                                          (df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))].sleutel.to_list()
-            errors_FC_BC[key]['724'] = df[(~df.opleverdatum.isna() & df.redenna.isin(['R0', 'R19', 'R22']))].sleutel.to_list()
+                                          (df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(
+                                              ['91'])) |
+                                          (df.opleverstatus.isin(['90']) & df.redenna.isin(
+                                              ['R2', 'R11']))].sleutel.to_list()
+            errors_FC_BC[key]['724'] = df[
+                (~df.opleverdatum.isna() & df.redenna.isin(['R0', 'R19', 'R22']))].sleutel.to_list()
             errors_FC_BC[key]['725'] = []  # geen zicht op vraagbundelingsproject of niet
             errors_FC_BC[key]['726'] = []  # niet te checken, geen HLopleverdatum aanwezig
             errors_FC_BC[key]['727'] = df[df.opleverstatus.isin(['50'])].sleutel.to_list()
@@ -1553,7 +1433,6 @@ def cluster_reden_na(label, clusters):
 
 
 def pie_chart_reden_na(df_na, clusters, key):
-
     df_na['cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
     df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
 
@@ -1563,17 +1442,17 @@ def pie_chart_reden_na(df_na, clusters, key):
     values = df_na['count'].tolist()
 
     data = {
-                'labels': labels,
-                'values': values,
-                'marker': {
-                            'colors':
-                            [
-                                'rgb(0, 204, 0)',
-                                'rgb(255, 255, 0)',
-                                'rgb(204, 0, 0)'
-                            ]
-                          }
-           }
+        'labels': labels,
+        'values': values,
+        'marker': {
+            'colors':
+                [
+                    'rgb(0, 204, 0)',
+                    'rgb(255, 255, 0)',
+                    'rgb(204, 0, 0)'
+                ]
+        }
+    }
     document = 'pie_na_' + key
     return data, document
 
@@ -1583,9 +1462,9 @@ def overview_reden_na(df_l, clusters):
     data, document = pie_chart_reden_na(full_df, clusters, 'overview')
     layout = get_pie_layout()
     fig = {
-                'data': data,
-                'layout': layout
-          }
+        'data': data,
+        'layout': layout
+    }
     record = dict(id=document, figure=fig)
     return record
 
@@ -1596,9 +1475,9 @@ def individual_reden_na(df_l, clusters):
         data, document = pie_chart_reden_na(df, clusters, project)
         layout = get_pie_layout()
         fig = {
-                'data': data,
-                'layout': layout
-            }
+            'data': data,
+            'layout': layout
+        }
         record = dict(id=document, figure=fig)
         record_dict[document] = record
     return record_dict
@@ -1610,10 +1489,10 @@ def to_firestore(collection, document, record):
 
 def get_pie_layout():
     layout = {
-                #   'clickmode': 'event+select',
-                'showlegend': True,
-                'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
-                'title': {'text': 'Opgegeven reden na'},
-                'height': 350,
-             }
+        #   'clickmode': 'event+select',
+        'showlegend': True,
+        'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+        'title': {'text': 'Opgegeven reden na'},
+        'height': 350,
+    }
     return layout

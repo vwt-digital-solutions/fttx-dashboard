@@ -2,11 +2,12 @@
 import os
 import time
 import analyse.config as config
-from analyse.functions import Analysis, get_data_planning, get_data_targets, preprocess_data
+from analyse.functions import get_data_planning, get_data_targets, preprocess_data
 from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
 from analyse.functions import overview
 from analyse.functions import set_filters, set_bar_names, error_check_FCBC
 from analyse.functions import masks_phases, map_redenen, consume, set_date_update
+from analyse.Analysis import Analysis
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -33,7 +34,7 @@ print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Analysis
 analyse = Analysis('KPN')
-analyse.set_inputfields(date_FTU0, date_FTU1, timeline)
+analyse.set_input_fields(date_FTU0, date_FTU1, timeline)
 df_l = preprocess_data(df_l, '2020')
 HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
 y_voorraad_act = analyse.calculate_y_voorraad_act(df_l)
