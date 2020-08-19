@@ -14,8 +14,6 @@ from app import app
 
 # update value dropdown given selection in scatter chart
 from data.graph import graph, pie_chart
-from data.figure import figure_data
-from data.jaaroverzicht import jaaroverzicht_data
 from data import collection
 from data.graph import info_table as graph_info_table
 
@@ -266,14 +264,16 @@ def FTU_update(data):
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
     info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 
-    out0 = 'HPend afgesproken: ' + jaaroverzicht_data('target')
-    out1 = 'HPend gerealiseerd: ' + jaaroverzicht_data('real')
-    out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht_data('plan')
-    out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht_data('prog')
-    out4 = jaaroverzicht_data('HC_HPend')
-    out5 = figure_data('graph_targets_M')
-    out6 = figure_data('graph_targets_W')
-    out7 = figure_data('project_performance')
-    out8 = jaaroverzicht_data("HAS_werkvoorraad")
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+
+    out0 = 'HPend afgesproken: ' + jaaroverzicht['target']
+    out1 = 'HPend gerealiseerd: ' + jaaroverzicht['real']
+    out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht['plan']
+    out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht['prog']
+    out4 = jaaroverzicht['HC_HPend']
+    out5 = collection.get_graph(client="KPN", graph_name='graph_targets_M')
+    out6 = collection.get_graph(client="KPN", graph_name='graph_targets_W')
+    out7 = collection.get_graph(client="KPN", graph_name='project_performance')
+    out8 = jaaroverzicht["HAS_werkvoorraad"]
 
     return [out0, out1, out2, out3, out4, out5, out6, out7, out8]
