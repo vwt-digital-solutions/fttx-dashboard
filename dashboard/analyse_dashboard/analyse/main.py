@@ -5,7 +5,7 @@ import json
 import base64
 from gobits import Gobits
 from google.cloud import pubsub, firestore
-from functions import Customer
+from Customer import Customer
 from functions import get_timeline, get_start_time, get_data, get_total_objects
 from functions import preprocess_data
 from functions import get_data_planning, get_data_targets
