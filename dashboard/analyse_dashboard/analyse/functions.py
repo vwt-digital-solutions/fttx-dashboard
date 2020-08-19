@@ -10,25 +10,23 @@ import unicodedata
 
 
 def make_frame_dict(files, source):
-    dataframe_dict = {}
+    dataframe = pd.DataFrame()
     for filename in files:
-        df = pd.DataFrame(pd.read_json(source + '../jsonFC/' + filename, orient='records')['data'].to_list())
-        project = unicodedata.normalize("NKFD", df['title'].iloc[0][0:-13])
-        dataframe_dict[project] = df
-    return dataframe_dict
+        df = pd.DataFrame(pd.read_json(source + filename, orient='records')['data'].to_list())
+        df['project'] = unicodedata.normalize("NFKD", df['title'].iloc[0][0:-13])
+        dataframe = dataframe.append(df)
+    df_dict = {}
+    for project in df.project.unique():
+        df_dict[project] = dataframe[dataframe.project == project]
+
+    return df_dict
 
 
 class Customer():
 
-    def __init__(self, name, bucket, col, projects, target_document, planning_location):
-
-        self.name = name
-        self.bucket = bucket
-        self.columns = col
-        self.projects = projects
-        self.target_document = target_document
-        self.planning_location = planning_location
-        self.local_folder = "../"+name+'_data/'
+    def __init__(self, config):
+        for key, value in config.items():
+            setattr(self, key, value)
 
     def set_etl_processes(self):
         self.etl_project_data = ETL_project_data_database
@@ -51,7 +49,25 @@ class Customer():
         etl = self.etl_target_data(self.target_document)
         etl.extract()
         etl.transform()
-        return etl.FTU0, etl.FTU1
+        self. etl.FTU0, etl.FTU1
+
+    def get_source_data(self):
+        self.set_etl_processes()
+        self.get_data()
+        self.get_data_planning()
+        self.get_data_targets()
+
+
+class Customer_tmobile(Customer):
+
+    def set_etl_processes(self):
+        self.etl_project_data = ETL_project_data
+
+    def get_data(self, local_file=None):
+        etl = self.etl_project_data(self.bucket, self.projects, self.columns)
+        etl.extract(local_file)
+        etl.transform()
+        return etl.data
 
 
 class ETL_target_data():
@@ -115,45 +131,47 @@ class ETL_project_data():
         self.projects = projects
         self.columns = col
 
-    def extract(self, local_file_location, local=True):
+    def extract(self, location):
         bucket = storage.Client().get_bucket(self.bucket)
         blobs = bucket.list_blobs()
         for blob in blobs:
             if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-                blob.download_to_filename(local_file_location + '../jsonFC/' + blob.name.split('/')[-1])
-        files = os.listdir(local_file_location + '../jsonFC/')
-        self.data = make_frame_dict(files, local_file_location)
+                blob.download_to_filename(location+'jsonFC/' + blob.name.split('/')[-1])
+        files = os.listdir(location+'jsonFC/')
+        self.data = make_frame_dict(files, location+'jsonFC/')
 
-    def transform_bucket_data(self, flag=0):
+    def transform(self, flag=0):
+        transformed_data = {}
         for project, df in self.data.items():
             df = self.rename_columns(df)
             if flag == 0:
                 df = df[self.columns]
             df = self.set_hasdatum(df)
             df = self.set_opleverdatum(df)
-            if (project in self.projects) and (project not in self.data.keys()):
-                self.data[project] = df
-            if (project in self.projects) and (project in self.data.keys()):
-                self.data[project] = self.data[project].append(df, ignore_index=True)
-                self.data[project] = self.data[project].drop_duplicates(keep='first')
+            print(project, len(df))
+            if (project in self.projects) and (project not in transformed_data.keys()):
+                transformed_data[project] = df
+            if (project in self.projects) and (project in transformed_data.keys()):
+                transformed_data[project] = transformed_data[project].append(df, ignore_index=True)
+                transformed_data[project] = transformed_data[project].drop_duplicates(keep='first')
                 # generate this as error output?
-
             # Hope this doesn't do anything anymore. Really weird fix.
             # if project not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
             #     os.remove(path_data + '../jsonFC/' + fn)
+        self.data = transformed_data
+        # # I don't understand the flag variable. Does it do anything? Function is always called with flag 0
+        # if flag == 0:
+        #     for key in self.data:
+        #         self.data[project].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in self.data[key].sleutel]
 
-        # I don't understand the flag variable. Does it do anything? Function is always called with flag 0
-        if flag == 0:
-            for key in self.data:
-                self.data[project].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in self.data[key].sleutel]
-
-        for key in self.projects:
-            if key not in self.data:
-                self.data[project] = pd.DataFrame(columns=self.columns)
+        # for key in self.projects:
+        #     if key not in self.data:
+        #         self.data[project] = pd.DataFrame(columns=self.columns)
 
     def set_opleverdatum(self, df):
         df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
+        return df
 
     def set_hasdatum(self, df):
         df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
@@ -189,6 +207,7 @@ class ETL_project_data_database(ETL_project_data):
                 records += [doc.to_dict()]
             if records != []:
                 df_l[key] = pd.DataFrame(records)[self.columns].fillna(np.nan)
+                print(f"Record: {len(df_l[key])}")
             else:
                 df_l[key] = pd.DataFrame(columns=self.columns).fillna(np.nan)
             # to correct for datetime value at HUB
