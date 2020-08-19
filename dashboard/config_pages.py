@@ -3,7 +3,7 @@ from collections import OrderedDict
 config_pages = OrderedDict(
     [
         ('main_page', {
-            'name': 'Projecten',
+            'name': 'Overzicht Projecten',
             'link': ["/", '/main_page', '/main_page/'],
         }),
         ('tmobile', {
