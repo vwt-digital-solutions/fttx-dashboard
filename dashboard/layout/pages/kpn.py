@@ -4,7 +4,7 @@ import dash_html_components as html
 
 from data import collection
 from layout.components.figure import figure
-from data.graph import pie_chart, project_names, ftu_table
+from data.graph import pie_chart, ftu_table
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 
@@ -100,7 +100,8 @@ def get_body():
                 [
                     html.Div(
                         [dcc.Dropdown(id='project-dropdown',
-                                      options=project_names(),
+                                      options=collection.get_document(collection="Data", client="KPN",
+                                                                      graph_name="project_names")['filters'],
                                       value=None)],
                         className="two-third column",
                     ),

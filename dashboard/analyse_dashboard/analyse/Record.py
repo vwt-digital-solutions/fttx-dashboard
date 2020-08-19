@@ -16,15 +16,26 @@ class Record:
     def transform(self, record):
         self.record = record
 
+    def to_document(self, graph_name, client):
+        return dict(record=self.record,
+                    client=client,
+                    graph_name=graph_name)
+
     def to_firestore(self, graph_name, client):
-        document = firestore.Client().collection(self.collection).document(graph_name)
-        firestore_dict = dict(record=self.record,
-                              client=client,
-                              graph_name=graph_name)
-        document.set(firestore_dict)
+        document_name = f"{client}_{graph_name}"
+        document = firestore.Client().collection(self.collection).document(document_name)
+        document.set(self.to_document(graph_name, client))
 
     def __repr__(self):
         return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection={self.collection})"
+
+    def to_table_part(self, graph_name, client):
+        document_name = f"{client}_{graph_name}"
+        return f"""<tr>
+          <td>{document_name}</td>
+          <td>{self.collection}</td>
+          <td>{self.to_document(graph_name, client)}</td>
+        </tr>"""
 
 
 class IntRecord(Record):
@@ -56,11 +67,28 @@ class StringRecord(Record):
 
 class DictRecord(Record):
     """DictRecord writes all items in the dictionary as a separate document to the collection."""
+
+    def to_document(self, graph_name, client, record="", project=""):
+        return dict(record=record,
+                    client=client,
+                    graph_name=graph_name,
+                    project=project)
+
     def to_firestore(self, graph_name, client):
         for k, v in self.record.items():
-            document = firestore.Client().collection(self.collection).document(graph_name + "_" + k)
-            print(f"Writing {graph_name + '_' + k} to {client}, in collection {self.collection}")
-            document.set(dict(record=v,
-                              client=client,
-                              graph_name=graph_name,
-                              project=k))
+            document_name = f"{client}_{graph_name}_{k}"
+            document = firestore.Client().collection(self.collection).document(document_name)
+            print(f"Writing {document_name} to {client}, in collection {self.collection}")
+            document.set(self.to_document(graph_name=graph_name, client=client, record=v, project=k))
+
+    def to_table_part(self, graph_name, client):
+        table_part = ""
+        for k, v in self.record.items():
+            document_name = f"{client}_{graph_name}_{k}"
+            document = self.to_document(graph_name=graph_name, client=client, record=v, project=k)
+            table_part += f"""<tr>
+              <td>{document_name}</td>
+              <td>{self.collection}</td>
+              <td>{document}</td>
+            </tr>"""
+        return table_part

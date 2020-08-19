@@ -1127,8 +1127,8 @@ def set_filters(df_l):
     filters = []
     for key in df_l:
         filters += [{'label': key, 'value': key}]
-    record = dict(id='pnames', filters=filters)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+    record = dict(filters=filters)
+    return record
 
 
 def get_intersect(a1, a2, b1, b2):

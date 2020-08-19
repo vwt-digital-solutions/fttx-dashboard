@@ -9,7 +9,7 @@ from functions import get_timeline, get_start_time, get_data, get_total_objects
 from functions import preprocess_data
 from functions import get_data_planning, get_data_targets
 from functions import overview
-from functions import set_filters, set_bar_names, error_check_FCBC
+from functions import set_bar_names, error_check_FCBC
 from functions import masks_phases, set_date_update
 from Analysis import Analysis
 
@@ -64,7 +64,7 @@ def analyse(request):
         logging.info('analyses done')
 
         # to fill collection Graphs
-        set_filters(df_l)
+        analyse.set_filters(df_l)
 
         analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
         analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)

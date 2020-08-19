@@ -1,7 +1,13 @@
-from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
-    performance_matrix, \
-    calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na
-from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord
+try:
+    from functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
+        performance_matrix, \
+        calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
+    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord
+except ImportError:
+    from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
+        performance_matrix, \
+        calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
+    from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord
 
 
 class Analysis:
@@ -20,14 +26,8 @@ class Analysis:
         return f"Analysis(client={self._client}) containing: {fields}"
 
     def _repr_html_(self):
-        row = """<tr>
-    <td>{}</td>
-    <td>{}</td>
-    <td>{}</td>
-  </tr>"""
-
         rows = "\n".join(
-            [row.format(field_name, data.collection, str(data.record)[:1000])
+            [data.to_table_part(field_name, self._client)
              for field_name, data in self.__dict__.items()
              if not field_name[0] == "_"])
 
@@ -36,7 +36,7 @@ class Analysis:
   <tr>
     <th>Field</th>
     <th>Collection</th>
-    <th>Record</th>
+    <th>Document</th>
   </tr>
 </thead>
 <tbody>
@@ -45,6 +45,9 @@ class Analysis:
 </table>"""
 
         return table
+
+    def set_filters(self, df_l):
+        self.project_names = ListRecord(record=set_filters(df_l), collection="Data")
 
     def set_input_fields(self, date_FTU0, date_FTU1, x_d):
         self.date_FTU0 = Record(date_FTU0, collection='Data')
@@ -125,7 +128,7 @@ class Analysis:
         for field_name, data in self.__dict__.items():
             if not field_name[0] == "_":
                 try:
-                    data.to_firestore(field_name, self._client)
+                    data.to_firestore(graph_name=field_name, client=self._client)
                     print(f"Wrote {field_name} to firestore")
                 except TypeError:
                     print(f"Could not write {field_name} to firestore.")

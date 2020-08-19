@@ -5,7 +5,7 @@ import analyse.config as config
 from analyse.functions import get_data_planning, get_data_targets, preprocess_data
 from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
 from analyse.functions import overview
-from analyse.functions import set_filters, set_bar_names, error_check_FCBC
+from analyse.functions import set_bar_names, error_check_FCBC
 from analyse.functions import masks_phases, map_redenen, consume, set_date_update
 from analyse.Analysis import Analysis
 
@@ -50,7 +50,7 @@ t_start = time.time()
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_p
 
-set_filters(df_l)
+analyse.set_filters(df_l)
 map_redenen()
 # add_token_mapbox(config.mapbox_token)
 analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
