@@ -4,7 +4,7 @@ import dash_html_components as html
 
 from data import collection
 from layout.components.figure import figure
-from data.graph import graph, pie_chart
+from data.graph import pie_chart, project_names, ftu_table
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 
@@ -85,7 +85,7 @@ def get_body():
                                  hidden=False,
                                  ),
                         html.Div(
-                            graph(9, None, None),
+                            ftu_table(),
                             id='FTU_table_c',
                             className="pretty_container column",
                             hidden=False,
@@ -100,7 +100,7 @@ def get_body():
                 [
                     html.Div(
                         [dcc.Dropdown(id='project-dropdown',
-                                      options=graph(3, None, None),
+                                      options=project_names(),
                                       value=None)],
                         className="two-third column",
                     ),
