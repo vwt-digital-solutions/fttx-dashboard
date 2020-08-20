@@ -1,5 +1,5 @@
 from analyse_dashboard.analyse.functions import from_rd
-from data import api
+from data import api, local
 import pandas as pd
 import plotly.graph_objs as go
 from elements import table_styles
@@ -38,10 +38,6 @@ def pie_chart(key="overview"):
     fig = dict(data=data,
                layout=layout)
     return fig
-
-
-def project_names():
-    return api.get('/Graphs?id=pnames')[0]['filters']
 
 
 def clickbar_lb(drop_selectie, mask_all):
@@ -222,7 +218,7 @@ def geomap_data_table(drop_selectie, mask_all):
     else:
         fig = dict(geo={'data': None, 'layout': dict()})
 
-    df['uitleg redenna'] = df['redenna'].map(api.get('/Graphs?id=reden_mapping')[0]['map'])
+    df['uitleg redenna'] = df['redenna'].map(local.reden_mapping)
     df = df[['sleutel', 'opleverdatum', 'hasdatum', 'opleverstatus', 'uitleg redenna']].sort_values(by='hasdatum')
     df_table = dash_table.DataTable(
         columns=[{"name": i, "id": i} for i in df.columns],
