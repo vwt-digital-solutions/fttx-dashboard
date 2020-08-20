@@ -67,13 +67,6 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     return df_l
 
 
-# y_target_l - transform mbv ftu0 ftu1
-# y_prog_l, y_target_l, rc1, rc2 - to list
-# t_shift  - to str
-# d_real_r, d_real_l_ri -> to list
-# x_prog - to int
-# x_d - to datetime
-
 def extract_data_planning(path_data):
     if 'gs://' in path_data:
         xls = pd.ExcelFile(path_data)
@@ -224,38 +217,6 @@ def get_total_objects(df_l):  # Don't think this is necessary to calculate at th
     total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
     total_objects['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
     return total_objects
-
-
-# def calculate_projectspecs(df_l, year):
-#     # to calculate HC / HPend ratio:
-#     HC = {}
-#     HPend = {}
-#     HC_HPend_l = {}
-#     Schouw_BIS = {}
-#     HPend_l = {}
-#     HAS_werkvoorraad_d = calculate_y_voorraad_act(df_l)
-#     for key in df_l:
-#         df_HPend = df_l[key][~df_l[key].opleverdatum.isna()]
-#         if not df_HPend.empty:
-#             df_HPend = df_HPend[(df_HPend.opleverdatum >= year + '-01-01') &
-#                                 (df_HPend.opleverdatum <= year + '-12-31')]
-#             HPend[key] = len(df_HPend)
-#             HC[key] = len(df_HPend[(df_HPend.opleverstatus == '2')])
-#         else:
-#             HC[key] = 0
-#             HPend[key] = 0
-#         opgeleverd = len(df_l[key][~df_l[key].opleverdatum.isna()])
-#         if opgeleverd > 0:
-#             HC_HPend_l[key] = len(df_l[key][df_l[key].opleverstatus == '2']) / opgeleverd * 100
-#         else:
-#             HC_HPend_l[key] = 0
-#         Schouw_BIS[key] = len(df_l[key][(~df_l[key].toestemming.isna()) & (df_l[key].opleverstatus != '0')])
-#         HPend_l[key] = len(df_l[key][~df_l[key].opleverdatum.isna()])
-
-#     HC_HPend = round(sum(HC.values()) / sum(HPend.values()), 2)
-#     HAS_werkvoorraad = sum(HAS_werkvoorraad_d.values())
-
-#     return HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad
 
 
 # Function that adds columns to the source data, to be used in project specs

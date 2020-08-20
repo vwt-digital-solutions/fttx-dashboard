@@ -78,7 +78,6 @@ class DictRecord(Record):
         for k, v in self.record.items():
             document_name = f"{client}_{graph_name}_{k}"
             document = firestore.Client().collection(self.collection).document(document_name)
-            print(f"Writing {document_name} to {client}, in collection {self.collection}")
             document.set(self.to_document(graph_name=graph_name, client=client, record=v, project=k))
 
     def to_table_part(self, graph_name, client):
@@ -92,3 +91,19 @@ class DictRecord(Record):
               <td>{document}</td>
             </tr>"""
         return table_part
+
+
+class RecordDict():
+
+    def __init__(self):
+        self.record_collection = {}
+
+    def add(self, key, record, RecordType, collection):
+        self.record_collection[key] = RecordType(record, collection)
+
+    def to_firestore(self, client):
+        for key, record in self.record_collection.items():
+            record.to_firestore(key, client)
+
+    def items(self):
+        return self.record_collection.items()
