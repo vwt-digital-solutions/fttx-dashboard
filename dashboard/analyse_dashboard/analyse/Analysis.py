@@ -143,5 +143,12 @@ class AnalysisKPN(Analysis):
 
 class AnalysisTmobile(Analysis):
 
-    def example_analysis(self):
-        pass
+    def test(self):
+        record = {'foo': 'bar'}
+        self.record_dict.add('test1', record, Record, 'Data')
+
+    def reden_na(self, df_l, clusters):
+        overview_record = overview_reden_na(df_l, clusters)
+        record_dict = individual_reden_na(df_l, clusters)
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
