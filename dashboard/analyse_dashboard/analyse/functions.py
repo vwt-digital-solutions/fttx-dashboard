@@ -641,7 +641,7 @@ def meters(d_sheets, tot_l, x_d, y_target_l):
         y_HASm[key] = (m_HAS.cumsum() / m_HAST * 100).to_list() + [0] * (len(y_target[key]) - len(m_HAS))
         y_HAS[key] = ((w_HP + w_2).cumsum() / tot_l[key] * 100).to_list() + [0] * (len(y_target[key]) - len(w_HP))
         y_schouw[key] = ((w_SLB + w_SHB).cumsum() / tot_l[key] * 100).to_list() + [0] * (
-                    len(y_target[key]) - len(w_SLB))
+                len(y_target[key]) - len(w_SLB))
 
     m_gegraven = [el1 + el2 for el1, el2 in zip(m_BIS_all, m_HAS_all)]
     rc_BIS, _ = np.polyfit(teams_BIS_all, m_gegraven, 1)  # aantal meters BIS per team per week
@@ -662,6 +662,7 @@ def meters(d_sheets, tot_l, x_d, y_target_l):
 
 
 def meters_graph(x_target, y_target, y_prog_l, y_BIS, y_HASm, y_HAS, y_schouw, advies):
+    # TODO check if this is used
     fig = {}
     for key in y_prog_l:
         if key in y_target:
@@ -767,90 +768,48 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
     return record_dict
 
 
-def map_redenen():
-    reden_l = dict(
-        R0='Geplande aansluiting',
-        R00='Geplande aansluiting',
-        R1='Geen toestemming bewoner',
-        R01='Geen toestemming bewoner',
-        R2='Geen toestemming VVE / WOCO',
-        R02='Geen toestemming VVE / WOCO',
-        R3='Bewoner na 3 pogingen niet thuis',
-        R4='Nieuwbouw (woning nog niet gereed)',
-        R5='Hoogbouw obstructie (blokkeert andere bewoners)',
-        R6='Hoogbouw obstructie (wordt geblokkeerd door andere bewoners)',
-        R7='Technische obstructie',
-        R8='Meterkast voldoet niet aan eisen',
-        R9='Pand staat leeg',
-        R10='Geen graafvergunning',
-        R11='Aansluitkosten boven normbedrag niet gedekt',
-        R12='Buiten het uitrolgebied',
-        R13='Glasnetwerk van een andere operator',
-        R14='Geen vezelcapaciteit',
-        R15='Geen woning',
-        R16='Sloopwoning (niet voorbereid)',
-        R17='Complex met 1 aansluiting op ander adres',
-        R18='Klant niet bereikbaar',
-        R19='Bewoner niet thuis, wordt opnieuw ingepland',
-        R20='Uitrol na vraagbundeling, klant neemt geen dienst',
-        R21='Wordt niet binnen dit project aangesloten',
-        R22='Vorst, niet planbaar',
-        R_geen='Geen reden'
-    )
-    record = dict(id='reden_mapping', map=reden_l)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
-
-
 def masks_phases(pkey, df_l):
     df = df_l[pkey]
     batch = firestore.Client().batch()
-    bar_m = {}
-    bar_m['SchouwenLB0-mask'] = (df['toestemming'].isna()) & \
-                                (df['soort_bouw'] == 'Laag')
-    bar_m['SchouwenLB1-mask'] = (~df['toestemming'].isna()) & \
-                                (df['soort_bouw'] == 'Laag')
-    bar_m['SchouwenHB0-mask'] = (df['toestemming'].isna()) & \
-                                (df['soort_bouw'] != 'Laag')
-    bar_m['SchouwenHB1-mask'] = (~df['toestemming'].isna()) & \
-                                (df['soort_bouw'] != 'Laag')
-    bar_m['BISLB0-mask'] = (df['opleverstatus'] == '0') & \
-                           (df['soort_bouw'] == 'Laag')
-    bar_m['BISLB1-mask'] = (df['opleverstatus'] != '0') & \
-                           (df['soort_bouw'] == 'Laag')
-    bar_m['BISHB0-mask'] = (df['opleverstatus'] == '0') & \
-                           (df['soort_bouw'] != 'Laag')
-    bar_m['BISHB1-mask'] = (df['opleverstatus'] != '0') & \
-                           (df['soort_bouw'] != 'Laag')
-    bar_m['Montage-lasDPLB0-mask'] = (df['laswerkdpgereed'] == '0') & \
-                                     (df['soort_bouw'] == 'Laag')
-    bar_m['Montage-lasDPLB1-mask'] = (df['laswerkdpgereed'] == '1') & \
-                                     (df['soort_bouw'] == 'Laag')
-    bar_m['Montage-lasDPHB0-mask'] = (df['laswerkdpgereed'] == '0') & \
-                                     (df['soort_bouw'] != 'Laag')
-    bar_m['Montage-lasDPHB1-mask'] = (df['laswerkdpgereed'] == '1') & \
-                                     (df['soort_bouw'] != 'Laag')
-    bar_m['Montage-lasAPLB0-mask'] = (df['laswerkapgereed'] == '0') & \
-                                     (df['soort_bouw'] == 'Laag')
-    bar_m['Montage-lasAPLB1-mask'] = (df['laswerkapgereed'] == '1') & \
-                                     (df['soort_bouw'] == 'Laag')
-    bar_m['Montage-lasAPHB0-mask'] = (df['laswerkapgereed'] == '0') & \
-                                     (df['soort_bouw'] != 'Laag')
-    bar_m['Montage-lasAPHB1-mask'] = (df['laswerkapgereed'] == '1') & \
-                                     (df['soort_bouw'] != 'Laag')
-    bar_m['HASLB0-mask'] = (df['opleverdatum'].isna()) & \
-                           (df['soort_bouw'] == 'Laag')
-    bar_m['HASLB1-mask'] = (df['opleverstatus'] == '2') & \
-                           (df['soort_bouw'] == 'Laag')
-    bar_m['HASLB1HP-mask'] = (df['opleverstatus'] != '2') & \
-                             (~df['opleverdatum'].isna()) & \
-                             (df['soort_bouw'] == 'Laag')
-    bar_m['HASHB0-mask'] = (df['opleverdatum'].isna()) & \
-                           (df['soort_bouw'] != 'Laag')
-    bar_m['HASHB1-mask'] = (df['opleverstatus'] == '2') & \
-                           (df['soort_bouw'] != 'Laag')
-    bar_m['HASHB1HP-mask'] = (df['opleverstatus'] != '2') & \
-                             (~df['opleverdatum'].isna()) & \
-                             (df['soort_bouw'] != 'Laag')
+    bar_m = {'SchouwenLB0-mask': (df['toestemming'].isna()) &
+                                 (df['soort_bouw'] == 'Laag'), 'SchouwenLB1-mask': (~df['toestemming'].isna()) &
+                                                                                   (df['soort_bouw'] == 'Laag'),
+             'SchouwenHB0-mask': (df['toestemming'].isna()) &
+                                 (df['soort_bouw'] != 'Laag'), 'SchouwenHB1-mask': (~df['toestemming'].isna()) &
+                                                                                   (df['soort_bouw'] != 'Laag'),
+             'BISLB0-mask': (df['opleverstatus'] == '0') &
+                            (df['soort_bouw'] == 'Laag'), 'BISLB1-mask': (df['opleverstatus'] != '0') &
+                                                                         (df['soort_bouw'] == 'Laag'),
+             'BISHB0-mask': (df['opleverstatus'] == '0') &
+                            (df['soort_bouw'] != 'Laag'), 'BISHB1-mask': (df['opleverstatus'] != '0') &
+                                                                         (df['soort_bouw'] != 'Laag'),
+             'Montage-lasDPLB0-mask': (df['laswerkdpgereed'] == '0') &
+                                      (df['soort_bouw'] == 'Laag'),
+             'Montage-lasDPLB1-mask': (df['laswerkdpgereed'] == '1') &
+                                      (df['soort_bouw'] == 'Laag'),
+             'Montage-lasDPHB0-mask': (df['laswerkdpgereed'] == '0') &
+                                      (df['soort_bouw'] != 'Laag'),
+             'Montage-lasDPHB1-mask': (df['laswerkdpgereed'] == '1') &
+                                      (df['soort_bouw'] != 'Laag'),
+             'Montage-lasAPLB0-mask': (df['laswerkapgereed'] == '0') &
+                                      (df['soort_bouw'] == 'Laag'),
+             'Montage-lasAPLB1-mask': (df['laswerkapgereed'] == '1') &
+                                      (df['soort_bouw'] == 'Laag'),
+             'Montage-lasAPHB0-mask': (df['laswerkapgereed'] == '0') &
+                                      (df['soort_bouw'] != 'Laag'),
+             'Montage-lasAPHB1-mask': (df['laswerkapgereed'] == '1') &
+                                      (df['soort_bouw'] != 'Laag'), 'HASLB0-mask': (df['opleverdatum'].isna()) &
+                                                                                   (df['soort_bouw'] == 'Laag'),
+             'HASLB1-mask': (df['opleverstatus'] == '2') &
+                            (df['soort_bouw'] == 'Laag'), 'HASLB1HP-mask': (df['opleverstatus'] != '2') &
+                                                                           (~df['opleverdatum'].isna()) &
+                                                                           (df['soort_bouw'] == 'Laag'),
+             'HASHB0-mask': (df['opleverdatum'].isna()) &
+                            (df['soort_bouw'] != 'Laag'), 'HASHB1-mask': (df['opleverstatus'] == '2') &
+                                                                         (df['soort_bouw'] != 'Laag'),
+             'HASHB1HP-mask': (df['opleverstatus'] != '2') &
+                              (~df['opleverdatum'].isna()) &
+                              (df['soort_bouw'] != 'Laag')}
 
     bar = {}
     bar_names = []
