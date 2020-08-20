@@ -14,9 +14,9 @@ class Customer():
 
 # Moved decorator out of class scope, does seem to be the pythonic way to do it.
 def etl(function):
-    def wrapper(self):
+    def wrapper(self, *args):
         self._set_etl()
-        func = function(self)
+        func = function(self, *args)
         return func
     return wrapper
 
