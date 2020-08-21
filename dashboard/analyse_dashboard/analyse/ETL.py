@@ -74,7 +74,7 @@ class ETL_project_data():
             if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
                 blob.download_to_filename(location+'jsonFC/' + blob.name.split('/')[-1])
         files = os.listdir(location+'jsonFC/')
-        self.data = make_frame_dict(files, location+'jsonFC/')
+        self.data = make_frame_dict(files, location+'jsonFC/', self.projects)
 
     def transform(self, flag=0):
         transformed_data = {}
@@ -160,14 +160,17 @@ class ETL_project_data_database(ETL_project_data):
         self.data = self.data
 
 
-def make_frame_dict(files, source):
+def make_frame_dict(files, source, projects):
     dataframe = pd.DataFrame()
     for filename in files:
-        df = pd.DataFrame(pd.read_json(source + filename, orient='records')['data'].to_list())
-        df['project'] = unicodedata.normalize("NFKD", df['title'].iloc[0][0:-13])
-        dataframe = dataframe.append(df)
+        if filename[-5:] == '.json':
+            df = pd.DataFrame(pd.read_json(source + filename, orient='records')['data'].to_list())
+            titel = df['title'].iloc[0][0:-13]
+            if titel in projects:
+                df['project'] = unicodedata.normalize("NFKD", titel)
+                dataframe = dataframe.append(df)
     df_dict = {}
-    for project in df.project.unique():
+    for project in dataframe.project.unique():
         df_dict[project] = dataframe[dataframe.project == project]
 
     return df_dict

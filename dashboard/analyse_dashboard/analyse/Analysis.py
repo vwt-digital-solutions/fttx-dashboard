@@ -8,6 +8,7 @@ except ImportError:
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
+import pandas as pd
 
 
 class Analysis:
@@ -142,6 +143,11 @@ class AnalysisKPN(Analysis):
 
 
 class AnalysisTmobile(Analysis):
+
+    def __init__(self, client, df_l):
+        self.client = client
+        self.data = pd.concat(df_l.values())
+        self.record_dict = RecordDict()
 
     def test(self):
         record = {'foo': 'bar'}
