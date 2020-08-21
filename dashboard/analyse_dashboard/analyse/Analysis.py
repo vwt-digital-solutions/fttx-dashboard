@@ -58,9 +58,8 @@ class Analysis:
 class AnalysisKPN(Analysis):
 
     def set_input_fields(self, date_FTU0, date_FTU1, x_d):
-        self.date_FTU0 = Record(date_FTU0, collection='Data')
-        self.date_FTU1 = Record(date_FTU1, collection='Data')
-        self.x_d = DateRecord(x_d, collection="Data")
+        self.record_dict.add("analysis", dict(FTU0=date_FTU0, FTU1=date_FTU1), Record, "Data")
+        self.record_dict.add("x_d", x_d, DateRecord, collection="Data")
 
     def prognose(self, df_l, start_time, timeline, total_objects, date_FTU0):
         print("Prognose")
