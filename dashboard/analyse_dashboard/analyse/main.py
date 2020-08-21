@@ -3,6 +3,7 @@ import logging
 import json
 import base64
 
+logging.basicConfig(level=logging.INFO)
 
 try:
     from gobits import Gobits
@@ -11,11 +12,12 @@ try:
     from functions import get_timeline, get_start_time, get_data, get_total_objects
     from functions import preprocess_data
     from functions import overview
-    from functions import set_bar_names, error_check_FCBC
+    from functions import error_check_FCBC
     from functions import masks_phases, set_date_update
     from Analysis import AnalysisKPN, AnalysisTmobile
     from google.cloud import pubsub, firestore
-    logging.basicConfig(level=logging.INFO)
+    from Record import DocumentListRecord, ListRecord
+
     publisher = pubsub.PublisherClient()
 
 except ImportError:
@@ -24,7 +26,7 @@ except ImportError:
     from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
     from analyse.functions import preprocess_data
     from analyse.functions import overview
-    from analyse.functions import set_bar_names, error_check_FCBC
+    from analyse.functions import error_check_FCBC
     from analyse.functions import masks_phases, set_date_update
     from analyse.Analysis import AnalysisKPN, AnalysisTmobile
 
@@ -172,8 +174,13 @@ def graph(request):
         bytes = base64.b64decode(envelope['message']['data'])
         project = json.loads(bytes)
         df_l = get_data([project], config.col, None, None, 0)
-        bar_m = masks_phases(project, df_l)
-        set_bar_names(bar_m)
+        bar_names, document_list = masks_phases(project, df_l)
+        dlr = DocumentListRecord(document_list, collection="Data")
+        dlr.to_firestore(client="KPN")
+
+        lr = ListRecord(dict(bar_names=bar_names), collection="Data")
+        lr.to_firestore(graph_name="bar_names", client="KPN")
+
         logging.info(f'masks bar uploaded for {project}')
     except Exception:
         logging.exception('Graph calculation failed')
