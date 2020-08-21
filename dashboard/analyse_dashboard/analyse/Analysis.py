@@ -2,7 +2,7 @@ try:
     from functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
-    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord
+    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
@@ -48,7 +48,7 @@ class Analysis:
         return table
 
     def set_filters(self, df_l):
-        self.project_names = ListRecord(record=set_filters(df_l), collection="Data")
+        self.record_dict.add("project_name", set_filters(df_l), ListRecord, "Data")
 
     def to_firestore(self):
         self.record_dict.to_firestore(self.client)
