@@ -138,23 +138,18 @@ class AnalysisKPN(Analysis):
     def reden_na(self, df_l, clusters):
         overview_record = overview_reden_na(df_l, clusters)
         record_dict = individual_reden_na(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
 
 class AnalysisTmobile(Analysis):
 
     def __init__(self, client, df_l):
-        self.client = client
+        super.__init__()
         self.data = pd.concat(df_l.values())
-        self.record_dict = RecordDict()
-
-    def test(self):
-        record = {'foo': 'bar'}
-        self.record_dict.add('test1', record, Record, 'Data')
 
     def reden_na(self, df_l, clusters):
         overview_record = overview_reden_na(df_l, clusters)
         record_dict = individual_reden_na(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')

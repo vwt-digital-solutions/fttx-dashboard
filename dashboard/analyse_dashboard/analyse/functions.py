@@ -6,6 +6,7 @@ import time
 import json
 import datetime
 import hashlib
+import plotly.graph_objs as go
 
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
@@ -1377,6 +1378,16 @@ def pie_chart_reden_na(df_na, clusters, key):
     return data, document
 
 
+def to_graph(fig):
+    data = fig[0]['figure']['data']
+    trace = go.Pie(data)
+    layout = fig[0]['figure']['layout']
+    data = [trace]
+    graph = dict(data=data,
+                 layout=layout)
+    return graph
+
+
 def overview_reden_na(df_l, clusters):
     full_df = pd.concat(df_l.values())
     data, document = pie_chart_reden_na(full_df, clusters, 'overview')
@@ -1385,8 +1396,10 @@ def overview_reden_na(df_l, clusters):
         'data': data,
         'layout': layout
     }
-    record = dict(id=document, figure=fig)
-    return record
+    fig = dict(data=data,
+               layout=layout)
+    graph = to_graph(fig)
+    return graph
 
 
 def individual_reden_na(df_l, clusters):
@@ -1399,7 +1412,8 @@ def individual_reden_na(df_l, clusters):
             'layout': layout
         }
         record = dict(id=document, figure=fig)
-        record_dict[document] = record
+        graph = to_graph(record)
+        record_dict[document] = graph
     return record_dict
 
 

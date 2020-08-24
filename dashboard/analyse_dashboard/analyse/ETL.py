@@ -76,7 +76,7 @@ class ETL_project_data():
         files = os.listdir(location+'jsonFC/')
         self.data = make_frame_dict(files, location+'jsonFC/', self.projects)
 
-    def transform(self, flag=0):
+    def transform(self, flag=1):
         transformed_data = {}
         for project, df in self.data.items():
             df = self.rename_columns(df)
