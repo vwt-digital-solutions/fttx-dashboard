@@ -3,13 +3,13 @@ try:
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
-    from functions_tmobile import column_to_datetime, add_weeknumber
+    from functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
-    from analyse.functions_tmobile import column_to_datetime, add_weeknumber
+    from analyse.functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart
 import pandas as pd
 
 
@@ -165,3 +165,7 @@ class AnalysisTmobile(Analysis):
 
     def HAS_add_weeknumber(self):
         self.data['HASdatum_week'] = add_weeknumber(self.data['HASdatum'])
+
+    def has_maand_bar_chart(self):
+        record_dict = has_maand_bar_chart(self.data)
+        self.record_dict.add('HASdatum_maand', record_dict, DictRecord, 'Graphs')
