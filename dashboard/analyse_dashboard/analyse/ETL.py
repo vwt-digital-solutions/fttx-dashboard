@@ -6,25 +6,38 @@ import time
 import unicodedata
 
 
-class ETL_target_data():
+class ExtractTransform:
+    def __init__(self, run=True):
+        self.data = None
+        if run:
+            self.extract()
+            self.transform()
 
-    def __init__(self, target_document, initialise=False):
-        self.target_document = target_document
-
-    # TODO where does the data come from?
     def extract(self):
-        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
-        self.FTU0 = doc['FTU0']
-        self.FTU1 = doc['FTU1']
+        pass
 
     def transform(self):
         pass
 
 
-class ETL_planning_data():
+class ExtractTransformTargetData(ExtractTransform):
+
+    # TODO where does the data come from?
+    def extract(self):
+        self.data = {}
+        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
+        self.data['FTU0'] = doc['FTU0']
+        self.data['FTU1'] = doc['FTU1']
+
+    def transform(self):
+        pass
+
+
+class ExtractTransformPlanningData(ExtractTransform):
 
     def __init__(self, location):
         self.location = location
+        super().__init__()
 
     def extract(self):
         if 'gs://' in self.location:
@@ -60,21 +73,23 @@ class ETL_planning_data():
         self.data = df
 
 
-class ETL_project_data():
+class ExtractTransformProjectData(ExtractTransform):
 
-    def __init__(self, bucket, projects, col):
+    def __init__(self, bucket, projects, col, **kwargs):
         self.bucket = bucket
         self.projects = projects
         self.columns = col
+        super().__init__(**kwargs)
 
-    def extract(self, location):
+    def extract(self, location=None):
+        breakpoint()
         bucket = storage.Client().get_bucket(self.bucket)
         blobs = bucket.list_blobs()
         for blob in blobs:
             if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-                blob.download_to_filename(location+'jsonFC/' + blob.name.split('/')[-1])
-        files = os.listdir(location+'jsonFC/')
-        self.data = make_frame_dict(files, location+'jsonFC/', self.projects)
+                blob.download_to_filename(location + 'jsonFC/' + blob.name.split('/')[-1])
+        files = os.listdir(location + 'jsonFC/')
+        self.data = make_frame_dict(files, location + 'jsonFC/', self.projects)
 
     def transform(self, flag=0):
         transformed_data = {}
@@ -105,33 +120,33 @@ class ETL_project_data():
         #         self.data[project] = pd.DataFrame(columns=self.columns)
 
     def set_opleverdatum(self, df):
-        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] =\
+        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] = \
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
         return df
 
     def set_hasdatum(self, df):
-        df.loc[~df['hasdatum'].isna(), ('hasdatum')] =\
+        df.loc[~df['hasdatum'].isna(), ('hasdatum')] = \
             [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
         return df
 
     def rename_columns(self, df):
         df.rename(columns={
-                            'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
-                            'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
-                            'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
-                            'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
-                            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
-                            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                            'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
-                            'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
-                            'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
-                            'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
-                            'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
-                            'SchouwDatum': 'schouwdatum'}, inplace=True)
+            'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
+            'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
+            'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
+            'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
+            'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
+            'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
+            'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
+            'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
+            'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
+            'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
+            'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
+            'SchouwDatum': 'schouwdatum'}, inplace=True)
         return df
 
 
-class ETL_project_data_database(ETL_project_data):
+class ExtractTransformProjectDataDatabase(ExtractTransformProjectData):
 
     def extract(self):
         t = time.time()
@@ -153,11 +168,11 @@ class ETL_project_data_database(ETL_project_data):
                 [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
 
             print(key)
-            print('Time: ' + str((time.time() - t)/60) + ' minutes')
+            print('Time: ' + str((time.time() - t) / 60) + ' minutes')
         self.data = df_l
 
     def transform(self):
-        self.data = self.data
+        pass
 
 
 def make_frame_dict(files, source, projects):

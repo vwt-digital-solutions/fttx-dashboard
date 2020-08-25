@@ -2,7 +2,6 @@ from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l,
 from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 from analyse_dashboard.analyse.functions import info_table, overview
 
-from data import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
@@ -166,7 +165,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
                 pt_cell = 'HB0'
         mask_all += pt_x + pt_cell
 
-        doc = api.get('/Graphs?id=bar_names')[0]['bar_names']
+        doc = collection.get_document(collection="Data", client="KPN", graph_name="bar_names")['bar_names']
         if mask_all not in doc:
             mask_all = '0'
     else:

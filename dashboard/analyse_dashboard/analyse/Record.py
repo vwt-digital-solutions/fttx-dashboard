@@ -166,7 +166,8 @@ class DocumentListRecord(Record):
         db = firestore.Client()
         batch = db.batch()
         for i, document in enumerate(self.record):
-
+            if client and "client" not in document:
+                document['client'] = client
             fs_document = db.collection(self.collection).document(self._document_name(document, client, graph_name))
             batch.set(fs_document, document)
             if not i % 100:
