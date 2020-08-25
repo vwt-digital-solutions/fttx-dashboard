@@ -30,10 +30,13 @@ def info_table():
 
 
 def pie_chart(key="overview"):
-    fig = api.get('/Graphs?id=pie_na_' + key)
-    data = fig[0]['figure']['data']
+    if key == "overview":
+        fig = collection.get_graph(client="KPN", graph_name="reden_na_overview")
+    else:
+        fig = collection.get_graph(client="KPN", graph_name="reden_na_projects", project="pie_na_" + key)
+    data = fig['data']
     trace = go.Pie(data)
-    layout = fig[0]['figure']['layout']
+    layout = fig['layout']
     data = [trace]
     fig = dict(data=data,
                layout=layout)
@@ -41,7 +44,11 @@ def pie_chart(key="overview"):
 
 
 def clickbar_lb(drop_selectie, mask_all):
-    fig = api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
+    fig = collection.get_document(collection="Data",
+                                  graph_name='status_bar_chart',
+                                  project=drop_selectie,
+                                  filter=mask_all
+                                  )['bar']
     bar = {}
     for key in fig:
         if 'LB' in key:
@@ -80,7 +87,11 @@ def clickbar_lb(drop_selectie, mask_all):
 
 
 def clickbar_hb(drop_selectie, mask_all):
-    fig = api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['bar']
+    fig = collection.get_document(collection="Data",
+                                  graph_name='status_bar_chart',
+                                  project=drop_selectie,
+                                  filter=mask_all
+                                  )['bar']
     bar = {}
     for key in fig:
         if 'HB' in key:

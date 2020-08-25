@@ -731,8 +731,17 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
 
 
 def masks_phases(pkey, df_l):
+    def calculate_bar(bar_m, mask):
+        bar = {}
+        for key in bar_m:
+            len_b = (bar_m[key] & mask).value_counts()
+            if True in len_b:
+                bar[key[0:-5]] = str(len_b[True])
+            else:
+                bar[key[0:-5]] = str(0)
+        return bar
+
     df = df_l[pkey]
-    batch = firestore.Client().batch()
     bar_m = {'SchouwenLB0-mask': (df['toestemming'].isna()) &
                                  (df['soort_bouw'] == 'Laag'), 'SchouwenLB1-mask': (~df['toestemming'].isna()) &
                                                                                    (df['soort_bouw'] == 'Laag'),
@@ -773,72 +782,51 @@ def masks_phases(pkey, df_l):
                               (~df['opleverdatum'].isna()) &
                               (df['soort_bouw'] != 'Laag')}
 
-    bar = {}
-    bar_names = []
-    mask = True
-    # begin state:
-    for key2 in bar_m:
-        len_b = (bar_m[key2] & mask).value_counts()
-        if True in len_b:
-            bar[key2[0:-5]] = str(len_b[True])
-        else:
-            bar[key2[0:-5]] = str(0)
-    record = dict(id=pkey + '_bar_filters_0', bar=bar)
-    bar_names += '0'
-    batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
-    # after one click:
-    for key2 in bar_m:
-        mask = bar_m[key2]
-        bar = {}
-        for key3 in bar_m:
-            len_b = (bar_m[key3] & mask).value_counts()
-            if True in len_b:
-                bar[key3[0:-5]] = str(len_b[True])
-            else:
-                bar[key3[0:-5]] = str(0)
-        record = dict(id=pkey + '_bar_filters_0' + key2[0:-5], bar=bar, mask=json.dumps(df[mask].sleutel.to_list()))
-        bar_names += ['0' + key2[0:-5]]
-        batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
-    batch.commit()
-    batch = firestore.Client().batch()
-    # print('23')
-    # after second click:
-    ii = 0
-    for key2 in bar_m:
-        mask = bar_m[key2]
-        for key3 in bar_m:
-            mask2 = bar_m[key3]
-            bar = {}
-            for key4 in bar_m:
-                len_b = (bar_m[key4] & mask & mask2).value_counts()
-                if True in len_b:
-                    bar[key4[0:-5]] = str(len_b[True])
-                else:
-                    bar[key4[0:-5]] = str(0)
-            record = dict(id=pkey + '_bar_filters_0' + key2[0:-5] + key3[0:-5],
-                          bar=bar,
-                          mask=json.dumps(df[mask & mask2].sleutel.to_list()))
-            bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-            batch.set(firestore.Client().collection('Graphs').document(record['id']), record)
-            ii += 1
-            if (ii % 150 == 0):
-                # print(ii)
-                batch.commit()
-                batch = firestore.Client().batch()
-    batch.commit()
-
-    return bar_m
-
-
-def set_bar_names(bar_m):
+    document_list = []
+    mask_level0 = True
+    bar = calculate_bar(bar_m, mask=mask_level0)
     bar_names = ['0']
+    record = dict(bar=bar)
+    document = dict(record=record,
+                    filter="0",
+                    graph_name="status_bar_chart",
+                    project=pkey)
+    document_list.append(document)
+
     for key2 in bar_m:
+        mask_level1 = bar_m[key2]
+        bar = calculate_bar(bar_m, mask=mask_level0 & mask_level1)
         bar_names += ['0' + key2[0:-5]]
-    for key2 in bar_m:
+        record = dict(bar=bar, mask=json.dumps(df[mask_level0 & mask_level1].sleutel.to_list()))
+        document = dict(record=record,
+                        filter="0" + key2[0:-5],
+                        graph_name="status_bar_chart",
+                        project=pkey)
+        document_list.append(document)
+
         for key3 in bar_m:
+            mask_level2 = bar_m[key3]
+            bar = calculate_bar(bar_m, mask=mask_level0 & mask_level1 & mask_level2)
             bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-    record = dict(id='bar_names', bar_names=bar_names)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+            record = dict(bar=bar,
+                          mask=json.dumps(df[mask_level0 & mask_level1 & mask_level2].sleutel.to_list()))
+            document = dict(record=record,
+                            filter="0" + key2[0:-5] + key3[0:-5],
+                            graph_name="status_bar_chart",
+                            project=pkey)
+            document_list.append(document)
+    return bar_names, document_list
+
+
+# def set_bar_names(bar_m):
+#     bar_names = ['0']
+#     for key2 in bar_m:
+#         bar_names += ['0' + key2[0:-5]]
+#     for key2 in bar_m:
+#         for key3 in bar_m:
+#             bar_names += ['0' + key2[0:-5] + key3[0:-5]]
+#     record = dict(id='bar_names', bar_names=bar_names)
+#     firestore.Client().collection('Data').document(record['id']).set(record)
 
 
 def consume(df_l):

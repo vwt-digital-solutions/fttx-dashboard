@@ -2,7 +2,7 @@ try:
     from functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
-    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord
+    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
@@ -49,7 +49,7 @@ class Analysis:
         return table
 
     def set_filters(self, df_l):
-        self.project_names = ListRecord(record=set_filters(df_l), collection="Data")
+        self.record_dict.add("project_name", set_filters(df_l), ListRecord, "Data")
 
     def to_firestore(self):
         self.record_dict.to_firestore(self.client)
@@ -58,9 +58,8 @@ class Analysis:
 class AnalysisKPN(Analysis):
 
     def set_input_fields(self, date_FTU0, date_FTU1, x_d):
-        self.date_FTU0 = Record(date_FTU0, collection='Data')
-        self.date_FTU1 = Record(date_FTU1, collection='Data')
-        self.x_d = DateRecord(x_d, collection="Data")
+        self.record_dict.add("analysis", dict(FTU0=date_FTU0, FTU1=date_FTU1), Record, "Data")
+        self.record_dict.add("x_d", x_d, DateRecord, collection="Data")
 
     def prognose(self, df_l, start_time, timeline, total_objects, date_FTU0):
         print("Prognose")

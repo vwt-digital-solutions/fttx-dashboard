@@ -1,13 +1,25 @@
 # %% Initialize
 import os
 import time
-import analyse.config as config
-from analyse.functions import get_data_planning, get_data_targets, preprocess_data
-from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
-from analyse.functions import overview
-from analyse.functions import set_bar_names, error_check_FCBC
-from analyse.functions import masks_phases, map_redenen, consume, set_date_update
-from analyse.Analysis import Analysis
+
+from Record import ListRecord, DocumentListRecord
+
+try:
+    import analyse.config as config
+    from analyse.functions import get_data_planning, get_data_targets, preprocess_data
+    from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
+    from analyse.functions import overview
+    from analyse.functions import error_check_FCBC
+    from analyse.functions import masks_phases, map_redenen, consume, set_date_update
+    from analyse.Analysis import AnalysisKPN
+except ImportError:
+    # import config as config
+    from functions import get_data_planning, get_data_targets, preprocess_data
+    from functions import get_timeline, get_start_time, get_data, get_total_objects
+    from functions import overview
+    from functions import error_check_FCBC
+    from functions import masks_phases, map_redenen, consume, set_date_update
+    from Analysis import AnalysisKPN
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -33,7 +45,7 @@ date_FTU0, date_FTU1 = get_data_targets(None)  # if path_data is None, then FTU 
 print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Analysis
-analyse = Analysis('KPN')
+analyse = AnalysisKPN('KPN')
 analyse.set_input_fields(date_FTU0, date_FTU1, timeline)
 df_l = preprocess_data(df_l, '2020')
 HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
@@ -62,11 +74,19 @@ set_date_update()
 analyse.to_firestore()
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 t_start = time.time()
+total_document_list = []
+bar_names = []
 for i, pkey in enumerate(config.subset_KPN_2020):
-    # df_l = get_data_projects([pkey], config.col)
-    bar_m = masks_phases(pkey, df_l)
-    print(i)
-set_bar_names(bar_m)
+    print(i, pkey)
+    bar_names, document_list = masks_phases(pkey, df_l)
+    total_document_list += document_list
+
+dlr = DocumentListRecord(total_document_list, collection="Data")
+dlr.to_firestore(client="KPN")
+
+lr = ListRecord(dict(bar_names=bar_names), collection="Data")
+lr.to_firestore(graph_name="bar_names", client="KPN")
+
 set_date_update()
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 consume(df_l)
