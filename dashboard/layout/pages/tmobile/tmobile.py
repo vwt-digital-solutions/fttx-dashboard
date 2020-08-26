@@ -4,7 +4,7 @@ import dash_html_components as html
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 from layout.pages.tmobile.sales_graph import get_html
-
+from data import collection
 
 layout = dict(
     autosize=True,
@@ -34,7 +34,8 @@ def get_body():
         dict(id_="info_globaal_container4", title='Actuele HC / HPend',
              value='1500'),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
-             value='1600'),
+             value=str(collection.get_document(
+                 collection="Data", client="t-mobile", graph_name="voorraadvormend")['all'])),
     ]
 
     page = html.Div(
