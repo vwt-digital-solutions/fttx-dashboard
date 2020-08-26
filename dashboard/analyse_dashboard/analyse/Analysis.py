@@ -155,7 +155,7 @@ class AnalysisTmobile(Analysis):
         self.record_dict.add('test1', record, Record, 'Data')
 
     def HAS_to_datetime(self):
-        self.data['HASdatum'] = column_to_datetime(self.data['HASdatum'])
+        self.data['hasdatum'] = column_to_datetime(self.data['hasdatum'])
 
     def reden_na(self, df_l, clusters):
         overview_record = overview_reden_na(df_l, clusters)
@@ -164,8 +164,8 @@ class AnalysisTmobile(Analysis):
         self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
 
     def HAS_add_weeknumber(self):
-        self.data['HASdatum_week'] = add_weeknumber(self.data['HASdatum'])
+        self.data['hasdatum_week'] = add_weeknumber(self.data['hasdatum'])
 
     def has_maand_bar_chart(self):
         record_dict = has_maand_bar_chart(self.data)
-        self.record_dict.add('HASdatum_maand', record_dict, DictRecord, 'Graphs')
+        self.record_dict.add('hasdatum_maand', record_dict, Record, 'Data')
