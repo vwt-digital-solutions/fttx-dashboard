@@ -40,7 +40,7 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
                            'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
                            'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
                            'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
-                           'SchouwDatum': 'schouwdatum'}, inplace=True)
+                           'SchouwDatum': 'schouwdatum', 'Plan Status': 'plan_status'}, inplace=True)
         if flag == 0:
             df = df[col]
         df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] = \
