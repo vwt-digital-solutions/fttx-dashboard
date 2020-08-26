@@ -173,7 +173,7 @@ class ExtractTransformProjectDataFirestoreToDfList(ExtractTransformProjectData):
             print('Time: ' + str((time.time() - t) / 60) + ' minutes')
         self.data = df_l
 
-    def transform(self):
+    def transform(self, **kwargs):
         pass
 
 
@@ -194,12 +194,14 @@ class ExtractTransformProjectDataFirestore(ExtractTransformProjectData):
             print('Time: ' + str((time.time() - t) / 60) + ' minutes')
 
         df = pd.DataFrame(records).fillna(np.nan)
-        # df[["opleverdatum", "hasdatum"]] = df[["opleverdatum", "hasdatum"]].apply(lambda x: x.str.slice(0, 10))
-
         self.data = df
 
-    def transform(self):
-        pass
+    def transform(self, **kwargs):
+        self._fix_dates()
+
+    def _fix_dates(self):
+        datums = [col for col in self.data.columns if "datum" in col]
+        self.data[datums] = self.data[datums].apply(lambda x: x.str.slice(0, 10))
 
 
 def make_frame_dict(files, source, projects):
