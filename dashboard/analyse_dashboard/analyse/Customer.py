@@ -3,7 +3,7 @@ try:
         ExtractTransformProjectDataFirestoreToDfList,
         ExtractTransformPlanningData,
         ExtractTransformTargetData,
-        ExtractTransformProjectData
+        ExtractTransformProjectDataFirestore
     )
 except ImportError as e:
     print(e)
@@ -11,13 +11,16 @@ except ImportError as e:
         ExtractTransformProjectDataFirestoreToDfList,
         ExtractTransformPlanningData,
         ExtractTransformTargetData,
-        ExtractTransformProjectData
+        ExtractTransformProjectDataFirestore
     )
 
 
 class Customer:
     def __init__(self, config):
         self.config = config
+
+    def __str__(self):
+        return f"{self.__class__.__qualname__}\nconfig:\n{self.config}"
 
 
 class CustomerKPN(Customer):
@@ -37,13 +40,12 @@ class CustomerKPN(Customer):
 
 
 class CustomerTmobile(Customer):
-    def get_data(self, local_file=None):
-        etl = ExtractTransformProjectData(
+    def get_data(self):
+        etl = ExtractTransformProjectDataFirestore(
             self.config["bucket"],
             self.config["projects"],
             self.config["columns"],
-            run=False,
+            run=False
         )
-        etl.extract(local_file)
-        etl.transform()
+        etl.extract()
         return etl.data

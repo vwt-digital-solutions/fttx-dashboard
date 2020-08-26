@@ -3,14 +3,13 @@ try:
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
-    from functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart
+    from functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart, calculate_voorraadvormend
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
-    from analyse.functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart
-import pandas as pd
+    from analyse.functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart, calculate_voorraadvormend
 
 
 class Analysis:
@@ -20,11 +19,9 @@ class Analysis:
         self.record_dict = RecordDict()
 
     def __repr__(self):
-
         return f"Analysis(client={self.client})"
 
     def __str__(self):
-
         fields = [field_name for field_name, data in self.record_dict.items()]
 
         return f"Analysis(client={self.client}) containing: {fields}"
@@ -145,9 +142,9 @@ class AnalysisKPN(Analysis):
 
 class AnalysisTmobile(Analysis):
 
-    def __init__(self, client, df_l):
+    def __init__(self, client, data):
         self.client = client
-        self.data = pd.concat(df_l.values())
+        self.data = data
         self.record_dict = RecordDict()
 
     def test(self):
@@ -169,3 +166,7 @@ class AnalysisTmobile(Analysis):
     def has_maand_bar_chart(self):
         record_dict = has_maand_bar_chart(self.data)
         self.record_dict.add('hasdatum_maand', record_dict, Record, 'Data')
+
+    def get_voorraadvormend(self):
+        record = calculate_voorraadvormend(self.data)
+        self.record_dict.add('voorraadvormend', record, Record, "Data")

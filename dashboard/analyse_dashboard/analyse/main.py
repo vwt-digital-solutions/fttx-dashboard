@@ -164,6 +164,7 @@ def analyseTmobile(client_name):
 
     analyse = AnalysisTmobile(client_name)
     analyse.reden_na(df_l, config.clusters_reden_na)
+    analyse.get_voorraadvormend()
 
     analyse.to_firestore()
 

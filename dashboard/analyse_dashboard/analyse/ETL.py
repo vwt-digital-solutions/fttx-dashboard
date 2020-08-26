@@ -201,7 +201,9 @@ class ExtractTransformProjectDataFirestore(ExtractTransformProjectData):
 
     def _fix_dates(self):
         datums = [col for col in self.data.columns if "datum" in col]
-        self.data[datums] = self.data[datums].apply(lambda x: x.str.slice(0, 10))
+        self.data[datums] = self.data[datums].fillna("") \
+            .apply(lambda x: x.str.slice(0, 10)) \
+            .replace(r'^\s*$', np.nan, regex=True)
 
 
 def make_frame_dict(files, source, projects):
