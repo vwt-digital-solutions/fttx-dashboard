@@ -159,7 +159,6 @@ def analyseKPN(client_name):
 def analyseTmobile(client_name):
     client_config = config.client_config[client_name]
     customer = CustomerTmobile(client_config)
-    print(customer)
     df_l = customer.get_data()
 
     analyse = AnalysisTmobile(client_name)

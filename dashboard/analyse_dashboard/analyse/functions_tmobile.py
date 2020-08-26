@@ -6,7 +6,7 @@ except ImportError:
 
 # Small change to functions for KPN to work with dataframe instead of dict
 # Should be generalised in later stage
-def overview_reden_na(df, clusters):
+def overview_reden_na_df(df, clusters):
     data, document = pie_chart_reden_na(df, clusters, 'overview')
     layout = get_pie_layout()
     fig = {
@@ -19,10 +19,10 @@ def overview_reden_na(df, clusters):
 
 # Small change to functions for KPN to work with dataframe instead of dict
 # Should be generalised in later stage
-def individual_reden_na(data, clusters):
+def individual_reden_na_df(project_data, clusters):
     record_dict = {}
-    for project in data.projects.unique():
-        project_data = data[data.project == project]
+    for project in project_data.project.unique():
+        project_data = project_data[project_data.project == project]
         data, document = pie_chart_reden_na(project_data, clusters, project)
         layout = get_pie_layout()
         fig = {

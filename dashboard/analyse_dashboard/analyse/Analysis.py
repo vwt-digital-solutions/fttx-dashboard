@@ -3,10 +3,12 @@ try:
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
+    from functions_tmobile import overview_reden_na_df, individual_reden_na_df
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
-        calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
+        calculate_y_voorraad_act, prognose_graph, info_table, set_filters, overview_reden_na, individual_reden_na
+    from analyse.functions_tmobile import overview_reden_na_df, individual_reden_na_df
     from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
 import pandas as pd
 
@@ -144,11 +146,11 @@ class AnalysisKPN(Analysis):
 class AnalysisTmobile(Analysis):
 
     def __init__(self, client, df_l):
-        super.__init__()
+        super().__init__(client)
         self.data = pd.concat(df_l.values())
 
-    def reden_na(self, df_l, clusters):
-        overview_record = overview_reden_na(df_l, clusters)
-        record_dict = individual_reden_na(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
+    def reden_na(self, clusters):
+        overview_record = overview_reden_na_df(self.data, clusters)
+        record_dict = individual_reden_na_df(self.data, clusters)
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')

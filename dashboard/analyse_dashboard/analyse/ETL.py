@@ -82,11 +82,10 @@ class ExtractTransformProjectData(ExtractTransform):
         super().__init__(**kwargs)
 
     def extract(self, location=None):
-        breakpoint()
         bucket = storage.Client().get_bucket(self.bucket)
         blobs = bucket.list_blobs()
         for blob in blobs:
-            if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
+            if pd.Timestamp.now().strftime('%Y/%m/%d') in blob.name:
                 blob.download_to_filename(location + 'jsonFC/' + blob.name.split('/')[-1])
         files = os.listdir(location + 'jsonFC/')
         self.data = make_frame_dict(files, location + 'jsonFC/', self.projects)
@@ -137,7 +136,7 @@ class ExtractTransformProjectData(ExtractTransform):
             'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
             'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
             'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-            'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
+            'HASdatum': 'hasdatum', 'title': 'project_naam', 'KabelID': 'kabelid',
             'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
             'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
             'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
