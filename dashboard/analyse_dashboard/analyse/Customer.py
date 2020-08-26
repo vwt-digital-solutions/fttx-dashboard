@@ -1,9 +1,18 @@
 try:
-    from analyse.ETL import ExtractTransformProjectDataDatabase, ExtractTransformPlanningData, ExtractTransformTargetData, \
+    from analyse.ETL import (
+        ExtractTransformProjectDataFirestoreToDfList,
+        ExtractTransformPlanningData,
+        ExtractTransformTargetData,
         ExtractTransformProjectData
-except ImportError:
-    from ETL import ExtractTransformProjectDataDatabase, ExtractTransformPlanningData, ExtractTransformTargetData, \
+    )
+except ImportError as e:
+    print(e)
+    from ETL import (
+        ExtractTransformProjectDataFirestoreToDfList,
+        ExtractTransformPlanningData,
+        ExtractTransformTargetData,
         ExtractTransformProjectData
+    )
 
 
 class Customer:
@@ -12,10 +21,10 @@ class Customer:
 
 
 class CustomerKPN(Customer):
-
     def get_data(self):
-        etl = ExtractTransformProjectDataDatabase(self.config["bucket"], self.config["projects"],
-                                                  self.config["columns"])
+        etl = ExtractTransformProjectDataFirestoreToDfList(
+            self.config["bucket"], self.config["projects"], self.config["columns"]
+        )
         return etl.data
 
     def get_data_planning(self):
@@ -24,14 +33,17 @@ class CustomerKPN(Customer):
 
     def get_data_targets(self):
         etl = ExtractTransformTargetData()
-        return etl.data['FTU0'], etl.data['FTU1']
+        return etl.data["FTU0"], etl.data["FTU1"]
 
 
 class CustomerTmobile(Customer):
-
     def get_data(self, local_file=None):
-        etl = ExtractTransformProjectData(self.config["bucket"], self.config["projects"], self.config["columns"],
-                                          run=False)
+        etl = ExtractTransformProjectData(
+            self.config["bucket"],
+            self.config["projects"],
+            self.config["columns"],
+            run=False,
+        )
         etl.extract(local_file)
         etl.transform()
         return etl.data

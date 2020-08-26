@@ -145,9 +145,12 @@ class ExtractTransformProjectData(ExtractTransform):
         return df
 
 
-class ExtractTransformProjectDataDatabase(ExtractTransformProjectData):
+class ExtractTransformProjectDataFirestoreToDfList(ExtractTransformProjectData):
 
     def extract(self):
+        """Extracts all data from the projects catalog for the projects set during initialization of this object.
+        Sets self.data to Dict[str, pd.DataFrame] where the key is the project name.
+        """
         t = time.time()
         df_l = {}
         for key in self.projects:
@@ -155,7 +158,7 @@ class ExtractTransformProjectDataDatabase(ExtractTransformProjectData):
             records = []
             for doc in docs:
                 records += [doc.to_dict()]
-            if records != []:
+            if records:
                 df_l[key] = pd.DataFrame(records)[self.columns].fillna(np.nan)
                 print(f"Record: {len(df_l[key])}")
             else:
@@ -169,6 +172,31 @@ class ExtractTransformProjectDataDatabase(ExtractTransformProjectData):
             print(key)
             print('Time: ' + str((time.time() - t) / 60) + ' minutes')
         self.data = df_l
+
+    def transform(self):
+        pass
+
+
+class ExtractTransformProjectDataFirestore(ExtractTransformProjectData):
+
+    def extract(self):
+        """Extracts all data from the projects catalog for the projects set during initialization of this object.
+        Sets self.data to a pd.Dataframe of all data.
+        """
+        t = time.time()
+
+        records = []
+        for key in self.projects:
+            docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
+            new_records = [doc.to_dict() for doc in docs]
+            records += new_records
+            print(f"Number of records in {key}: {len(new_records)}")
+            print('Time: ' + str((time.time() - t) / 60) + ' minutes')
+
+        df = pd.DataFrame(records).fillna(np.nan)
+        # df[["opleverdatum", "hasdatum"]] = df[["opleverdatum", "hasdatum"]].apply(lambda x: x.str.slice(0, 10))
+
+        self.data = df
 
     def transform(self):
         pass
