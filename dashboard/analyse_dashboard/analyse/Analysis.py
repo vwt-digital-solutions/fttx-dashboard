@@ -3,12 +3,14 @@ try:
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
     from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
+    from functions_tmobile import overview_reden_na_df, individual_reden_na_df
     from functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart, calculate_voorraadvormend
     from functions_tmobile import has_week_bar_chart
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
-        calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
+        calculate_y_voorraad_act, prognose_graph, info_table, set_filters, overview_reden_na, individual_reden_na
+    from analyse.functions_tmobile import overview_reden_na_df, individual_reden_na_df
     from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
     from analyse.functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart, calculate_voorraadvormend
     from analyse.functions_tmobile import has_week_bar_chart
@@ -138,8 +140,8 @@ class AnalysisKPN(Analysis):
     def reden_na(self, df_l, clusters):
         overview_record = overview_reden_na(df_l, clusters)
         record_dict = individual_reden_na(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
 
 class AnalysisTmobile(Analysis):
@@ -149,18 +151,14 @@ class AnalysisTmobile(Analysis):
         self.data = data
         self.record_dict = RecordDict()
 
-    def test(self):
-        record = {'foo': 'bar'}
-        self.record_dict.add('test1', record, Record, 'Data')
-
     def HAS_to_datetime(self):
         self.data['hasdatum'] = column_to_datetime(self.data['hasdatum'])
 
-    def reden_na(self, df_l, clusters):
-        overview_record = overview_reden_na(df_l, clusters)
-        record_dict = individual_reden_na(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
+    def reden_na(self, clusters):
+        overview_record = overview_reden_na_df(self.data, clusters)
+        record_dict = individual_reden_na_df(self.data, clusters)
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
     def HAS_add_weeknumber(self):
         self.data['hasdatum_week'] = add_weeknumber(self.data['hasdatum'])
@@ -168,6 +166,10 @@ class AnalysisTmobile(Analysis):
     def has_maand_bar_chart(self):
         record_dict = has_maand_bar_chart(self.data)
         self.record_dict.add('hasdatum_maand', record_dict, Record, 'Data')
+
+    def add_columns(self):
+        self.HAS_to_datetime()
+        self.HAS_add_weeknumber()
 
     def get_voorraadvormend(self):
         record = calculate_voorraadvormend(self.data)
