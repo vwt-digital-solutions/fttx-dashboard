@@ -2,16 +2,19 @@ try:
     from functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
-    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
-    from functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart, calculate_voorraadvormend
-    from functions_tmobile import has_week_bar_chart
+    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict,\
+        DocumentListRecord
+    from functions_tmobile import column_to_datetime, add_weeknumber, calculate_voorraadvormend
+    from functions_tmobile import counts_by_time_period
 except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
-    from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict
-    from analyse.functions_tmobile import column_to_datetime, add_weeknumber, has_maand_bar_chart, calculate_voorraadvormend
-    from analyse.functions_tmobile import has_week_bar_chart
+    from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict,\
+        DocumentListRecord
+    from analyse.functions_tmobile import column_to_datetime, add_weeknumber, \
+        calculate_voorraadvormend
+    from analyse.functions_tmobile import counts_by_time_period
 
 
 class Analysis:
@@ -165,14 +168,20 @@ class AnalysisTmobile(Analysis):
     def HAS_add_weeknumber(self):
         self.data['hasdatum_week'] = add_weeknumber(self.data['hasdatum'])
 
-    def has_maand_bar_chart(self):
-        record_dict = has_maand_bar_chart(self.data)
-        self.record_dict.add('hasdatum_maand', record_dict, Record, 'Data')
-
     def get_voorraadvormend(self):
         record = calculate_voorraadvormend(self.data)
         self.record_dict.add('voorraadvormend', record, Record, "Data")
 
-    def has_week_bar_chart(self):
-        record_dict = has_week_bar_chart(self.data)
-        self.record_dict.add('hadatum_week', record_dict, Record, 'Data')
+    def get_counts_by_week(self):
+        counts_by_week = counts_by_time_period(self.data)
+        drl = [dict(record={k: v},
+                    id=f"{k}_by_week")
+               for k, v in counts_by_week.items()]
+        self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data")
+
+    def get_counts_by_month(self):
+        counts_by_month = counts_by_time_period(self.data, freq="M")
+        drl = [dict(record={k: v},
+                    id=f"{k}_by_month")
+               for k, v in counts_by_month.items()]
+        self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data")

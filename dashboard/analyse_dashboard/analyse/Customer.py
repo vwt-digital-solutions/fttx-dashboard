@@ -45,7 +45,5 @@ class CustomerTmobile(Customer):
             self.config["bucket"],
             self.config["projects"],
             self.config["columns"],
-            run=False
         )
-        etl.extract()
         return etl.data
