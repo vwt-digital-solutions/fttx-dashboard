@@ -151,10 +151,6 @@ class AnalysisTmobile(Analysis):
         super().__init__(client)
         self.data = pd.concat(df_l.values())
 
-    def test(self):
-        record = {'foo': 'bar'}
-        self.record_dict.add('test1', record, Record, 'Data')
-
     def HAS_to_datetime(self):
         self.data['hasdatum'] = column_to_datetime(self.data['hasdatum'])
 
@@ -170,3 +166,7 @@ class AnalysisTmobile(Analysis):
     def has_maand_bar_chart(self):
         record_dict = has_maand_bar_chart(self.data)
         self.record_dict.add('hasdatum_maand', record_dict, Record, 'Data')
+
+    def add_columns(self):
+        self.HAS_to_datetime()
+        self.HAS_add_weeknumber()

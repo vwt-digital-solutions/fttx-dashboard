@@ -4,6 +4,10 @@ from google.cloud import firestore, storage
 import os
 import time
 import unicodedata
+try:
+    from analyse.functions import get_data_targets_init
+except ImportError:
+    from functions import get_data_targets_init
 
 
 class ExtractTransform:
@@ -22,12 +26,19 @@ class ExtractTransform:
 
 class ExtractTransformTargetData(ExtractTransform):
 
+    def __init__(self, location):
+        self.location = location
+        super().__init__()
+
     # TODO where does the data come from?
     def extract(self):
-        self.data = {}
         doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
-        self.data['FTU0'] = doc['FTU0']
-        self.data['FTU1'] = doc['FTU1']
+        if doc is not None:
+            self.date_FTU0 = doc['FTU0']
+            self.date_FTU1 = doc['FTU1']
+        else:
+            print("Could not retrieve FTU0 and FTU1 from firestore, setting from local file")
+            self.date_FTU0, self.date_FTU1 = get_data_targets_init(self.location)
 
     def transform(self):
         pass
@@ -43,7 +54,7 @@ class ExtractTransformPlanningData(ExtractTransform):
         if 'gs://' in self.location:
             xls = pd.ExcelFile(self.location)
         else:
-            xls = pd.ExcelFile(self.location + 'Data_20200101_extra/Forecast JUNI 2020_def.xlsx')
+            xls = pd.ExcelFile(self.location + 'Forecast JUNI 2020_def.xlsx')
         df = pd.read_excel(xls, 'FTTX ').fillna(0)
         self.data = df
 
@@ -70,7 +81,7 @@ class ExtractTransformPlanningData(ExtractTransform):
                     HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
                 if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
                     HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-        self.data = df
+        self.data = HP
 
 
 class ExtractTransformProjectData(ExtractTransform):
