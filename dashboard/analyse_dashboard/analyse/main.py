@@ -143,8 +143,9 @@ def analyseTmobile(client_name):
     customer = CustomerTmobile(client_config)
     df_l = customer.get_data()
 
-    analyse = AnalysisTmobile(client_name)
-    analyse.reden_na(df_l, config.clusters_reden_na)
+    analyse = AnalysisTmobile(client_name, df_l)
+    analyse.reden_na(config.clusters_reden_na)
+    analyse.get_voorraadvormend()
 
     analyse.to_firestore()
 

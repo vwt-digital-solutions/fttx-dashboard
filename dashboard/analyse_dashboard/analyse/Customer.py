@@ -1,24 +1,36 @@
-try:
-    from analyse.ETL import ExtractTransformProjectDataDatabase, ExtractTransformPlanningData, ExtractTransformTargetData, \
-        ExtractTransformProjectData
-    import analyse.config as config
-except ImportError:
-    from ETL import ExtractTransformProjectDataDatabase, ExtractTransformPlanningData, ExtractTransformTargetData, \
-        ExtractTransformProjectData
-    import config
 import os
+try:
+    from analyse.ETL import (
+        ExtractTransformProjectDataFirestoreToDfList,
+        ExtractTransformPlanningData,
+        ExtractTransformTargetData,
+        ExtractTransformProjectDataFirestore
+    )
+    import analyse.config as config
+except ImportError as e:
+    print(e)
+    from ETL import (
+        ExtractTransformProjectDataFirestoreToDfList,
+        ExtractTransformPlanningData,
+        ExtractTransformTargetData,
+        ExtractTransformProjectDataFirestore
+    )
+    import config
 
 
 class Customer:
     def __init__(self, config):
         self.config = config
 
+    def __str__(self):
+        return f"{self.__class__.__qualname__}\nconfig:\n{self.config}"
+
 
 class CustomerKPN(Customer):
-
     def get_data(self):
-        etl = ExtractTransformProjectDataDatabase(self.config["bucket"], self.config["projects"],
-                                                  self.config["columns"])
+        etl = ExtractTransformProjectDataFirestoreToDfList(
+            self.config["bucket"], self.config["projects"], self.config["columns"]
+        )
         return etl.data
 
     def get_data_planning(self):
@@ -31,12 +43,14 @@ class CustomerKPN(Customer):
 
 
 class CustomerTmobile(Customer):
-
-    def get_data(self, local_file=None):
-        etl = ExtractTransformProjectData(self.config["bucket"], self.config["projects"], self.config["columns"],
-                                          run=False)
-        etl.extract(local_file)
-        etl.transform()
+    def get_data(self):
+        etl = ExtractTransformProjectDataFirestore(
+            self.config["bucket"],
+            self.config["projects"],
+            self.config["columns"],
+            run=False
+        )
+        etl.extract()
         return etl.data
 
 
