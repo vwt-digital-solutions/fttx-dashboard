@@ -1,9 +1,10 @@
 import dash_core_components as dcc
 import dash_html_components as html
 
+from data.data import has_planning_by_week
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
-from layout.pages.tmobile.sales_graph import get_html
+from layout.pages.tmobile import sales_graph, planning_has_graph
 from data import collection
 
 layout = dict(
@@ -52,8 +53,8 @@ def get_body():
                              className="container-display"),
             html.Div(
                 className="container-display",
-                children=[get_html('Sales, HAsses & Activations (by week)'),
-                          get_html('Sales, HAsses & Activations (by month)', flag=2)]
+                children=[planning_has_graph.get_html(has_planning_by_week()),
+                          sales_graph.get_html('Sales, HAsses & Activations (by month)', flag=2)]
             )
         ],
         id="mainContainer",
