@@ -71,7 +71,7 @@ def extract_data_planning(path_data):
     if 'gs://' in path_data:
         xls = pd.ExcelFile(path_data)
     else:
-        xls = pd.ExcelFile(path_data + 'Data_20200101_extra/Forecast JUNI 2020_def.xlsx')
+        xls = pd.ExcelFile(path_data + 'Forecast JUNI 2020_def.xlsx')
     df = pd.read_excel(xls, 'FTTX ').fillna(0)
     return df
 
@@ -110,9 +110,14 @@ def get_data_planning(path_data, subset_KPN_2020):
 
 def get_data_targets(path_data):
     doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
-    date_FTU0 = doc['FTU0']
-    date_FTU1 = doc['FTU1']
-    return date_FTU0, date_FTU1
+    if doc is not None:
+        date_FTU0 = doc['FTU0']
+        date_FTU1 = doc['FTU1']
+        return date_FTU0, date_FTU1
+    else:
+        print("Could not retrieve FTU0 and FTU1 from firestore, setting from local file")
+        dates = get_data_targets_init(path_data)
+    return dates
 
 
 # Function to use only when data_targets in database need to be reset.
@@ -143,7 +148,7 @@ def get_data_targets_init(path_data):
         # afgerond in FC...FTU0/FTU1 schatten
         # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
     }
-    fn_targets = 'Data_20200101_extra/20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx'
+    fn_targets = '20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx'
     df_targetsKPN = pd.read_excel(path_data + fn_targets, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
@@ -175,7 +180,7 @@ def get_data_meters(path_data):
         'Data Biezen Wolfskuil': 'Nijmegen Biezen-Wolfskuil-Hatert ',
         'Data Spijkenisse': 'KPN Spijkernisse'
     }
-    fn_teams = path_data + 'Data_20200101_extra/Weekrapportage FttX projecten - Week 22-2020.xlsx'
+    fn_teams = path_data + 'Weekrapportage FttX projecten - Week 22-2020.xlsx'
     xls = pd.ExcelFile(fn_teams)
     d_sheets_o = pd.read_excel(xls, None)
     d_sheets = {}
@@ -1369,10 +1374,7 @@ def overview_reden_na(df_l, clusters):
     full_df = pd.concat(df_l.values())
     data, document = pie_chart_reden_na(full_df, clusters, 'overview')
     layout = get_pie_layout()
-    fig = {
-        'data': data,
-        'layout': layout
-    }
+    fig = dict(data=data, layout=layout)
     record = dict(id=document, figure=fig)
     return record
 
@@ -1386,6 +1388,7 @@ def individual_reden_na(df_l, clusters):
             'data': data,
             'layout': layout
         }
+        fig = dict(data=data, layout=layout)
         record = dict(id=document, figure=fig)
         record_dict[document] = record
     return record_dict
