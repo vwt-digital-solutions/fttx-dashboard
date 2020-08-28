@@ -2,7 +2,7 @@ try:
     from functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
-    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict,\
+    from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict, \
         DocumentListRecord
     from functions_tmobile import overview_reden_na_df, individual_reden_na_df
     from functions_tmobile import column_to_datetime, add_weeknumber, calculate_voorraadvormend
@@ -11,13 +11,14 @@ except ImportError:
     from analyse.functions import prognose, targets, error_check_FCBC, calculate_projectspecs, graph_overview, \
         performance_matrix, \
         calculate_y_voorraad_act, prognose_graph, info_table, overview_reden_na, individual_reden_na, set_filters
-    from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict,\
+    from analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict, \
         DocumentListRecord
     from analyse.functions_tmobile import overview_reden_na_df, individual_reden_na_df
     from analyse.functions_tmobile import column_to_datetime, add_weeknumber, \
         calculate_voorraadvormend
     from analyse.functions_tmobile import counts_by_time_period
-    
+
+
 class Analysis:
 
     def __init__(self, client):
