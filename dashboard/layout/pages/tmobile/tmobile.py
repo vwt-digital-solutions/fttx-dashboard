@@ -5,6 +5,7 @@ from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 from layout.pages.tmobile.sales_graph import get_html
 from data import collection
+from data.graph import pie_chart
 
 layout = dict(
     autosize=True,
@@ -54,6 +55,10 @@ def get_body():
                 className="container-display",
                 children=[get_html('Sales, HAsses & Activations (by week)'),
                           get_html('Sales, HAsses & Activations (by month)', flag=2)]
+            ),
+            html.Div(
+                className="container-display",
+                children=[pie_chart('t-mobile')],
             )
         ],
         id="mainContainer",
