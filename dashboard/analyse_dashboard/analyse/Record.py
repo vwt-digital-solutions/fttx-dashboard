@@ -182,7 +182,7 @@ class DocumentListRecord(Record):
             table_part += f"""<tr>
               <td>{document_name}</td>
               <td>{self.collection}</td>
-              <td>{doc['record']}</td>
+              <td>{doc}</td>
             </tr>"""
         return table_part
 
