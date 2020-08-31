@@ -6,7 +6,6 @@ from elements import table_styles
 import json
 import dash_table
 from data import collection
-from layout.components.figure import figure
 
 
 def info_table():
@@ -41,7 +40,7 @@ def pie_chart(client, key="overview"):
     data = [trace]
     print(data)
     fig = go.Figure(data, layout=layout)
-    return figure(figure=fig)
+    return fig
 
 
 def clickbar_lb(drop_selectie, mask_all):
