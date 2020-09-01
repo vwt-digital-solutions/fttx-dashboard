@@ -112,6 +112,21 @@ def calculate_planning_has_by_week(df):
     return record
 
 
+def calculate_planning_has_by_month(df):
+    count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='M')]).count()
+    count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
+
+    count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='M')]).count()
+    count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
+
+    merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
+    merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
+    merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
+    record = merged_df.set_index("date").to_dict()
+
+    return record
+
+
 def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases

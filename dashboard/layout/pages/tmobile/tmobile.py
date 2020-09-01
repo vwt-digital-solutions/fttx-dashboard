@@ -1,12 +1,11 @@
 import dash_core_components as dcc
 import dash_html_components as html
 
-from data.data import has_planning_by_week
+from data.data import has_planning_by_week, has_planning_by_month
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 from layout.pages.tmobile import planning_has_graph
-from layout.pages.tmobile.sales_graph import get_html
 from data import collection
 from data.graph import pie_chart
 
@@ -56,8 +55,8 @@ def get_body():
                              className="container-display"),
             html.Div(
                 className="container-display",
-                children=[planning_has_graph.get_html(has_planning_by_week()),
-                          get_html('Sales, HAsses & Activations (by month)', flag=2)]
+                children=[planning_has_graph.get_html_week(has_planning_by_week()),
+                          planning_has_graph.get_html_month(has_planning_by_month())]
             ),
             html.Div(
                 className="container-display",
