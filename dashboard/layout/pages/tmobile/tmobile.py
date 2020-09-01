@@ -5,7 +5,7 @@ from data.data import has_planning_by_week, has_planning_by_month
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
-from layout.pages.tmobile import planning_has_graph
+from layout.pages.tmobile import planning_has_graph, new_component
 from data import collection
 from data.graph import pie_chart
 
@@ -22,7 +22,6 @@ layout = dict(
 
 # APP LAYOUT
 def get_body():
-
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
              title='Outlook (KPN)',
@@ -53,6 +52,26 @@ def get_body():
             global_info_list(jaaroverzicht_list,
                              id="info-container1",
                              className="container-display"),
+            html.Div(
+                className="container-display",
+                children=[
+                    new_component.get_html(value=379,
+                                           previous_value=402,
+                                           title="Te laat",
+                                           sub_title="> 12 weken",
+                                           font_color="red"),
+                    new_component.get_html(value=42,
+                                           previous_value=38,
+                                           title="Nog beperkte tijd",
+                                           sub_title="> 8 weken < 12 weken",
+                                           font_color="orange"),
+                    new_component.get_html(value=823,
+                                           previous_value=789,
+                                           title="Op tijd",
+                                           sub_title="< 8 weken",
+                                           font_color="green"),
+                ]
+            ),
             html.Div(
                 className="container-display",
                 children=[planning_has_graph.get_html_week(has_planning_by_week()),

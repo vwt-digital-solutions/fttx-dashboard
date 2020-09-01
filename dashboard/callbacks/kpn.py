@@ -46,7 +46,7 @@ def update_dropdown(value):
         Output("table_info", "hidden"),
         Output("Bar_LB_c", "hidden"),
         Output("Bar_HB_c", "hidden"),
-        Output("Pie_NA_oid", "hidden"),
+        Output("pie_chart_overview_kpn_container", "hidden"),
         Output("Pie_NA_cid", "hidden"),
         Output("geo_plot", 'figure'),
         Output("table_c", 'children'),
@@ -173,7 +173,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
 
     barLB = clickbar_lb(drop_selectie, mask_all)
     barHB = clickbar_hb(drop_selectie, mask_all)
-    pieNA = pie_chart(drop_selectie)
+    pieNA = pie_chart(client='KPN', key=drop_selectie)
 
     return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
 
