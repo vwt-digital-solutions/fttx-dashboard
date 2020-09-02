@@ -1,0 +1,8 @@
+# Name of the firestore colleciton
+FIRESTORE_COLLECTION = ''
+
+# Primary key column
+PRIMARY_KEYS = ''
+
+# Size of the batch
+BATCH_SIZE = 500

@@ -6,12 +6,12 @@ def get_html_week(data):
     return figure(
         figure=go.Figure(
             data=[
-                go.Bar(name="Geplande HASsen", x=data.date, y=data.count_plandatum),
-                go.Bar(name="Uitgevoerde HASsen", x=data.date, y=data.count_hasdatum),
+                go.Bar(name="Geplande HASsen", x=data.date, y=data.count_hasdatum),
+                go.Bar(name="Uitgevoerde HASsen", x=data.date, y=data.count_opleverdatum),
             ],
             layout={
                 "barmode": 'group',
-                "title": "Geplande HASsen en Aantal HASsen per week",
+                "title": "Geplande HASsen en uitgevoerde HASsen per week",
                 "yaxis": {"title": "Aantal"},
                 "xaxis": {"title": "Week"}
             }
@@ -23,12 +23,12 @@ def get_html_month(data):
     return figure(
         figure=go.Figure(
             data=[
-                go.Bar(name="Geplande HASsen", x=data.date, y=data.count_plandatum),
-                go.Bar(name="Uitgevoerde HASsen", x=data.date, y=data.count_hasdatum),
+                go.Bar(name="Geplande HASsen", x=data.date, y=data.count_hasdatum),
+                go.Bar(name="Uitgevoerde HASsen", x=data.date, y=data.count_opleverdatum),
             ],
             layout={
                 "barmode": 'group',
-                "title": "Geplande HASsen en Aantal HASsen per maand",
+                "title": "Geplande HASsen en uitgevoerde HASsen per maand",
                 "yaxis": {"title": "Aantal"},
                 "xaxis": {"title": "Maand"}
             }
