@@ -91,7 +91,7 @@ def analyse(request):
         analyseKPN('kpn')
         analyseTmobile('t-mobile')
         set_date_update()
-        return 'OK', 204
+        return 'OK', 200
 
     except Exception as e:
         logging.exception(f'Analyse failed {e}')
