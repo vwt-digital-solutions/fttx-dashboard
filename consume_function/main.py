@@ -16,8 +16,13 @@ def handler(request):
         bytes = base64.b64decode(envelope['message']['data'])
         data = json.loads(bytes)
         subscription = envelope['subscription'].split('/')[-1]
+        records = data['it-fiber-connect-new-construction']
+        collection_name = config.FIRESTORE_COLLECTION
+        document_name_column = config.PRIMARY_KEYS if hasattr(config, 'PRIMARY_KEYS') else None
         logging.info(f'Read message from subscription {subscription}')
-        write_to_fs(data)
+
+        write_records_to_fs(records, collection_name, document_name_column)
+
     except Exception as e:
         logging.error(f'Extracting of data failed: {e}')
         return 'Error', 500
@@ -25,19 +30,12 @@ def handler(request):
     return 'OK', 200
 
 
-def write_to_fs(data):
+def write_records_to_fs(records, collection_name, document_name_column=None):
 
-    records = data['it-fiber-connect-new-construction']
     batch = db.batch()
 
-    for i, row in enumerate(records):
-        record = {}
-        for key in config.COLUMNS:
-            if row[key] == 'Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren':
-                record[key] = 'Bergen op Zoom Noord en Halsteren'
-            else:
-                record[key] = row[key]
-        batch.set(db.collection(config.FIRESTORE_COLLECTION).document(record[config.PRIMARY_KEYS[0]]), record)
+    for i, record in enumerate(records):
+        batch.set(db.collection(collection_name).document(record[document_name_column] if document_name_column else None), record)
         if (i + 1) % config.BATCH_SIZE == 0:
             batch.commit()
             logging.info(f'Write {i} message(s) to the firestore')
