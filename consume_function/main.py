@@ -2,7 +2,7 @@ import json
 import base64
 import config
 import logging
-import datetime
+from datetime import datetime
 
 from google.cloud import firestore_v1
 
