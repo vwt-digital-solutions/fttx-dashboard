@@ -76,7 +76,7 @@ def prepare_records(records):
             for key, value in history_columns.items():
                 if value in record_fs:
                     record[value] = record_fs[value]
-                elif int(record[key]) == 1:
+                elif '1' in str(record[key]):
                     record[value] = datetime.now().strftime('%Y-%m-%d')
 
             # add transition log if the status changed
@@ -88,7 +88,7 @@ def prepare_records(records):
             for key, value in status_change_columns.items():
                 updated_log.append(create_log(key, value, record))
             for key, value in history_columns.items():
-                if int(record[key]) == 1:
+                if '1' in str(record[key]):
                     record[value] = datetime.now().strftime('%Y-%m-%d')
 
         updated_records.append(record)
