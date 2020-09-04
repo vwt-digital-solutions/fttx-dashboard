@@ -291,25 +291,19 @@ def get_hc_hpend_ratio_total(hc, hpend):
 
 
 # Calculates the ratio between homes completed v.s. completed + permantently passed objects per project
-def get_hc_hpend_ratio(df_l):
-    ratio_per_project = {}
-    for project, data in df_l.items():
-        try:
-            ratio_per_project[project] = sum(data.homes_completed) / sum(data.hpend) * 100
-        except ZeroDivisionError:
-            # Dirty fix, check if it can be removed.
-            ratio_per_project[project] = 0
-    return ratio_per_project
+def get_hc_hpend_ratio(df: pd.DataFrame):
+    sum_df = df[['sleutel', "project", "hpend", 'homes_completed']].groupby(by="project").sum().reset_index()
+    sum_df['ratio'] = sum_df.apply(lambda x: x.homes_completed / x.hpend * 100 if x.hpend else 0, axis=1)
+    return sum_df[['project', 'ratio']].set_index("project").to_dict()['ratio']
 
 
 def get_has_werkvoorraad(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
     return len(df[
-        (~df.toestemming.isna()) &
-        (df.opleverstatus != '0') &
-        (df.opleverdatum.isna())
-        ])
-    # return sum(calculate_y_voorraad_act(df_l).values())
+                   (~df.toestemming.isna()) &
+                   (df.opleverstatus != '0') &
+                   (df.opleverdatum.isna())
+                   ])
 
 
 # Function to add relevant data to the source data_frames
@@ -1143,9 +1137,9 @@ def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_pro
 def calculate_y_voorraad_act(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
     return df[
-            (~df.toestemming.isna()) &
-            (df.opleverstatus != '0') &
-            (df.opleverdatum.isna())
+        (~df.toestemming.isna()) &
+        (df.opleverstatus != '0') &
+        (df.opleverdatum.isna())
         ].groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
 
 

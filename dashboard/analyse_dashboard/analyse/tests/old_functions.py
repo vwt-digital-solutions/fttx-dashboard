@@ -61,3 +61,14 @@ def calculate_y_voorraad_act_old(df_l):
 
 def get_has_werkvoorraad_old(df_l):
     return sum(calculate_y_voorraad_act_old(df_l).values())
+
+
+def get_hc_hpend_ratio_old(df_l):
+    ratio_per_project = {}
+    for project, data in df_l.items():
+        try:
+            ratio_per_project[project] = sum(data.homes_completed) / sum(data.hpend) * 100
+        except ZeroDivisionError:
+            # Dirty fix, check if it can be removed.
+            ratio_per_project[project] = 0
+    return ratio_per_project
