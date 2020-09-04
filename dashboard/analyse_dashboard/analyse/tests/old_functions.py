@@ -72,3 +72,8 @@ def get_hc_hpend_ratio_old(df_l):
             # Dirty fix, check if it can be removed.
             ratio_per_project[project] = 0
     return ratio_per_project
+
+
+def preprocess_data_old(df_l, year):
+    df_l = add_relevant_columns_old(df_l, year)
+    return df_l

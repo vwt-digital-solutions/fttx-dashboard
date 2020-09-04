@@ -308,9 +308,9 @@ def get_has_werkvoorraad(df: pd.DataFrame):
 
 # Function to add relevant data to the source data_frames
 # TODO: Convert dict of dataframes to single dataframe, and add this in further steps.
-def preprocess_data(df_l, year):
-    df_l = add_relevant_columns(df_l, year)
-    return df_l
+def preprocess_data(df, year):
+    df = add_relevant_columns(df, year)
+    return df
 
 
 def calculate_projectspecs(df_l):
