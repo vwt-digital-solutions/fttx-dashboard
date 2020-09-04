@@ -10,3 +10,28 @@ def get_start_time_old(df_l):
         else:  # I'm not sure its desireable to hard-set dates like this. Might lead to unexpected behaviour.
             t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
     return t_s
+
+
+def get_total_objects_old(df_l):  # Don't think this is necessary to calculate at this point, should be done later.
+    total_objects = {k: len(v) for k, v in df_l.items()}
+    # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
+    total_objects['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9.465  # not yet in FC, total from excel bouwstromen
+    total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
+    total_objects['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
+    return total_objects
+
+
+def add_relevant_columns_old(df_l, year):
+    def object_is_hpend(opleverdatum, year):
+        # Will return TypeError if opleverdatum is nan, in which case object is not hpend
+        try:
+            is_hpend = (opleverdatum >= year + '-01-01') & (opleverdatum <= year + '-12-31')
+        except TypeError:
+            is_hpend = False
+        return is_hpend
+
+    for k, v in df_l.items():
+        v['hpend'] = v.opleverdatum.apply(lambda x: object_is_hpend(x, '2020'))
+        v['homes_completed'] = v.opleverstatus == '2'
+        v['bis_gereed'] = v.opleverstatus != '0'
+    return df_l

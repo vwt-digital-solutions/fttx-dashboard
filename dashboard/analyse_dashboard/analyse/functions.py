@@ -229,21 +229,16 @@ def get_total_objects(df_l):  # Don't think this is necessary to calculate at th
 # hpend is a boolean column indicating whether an object has been delivered
 # homes_completed is a boolean column indicating a home has been completed
 # bis_gereed is a boolean column indicating whther the BIS for an object has been finished
-def add_relevant_columns(df_l, year):
-    for k, v in df_l.items():
-        v['hpend'] = v.opleverdatum.apply(lambda x: object_is_hpend(x, '2020'))
-        v['homes_completed'] = v.opleverstatus == '2'
-        v['bis_gereed'] = v.opleverstatus != '0'
-    return df_l
-
-
-def object_is_hpend(opleverdatum, year):
-    # Will return TypeError if opleverdatum is nan, in which case object is not hpend
-    try:
-        is_hpend = (opleverdatum >= year + '-01-01') & (opleverdatum <= year + '-12-31')
-    except TypeError:
-        is_hpend = False
-    return is_hpend
+def add_relevant_columns(df: pd.DataFrame, year):
+    # TODO add to tranform part of the ETL
+    if not year:
+        year = str(pd.Timestamp.now().year)
+    start_year = pd.to_datetime(year + '-01-01')
+    end_year = pd.to_datetime(year + '-12-31')
+    df['hpend'] = df.opleverdatum.apply(lambda x: (x >= start_year) and (x <= end_year))
+    df['homes_completed'] = df.opleverstatus == '2'
+    df['bis_gereed'] = df.opleverstatus != '0'
+    return df
 
 
 # Calculates the amount of homes completed per project in a dictionary

@@ -1,6 +1,8 @@
+import pytest
+
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
-from functions import get_start_time
-from tests.old_functions import get_start_time_old
+from functions import get_start_time, get_total_objects, add_relevant_columns
+from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -39,7 +41,11 @@ class TestKPNdflToBigDf:
             pickle.dump(self.df, open("df.pickle", "wb"))
 
     def test_dfs(self):
-        concat_df = pd.concat(self.df_l.values())
+        concat_df = pd.concat(self.df_l.values()).sort_values(by="sleutel").reset_index()
+        sorted_df = self.df.sort_values(by="sleutel").reset_index()
+
+        assert (concat_df.sleutel == sorted_df.sleutel).all()
+
         assert len(concat_df) == len(self.df)
         assert set(concat_df.sleutel) == set(self.df.sleutel)
         assert set(concat_df.project) == set(self.df.project)
@@ -48,8 +54,25 @@ class TestKPNdflToBigDf:
         assert set(self.df_l.keys()) == set(self.df.project.cat.categories)
 
     def test_get_start_time(self):
-        old_result = get_start_time_old(self.df_l)
-        new_result = get_start_time(self.df)
+        old_result = get_start_time_old(self.df_l.copy())
+        new_result = get_start_time(self.df.copy())
 
         assert set(old_result.keys()) == set(new_result.keys())
         assert old_result == new_result
+
+    @pytest.mark.skip(reason="no way of currently testing this")
+    def test_get_total_objects(self):
+        old_result = get_total_objects_old(self.df_l.copy())
+        new_result = get_total_objects(self.df.copy())
+        assert old_result == new_result
+
+    def test_add_relevant_columns(self):
+        old_result = add_relevant_columns_old(self.df_l.copy(), None)
+
+        concat_df = pd.concat(old_result).sort_values(by="sleutel").reset_index()
+
+        new_result = add_relevant_columns(self.df.copy(), None).sort_values(by="sleutel").reset_index()
+
+        assert (concat_df['hpend'] == new_result['hpend']).all()
+        assert (concat_df['homes_completed'] == new_result['homes_completed']).all()
+        assert (concat_df['bis_gereed'] == new_result['bis_gereed']).all()
