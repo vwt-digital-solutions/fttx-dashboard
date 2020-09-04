@@ -43,7 +43,7 @@ def write_records_to_fs(records, collection_name, primary_key=None):
             logging.info(f'Write {i} message(s) to the firestore')
     batch.commit()
     db.collection('Graphs').document('update_date_consume').set(dict(
-        id='update_date_consume', date=datetime.datetime.now().strftime('%Y-%m-%d')))
+        id='update_date_consume', date=datetime.now().strftime('%Y-%m-%d')))
     logging.info(f'Writing message to {collection_name} finished')
 
 
