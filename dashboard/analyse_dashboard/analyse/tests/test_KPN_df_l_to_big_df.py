@@ -1,8 +1,9 @@
 import pytest
 
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
-from functions import get_start_time, get_total_objects, add_relevant_columns
-from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old
+from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed
+from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
+    get_homes_completed_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -76,3 +77,8 @@ class TestKPNdflToBigDf:
         assert (concat_df['hpend'] == new_result['hpend']).all()
         assert (concat_df['homes_completed'] == new_result['homes_completed']).all()
         assert (concat_df['bis_gereed'] == new_result['bis_gereed']).all()
+
+    def test_get_homes_completed(self):
+        old_result = get_homes_completed_old(add_relevant_columns_old(self.df_l.copy(), None))
+        new_result = get_homes_completed(add_relevant_columns(self.df.copy(), None))
+        assert old_result == new_result

@@ -242,8 +242,17 @@ def add_relevant_columns(df: pd.DataFrame, year):
 
 
 # Calculates the amount of homes completed per project in a dictionary
-def get_homes_completed(df_l):
-    return {k: sum(v.homes_completed) for k, v in df_l.items()}
+def get_homes_completed(df: pd.DataFrame):
+    result = df[['project', 'homes_completed']] \
+        .groupby(by="project") \
+        .sum() \
+        .reset_index() \
+        .set_index("project") \
+        .to_dict()['homes_completed'] \
+
+    return result
+
+    # return {k: sum(v.homes_completed) for k, v in df_l.items()}
 
 
 # Calculate the amount of objects per project that have been

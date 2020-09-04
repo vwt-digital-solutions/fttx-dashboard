@@ -35,3 +35,7 @@ def add_relevant_columns_old(df_l, year):
         v['homes_completed'] = v.opleverstatus == '2'
         v['bis_gereed'] = v.opleverstatus != '0'
     return df_l
+
+
+def get_homes_completed_old(df_l):
+    return {k: sum(v.homes_completed) for k, v in df_l.items()}
