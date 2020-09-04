@@ -39,3 +39,21 @@ def add_relevant_columns_old(df_l, year):
 
 def get_homes_completed_old(df_l):
     return {k: sum(v.homes_completed) for k, v in df_l.items()}
+
+
+def get_HPend_old(df_l):
+    return {k: sum(v.hpend) for k, v in df_l.items()}
+
+
+def get_has_ready_old(df_l):
+    return {k: len(v[~v.toestemming.isna() & v.bis_gereed]) for k, v in df_l.items()}
+
+
+def calculate_y_voorraad_act_old(df_l):
+    y_voorraad_act = {}
+    for key in df_l:
+        y_voorraad_act[key] = len(df_l[key][(~df_l[key].toestemming.isna()) &
+                                            (df_l[key].opleverstatus != '0') &
+                                            (df_l[key].opleverdatum.isna())])
+
+    return y_voorraad_act
