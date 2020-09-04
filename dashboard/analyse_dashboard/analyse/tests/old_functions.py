@@ -1,5 +1,7 @@
 import pandas as pd
 
+from functions import get_hc_hpend_ratio_total
+
 
 def get_start_time_old(df_l):
     # What does t_s stand for? Would prefer to use a descriptive variable name.
@@ -77,3 +79,14 @@ def get_hc_hpend_ratio_old(df_l):
 def preprocess_data_old(df_l, year):
     df_l = add_relevant_columns_old(df_l, year)
     return df_l
+
+
+def calculate_projectspecs_old(df_l):
+    homes_completed = get_homes_completed_old(df_l)
+    homes_ended = get_HPend_old(df_l)
+    has_ready = get_has_ready_old(df_l)
+    hc_hpend_ratio = get_hc_hpend_ratio_old(df_l)
+    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
+    werkvoorraad = get_has_werkvoorraad_old(df_l)
+
+    return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad

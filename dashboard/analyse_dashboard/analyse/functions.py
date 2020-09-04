@@ -313,13 +313,13 @@ def preprocess_data(df, year):
     return df
 
 
-def calculate_projectspecs(df_l):
-    homes_completed = get_homes_completed(df_l)
-    homes_ended = get_HPend(df_l)
-    has_ready = get_has_ready(df_l)
-    hc_hpend_ratio = get_hc_hpend_ratio(df_l)
+def calculate_projectspecs(df: pd.DataFrame):
+    homes_completed = get_homes_completed(df)
+    homes_ended = get_HPend(df)
+    has_ready = get_has_ready(df)
+    hc_hpend_ratio = get_hc_hpend_ratio(df)
     hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
-    werkvoorraad = get_has_werkvoorraad(df_l)
+    werkvoorraad = get_has_werkvoorraad(df)
 
     return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad
 

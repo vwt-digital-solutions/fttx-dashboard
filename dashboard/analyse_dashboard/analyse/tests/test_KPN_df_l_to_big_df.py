@@ -2,10 +2,11 @@ import pytest
 
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
 from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed, get_HPend, \
-    get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad, get_hc_hpend_ratio, preprocess_data
+    get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad, get_hc_hpend_ratio, preprocess_data, \
+    calculate_projectspecs
 from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
     get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old, \
-    get_hc_hpend_ratio_old, preprocess_data_old
+    get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -119,3 +120,22 @@ class TestKPNdflToBigDf:
         assert (concat_df['hpend'] == new_result['hpend']).all()
         assert (concat_df['homes_completed'] == new_result['homes_completed']).all()
         assert (concat_df['bis_gereed'] == new_result['bis_gereed']).all()
+
+    def test_calculate_projectspecs(self):
+        hc_hp_end_ratio_total_old, \
+            hc_hpend_ratio_old, \
+            has_ready_old, \
+            homes_ended_old, \
+            werkvoorraad_old = calculate_projectspecs_old(add_relevant_columns_old(self.df_l.copy(), None))
+
+        hc_hp_end_ratio_total, \
+            hc_hpend_ratio, \
+            has_ready, \
+            homes_ended, \
+            werkvoorraad = calculate_projectspecs(add_relevant_columns(self.df.copy(), None))
+
+        assert hc_hp_end_ratio_total_old == hc_hp_end_ratio_total
+        assert hc_hpend_ratio_old == hc_hpend_ratio
+        assert has_ready_old == has_ready
+        assert homes_ended_old == homes_ended
+        assert werkvoorraad_old == werkvoorraad
