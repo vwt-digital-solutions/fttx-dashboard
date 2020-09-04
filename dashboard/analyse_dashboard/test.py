@@ -2,24 +2,25 @@
 import os
 import time
 
-from Record import ListRecord, DocumentListRecord
+from analyse.Record import ListRecord, DocumentListRecord
 
-try:
-    import analyse.config as config
-    from analyse.functions import get_data_planning, get_data_targets, preprocess_data
-    from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
-    from analyse.functions import overview
-    from analyse.functions import error_check_FCBC
-    from analyse.functions import masks_phases, map_redenen, consume, set_date_update
-    from analyse.Analysis import AnalysisKPN
-except ImportError:
-    # import config as config
-    from functions import get_data_planning, get_data_targets, preprocess_data
-    from functions import get_timeline, get_start_time, get_data, get_total_objects
-    from functions import overview
-    from functions import error_check_FCBC
-    from functions import masks_phases, map_redenen, consume, set_date_update
-    from Analysis import AnalysisKPN
+# try:
+import analyse.config as config
+from analyse.functions import get_data_planning, get_data_targets, preprocess_data
+from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
+from analyse.functions import overview
+from analyse.functions import error_check_FCBC
+# from analyse.functions import masks_phases, map_redenen, consume, set_date_update
+from analyse.functions import masks_phases, consume, set_date_update
+from analyse.Analysis import AnalysisKPN
+# except ImportError:
+#     # import config as config
+#     from functions import get_data_planning, get_data_targets, preprocess_data
+#     from functions import get_timeline, get_start_time, get_data, get_total_objects
+#     from functions import overview
+#     from functions import error_check_FCBC
+#     from functions import masks_phases, map_redenen, consume, set_date_update
+#     from Analysis import AnalysisKPN
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -39,8 +40,8 @@ df_l = get_data(config.subset_KPN_2020, config.col, None, None, 0)
 start_time = get_start_time(df_l)
 timeline = get_timeline(start_time)
 total_objects = get_total_objects(df_l)
-HP = get_data_planning(config.path_data, config.subset_KPN_2020)
-# date_FTU0, date_FTU1 = get_data_targets(config.path_data)  # if path_data is None, then FTU from firestore
+HP = get_data_planning(config.path_data + 'Data_20200101_extra/', config.subset_KPN_2020)
+# date_FTU0, date_FTU1 = get_data_targets(config.path_data + 'Data_20200101_extra/')  # if path_data is None, then FTU from firestore
 date_FTU0, date_FTU1 = get_data_targets(None)  # if path_data is None, then FTU from firestore
 print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 
@@ -63,7 +64,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_p
 
 analyse.set_filters(df_l)
-map_redenen()
+# map_redenen()
 # add_token_mapbox(config.mapbox_token)
 analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
 analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)
@@ -81,7 +82,7 @@ for i, pkey in enumerate(config.subset_KPN_2020):
     bar_names, document_list = masks_phases(pkey, df_l)
     total_document_list += document_list
 
-dlr = DocumentListRecord(total_document_list, collection="Data")
+dlr = DocumentListRecord(total_document_list, collection="Data", document_key=['filter'])
 dlr.to_firestore(client="KPN")
 
 lr = ListRecord(dict(bar_names=bar_names), collection="Data")

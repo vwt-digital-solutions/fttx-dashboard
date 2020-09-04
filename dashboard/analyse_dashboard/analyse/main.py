@@ -157,7 +157,7 @@ def graph(request):
         project = json.loads(bytes)
         df_l = get_data([project], config.col, None, None, 0)
         bar_names, document_list = masks_phases(project, df_l)
-        dlr = DocumentListRecord(document_list, collection="Data")
+        dlr = DocumentListRecord(document_list, collection="Data", document_key=['filter'])
         dlr.to_firestore(client="KPN")
 
         lr = ListRecord(dict(bar_names=bar_names), collection="Data")

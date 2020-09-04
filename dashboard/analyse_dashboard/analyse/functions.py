@@ -138,7 +138,7 @@ def get_data_targets_init(path_data):
         'Spijkenisse': 'KPN Spijkernisse',
         'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
         # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord  wijk 01 + Halsteren',  # niet in FC
+        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord  wijk 01 + Halsteren',  # niet in FC
         'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
         'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag - Haagse Hout-Bezuidenhout West',  # niet in FC??
         'Den Haag - Vrederust en Bouwlust': 'Den Haag - Vrederust en Bouwlust',  # niet in FC??
@@ -1042,6 +1042,7 @@ def set_filters(df_l):
         filters += [{'label': key, 'value': key}]
     record = dict(filters=filters)
     return record
+# firestore.Client().collection('Graphs').document('pnames').set(set_filters(subset_KPN_2020))
 
 
 def get_intersect(a1, a2, b1, b2):
