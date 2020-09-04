@@ -199,14 +199,15 @@ def get_data(subset, col, gpath_i, path_data, flag):
     return df_l
 
 
-def get_start_time(df_l):
+def get_start_time(df: pd.DataFrame):
     # What does t_s stand for? Would prefer to use a descriptive variable name.
     t_s = {}
-    for key in df_l:
-        if df_l[key][~df_l[key].opleverdatum.isna()].empty:
-            t_s[key] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
-        else:  # I'm not sure its desireable to hard-set dates like this. Might lead to unexpected behaviour.
-            t_s[key] = pd.to_datetime(df_l[key]['opleverdatum']).min()
+    for project, project_df in df.groupby("project"):
+        start_time = project_df.opleverdatum.min()
+        if start_time is pd.NaT:
+            t_s[project] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
+        else:
+            t_s[project] = start_time
     return t_s
 
 

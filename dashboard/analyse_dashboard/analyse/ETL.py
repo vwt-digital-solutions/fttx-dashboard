@@ -205,6 +205,8 @@ class ExtractTransformProjectDataFirestore(ExtractTransformProjectData):
             print('Time: ' + str((time.time() - t) / 60) + ' minutes')
 
         df = pd.DataFrame(records).fillna(np.nan)
+        projects_category = pd.CategoricalDtype(categories=self.projects)
+        df['project'] = df.project.astype(projects_category)
         self.data = df
 
     def transform(self, **kwargs):
