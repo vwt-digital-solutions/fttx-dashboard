@@ -6,3 +6,20 @@ PRIMARY_KEYS = ''
 
 # Size of the batch
 BATCH_SIZE = 500
+
+# Columns to track history change from 0 to 1. key is the column to track,
+# and the value is the new column name to store the timestamp
+HISTORY_COLUMNS = {
+    'key': 'value',
+    'test1': 'test1_datum',
+}
+
+# Columns to track history of status change stored in the transition log. The key 
+# is the column to track and the value 'sleutel' is column of the unique identifier and the 'project'
+# is the column name of the 'project name'
+STATUS_CHANGE_COLUMNS = {
+    'opleverstatus': {
+        'sleutel': 'sleutel',
+        'project': 'project'
+    }
+}
