@@ -57,3 +57,7 @@ def calculate_y_voorraad_act_old(df_l):
                                             (df_l[key].opleverdatum.isna())])
 
     return y_voorraad_act
+
+
+def get_has_werkvoorraad_old(df_l):
+    return sum(calculate_y_voorraad_act_old(df_l).values())

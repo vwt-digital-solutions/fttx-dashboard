@@ -302,8 +302,14 @@ def get_hc_hpend_ratio(df_l):
     return ratio_per_project
 
 
-def get_has_werkvoorraad(df_l):
-    return sum(calculate_y_voorraad_act(df_l).values())
+def get_has_werkvoorraad(df: pd.DataFrame):
+    # todo add in_has_werkvoorraad column in etl and use that column
+    return len(df[
+        (~df.toestemming.isna()) &
+        (df.opleverstatus != '0') &
+        (df.opleverdatum.isna())
+        ])
+    # return sum(calculate_y_voorraad_act(df_l).values())
 
 
 # Function to add relevant data to the source data_frames
@@ -1135,6 +1141,7 @@ def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_pro
 
 
 def calculate_y_voorraad_act(df: pd.DataFrame):
+    # todo add in_has_werkvoorraad column in etl and use that column
     return df[
             (~df.toestemming.isna()) &
             (df.opleverstatus != '0') &

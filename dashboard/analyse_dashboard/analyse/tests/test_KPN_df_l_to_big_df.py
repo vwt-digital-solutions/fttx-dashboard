@@ -2,9 +2,9 @@ import pytest
 
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
 from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed, get_HPend, \
-    get_has_ready, calculate_y_voorraad_act
+    get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad
 from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
-    get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old
+    get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -97,4 +97,9 @@ class TestKPNdflToBigDf:
     def test_calculate_y_voorraad_act(self):
         old_result = calculate_y_voorraad_act_old(self.df_l.copy())
         new_result = calculate_y_voorraad_act(self.df.copy())
+        assert old_result == new_result
+
+    def test_get_has_werkvoorraad(self):
+        old_result = get_has_werkvoorraad_old(self.df_l.copy())
+        new_result = get_has_werkvoorraad(self.df.copy())
         assert old_result == new_result
