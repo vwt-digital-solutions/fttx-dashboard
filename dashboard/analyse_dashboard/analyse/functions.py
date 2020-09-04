@@ -248,7 +248,7 @@ def get_homes_completed(df: pd.DataFrame):
         .sum() \
         .reset_index() \
         .set_index("project") \
-        .to_dict()['homes_completed'] \
+        .to_dict()['homes_completed']
 
     return result
 
@@ -257,16 +257,32 @@ def get_homes_completed(df: pd.DataFrame):
 
 # Calculate the amount of objects per project that have been
 # Permanently passed or completed
-def get_HPend(df_l):
-    return {k: sum(v.hpend) for k, v in df_l.items()}
+def get_HPend(df: pd.DataFrame):
+    result = df[['project', 'hpend']] \
+        .groupby(by="project") \
+        .sum() \
+        .reset_index() \
+        .set_index("project") \
+        .to_dict()['hpend']
+
+    return result
 
 
 # Objects that are ready for HAS
 # These are obejcts for which:
 # - a permission has been filled in (granted or rejected)
 # - The BIS (basic infrastructure) is in place
-def get_has_ready(df_l):
-    return {k: len(v[~v.toestemming.isna() & v.bis_gereed]) for k, v in df_l.items()}
+def get_has_ready(df: pd.DataFrame):
+    tmp_df = df.copy()
+    tmp_df['has_ready'] = ~df.toestemming.isna() & df.bis_gereed
+    result = tmp_df[['project', 'has_ready']] \
+        .groupby(by="project") \
+        .sum() \
+        .reset_index() \
+        .set_index("project") \
+        .to_dict()['has_ready']
+
+    return result
 
 
 # Total ratio of completed objects v.s. completed + permantently passed objects.
@@ -1118,14 +1134,12 @@ def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_pro
     return y_prog_l, t_shift
 
 
-def calculate_y_voorraad_act(df_l):
-    y_voorraad_act = {}
-    for key in df_l:
-        y_voorraad_act[key] = len(df_l[key][(~df_l[key].toestemming.isna()) &
-                                            (df_l[key].opleverstatus != '0') &
-                                            (df_l[key].opleverdatum.isna())])
-
-    return y_voorraad_act
+def calculate_y_voorraad_act(df: pd.DataFrame):
+    return df[
+            (~df.toestemming.isna()) &
+            (df.opleverstatus != '0') &
+            (df.opleverdatum.isna())
+        ].groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
 
 
 def empty_collection(subset):
