@@ -3,10 +3,10 @@ import pytest
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
 from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed, get_HPend, \
     get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad, get_hc_hpend_ratio, preprocess_data, \
-    calculate_projectspecs, get_timeline, get_data_targets
+    calculate_projectspecs, get_timeline, get_data_targets, set_filters
 from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
     get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old, \
-    get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old, prognose_old
+    get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old, prognose_old, set_filters_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -149,3 +149,9 @@ class TestKPNdflToBigDf:
         date_FTU0, date_FTU1 = get_data_targets(None)
         old_result = prognose_old(self.df_l, t_s, x_d, tot_l, date_FTU0)
         assert old_result == 1
+
+    def test_set_filters(self):
+        old_result = set_filters_old(self.df_l)
+        new_result = set_filters(self.df)
+
+        assert old_result == new_result

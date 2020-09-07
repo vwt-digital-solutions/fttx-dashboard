@@ -165,3 +165,11 @@ def prognose_old(df_l, t_s, x_d, tot_l, date_FTU0):
         y_prog_l[key][y_prog_l[key] < 0] = 0
 
     return rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff
+
+
+def set_filters_old(df_l):
+    filters = []
+    for key in df_l:
+        filters += [{'label': key, 'value': key}]
+    record = dict(filters=filters)
+    return record

@@ -95,8 +95,8 @@ class AnalysisKPN(Analysis):
     def error_check_FCBC(self, df_l):
         results = error_check_FCBC(df_l)
 
-        self.record_dict('n_err', results[0], Record, 'Data')
-        self.record_dict('errors_FC_BC', results[1], Record, 'Data')
+        self.record_dict.add('n_err', results[0], Record, 'Data')
+        self.record_dict.add('errors_FC_BC', results[1], Record, 'Data')
 
         return results
 
