@@ -1,6 +1,6 @@
 import pandas as pd
-
-from functions import get_hc_hpend_ratio_total
+import numpy as np
+from functions import get_hc_hpend_ratio_total, get_intersect
 
 
 def get_start_time_old(df_l):
@@ -90,3 +90,78 @@ def calculate_projectspecs_old(df_l):
     werkvoorraad = get_has_werkvoorraad_old(df_l)
 
     return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad
+
+
+def prognose_old(df_l, t_s, x_d, tot_l, date_FTU0):
+    x_prog = np.array(list(range(0, len(x_d))))
+    cutoff = 85
+
+    rc1 = {}
+    rc2 = {}
+    d_real_l = {}
+    t_shift = {}
+    y_prog_l = {}
+    for key in df_l:  # to calculate prognoses for projects in FC
+        d_real = df_l[key][~df_l[key]['opleverdatum'].isna()]
+        if not d_real.empty:
+            d_real = d_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+            d_real.index = pd.to_datetime(d_real.index, format='%Y-%m-%d')
+            d_real = d_real.sort_index()
+            d_real = d_real[d_real.index < pd.Timestamp.now()]
+
+            d_real = d_real.cumsum() / tot_l[key] * 100
+            d_real[d_real.Aantal > 100] = 100  # only necessary for DH
+            t_shift[key] = (d_real.index.min() - min(t_s.values())).days
+            d_real.index = (d_real.index - d_real.index[0]).days + t_shift[key]
+            d_real_l[key] = d_real
+
+            d_rc1 = d_real[d_real.Aantal < cutoff]
+            if len(d_rc1) > 1:
+                rc1[key], b1 = np.polyfit(d_rc1.index, d_rc1, 1)
+                y_prog1 = b1[0] + rc1[key][0] * x_prog
+                y_prog_l[key] = y_prog1.copy()
+
+            d_rc2 = d_real[d_real.Aantal >= cutoff]
+            if (len(d_rc2) > 1) & (len(d_rc1) > 1):
+                rc2[key], b2 = np.polyfit(d_rc2.index, d_rc2, 1)
+                y_prog2 = b2[0] + rc2[key][0] * x_prog
+                x_i, y_i = get_intersect([x_prog[0], y_prog1[0]], [x_prog[-1], y_prog1[-1]],
+                                         [x_prog[0], y_prog2[0]], [x_prog[-1], y_prog2[-1]])
+                y_prog_l[key][x_prog >= x_i] = y_prog2[x_prog >= x_i]
+            # if (len(d_rc2) > 1) & (len(d_rc1) <= 1):
+            #     rc1[key], b1 = np.polyfit(d_rc2.index, d_rc2, 1)
+            #     y_prog1 = b1[0] + rc1[key][0] * x_prog
+            #     y_prog_l[key] = y_prog1.copy()
+
+    rc1_mean = sum(rc1.values()) / len(rc1.values())
+    rc2_mean = sum(rc2.values()) / len(rc2.values())
+    for key in df_l:
+        if (key in rc1) & (key not in rc2):  # the case of 2 realisation dates, rc1 but no rc2
+            if max(y_prog_l[key]) > cutoff:
+                b2_mean = cutoff - (rc2_mean * x_prog[y_prog_l[key] >= cutoff][0])
+                y_prog2 = b2_mean + rc2_mean * x_prog
+                y_prog_l[key][y_prog_l[key] >= cutoff] = y_prog2[y_prog_l[key] >= cutoff]
+        if (key in d_real_l) & (key not in y_prog_l):  # the case of only 1 realisation date
+            b1_mean = -(rc1_mean * t_shift[key])
+            y_prog1 = b1_mean + rc1_mean * x_prog
+            b2_mean = cutoff - (rc2_mean * x_prog[y_prog1 >= cutoff][0])
+            y_prog2 = b2_mean + rc2_mean * x_prog
+            y_prog_l[key] = y_prog1.copy()
+            y_prog_l[key][y_prog1 >= cutoff] = y_prog2[y_prog1 >= cutoff]
+        if key not in d_real_l:  # the case of no realisation date
+            t_shift[key] = x_prog[x_d == pd.Timestamp.now().strftime('%Y-%m-%d')][0]
+            if key in date_FTU0:
+                if not pd.isnull(date_FTU0[key]):
+                    t_shift[key] = x_prog[x_d == date_FTU0[key]][0]
+            b1_mean = -(rc1_mean * (t_shift[key] + 14))  # to include delay of two week
+            y_prog1 = b1_mean + rc1_mean * x_prog
+            b2_mean = cutoff - (rc2_mean * x_prog[y_prog1 >= cutoff][0])
+            y_prog2 = b2_mean + rc2_mean * x_prog
+            y_prog_l[key] = y_prog1.copy()
+            y_prog_l[key][y_prog1 >= cutoff] = y_prog2[y_prog1 >= cutoff]
+
+    for key in y_prog_l:
+        y_prog_l[key][y_prog_l[key] > 100] = 100
+        y_prog_l[key][y_prog_l[key] < 0] = 0
+
+    return rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff

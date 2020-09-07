@@ -211,11 +211,6 @@ def get_start_time(df: pd.DataFrame):
     return t_s
 
 
-def get_timeline(t_s):
-    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
-    return x_axis
-
-
 def get_total_objects(df_l):  # Don't think this is necessary to calculate at this point, should be done later.
     total_objects = {k: len(v) for k, v in df_l.items()}
     # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
@@ -225,10 +220,6 @@ def get_total_objects(df_l):  # Don't think this is necessary to calculate at th
     return total_objects
 
 
-# Function that adds columns to the source data, to be used in project specs
-# hpend is a boolean column indicating whether an object has been delivered
-# homes_completed is a boolean column indicating a home has been completed
-# bis_gereed is a boolean column indicating whther the BIS for an object has been finished
 def add_relevant_columns(df: pd.DataFrame, year):
     # TODO add to tranform part of the ETL
     if not year:
@@ -239,6 +230,15 @@ def add_relevant_columns(df: pd.DataFrame, year):
     df['homes_completed'] = df.opleverstatus == '2'
     df['bis_gereed'] = df.opleverstatus != '0'
     return df
+
+
+# Function that adds columns to the source data, to be used in project specs
+# hpend is a boolean column indicating whether an object has been delivered
+# homes_completed is a boolean column indicating a home has been completed
+# bis_gereed is a boolean column indicating whther the BIS for an object has been finished
+def get_timeline(t_s):
+    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    return x_axis
 
 
 # Calculates the amount of homes completed per project in a dictionary

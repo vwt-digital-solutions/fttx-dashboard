@@ -3,10 +3,10 @@ import pytest
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
 from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed, get_HPend, \
     get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad, get_hc_hpend_ratio, preprocess_data, \
-    calculate_projectspecs
+    calculate_projectspecs, get_timeline, get_data_targets
 from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
     get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old, \
-    get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old
+    get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old, prognose_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -139,3 +139,13 @@ class TestKPNdflToBigDf:
         assert has_ready_old == has_ready
         assert homes_ended_old == homes_ended
         assert werkvoorraad_old == werkvoorraad
+
+    @pytest.mark.skip(reason="Analysis document is missing")
+    def test_prognose(self):
+
+        tot_l = get_total_objects(self.df_l)
+        t_s = get_start_time_old(self.df_l)
+        x_d = get_timeline(t_s)
+        date_FTU0, date_FTU1 = get_data_targets(None)
+        old_result = prognose_old(self.df_l, t_s, x_d, tot_l, date_FTU0)
+        assert old_result == 1
