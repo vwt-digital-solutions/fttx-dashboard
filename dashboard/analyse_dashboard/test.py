@@ -40,9 +40,11 @@ df_l = get_data(config.subset_KPN_2020, config.col, None, None, 0)
 start_time = get_start_time(df_l)
 timeline = get_timeline(start_time)
 total_objects = get_total_objects(df_l)
-HP = get_data_planning(config.path_data + 'Data_20200101_extra/', config.subset_KPN_2020)
-# date_FTU0, date_FTU1 = get_data_targets(config.path_data + 'Data_20200101_extra/')  # if path_data is None, then FTU from firestore
-date_FTU0, date_FTU1 = get_data_targets(None)  # if path_data is None, then FTU from firestore
+HP = get_data_planning(config.path_data + 'Data_20200101_extra/', config.subset_KPN_2020)  # 'Forecast JUNI 2020_def.xlsx'
+date_FTU0, date_FTU1 = get_data_targets(
+    config.path_data + 'Data_20200101_extra/20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx')
+# date_FTU0, date_FTU1 = get_data_targets(
+#   config.path_data_b +'20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx')
 print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Analysis
@@ -64,7 +66,6 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_p
 
 analyse.set_filters(df_l)
-# map_redenen()
 # add_token_mapbox(config.mapbox_token)
 analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
 analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)

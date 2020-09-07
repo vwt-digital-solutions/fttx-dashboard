@@ -113,9 +113,9 @@ def get_data_targets(path_data):
     if doc is not None:
         date_FTU0 = doc['FTU0']
         date_FTU1 = doc['FTU1']
-        return date_FTU0, date_FTU1
+        dates = date_FTU0, date_FTU1
     else:
-        print("Could not retrieve FTU0 and FTU1 from firestore, setting from local file")
+        print("Could not retrieve FTU0 and FTU1 from firestore, setting from original file")
         dates = get_data_targets_init(path_data)
     return dates
 
@@ -148,8 +148,7 @@ def get_data_targets_init(path_data):
         # afgerond in FC...FTU0/FTU1 schatten
         # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
     }
-    fn_targets = '20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx'
-    df_targetsKPN = pd.read_excel(path_data + fn_targets, sheet_name='KPN')
+    df_targetsKPN = pd.read_excel(path_data, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
     for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
