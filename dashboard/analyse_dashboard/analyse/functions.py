@@ -1133,7 +1133,8 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['119'] = (df['toelichting_status'].isna() & df.redenna.isin(['R8', 'R9', 'R17']))
 
     business_rules['120'] = no_errors_series  # doorvoerafhankelijk niet aanwezig
-    business_rules['121'] = ((df.postcode.isna() & ~df.huisnummer.isna()) | (~df.postcode.isna() & df.huisnummer.isna()))
+    business_rules['121'] = (
+                (df.postcode.isna() & ~df.huisnummer.isna()) | (~df.postcode.isna() & df.huisnummer.isna()))
     business_rules['122'] = (
         ~(
                 (
@@ -1224,7 +1225,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['721'] = no_errors_series  # niet te checken, geen Doorvoerafhankelijkheid in FC dump
     business_rules['723'] = (df.redenna.isin(['R15', 'R16', 'R17']) & ~df.opleverstatus.isin(['90'])) | (
             df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(['91'])) | (
-                                   df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))
+                                    df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))
     business_rules['724'] = (~df.opleverdatum.isna() & df.redenna.isin(['R0', 'R19', 'R22']))
     business_rules['725'] = no_errors_series  # geen zicht op vraagbundelingsproject of niet
     business_rules['726'] = no_errors_series  # niet te checken, geen HLopleverdatum aanwezig
@@ -1283,18 +1284,17 @@ def pie_chart_reden_na(df_na, clusters, key):
     return data, document
 
 
-def overview_reden_na(df_l, clusters):
-    full_df = pd.concat(df_l.values())
-    data, document = pie_chart_reden_na(full_df, clusters, 'overview')
+def overview_reden_na(df: pd.DataFrame, clusters):
+    data, document = pie_chart_reden_na(df, clusters, 'overview')
     layout = get_pie_layout()
     fig = dict(data=data, layout=layout)
     record = dict(id=document, figure=fig)
     return record
 
 
-def individual_reden_na(df_l, clusters):
+def individual_reden_na(df: pd.DataFrame, clusters):
     record_dict = {}
-    for project, df in df_l.items():
+    for project, df in df.groupby(by="project"):
         data, document = pie_chart_reden_na(df, clusters, project)
         layout = get_pie_layout()
         fig = {

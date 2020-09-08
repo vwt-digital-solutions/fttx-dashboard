@@ -3,11 +3,12 @@ import pytest
 from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformProjectDataFirestore
 from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed, get_HPend, \
     get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad, get_hc_hpend_ratio, preprocess_data, \
-    calculate_projectspecs, get_timeline, get_data_targets, set_filters, error_check_FCBC
+    calculate_projectspecs, get_timeline, get_data_targets, set_filters, error_check_FCBC, overview_reden_na, \
+    individual_reden_na
 from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
     get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old, \
     get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old, prognose_old, set_filters_old, \
-    error_check_FCBC_old
+    error_check_FCBC_old, overview_reden_na_old, individual_reden_na_old
 from analyse_dashboard.analyse import config
 import pickle
 import os
@@ -160,7 +161,15 @@ class TestKPNdflToBigDf:
         reason="One discrepancy in rule 710, but too slow to keep running the test while working on the rest")
     def test_error_check_FCBC(self):
         old_result = error_check_FCBC_old(self.df_l)
-        print("old res done")
         new_result = error_check_FCBC(self.df)
-        print("new res done")
         assert old_result[0] == new_result[0]
+
+    def test_overview_reden_na(self):
+        old_result = overview_reden_na_old(self.df_l, config.clusters_reden_na)
+        new_result = overview_reden_na(self.df, config.clusters_reden_na)
+        assert old_result == new_result
+
+    def test_individual_reden_na(self):
+        old_result = individual_reden_na_old(self.df_l, config.clusters_reden_na)
+        new_result = individual_reden_na(self.df, config.clusters_reden_na)
+        assert old_result == new_result

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from functions import get_hc_hpend_ratio_total, get_intersect
+from functions import get_hc_hpend_ratio_total, get_intersect, pie_chart_reden_na, get_pie_layout
 
 
 def get_start_time_old(df_l):
@@ -336,3 +336,27 @@ def error_check_FCBC_old(df_l):
         n_err[key] = len(err_all)
 
     return n_err, errors_FC_BC
+
+
+def overview_reden_na_old(df_l, clusters):
+    full_df = pd.concat(df_l.values())
+    data, document = pie_chart_reden_na(full_df, clusters, 'overview')
+    layout = get_pie_layout()
+    fig = dict(data=data, layout=layout)
+    record = dict(id=document, figure=fig)
+    return record
+
+
+def individual_reden_na_old(df_l, clusters):
+    record_dict = {}
+    for project, df in df_l.items():
+        data, document = pie_chart_reden_na(df, clusters, project)
+        layout = get_pie_layout()
+        fig = {
+            'data': data,
+            'layout': layout
+        }
+        fig = dict(data=data, layout=layout)
+        record = dict(id=document, figure=fig)
+        record_dict[document] = record
+    return record_dict
