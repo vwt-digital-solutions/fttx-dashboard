@@ -218,8 +218,8 @@ def get_timeline(t_s):
     return x_axis
 
 
-def get_total_objects(df_l):  # Don't think this is necessary to calculate at this point, should be done later.
-    total_objects = {k: len(v) for k, v in df_l.items()}
+def get_total_objects(df):  # Don't think this is necessary to calculate at this point, should be done later.
+    total_objects = df[['sleutel', 'project']].groupby(by="project").count().to_dict()['sleutel']
     # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
     total_objects['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9_465  # not yet in FC, total from excel bouwstromen
     total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9_488  # not yet in FC, total from excel bouwstromen
