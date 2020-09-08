@@ -81,8 +81,11 @@ def prepare_records(records):
 
             # add transition log if the status changed
             for key, value in status_change_columns.items():
-                if record_fs[key] != record[key]:
-                    updated_log.append(create_log(key, value, record, record_fs))
+                if key in record_fs:
+                    if record_fs[key] != record[key]:
+                        updated_log.append(create_log(key, value, record, record_fs))
+                else:  # if the column did not exists before, update log with 'primary entry'
+                    updated_log.append(create_log(key, value, record))
 
         else:  # if not exists update log with 'primary entry'
             for key, value in status_change_columns.items():
