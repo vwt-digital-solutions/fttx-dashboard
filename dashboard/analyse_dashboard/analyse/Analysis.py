@@ -55,7 +55,7 @@ class Analysis:
         return table
 
     def set_filters(self, df_l):
-        self.record_dict.add("project_name", set_filters(df_l), ListRecord, "Data")
+        self.record_dict.add("project_names", set_filters(df_l), ListRecord, "Data")
 
     def to_firestore(self):
         self.record_dict.to_firestore(self.client)
@@ -119,7 +119,7 @@ class AnalysisKPN(Analysis):
 
         self.record_dict.add('graph_targets_W', graph_targets_W, Record, 'Graphs')
         self.record_dict.add('graph_targets_M', graph_targets_M, Record, 'Graphs')
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Graphs')
+        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def performance_matrix(self, x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
         graph = performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
@@ -143,8 +143,8 @@ class AnalysisKPN(Analysis):
     def reden_na(self, df_l, clusters):
         overview_record = overview_reden_na(df_l, clusters)
         record_dict = individual_reden_na(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
 
 
 class AnalysisTmobile(Analysis):

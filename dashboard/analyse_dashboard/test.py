@@ -9,9 +9,9 @@ import analyse.config as config
 from analyse.functions import get_data_planning, get_data_targets, preprocess_data
 from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
 from analyse.functions import overview
-from analyse.functions import error_check_FCBC
+from analyse.functions import error_check_FCBC, analyse_to_firestore
 # from analyse.functions import masks_phases, map_redenen, consume, set_date_update
-from analyse.functions import masks_phases, consume, set_date_update
+from analyse.functions import masks_phases, set_date_update
 from analyse.Analysis import AnalysisKPN
 # except ImportError:
 #     # import config as config
@@ -40,7 +40,8 @@ df_l = get_data(config.subset_KPN_2020, config.col, None, None, 0)
 start_time = get_start_time(df_l)
 timeline = get_timeline(start_time)
 total_objects = get_total_objects(df_l)
-HP = get_data_planning(config.path_data + 'Data_20200101_extra/', config.subset_KPN_2020)  # 'Forecast JUNI 2020_def.xlsx'
+HP = get_data_planning(config.path_data + 'Data_20200101_extra/Forecast JUNI 2020_def.xlsx', config.subset_KPN_2020)
+# HP = get_data_planning(config.path_data_b + 'Forecast JUNI 2020_def.xlsx', config.subset_KPN_2020)
 date_FTU0, date_FTU1 = get_data_targets(
     config.path_data + 'Data_20200101_extra/20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx')
 # date_FTU0, date_FTU1 = get_data_targets(
@@ -57,6 +58,10 @@ rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = analyse.prognose(df_l, s
 y_target_l, t_diff = analyse.targets(x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
 df_prog, df_target, df_real, df_plan = overview(timeline, y_prog_l, total_objects, d_real_l, HP, y_target_l)
 n_err, errors_FC_BC = error_check_FCBC(df_l)
+
+analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, timeline, d_real_l, df_prog, df_target, df_real,
+                     df_plan, HC_HPend, y_prog_l, total_objects, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                     Schouw_BIS, HPend_l, n_err, None, None)
 
 print('do analyses: ' + str((time.time() - t_start) / 60) + ' min')
 
@@ -83,7 +88,7 @@ for i, pkey in enumerate(config.subset_KPN_2020):
     bar_names, document_list = masks_phases(pkey, df_l)
     total_document_list += document_list
 
-dlr = DocumentListRecord(total_document_list, collection="Data", document_key=['filter'])
+dlr = DocumentListRecord(total_document_list, collection="Data", document_key=['filter', 'project'])
 dlr.to_firestore(client="KPN")
 
 lr = ListRecord(dict(bar_names=bar_names), collection="Data")
@@ -91,8 +96,8 @@ lr.to_firestore(graph_name="bar_names", client="KPN")
 
 set_date_update()
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
-consume(df_l)
-print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
+# consume(df_l)
+# print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Extra tests
 
@@ -119,3 +124,8 @@ print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min'
 #    if df_l[key].empty:
 #        print(key)
 # df_l[key] = df_l_t[key]
+
+# docs = firestore.Client().collection('Data').where('graph_name', '==', "status_bar_chart").where(
+#     'filter', '==', "0").stream()
+# for doc in docs:
+#     print(doc.to_dict())

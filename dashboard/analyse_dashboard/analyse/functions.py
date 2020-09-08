@@ -68,10 +68,10 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
 
 
 def extract_data_planning(path_data):
-    if 'gs://' in path_data:
-        xls = pd.ExcelFile(path_data)
-    else:
-        xls = pd.ExcelFile(path_data + 'Forecast JUNI 2020_def.xlsx')
+    # if 'gs://' in path_data:
+    #     xls = pd.ExcelFile(path_data)
+    # else:
+    xls = pd.ExcelFile(path_data)
     df = pd.read_excel(xls, 'FTTX ').fillna(0)
     return df
 
@@ -1407,3 +1407,44 @@ def get_pie_layout():
         'height': 350,
     }
     return layout
+
+
+def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
+                         df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                         Schouw_BIS, HPend_l, n_err, Schouw, BIS):
+    for key in y_target_l:
+        if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
+            date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
+                                           (100 / (sum(rc1.values()) / len(rc1.values())))[0]))].strftime('%Y-%m-%d')
+        if (key not in date_FTU0):  # project has finished, estimate target on what has been done
+            date_FTU0[key] = x_d[d_real_l[key].index.min()].strftime('%Y-%m-%d')
+            date_FTU1[key] = x_d[d_real_l[key].index.max()].strftime('%Y-%m-%d')
+
+    record = dict(id='analysis', FTU0=date_FTU0, FTU1=date_FTU1)
+    firestore.Client().collection('Data').document(record['id']).set(record)
+
+    y_prog_l_r = {}
+    y_target_l_r = {}
+    t_shift_r = {}
+    d_real_l_r = {}
+    d_real_l_ri = {}
+    rc1_r = {}
+    rc2_r = {}
+    for key in y_prog_l:
+        y_prog_l_r[key] = list(y_prog_l[key])
+        y_target_l_r[key] = list(y_target_l[key])
+        t_shift_r[key] = str(t_shift[key])
+        if key in d_real_l:
+            d_real_l_r[key] = list(d_real_l[key]['Aantal'])
+            d_real_l_ri[key] = list(d_real_l[key].index)
+        if key in rc1:
+            rc1_r[key] = list(rc1[key])
+        if key in rc2:
+            rc2_r[key] = list(rc2[key])
+    record = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
+                  y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
+                  x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
+                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
+    firestore.Client().collection('Data').document(record['id']).set(record)
+    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
+    firestore.Client().collection('Data').document(record['id']).set(record)

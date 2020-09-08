@@ -4,7 +4,7 @@ import dash_html_components as html
 
 from data import collection
 from layout.components.figure import figure
-from data.graph import pie_chart  # , ftu_table
+from data.graph import pie_chart, ftu_table
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 
@@ -81,12 +81,12 @@ def get_body():
                                  className="pretty_container column",
                                  hidden=False,
                                  ),
-                        # html.Div(
-                        #     ftu_table(),
-                        #     id='FTU_table_c',
-                        #     className="pretty_container column",
-                        #     hidden=False,
-                        # ),
+                        html.Div(
+                            ftu_table(),
+                            id='FTU_table_c',
+                            className="pretty_container column",
+                            hidden=False,
+                        ),
                     ],
                         className="pretty_container column",
                     ),
@@ -152,10 +152,10 @@ def get_body():
                 id="main_graphs",
                 className="container-display",
             ),
-            html.Div(
-                [dbc.Button('Project details [eerste 3000 resultaten]', id='detail_button')],
-                className="one-third column"
-            ),
+            # html.Div(
+            #     [dbc.Button('Project details [eerste 3000 resultaten]', id='detail_button')],
+            #     className="one-third column"
+            # ),
             html.Div(
                 [
                     html.Div(
