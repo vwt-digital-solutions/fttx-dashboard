@@ -4,7 +4,7 @@ from ETL import ExtractTransformProjectDataFirestoreToDfList, ExtractTransformPr
 from functions import get_start_time, get_total_objects, add_relevant_columns, get_homes_completed, get_HPend, \
     get_has_ready, calculate_y_voorraad_act, get_has_werkvoorraad, get_hc_hpend_ratio, preprocess_data, \
     calculate_projectspecs, get_timeline, get_data_targets, set_filters, error_check_FCBC, overview_reden_na, \
-    individual_reden_na
+    individual_reden_na, prognose
 from tests.old_functions import get_start_time_old, get_total_objects_old, add_relevant_columns_old, \
     get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old, \
     get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old, prognose_old, set_filters_old, \
@@ -142,14 +142,31 @@ class TestKPNdflToBigDf:
         assert homes_ended_old == homes_ended
         assert werkvoorraad_old == werkvoorraad
 
-    @pytest.mark.skip(reason="Analysis document is missing")
+    # @pytest.mark.skip(reason="Analysis document is missing")
     def test_prognose(self):
         tot_l = get_total_objects(self.df_l)
         t_s = get_start_time_old(self.df_l)
         x_d = get_timeline(t_s)
         date_FTU0, date_FTU1 = get_data_targets(None)
         old_result = prognose_old(self.df_l, t_s, x_d, tot_l, date_FTU0)
-        assert old_result == 1
+
+        rc1_old, rc2_old, d_real_l_old, y_prog_l_old, x_prog_old, t_shift_old, cutoff_old = old_result
+
+        tot_l = get_total_objects(self.df_l)
+        t_s = get_start_time(self.df)
+        x_d = get_timeline(t_s)
+        date_FTU0, date_FTU1 = get_data_targets(None)
+        new_result = prognose(self.df, t_s, x_d, tot_l, date_FTU0)
+        rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = new_result
+        assert rc1 == rc1_old
+        assert rc2 == rc2_old
+        # assert d_real_l == d_real_l_old Cant test the equallity of a dataframe
+        for key in y_prog_l:
+            assert key in y_prog_l_old
+            assert (y_prog_l[key] == y_prog_l_old[key]).all()
+        assert (x_prog == x_prog_old).all()
+        assert t_shift == t_shift_old
+        assert cutoff == cutoff_old
 
     def test_set_filters(self):
         old_result = set_filters_old(self.df_l)
