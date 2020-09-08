@@ -1213,7 +1213,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['708'] = (df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) | (
             df.opleverstatus.isin(['91']) & ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))
     # business_rules['709'] = ((df.ODF + df.ODFpos).duplicated(keep='last'))  # klopt dit?
-    business_rules['710'] = (df.kabelid + df.adres).duplicated()
+    business_rules['710'] = ~df.kabelid.isna() & (df.kabelid + df.adres).duplicated(keep=False)
     # business_rules['711'] = (~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999']))  # wanneer PoP 999?
     business_rules['713'] = no_errors_series  # type bouw zit niet in onze FC dump
     # if df[df.ODF.isin(['999']) & df.ODFpos.isin(['999']) & df.CATVpos.isin(['999']) & df.CATVpos.isin(['999'])].shape[0] > 0:
@@ -1248,7 +1248,6 @@ def error_check_FCBC(df: pd.DataFrame):
         for err, sleutels in err_sleutels.items():
             total_sleutels.update(sleutels)
         n_err[plaats] = len(set(total_sleutels))
-    n_err
 
     return n_err, errors_FC_BC
 

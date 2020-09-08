@@ -174,8 +174,8 @@ class TestKPNdflToBigDf:
 
         assert old_result == new_result
 
-    @pytest.mark.skip(
-        reason="One discrepancy in rule 710, but too slow to keep running the test while working on the rest")
+    # @pytest.mark.skip(
+    #     reason="One discrepancy in rule 710, but too slow to keep running the test while working on the rest. ")
     def test_error_check_FCBC(self):
         old_result = error_check_FCBC_old(self.df_l)
         new_result = error_check_FCBC(self.df)
