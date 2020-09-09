@@ -189,7 +189,7 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
     ],
 )
 def FTU_table_editable(ww):
-    return [ww == 'xxxx']
+    return [ww == 'Wout']
 
 
 # update firestore given edit FTU table

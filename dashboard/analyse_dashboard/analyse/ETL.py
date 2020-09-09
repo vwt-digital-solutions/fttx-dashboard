@@ -32,7 +32,7 @@ class ExtractTransformTargetData(ExtractTransform):
 
     # TODO where does the data come from?
     def extract(self):
-        doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
+        doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
         if doc is not None:
             self.date_FTU0 = doc['FTU0']
             self.date_FTU1 = doc['FTU1']

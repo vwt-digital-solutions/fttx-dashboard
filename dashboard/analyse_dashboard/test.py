@@ -1,26 +1,15 @@
 # %% Initialize
 import os
 import time
+import analyse.config as config
 
 from analyse.Record import ListRecord, DocumentListRecord
-
-# try:
-import analyse.config as config
 from analyse.functions import get_data_planning, get_data_targets, preprocess_data
 from analyse.functions import get_timeline, get_start_time, get_data, get_total_objects
 from analyse.functions import overview
 from analyse.functions import error_check_FCBC, analyse_to_firestore
-# from analyse.functions import masks_phases, map_redenen, consume, set_date_update
 from analyse.functions import masks_phases, set_date_update
 from analyse.Analysis import AnalysisKPN
-# except ImportError:
-#     # import config as config
-#     from functions import get_data_planning, get_data_targets, preprocess_data
-#     from functions import get_timeline, get_start_time, get_data, get_total_objects
-#     from functions import overview
-#     from functions import error_check_FCBC
-#     from functions import masks_phases, map_redenen, consume, set_date_update
-#     from Analysis import AnalysisKPN
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -71,7 +60,6 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 # os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_p
 
 analyse.set_filters(df_l)
-# add_token_mapbox(config.mapbox_token)
 analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
 analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)
 analyse.prognose_graph(timeline, y_prog_l, d_real_l, y_target_l)
@@ -96,8 +84,6 @@ lr.to_firestore(graph_name="bar_names", client="KPN")
 
 set_date_update()
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
-# consume(df_l)
-# print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Extra tests
 

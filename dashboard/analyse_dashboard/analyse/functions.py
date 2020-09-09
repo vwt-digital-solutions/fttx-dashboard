@@ -109,7 +109,7 @@ def get_data_planning(path_data, subset_KPN_2020):
 
 
 def get_data_targets(path_data):
-    doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
+    doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
     if doc is not None:
         date_FTU0 = doc['FTU0']
         date_FTU1 = doc['FTU1']
