@@ -113,5 +113,6 @@ print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min'
 
 # docs = firestore.Client().collection('Data').where('graph_name', '==', "status_bar_chart").where(
 #     'filter', '==', "0").stream()
+# docs = firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()
 # for doc in docs:
 #     print(doc.to_dict())

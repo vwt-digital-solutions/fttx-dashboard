@@ -121,7 +121,7 @@ def graph(request):
 def get_project_list():
     # We could get this list from the config file
     data = [
-        el['label'] for el in firestore.Client().collection('Data').document('project_names').get().to_dict()['filters']
+        el['label'] for el in firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['filters']
     ]
     return data
 
