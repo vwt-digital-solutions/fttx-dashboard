@@ -34,11 +34,11 @@ class CustomerKPN(Customer):
         return etl.data
 
     def get_data_planning(self):
-        etl = ExtractTransformPlanningData(self.config["local_location"])
+        etl = ExtractTransformPlanningData(self.config["planning_location"])
         return etl.data
 
     def get_data_targets(self):
-        etl = ExtractTransformTargetData(self.config["local_location"])
+        etl = ExtractTransformTargetData(self.config["target_location"])
         return etl.date_FTU0, etl.date_FTU1
 
 

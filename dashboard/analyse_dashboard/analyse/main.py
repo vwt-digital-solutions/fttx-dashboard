@@ -12,7 +12,7 @@ try:
     from functions import get_timeline, get_start_time, get_data
     from functions import preprocess_data, get_total_objects
     from functions import overview
-    from functions import error_check_FCBC
+    from functions import error_check_FCBC, analyse_to_firestore
     from functions import masks_phases, set_date_update
     from Analysis import AnalysisKPN, AnalysisTmobile
     from google.cloud import pubsub, firestore
@@ -26,15 +26,15 @@ except ImportError:
     from analyse.functions import get_timeline, get_start_time, get_data
     from analyse.functions import preprocess_data, get_total_objects
     from analyse.functions import overview
-    from analyse.functions import error_check_FCBC
+    from analyse.functions import error_check_FCBC, analyse_to_firestore
     from analyse.functions import masks_phases, set_date_update
     from analyse.Analysis import AnalysisKPN, AnalysisTmobile
 
 
 def analyse(request):
     try:
-        publish_project_data(request)
         analyseKPN('kpn')
+        publish_project_data(request)
         analyseTmobile('t-mobile')
         set_date_update()
         return 'OK', 200
@@ -48,7 +48,6 @@ def analyse(request):
 
 
 def kpn_analysis_variable_use(analyse, df_l, start_time, timeline, total_objects, HP, date_FTU0, date_FTU1):
-    df_l = preprocess_data(df_l, '2020')
     HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
     y_voorraad_act = analyse.calculate_y_voorraad_act(df_l)
     rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = analyse.prognose(df_l, start_time, timeline, total_objects, date_FTU0)
@@ -56,6 +55,11 @@ def kpn_analysis_variable_use(analyse, df_l, start_time, timeline, total_objects
     df_prog, df_target, df_real, df_plan = overview(timeline, y_prog_l, total_objects, d_real_l, HP, y_target_l)
     n_err, errors_FC_BC = error_check_FCBC(df_l)
 
+    analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, timeline, d_real_l, df_prog, df_target, df_real,
+                         df_plan, HC_HPend, y_prog_l, total_objects, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                         Schouw_BIS, HPend_l, n_err, None, None)
+
+    analyse.set_filters(df_l)
     analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
     analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)
     analyse.prognose_graph(timeline, y_prog_l, d_real_l, y_target_l)
@@ -103,7 +107,7 @@ def graph(request):
         project = json.loads(bytes)
         df_l = get_data([project], config.col, None, None, 0)
         bar_names, document_list = masks_phases(project, df_l)
-        dlr = DocumentListRecord(document_list, collection="Data", document_key=['filter'])
+        dlr = DocumentListRecord(document_list, collection="Data", document_key=['filter', 'project'])
         dlr.to_firestore(client="KPN")
 
         lr = ListRecord(dict(bar_names=bar_names), collection="Data")
@@ -117,7 +121,7 @@ def graph(request):
 def get_project_list():
     # We could get this list from the config file
     data = [
-        el['label'] for el in firestore.Client().collection('Graphs').document('pnames').get().to_dict()['filters']
+        el['label'] for el in firestore.Client().collection('Data').document('project_names').get().to_dict()['filters']
     ]
     return data
 
