@@ -88,13 +88,13 @@ def transform_data_planning(df):
             if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
                 HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
-                HP['Bergen op Zoom Noord  wijk 01 + Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                HP['Bergen op Zoom Noord Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
-                HP['Den Haag - Haagse Hout-Bezuidenhout West'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                HP['Den Haag Bezuidenhout'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
                 HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
-                HP['Den Haag - Vrederust en Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                HP['Den Haag Vredelust Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == '':
                 HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
@@ -138,10 +138,10 @@ def get_data_targets_init(path_data):
         'Spijkenisse': 'KPN Spijkernisse',
         'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
         # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord  wijk 01 + Halsteren',  # niet in FC
+        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord Halsteren',  # niet in FC
         'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag - Haagse Hout-Bezuidenhout West',  # niet in FC??
-        'Den Haag - Vrederust en Bouwlust': 'Den Haag - Vrederust en Bouwlust',  # niet in FC??
+        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag Bezuidenhout',  # niet in FC??
+        'Den Haag - Vrederust en Bouwlust': 'Den Haag Vredelust Bouwlust',  # niet in FC??
         'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
         # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
         # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
@@ -217,9 +217,9 @@ def get_timeline(t_s):
 def get_total_objects(df_l):  # Don't think this is necessary to calculate at this point, should be done later.
     total_objects = {k: len(v) for k, v in df_l.items()}
     # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
-    total_objects['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9.465  # not yet in FC, total from excel bouwstromen
-    total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9.488  # not yet in FC, total from excel bouwstromen
-    total_objects['Den Haag - Vrederust en Bouwlust'] = 11.918  # not yet in FC, total from excel bouwstromen
+    # total_objects['Bergen op Zoom Noord Halsteren'] = 9465  # not yet in FC, total from excel bouwstromen
+    # total_objects['Den Haag Bezuidenhout'] = 9488  # not yet in FC, total from excel bouwstromen
+    # total_objects['Den Haag Vredelust Bouwlust'] = 11918  # not yet in FC, total from excel bouwstromen
     return total_objects
 
 
@@ -230,7 +230,7 @@ def get_total_objects(df_l):  # Don't think this is necessary to calculate at th
 def add_relevant_columns(df_l, year):
     for k, v in df_l.items():
         v['hpend'] = v.opleverdatum.apply(lambda x: object_is_hpend(x, '2020'))
-        v['homes_completed'] = v.opleverstatus == '2'
+        v['homes_completed'] = (v.opleverstatus == '2') & (v.hpend)
         v['bis_gereed'] = v.opleverstatus != '0'
     return df_l
 
@@ -251,8 +251,12 @@ def get_homes_completed(df_l):
 
 # Calculate the amount of objects per project that have been
 # Permanently passed or completed
-def get_HPend(df_l):
+def get_HPend_2020(df_l):
     return {k: sum(v.hpend) for k, v in df_l.items()}
+
+
+def get_HPend(df_l):
+    return {k: sum(v.opleverdatum.notna()) for k, v in df_l.items()}
 
 
 # Objects that are ready for HAS
@@ -273,7 +277,7 @@ def get_hc_hpend_ratio(df_l):
     ratio_per_project = {}
     for project, data in df_l.items():
         try:
-            ratio_per_project[project] = sum(data.homes_completed) / sum(data.hpend) * 100
+            ratio_per_project[project] = sum(data.opleverstatus == '2') / sum(~data.opleverdatum.isna()) * 100
         except ZeroDivisionError:
             # Dirty fix, check if it can be removed.
             ratio_per_project[project] = 0
@@ -293,10 +297,11 @@ def preprocess_data(df_l, year):
 
 def calculate_projectspecs(df_l):
     homes_completed = get_homes_completed(df_l)
+    homes_ended_2020 = get_HPend_2020(df_l)
     homes_ended = get_HPend(df_l)
     has_ready = get_has_ready(df_l)
     hc_hpend_ratio = get_hc_hpend_ratio(df_l)
-    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
+    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended_2020)
     werkvoorraad = get_has_werkvoorraad(df_l)
 
     return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad
