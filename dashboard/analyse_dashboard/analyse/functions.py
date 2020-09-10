@@ -9,6 +9,8 @@ import json
 import datetime
 import hashlib
 
+from collections import namedtuple
+
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
@@ -354,7 +356,8 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
         y_target_l[key][y_target_l[key] > 100] = 100
         y_target_l[key][y_target_l[key] < 0] = 0
 
-    return y_target_l, t_diff
+    TargetResults = namedtuple("TargetResults", ['y_target_l', 't_diff'])
+    return TargetResults(y_target_l, t_diff)
 
 
 def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
@@ -429,7 +432,8 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
         y_prog_l[project][y_prog_l[project] > 100] = 100
         y_prog_l[project][y_prog_l[project] < 0] = 0
 
-    return rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff
+    PrognoseResult = namedtuple("PrognoseResult", ['rc1', 'rc2', 'd_real_l', 'y_prog_l', 'x_prog', 't_shift', 'cutoff'])
+    return PrognoseResult(rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff)
 
 
 def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
@@ -1259,7 +1263,7 @@ def cluster_reden_na(label, clusters):
 
 
 def pie_chart_reden_na(df_na, clusters, key):
-    df_na['cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
+    df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
     df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
 
     df_na = df_na.groupby('cluster_redenna').size()
