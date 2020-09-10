@@ -80,7 +80,7 @@ class AnalysisKPN(Analysis):
         self.record_dict.add('y_prog_l', results[3], ListRecord, 'Data')
         self.record_dict.add('x_prog', results[4], IntRecord, 'Data')
         self.record_dict.add('t_shift', results[5], StringRecord, 'Data')
-        self.record_dict.add('t_shift', results[6], Record, 'Data')
+        self.record_dict.add('cutoff', results[6], Record, 'Data')
 
         return results
 
