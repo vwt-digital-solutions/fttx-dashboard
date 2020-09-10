@@ -103,16 +103,18 @@ def analyse(request):
 
 def kpn_analysis_variable_use(analyse, df_l, start_time, timeline, total_objects, HP, date_FTU0, date_FTU1):
     df_l = preprocess_data(df_l, '2020')
-    HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
-    y_voorraad_act = analyse.calculate_y_voorraad_act(df_l)
     rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = analyse.prognose(df_l, start_time, timeline, total_objects, date_FTU0)
     y_target_l, t_diff = analyse.targets(x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
     df_prog, df_target, df_real, df_plan = overview(timeline, y_prog_l, total_objects, d_real_l, HP, y_target_l)
-    n_err, errors_FC_BC = error_check_FCBC(df_l)
 
+    HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
     analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
+
+    y_voorraad_act = analyse.calculate_y_voorraad_act(df_l)
     analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)
     analyse.prognose_graph(timeline, y_prog_l, d_real_l, y_target_l)
+
+    n_err, _ = error_check_FCBC(df_l)
     analyse.info_table(total_objects, d_real_l, HP, y_target_l, timeline, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
     analyse.reden_na(df_l, config.clusters_reden_na)
 
