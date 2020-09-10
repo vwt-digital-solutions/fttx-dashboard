@@ -54,7 +54,7 @@ class Record:
         return f"{kwargs['client']}_{kwargs['graph_name']}"
 
     def __repr__(self):
-        return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection={self.collection})"
+        return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection='{self.collection}')"
 
     def to_table_part(self, graph_name="", client=""):
         document_name = self.document_name(graph_name=graph_name, client=client)
@@ -82,7 +82,7 @@ class Record:
         return table
 
     def __eq__(self, other):
-        if type(other) != type(self):
+        if self.__class__ != other.__class__:
             return False
         if self.record != other.record:
             return False
@@ -235,8 +235,15 @@ class DictRecord(Record):
 class RecordDict(MutableMapping):
     """A Dictionary that holds all records for an analysis"""
 
-    def __init__(self):
+    def __init__(self, record_collection=None):
         self.record_collection = {}
+        if record_collection:
+            for key, record in record_collection.items():
+                if isinstance(record, Record):
+                    self.record_collection[key] = record
+                else:
+                    raise ValueError(f"record collection must contain records,"
+                                     f"{key} contains an object of type: {type(record)}")
 
     def add(self, key, record, RecordType, collection):
         self.record_collection[key] = RecordType(record, collection)
@@ -244,9 +251,6 @@ class RecordDict(MutableMapping):
     def to_firestore(self, client):
         for key, record in self.record_collection.items():
             record.to_firestore(key, client)
-
-    def items(self):
-        return self.record_collection.items()
 
     def get_record(self, key):
         return self.record_collection[key].record
@@ -265,3 +269,21 @@ class RecordDict(MutableMapping):
 
     def __len__(self):
         return len(self.record_collection)
+
+    def __eq__(self, other):
+        if self.__class__ != other.__class__:
+            return False
+
+        key_union = set(self) & set(other)
+
+        if not key_union == set(self) or not key_union == set(other):
+            return False
+
+        for key in key_union:
+            if self[key] != other[key]:
+                return False
+
+        return self.record_collection == other.record_collection
+
+    def __repr__(self):
+        return f"{self.__class__.__qualname__}({str(self.record_collection)})"
