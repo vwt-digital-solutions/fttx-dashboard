@@ -1,6 +1,6 @@
 import dash_html_components as html
 
-from data.graph import graph
+from data.graph import update_date
 
 from app import app
 
@@ -33,7 +33,7 @@ def header(header_text=""):
                                 style={"margin-bottom": "0px", "margin-left": "75px"},
                             ),
                             html.P(id='date_update',
-                                   children='Laatste data update: ' + graph(85, None, None),
+                                   children='Laatste data update: ' + update_date(),
                                    style={"margin-bottom": "0px", "margin-left": "75px"},
                                    )
                         ],

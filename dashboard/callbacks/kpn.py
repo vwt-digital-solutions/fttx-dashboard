@@ -2,7 +2,6 @@ from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l,
 from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 from analyse_dashboard.analyse.functions import info_table, overview
 
-from data import api
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
@@ -13,9 +12,9 @@ import numpy as np
 from app import app
 
 # update value dropdown given selection in scatter chart
-from data.graph import graph
-from data.figure import figure_data
-from data.jaaroverzicht import jaaroverzicht_data
+from data.graph import pie_chart, clickbar_lb, clickbar_hb
+from data import collection
+from data.graph import info_table as graph_info_table
 
 
 @app.callback(
@@ -32,8 +31,8 @@ def update_dropdown(value):
 # update graphs
 @app.callback(
     [
-        Output("graph_targets_overall_c", 'hidden'),
-        Output("graph_targets_overallM_c", 'hidden'),
+        Output("graph_targets_W_container", 'hidden'),
+        Output("graph_targets_M_container", 'hidden'),
         Output("info_globaal_container0", 'hidden'),
         Output("info_globaal_container1", 'hidden'),
         Output("info_globaal_container2", 'hidden'),
@@ -47,7 +46,7 @@ def update_dropdown(value):
         Output("table_info", "hidden"),
         Output("Bar_LB_c", "hidden"),
         Output("Bar_HB_c", "hidden"),
-        Output("Pie_NA_oid", "hidden"),
+        Output("pie_chart_overview_kpn_container", "hidden"),
         Output("Pie_NA_cid", "hidden"),
         Output("geo_plot", 'figure'),
         Output("table_c", 'children'),
@@ -56,27 +55,28 @@ def update_dropdown(value):
     ],
     [
         Input("overzicht_button", 'n_clicks'),
-        Input("detail_button", "n_clicks")
+        # Input("detail_button", "n_clicks")
     ],
     [
         State('project-dropdown', 'value'),
         State("aggregate_data", 'data'),
     ],
 )
-def update_graphs(n_o, n_d, drop_selectie, mask_all):
+# def update_graphs(n_o, n_d, drop_selectie, mask_all):
+def update_graphs(n_o, drop_selectie, mask_all):
     if drop_selectie is None:
         raise PreventUpdate
     if n_o == -1:
         hidden = True
     else:
         hidden = False
-        n_d = 0
-    if n_d in [1, 3, 5]:
-        hidden1 = False
-        fig = graph(7, drop_selectie, mask_all)
-    else:
-        hidden1 = True
-        fig = dict(geo={'data': None, 'layout': dict()}, table=None)
+        # n_d = 0
+    # if n_d in [1, 3, 5]:
+    #     hidden1 = False
+    #     fig = geomap_data_table(drop_selectie, mask_all)
+    # else:
+    hidden1 = True
+    fig = dict(geo={'data': None, 'layout': dict()}, table=None)
     return [
         hidden,  # graph_targets_overall_c
         hidden,  # graph_targets_overallM_c
@@ -117,8 +117,10 @@ def middle_top_graphs(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_prog = graph(1, drop_selectie, None)
-    table_info = graph(8, drop_selectie, None)
+    fig_prog = collection.get_graph(client="KPN", graph_name="prognose_graph_dict", project=drop_selectie)
+    for i, item in enumerate(fig_prog['data']):
+        fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
+    table_info = graph_info_table()
 
     return [fig_prog, table_info, -1]
 
@@ -131,7 +133,7 @@ def middle_top_graphs(drop_selectie):
         Output("Pie_NA_c", "figure"),
         Output("aggregate_data", 'data'),
         Output("aggregate_data2", 'data'),
-        Output("detail_button", "n_clicks")
+        # Output("detail_button", "n_clicks")
     ],
     [Input('project-dropdown', 'value'),
      Input("Bar_LB", 'clickData'),
@@ -164,17 +166,17 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
                 pt_cell = 'HB0'
         mask_all += pt_x + pt_cell
 
-        doc = api.get('/Graphs?id=bar_names')[0]['bar_names']
+        doc = collection.get_document(collection="Data", client="KPN", graph_name="bar_names")['bar_names']
         if mask_all not in doc:
             mask_all = '0'
     else:
         mask_all = '0'
+    barLB = clickbar_lb(drop_selectie, mask_all)
+    barHB = clickbar_hb(drop_selectie, mask_all)
+    pieNA = pie_chart(client='KPN', key=drop_selectie)
 
-    barLB = graph(5, drop_selectie, mask_all)
-    barHB = graph(6, drop_selectie, mask_all)
-    pieNA = graph(10, drop_selectie, mask_all)
-
-    return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
+    # return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
+    return [barLB, barHB, pieNA, mask_all, drop_selectie]
 
 
 # update FTU table for editing
@@ -198,8 +200,8 @@ def FTU_table_editable(ww):
         Output('info_globaal_container2_text', 'children'),
         Output('info_globaal_container3_text', 'children'),
         Output('info_globaal_container4_text', 'children'),
-        Output('graph_targets_ov', 'figure'),
-        Output('graph_targets_m', 'figure'),
+        Output('graph_targets_M', 'figure'),
+        Output('graph_targets_W', 'figure'),
         Output('project_performance', 'figure'),
         Output('info_globaal_container5_text', 'children'),
     ],
@@ -216,18 +218,20 @@ def FTU_update(data):
         FTU1[el['Project']] = el['FTU1']
     record['FTU0'] = FTU0
     record['FTU1'] = FTU1
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+    firestore.Client().collection('Data').document(record['id']).set(record)
 
     # to update overview graphs:
-    HC_HPend = firestore.Client().collection('Graphs').document('jaaroverzicht').get().to_dict()['HC_HPend']
-    doc = firestore.Client().collection('Graphs').document('analysis2').get().to_dict()
-    doc2 = firestore.Client().collection('Graphs').document('analysis3').get().to_dict()
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+    HC_HPend = jaaroverzicht['HC_HPend']
+    HAS_werkvoorraad = jaaroverzicht["HAS_werkvoorraad"]
+    doc = firestore.Client().collection('Data').document('analysis2').get().to_dict()
+    doc2 = firestore.Client().collection('Data').document('analysis3').get().to_dict()
     x_d = pd.to_datetime(doc['x_d'])
     tot_l = doc['tot_l']
     HP = doc['HP']
     HC_HPend_l = doc['HC_HPend_l']
     Schouw_BIS = doc['Schouw_BIS']
-    HAS_werkvoorraad = doc['HAS_werkvoorraad']
+    # HAS_werkvoorraad = doc['HAS_werkvoorraad']
     HPend_l = doc['HPend_l']
     d_real_l = doc2['d_real_l']
     d_real_li = doc2['d_real_li']
@@ -262,14 +266,16 @@ def FTU_update(data):
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
     info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 
-    out0 = 'HPend afgesproken: ' + jaaroverzicht_data('target')
-    out1 = 'HPend gerealiseerd: ' + jaaroverzicht_data('real')
-    out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht_data('plan')
-    out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht_data('prog')
-    out4 = jaaroverzicht_data('HC_HPend')
-    out5 = figure_data('graph_targets_M')
-    out6 = figure_data('graph_targets_W')
-    out7 = figure_data('project_performance')
-    out8 = jaaroverzicht_data("HAS_werkvoorraad")
+    # jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+
+    out0 = 'HPend afgesproken: ' + jaaroverzicht['target']
+    out1 = 'HPend gerealiseerd: ' + jaaroverzicht['real']
+    out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht['plan']
+    out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht['prog']
+    out4 = jaaroverzicht['HC_HPend']
+    out5 = collection.get_graph(client="KPN", graph_name='graph_targets_M')
+    out6 = collection.get_graph(client="KPN", graph_name='graph_targets_W')
+    out7 = collection.get_graph(client="KPN", graph_name='project_performance')
+    out8 = HAS_werkvoorraad
 
     return [out0, out1, out2, out3, out4, out5, out6, out7, out8]

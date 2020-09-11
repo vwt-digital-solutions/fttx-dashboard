@@ -1,0 +1,3 @@
+[bandit]
+exclude: /dashboard/analyse_dashboard/analyse/tests
+skips: B101
