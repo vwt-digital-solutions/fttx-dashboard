@@ -25,7 +25,7 @@ def overview_reden_na_df(df, clusters):
 def individual_reden_na_df(project_data, clusters):
     record_dict = {}
     for project in project_data.project.unique():
-        project_data = project_data[project_data.project == project]
+        project_data = project_data[project_data.project == project].copy()
         data, document = pie_chart_reden_na(project_data, clusters, project)
         layout = get_pie_layout()
         fig = {
@@ -93,7 +93,7 @@ def calculate_voorraadvormend(df):
     totals.project = "all"
     totals.name = 'totals'
 
-    voorraad_project_counts = voorraad_project_counts.append(totals).set_index("project").to_dict()['voorraad_count']
+    voorraad_project_counts = voorraad_project_counts.append(totals).set_index("project").to_dict()['voorraad_count'].copy()
     return voorraad_project_counts
 
 

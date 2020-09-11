@@ -33,8 +33,8 @@ except ImportError:
 
 def analyse(request):
     try:
-        analyseKPN('kpn')
         publish_project_data(request)
+        analyseKPN('kpn')
         analyseTmobile('t-mobile')
         set_date_update()
         return 'OK', 200
