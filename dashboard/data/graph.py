@@ -44,6 +44,7 @@ def pie_chart(client, key="overview"):
 
 
 def clickbar_lb(drop_selectie, mask_all):
+    print(drop_selectie)
     fig = collection.get_document(collection="Data",
                                   graph_name='status_bar_chart',
                                   project=drop_selectie,
@@ -138,9 +139,9 @@ def update_date():
 
 def ftu_table():
     df = pd.DataFrame(columns=['Project', 'FTU0', 'FTU1'])
-    df['Project'] = list(api.get('/Graphs?id=analysis')[0]['FTU0'].keys())
-    df['FTU0'] = list(api.get('/Graphs?id=analysis')[0]['FTU0'].values())
-    df['FTU1'] = list(api.get('/Graphs?id=analysis')[0]['FTU1'].values())
+    df['Project'] = list(api.get('/Data?id=analysis')[0]['FTU0'].keys())
+    df['FTU0'] = list(api.get('/Data?id=analysis')[0]['FTU0'].values())
+    df['FTU1'] = list(api.get('/Data?id=analysis')[0]['FTU1'].values())
     fig = dash_table.DataTable(
         id='table_FTU',
         columns=[{"name": i, "id": i} for i in df.columns],

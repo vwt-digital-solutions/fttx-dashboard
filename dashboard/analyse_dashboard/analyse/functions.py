@@ -72,10 +72,10 @@ def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
 
 
 def extract_data_planning(path_data):
-    if 'gs://' in path_data:
-        xls = pd.ExcelFile(path_data)
-    else:
-        xls = pd.ExcelFile(path_data + 'Forecast JUNI 2020_def.xlsx')
+    # if 'gs://' in path_data:
+    #     xls = pd.ExcelFile(path_data)
+    # else:
+    xls = pd.ExcelFile(path_data)
     df = pd.read_excel(xls, 'FTTX ').fillna(0)
     return df
 
@@ -92,13 +92,13 @@ def transform_data_planning(df):
             if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
                 HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
-                HP['Bergen op Zoom Noord  wijk 01 + Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                HP['Bergen op Zoom Noord Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
-                HP['Den Haag - Haagse Hout-Bezuidenhout West'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                HP['Den Haag Bezuidenhout'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
                 HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
-                HP['Den Haag - Vrederust en Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                HP['Den Haag Vredelust Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == '':
                 HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
             if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
@@ -113,13 +113,13 @@ def get_data_planning(path_data, subset_KPN_2020):
 
 
 def get_data_targets(path_data):
-    doc = firestore.Client().collection('Graphs').document('analysis').get().to_dict()
+    doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
     if doc is not None:
         date_FTU0 = doc['FTU0']
         date_FTU1 = doc['FTU1']
-        return date_FTU0, date_FTU1
+        dates = date_FTU0, date_FTU1
     else:
-        print("Could not retrieve FTU0 and FTU1 from firestore, setting from local file")
+        print("Could not retrieve FTU0 and FTU1 from firestore, setting from original file")
         dates = get_data_targets_init(path_data)
     return dates
 
@@ -142,18 +142,17 @@ def get_data_targets_init(path_data):
         'Spijkenisse': 'KPN Spijkernisse',
         'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
         # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord  wijk 01 + Halsteren',  # niet in FC
+        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord Halsteren',  # niet in FC
         'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag - Haagse Hout-Bezuidenhout West',  # niet in FC??
-        'Den Haag - Vrederust en Bouwlust': 'Den Haag - Vrederust en Bouwlust',  # niet in FC??
+        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag Bezuidenhout',  # niet in FC??
+        'Den Haag - Vrederust en Bouwlust': 'Den Haag Vredelust Bouwlust',  # niet in FC??
         'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
         # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
         # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
         # afgerond in FC...FTU0/FTU1 schatten
         # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
     }
-    fn_targets = '20200501_Overzicht bouwstromen KPN met indiendata offerte v12.xlsx'
-    df_targetsKPN = pd.read_excel(path_data + fn_targets, sheet_name='KPN')
+    df_targetsKPN = pd.read_excel(path_data, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
     for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
@@ -223,9 +222,9 @@ def get_timeline(t_s):
 def get_total_objects(df):  # Don't think this is necessary to calculate at this point, should be done later.
     total_objects = df[['sleutel', 'project']].groupby(by="project").count().to_dict()['sleutel']
     # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
-    total_objects['Bergen op Zoom Noord  wijk 01 + Halsteren'] = 9_465  # not yet in FC, total from excel bouwstromen
-    total_objects['Den Haag - Haagse Hout-Bezuidenhout West'] = 9_488  # not yet in FC, total from excel bouwstromen
-    total_objects['Den Haag - Vrederust en Bouwlust'] = 11_918  # not yet in FC, total from excel bouwstromen
+    # total_objects['Bergen op Zoom Noord Halsteren'] = 9465  # not yet in FC, total from excel bouwstromen
+    # total_objects['Den Haag Bezuidenhout'] = 9488  # not yet in FC, total from excel bouwstromen
+    # total_objects['Den Haag Vredelust Bouwlust'] = 11918  # not yet in FC, total from excel bouwstromen
     return total_objects
 
 
@@ -240,7 +239,8 @@ def add_relevant_columns(df: pd.DataFrame, year):
     start_year = pd.to_datetime(year + '-01-01')
     end_year = pd.to_datetime(year + '-12-31')
     df['hpend'] = df.opleverdatum.apply(lambda x: (x >= start_year) and (x <= end_year))
-    df['homes_completed'] = df.opleverstatus == '2'
+    df['homes_completed'] = (df.opleverstatus == '2') & (df.hpend)
+    df['homes_completed_total'] = (df.opleverstatus == '2')
     df['bis_gereed'] = df.opleverstatus != '0'
     return df
 
@@ -261,7 +261,7 @@ def get_homes_completed(df: pd.DataFrame):
 
 # Calculate the amount of objects per project that have been
 # Permanently passed or completed
-def get_HPend(df: pd.DataFrame):
+def get_HPend_2020(df: pd.DataFrame):
     result = df[['project', 'hpend']] \
         .groupby(by="project") \
         .sum() \
@@ -270,6 +270,12 @@ def get_HPend(df: pd.DataFrame):
         .to_dict()['hpend']
 
     return result
+
+
+def get_HPend(df: pd.DataFrame):
+    test_df = df[['project']].copy()
+    test_df["hpend_not_2020"] = df.opleverdatum.notna()
+    return test_df.groupby(by="project").sum().reset_index().set_index("project").to_dict()['hpend_not_2020']
 
 
 # Objects that are ready for HAS
@@ -289,15 +295,20 @@ def get_has_ready(df: pd.DataFrame):
     return result
 
 
-# Total ratio of completed objects v.s. completed + permantently passed objects.
+# Total ratio of completed objects v.s. completed + permanently passed objects.
 def get_hc_hpend_ratio_total(hc, hpend):
     return round(sum(hc.values()) / sum(hpend.values()), 2)
 
 
-# Calculates the ratio between homes completed v.s. completed + permantently passed objects per project
+# Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
 def get_hc_hpend_ratio(df: pd.DataFrame):
-    sum_df = df[['sleutel', "project", "hpend", 'homes_completed']].groupby(by="project").sum().reset_index()
-    sum_df['ratio'] = sum_df.apply(lambda x: x.homes_completed / x.hpend * 100 if x.hpend else 0, axis=1)
+    temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
+    temp_df['has_opleverdatum'] = ~df.opleverdatum.isna()
+    sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(by="project").sum().reset_index()
+    sum_df['ratio'] = sum_df.apply(
+        lambda x: x.homes_completed_total / x.has_opleverdatum * 100
+        if x.has_opleverdatum else 0, axis=1
+    )
     return sum_df[['project', 'ratio']].set_index("project").to_dict()['ratio']
 
 
@@ -318,10 +329,11 @@ def preprocess_data(df, year):
 
 def calculate_projectspecs(df: pd.DataFrame):
     homes_completed = get_homes_completed(df)
+    homes_ended_2020 = get_HPend_2020(df)
     homes_ended = get_HPend(df)
     has_ready = get_has_ready(df)
     hc_hpend_ratio = get_hc_hpend_ratio(df)
-    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
+    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended_2020)
     werkvoorraad = get_has_werkvoorraad(df)
 
     return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad
@@ -1324,3 +1336,44 @@ def get_pie_layout():
         'height': 350,
     }
     return layout
+
+
+def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
+                         df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                         Schouw_BIS, HPend_l, n_err, Schouw, BIS):
+    for key in y_target_l:
+        if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
+            date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
+                                           (100 / (sum(rc1.values()) / len(rc1.values())))[0]))].strftime('%Y-%m-%d')
+        if (key not in date_FTU0):  # project has finished, estimate target on what has been done
+            date_FTU0[key] = x_d[d_real_l[key].index.min()].strftime('%Y-%m-%d')
+            date_FTU1[key] = x_d[d_real_l[key].index.max()].strftime('%Y-%m-%d')
+
+    record = dict(id='analysis', FTU0=date_FTU0, FTU1=date_FTU1)
+    firestore.Client().collection('Data').document(record['id']).set(record)
+
+    y_prog_l_r = {}
+    y_target_l_r = {}
+    t_shift_r = {}
+    d_real_l_r = {}
+    d_real_l_ri = {}
+    rc1_r = {}
+    rc2_r = {}
+    for key in y_prog_l:
+        y_prog_l_r[key] = list(y_prog_l[key])
+        y_target_l_r[key] = list(y_target_l[key])
+        t_shift_r[key] = str(t_shift[key])
+        if key in d_real_l:
+            d_real_l_r[key] = list(d_real_l[key]['Aantal'])
+            d_real_l_ri[key] = list(d_real_l[key].index)
+        if key in rc1:
+            rc1_r[key] = list(rc1[key])
+        if key in rc2:
+            rc2_r[key] = list(rc2[key])
+    record = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
+                  y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
+                  x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
+                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
+    firestore.Client().collection('Data').document(record['id']).set(record)
+    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
+    firestore.Client().collection('Data').document(record['id']).set(record)
