@@ -35,7 +35,7 @@ def analyse(request):
     try:
         publish_project_data(request, 'kpn')
         analyseKPN('kpn')
-        analyseTmobile('t-mobile')
+        # analyseTmobile('t-mobile')
         set_date_update()
         return 'OK', 200
 
