@@ -15,7 +15,7 @@ try:
     from functions import error_check_FCBC, analyse_to_firestore
     from functions import masks_phases, set_date_update
     from Analysis import AnalysisKPN, AnalysisTmobile
-    from google.cloud import pubsub, firestore
+    from google.cloud import pubsub
     from Record import DocumentListRecord, ListRecord
 
     publisher = pubsub.PublisherClient()
@@ -33,7 +33,7 @@ except ImportError:
 
 def analyse(request):
     try:
-        publish_project_data(request)
+        publish_project_data(request, 'kpn')
         analyseKPN('kpn')
         analyseTmobile('t-mobile')
         set_date_update()
@@ -118,16 +118,13 @@ def graph(request):
         logging.exception('Graph calculation failed')
 
 
-def get_project_list():
-    # We could get this list from the config file
-    data = [
-        el['label'] for el in firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['record']['filters']
-    ]
+def get_project_list(client):
+    data = config.client_config[client].get('projects')
     return data
 
 
-def publish_project_data(request):
-    data = get_project_list()
+def publish_project_data(request, client):
+    data = get_project_list(client)
     gobits = Gobits.from_request(request=request)
     i = 1
     for msg in data:
