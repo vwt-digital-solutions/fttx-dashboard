@@ -467,7 +467,8 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
     # ax.bar(x=test.index[0:15].strftime('%Y-%m'), height=test[0:15], width=0.5)
     # plt.savefig('Graphs/jaaroverzicht_2019_2020.png')
 
-    return df_prog, df_target, df_real, df_plan
+    OverviewResults = namedtuple("OverviewResults", ['df_prog', 'df_target', 'df_real', 'df_plan'])
+    return OverviewResults(df_prog, df_target, df_real, df_plan)
 
 
 def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res):
