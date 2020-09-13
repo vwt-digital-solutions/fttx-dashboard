@@ -1,4 +1,4 @@
-from collections import MutableMapping
+from collections.abc import MutableMapping
 
 from google.cloud import firestore
 import logging
@@ -169,9 +169,11 @@ class DocumentListRecord(Record):
         return validated
 
     def document_name(self, document, client, graph_name):
-        doc_name_parts = [client, graph_name] + [document[key_part] for key_part in self.document_key]
-        document_name = "_".join(part for part in doc_name_parts if part)
-        return document_name
+        if document:
+            doc_name_parts = [client, graph_name] + [document[key_part] for key_part in self.document_key]
+            document_name = "_".join(part for part in doc_name_parts if part)
+            return document_name
+        return super().document_name(client=client, graph_name=graph_name)
 
     def to_firestore(self, graph_name=None, client=""):
         if not self.record:
@@ -255,7 +257,7 @@ class RecordDict(MutableMapping):
     def get_record(self, key):
         return self.record_collection[key].record
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Record:
         return self.record_collection[item]
 
     def __setitem__(self, key, value):

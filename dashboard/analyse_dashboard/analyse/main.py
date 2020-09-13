@@ -1,34 +1,19 @@
 # %% Set data path
-import logging
 import json
 import base64
+from gobits import Gobits
+import config
+from google.cloud import pubsub, firestore
+from Record import DocumentListRecord, ListRecord
+from Analyse.KPN import KPNETL
+from Analyse.TMobile import TMobileETL
+from functions import set_date_update, get_data, masks_phases
+
+import logging
 
 logging.basicConfig(level=logging.INFO)
 
-try:
-    from gobits import Gobits
-    import config
-    from Customer import CustomerTmobile, CustomerKPN
-    from functions import get_timeline, get_start_time, get_data
-    from functions import preprocess_data, get_total_objects
-    from functions import overview
-    from functions import error_check_FCBC, analyse_to_firestore
-    from functions import masks_phases, set_date_update
-    from Analysis import AnalysisKPN, AnalysisTmobile
-    from google.cloud import pubsub, firestore
-    from Record import DocumentListRecord, ListRecord
-
-    publisher = pubsub.PublisherClient()
-
-except ImportError:
-    import analyse.config as config
-    from analyse.Customer import CustomerTmobile, CustomerKPN
-    from analyse.functions import get_timeline, get_start_time, get_data
-    from analyse.functions import preprocess_data, get_total_objects
-    from analyse.functions import overview
-    from analyse.functions import error_check_FCBC, analyse_to_firestore
-    from analyse.functions import masks_phases, set_date_update
-    from analyse.Analysis import AnalysisKPN, AnalysisTmobile
+publisher = pubsub.PublisherClient()
 
 
 def analyse(request):
@@ -47,57 +32,14 @@ def analyse(request):
         logging.info('run done')
 
 
-def kpn_analysis_variable_use(analyse, df_l, start_time, timeline, total_objects, HP, date_FTU0, date_FTU1):
-    HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
-    y_voorraad_act = analyse.calculate_y_voorraad_act(df_l)
-    rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff = analyse.prognose(df_l, start_time, timeline, total_objects, date_FTU0)
-    y_target_l, t_diff = analyse.targets(x_prog, timeline, t_shift, date_FTU0, date_FTU1, rc1, d_real_l)
-    df_prog, df_target, df_real, df_plan = overview(timeline, y_prog_l, total_objects, d_real_l, HP, y_target_l)
-    n_err, errors_FC_BC = error_check_FCBC(df_l)
-
-    analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, timeline, d_real_l, df_prog, df_target, df_real,
-                         df_plan, HC_HPend, y_prog_l, total_objects, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                         Schouw_BIS, HPend_l, n_err, None, None)
-
-    analyse.set_filters(df_l)
-    analyse.calculate_graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad)  # 2019-12-30 -- 2020-12-21
-    analyse.performance_matrix(timeline, y_target_l, d_real_l, total_objects, t_diff, y_voorraad_act)
-    analyse.prognose_graph(timeline, y_prog_l, d_real_l, y_target_l)
-    analyse.info_table(total_objects, d_real_l, HP, y_target_l, timeline, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
-    analyse.reden_na(df_l, config.clusters_reden_na)
-
-    return analyse
-
-
 def analyseKPN(client_name):
-    client_config = config.client_config[client_name]
-    customer = CustomerKPN(client_config)
-    df_l = customer.get_data()
-    HP = customer.get_data_planning()
-    date_FTU0, date_FTU1 = customer.get_data_targets()
-
-    start_time = get_start_time(df_l)
-    timeline = get_timeline(start_time)
-    total_objects = get_total_objects(df_l)
-
-    analyse = AnalysisKPN(client_name)
-    analyse.set_input_fields(date_FTU0, date_FTU1, timeline)
-    df_l = preprocess_data(df_l, '2020')
-    analyse = kpn_analysis_variable_use(analyse, df_l, start_time, timeline, total_objects, HP, date_FTU0, date_FTU1)
-
-    analyse.to_firestore()
+    kpn = KPNETL(client=client_name, config=config.client_config[client_name])
+    kpn.perform()
 
 
 def analyseTmobile(client_name):
-    client_config = config.client_config[client_name]
-    customer = CustomerTmobile(client_config)
-    df_l = customer.get_data()
-
-    analyse = AnalysisTmobile(client_name, df_l)
-    analyse.reden_na(config.clusters_reden_na)
-    analyse.get_voorraadvormend()
-
-    analyse.to_firestore()
+    tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
+    tmobile.perform()
 
 
 def graph(request):
@@ -121,7 +63,8 @@ def graph(request):
 def get_project_list():
     # We could get this list from the config file
     data = [
-        el['label'] for el in firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['record']['filters']
+        el['label'] for el in
+        firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['record']['filters']
     ]
     return data
 

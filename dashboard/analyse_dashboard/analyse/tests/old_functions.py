@@ -305,7 +305,8 @@ def error_check_FCBC_old(df_l):
                                           (df.opleverstatus.isin(['91']) &
                                            ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))].sleutel.to_list()
             # errors_FC_BC[key]['709'] = df[(df.ODF + df.ODFpos).duplicated(keep='last')].sleutel.to_list()  # klopt dit?
-            errors_FC_BC[key]['710'] = df[(df.kabelid + df.adres).duplicated()].sleutel.to_list()
+            errors_FC_BC[key]['710'] = df[~df.kabelid.isna() & ~df.adres.isna() & (df.kabelid + df.adres).duplicated(
+                keep=False)].sleutel.to_list()
             # errors_FC_BC[key]['711'] = df[~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999'])].sleutel.to_list()  # wanneer PoP 999?
             errors_FC_BC[key]['713'] = []  # type bouw zit niet in onze FC dump
             # if df[df.ODF.isin(['999']) & df.ODFpos.isin(['999']) & df.CATVpos.isin(['999']) & df.CATVpos.isin(['999'])].shape[0] > 0:

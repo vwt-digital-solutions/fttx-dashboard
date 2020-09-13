@@ -8,7 +8,7 @@ try:
     import analyse.config as config
 except ImportError as e:
     print(e)
-    from ETL import (
+    from tests.analyse_old.ETL import (
         ExtractTransformPlanningData,
         ExtractTransformTargetData,
         ExtractTransformProjectDataFirestore

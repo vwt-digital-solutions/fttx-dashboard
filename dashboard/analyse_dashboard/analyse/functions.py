@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import NamedTuple
 
 import pandas as pd
 import numpy as np
@@ -327,7 +328,15 @@ def preprocess_data(df, year):
     return df
 
 
-def calculate_projectspecs(df: pd.DataFrame):
+class ProjectSpecs(NamedTuple):
+    hc_hp_end_ratio_total: object
+    hc_hpend_ratio: object
+    has_ready: object
+    homes_ended: object
+    werkvoorraad: object
+
+
+def calculate_projectspecs(df: pd.DataFrame) -> ProjectSpecs:
     homes_completed = get_homes_completed(df)
     homes_ended_2020 = get_HPend_2020(df)
     homes_ended = get_HPend(df)
@@ -336,7 +345,7 @@ def calculate_projectspecs(df: pd.DataFrame):
     hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended_2020)
     werkvoorraad = get_has_werkvoorraad(df)
 
-    return hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad
+    return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad)
 
 
 def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
@@ -664,72 +673,6 @@ def meters(d_sheets, tot_l, x_d, y_target_l):
         advies[key] = 'Advies:<br>' + 'BIS teams: ' + str(BIS_advies) + '<br>HAS teams: ' + str(HAS_advies)
 
     return x_target, y_target, y_BIS, y_HASm, y_HAS, y_schouw, advies
-
-
-def meters_graph(x_target, y_target, y_prog_l, y_BIS, y_HASm, y_HAS, y_schouw, advies):
-    # TODO check if this is used
-    fig = {}
-    for key in y_prog_l:
-        if key in y_target:
-            fig = {'data': [{
-                'x': x_target,
-                'y': y_schouw[key],
-                'mode': 'markers',
-                'marker': {'symbol': 'triangle-down', 'color': 'rgb(0, 200, 0)'},
-                'name': 'Geschouwd',
-            },
-                {
-                    'x': x_target,
-                    'y': y_BIS[key],
-                    'mode': 'markers',
-                    'marker': {'symbol': 'x', 'color': 'rgb(0, 200, 0)'},
-                    'name': 'BIS-gegraven',
-                },
-                {
-                    'x': x_target,
-                    'y': y_HASm[key],
-                    'mode': 'markers',
-                    'marker': {'symbol': 'circle', 'color': 'rgb(0, 200, 0)'},
-                    'name': 'HAS-gegraven',
-                },
-                {
-                    'x': x_target,
-                    'y': y_HAS[key],
-                    'mode': 'markers',
-                    'marker': {'symbol': 'diamond', 'color': 'rgb(0, 200, 0)'},
-                    'name': 'HAS-opgeleverd',
-                },
-                {
-                    'x': x_target,
-                    'y': y_target[key],
-                    'mode': 'line',
-                    'line': dict(color='rgb(170, 170, 170)'),
-                    'name': 'Outlook (KPN)',
-                }],
-                'layout': {
-                    'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2019-12-30', '2020-12-28']},
-                    'yaxis': {'title': 'Fase afgerond [%]', 'range': [0, 110]},
-                    'title': {'text': 'Voortgang fase vs outlook KPN:'},
-                    'showlegend': True,
-                    'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                    'height': 350,
-                    'annotations': [dict(x='2020-10-12', y=50, text=advies[key], xref="x", yref="y",
-                                         ax=0, ay=0, alignment='left')]
-                }
-            }
-        else:
-            fig = {'layout': {
-                'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2019-12-30', '2020-12-28']},
-                'yaxis': {'title': 'Fase afgerond [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang fase vs outlook KPN:'},
-                'showlegend': True,
-                'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                'height': 350,
-            }
-            }
-
-        record = dict(id=key, figure=fig)
-        firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
 def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
@@ -1094,6 +1037,7 @@ def empty_collection(subset):
 
 
 def add_token_mapbox(token):
+    # TODO, remove if in secrets
     record = dict(id='token_mapbox',
                   token=token)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
@@ -1230,7 +1174,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['708'] = (df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) | (
             df.opleverstatus.isin(['91']) & ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))
     # business_rules['709'] = ((df.ODF + df.ODFpos).duplicated(keep='last'))  # klopt dit?
-    business_rules['710'] = ~df.kabelid.isna() & (df.kabelid + df.adres).duplicated(keep=False)
+    business_rules['710'] = ~df.kabelid.isna() & ~df.adres.isna() & (df.kabelid + df.adres).duplicated(keep=False)
     # business_rules['711'] = (~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999']))  # wanneer PoP 999?
     business_rules['713'] = no_errors_series  # type bouw zit niet in onze FC dump
     # if df[df.ODF.isin(['999']) & df.ODFpos.isin(['999']) & df.CATVpos.isin(['999']) & df.CATVpos.isin(['999'])].shape[0] > 0:
@@ -1338,9 +1282,9 @@ def get_pie_layout():
     return layout
 
 
-def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-                         df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                         Schouw_BIS, HPend_l, n_err, Schouw, BIS):
+def analyse_documents(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
+                      df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                      Schouw_BIS, HPend_l, n_err, Schouw, BIS):
     for key in y_target_l:
         if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
             date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
@@ -1349,8 +1293,7 @@ def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_r
             date_FTU0[key] = x_d[d_real_l[key].index.min()].strftime('%Y-%m-%d')
             date_FTU1[key] = x_d[d_real_l[key].index.max()].strftime('%Y-%m-%d')
 
-    record = dict(id='analysis', FTU0=date_FTU0, FTU1=date_FTU1)
-    firestore.Client().collection('Data').document(record['id']).set(record)
+    analysis = dict(id='analysis', FTU0=date_FTU0, FTU1=date_FTU1)
 
     y_prog_l_r = {}
     y_target_l_r = {}
@@ -1370,10 +1313,9 @@ def analyse_to_firestore(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_r
             rc1_r[key] = list(rc1[key])
         if key in rc2:
             rc2_r[key] = list(rc2[key])
-    record = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
-                  y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
-                  x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
-                  Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
-    firestore.Client().collection('Data').document(record['id']).set(record)
-    record = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
-    firestore.Client().collection('Data').document(record['id']).set(record)
+    analysis2 = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
+                     y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
+                     x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
+                     Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
+    analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
+    return analysis, analysis2, analysis3
