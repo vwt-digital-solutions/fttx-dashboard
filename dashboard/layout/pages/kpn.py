@@ -73,7 +73,7 @@ def get_body():
 
                     figure(container_id="graph_speed_c",
                            graph_id="project_performance",
-                           figure=collection.get_graph(client="KPN",
+                           figure=collection.get_graph(client="kpn",
                                                        graph_name="project_performance")),
                     html.Div([
                         html.Div(id='ww_c',
@@ -97,7 +97,7 @@ def get_body():
                 [
                     html.Div(
                         [dcc.Dropdown(id='project-dropdown',
-                                      options=collection.get_document(collection="Data", client="KPN",
+                                      options=collection.get_document(collection="Data", client="kpn",
                                                                       graph_name="project_names")['filters'],
                                       value=None)],
                         className="two-third column",
