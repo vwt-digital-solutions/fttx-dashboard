@@ -7,7 +7,7 @@ from tests.old_functions import get_start_time_old, get_total_objects_old, prepr
 
 from gobits import Gobits
 import config
-from tests.analyse_old.Customer import CustomerTmobile, CustomerKPN
+from tests.analyse_old.Customer import CustomerKPN
 from functions import get_timeline, get_data
 from functions import overview
 from functions import masks_phases, set_date_update
@@ -80,11 +80,7 @@ def analyseKPN(client_name, df_l) -> AnalysisKPN:
     return analyse
 
 
-def analyseTmobile(client_name):
-    client_config = config.client_config[client_name]
-    customer = CustomerTmobile(client_config)
-    df_l = customer.get_data()
-
+def analyseTmobile(client_name, df_l):
     analyse = AnalysisTmobile(client_name, df_l)
     analyse.reden_na(config.clusters_reden_na)
     analyse.get_voorraadvormend()
