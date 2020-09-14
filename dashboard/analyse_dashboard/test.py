@@ -38,7 +38,7 @@ date_FTU0, date_FTU1 = get_data_targets(
 print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Analysis
-analyse = AnalysisKPN('KPN')
+analyse = AnalysisKPN('kpn')
 analyse.set_input_fields(date_FTU0, date_FTU1, timeline)
 df_l = preprocess_data(df_l, '2020')
 HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
@@ -77,10 +77,10 @@ for i, pkey in enumerate(config.subset_KPN_2020):
     total_document_list += document_list
 
 dlr = DocumentListRecord(total_document_list, collection="Data", document_key=['filter', 'project'])
-dlr.to_firestore(client="KPN")
+dlr.to_firestore(client="kpn")
 
 lr = ListRecord(dict(bar_names=bar_names), collection="Data")
-lr.to_firestore(graph_name="bar_names", client="KPN")
+lr.to_firestore(graph_name="bar_names", client="kpn")
 
 set_date_update()
 print('write to Graph collection: ' + str((time.time() - t_start) / 60) + ' min')

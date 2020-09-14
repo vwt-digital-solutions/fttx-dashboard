@@ -9,7 +9,7 @@ from data import collection
 
 
 def info_table():
-    document = collection.get_document(collection="Graphs", client="KPN", graph_name="info_table")
+    document = collection.get_document(collection="Graphs", client="kpn", graph_name="info_table")
     df = pd.read_json(document['table'], orient='records')
     df = df[document['col']]
     fig = dash_table.DataTable(
