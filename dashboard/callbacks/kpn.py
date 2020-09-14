@@ -166,14 +166,14 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
                 pt_cell = 'HB0'
         mask_all += pt_x + pt_cell
 
-        doc = collection.get_document(collection="Data", client="KPN", graph_name="bar_names")['bar_names']
+        doc = collection.get_document(collection="Data", client="kpn", graph_name="bar_names")['bar_names']
         if mask_all not in doc:
             mask_all = '0'
     else:
         mask_all = '0'
     barLB = clickbar_lb(drop_selectie, mask_all)
     barHB = clickbar_hb(drop_selectie, mask_all)
-    pieNA = pie_chart(client='KPN', key=drop_selectie)
+    pieNA = pie_chart(client='kpn', key=drop_selectie)
 
     # return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
     return [barLB, barHB, pieNA, mask_all, drop_selectie]

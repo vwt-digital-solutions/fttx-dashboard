@@ -38,7 +38,7 @@ date_FTU0, date_FTU1 = get_data_targets(
 print('get data: ' + str((time.time() - t_start) / 60) + ' min')
 
 # %% Analysis
-analyse = AnalysisKPN('KPN')
+analyse = AnalysisKPN('kpn')
 analyse.set_input_fields(date_FTU0, date_FTU1, timeline)
 df_l = preprocess_data(df_l, '2020')
 HC_HPend, HC_HPend_l, Schouw_BIS, HPend_l, HAS_werkvoorraad = analyse.calculate_projectspecs(df_l)
