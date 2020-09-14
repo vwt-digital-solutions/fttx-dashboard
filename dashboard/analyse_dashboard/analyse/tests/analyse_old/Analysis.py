@@ -134,8 +134,8 @@ class AnalysisKPN(Analysis):
     def reden_na(self, df_l, clusters):
         overview_record = overview_reden_na_old(df_l, clusters)
         record_dict = individual_reden_na_old(df_l, clusters)
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Graphs')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Graphs')
+        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
+        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
     def analyse_documents(self, date_FTU0, date_FTU1, y_target_l, rc1, x_prog, timeline, d_real_l, df_prog, df_target, df_real,
                           df_plan, HC_HPend, y_prog_l, total_objects, HP, t_shift, rc2, cutoff, y_voorraad_act,
