@@ -13,7 +13,7 @@ from functions import overview
 from functions import masks_phases, set_date_update
 from tests.analyse_old.Analysis import AnalysisKPN, AnalysisTmobile
 from google.cloud import pubsub, firestore
-from Record import DocumentListRecord, ListRecord
+from Analyse.Record import DocumentListRecord, ListRecord
 
 publisher = pubsub.PublisherClient()
 
