@@ -46,7 +46,7 @@ class FttXExtract(Extract):
             logger.debug(f"Extracting {key}...")
             docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
             new_records = [doc.to_dict() for doc in docs]
-            df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True)
+            df = df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True)
             logger.debug(f"Extracted {len(new_records)} records in {time.time() - start_time} seconds")
 
         projects_category = pd.CategoricalDtype(categories=self.projects)
