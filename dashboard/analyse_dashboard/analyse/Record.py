@@ -1,3 +1,5 @@
+from collections.abc import MutableMapping
+
 from google.cloud import firestore
 import logging
 from enum import Enum
@@ -44,15 +46,18 @@ class Record:
                     graph_name=graph_name)
 
     def to_firestore(self, graph_name, client):
-        document_name = f"{client}_{graph_name}"
+        document_name = self.document_name(graph_name=graph_name, client=client)
         document = firestore.Client().collection(self.collection).document(document_name)
         document.set(self._to_document(graph_name, client))
 
+    def document_name(self, **kwargs):
+        return f"{kwargs['client']}_{kwargs['graph_name']}"
+
     def __repr__(self):
-        return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection={self.collection})"
+        return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection='{self.collection}')"
 
     def to_table_part(self, graph_name="", client=""):
-        document_name = f"{client}_{graph_name}"
+        document_name = self.document_name(graph_name=graph_name, client=client)
         return f"""<tr>
           <td>{document_name}</td>
           <td>{self.collection}</td>
@@ -65,7 +70,7 @@ class Record:
         table = f"""<table>
 <thead>
   <tr>
-    <th>Field</th>
+    <th>Document name</th>
     <th>Collection</th>
     <th>Document</th>
   </tr>
@@ -76,6 +81,15 @@ class Record:
 </table>"""
         return table
 
+    def __eq__(self, other):
+        if self.__class__ != other.__class__:
+            return False
+        if self.record != other.record:
+            return False
+        if self.collection != other.collection:
+            return False
+        return True
+
 
 class IntRecord(Record):
 
@@ -85,7 +99,7 @@ class IntRecord(Record):
             try:
                 int(el)
             except ValueError:
-                logging.warning(f"Element at index {i} is no integer")
+                logging.warning(f"Element at index {i}:'{el}' is no integer")
                 validated = False
                 if self._validation == Validation.FAIL_AT_FIRST:
                     break
@@ -154,10 +168,12 @@ class DocumentListRecord(Record):
                         break
         return validated
 
-    def _document_name(self, document, client, graph_name):
-        doc_name_parts = [client, graph_name] + [document[key_part] for key_part in self.document_key]
-        document_name = "_".join(part for part in doc_name_parts if part)
-        return document_name
+    def document_name(self, document, client, graph_name):
+        if document:
+            doc_name_parts = [client, graph_name] + [document[key_part] for key_part in self.document_key]
+            document_name = "_".join(part for part in doc_name_parts if part)
+            return document_name
+        return super().document_name(client=client, graph_name=graph_name)
 
     def to_firestore(self, graph_name=None, client=""):
         if not self.record:
@@ -168,7 +184,9 @@ class DocumentListRecord(Record):
         for i, document in enumerate(self.record):
             if client and "client" not in document:
                 document['client'] = client
-            fs_document = db.collection(self.collection).document(self._document_name(document, client, graph_name))
+            fs_document = db.collection(self.collection).document(self.document_name(document=document,
+                                                                                     client=client,
+                                                                                     graph_name=graph_name))
             batch.set(fs_document, document)
             if not i % 100:
                 batch.commit()
@@ -178,7 +196,7 @@ class DocumentListRecord(Record):
     def to_table_part(self, graph_name="", client=""):
         table_part = ""
         for doc in self.record:
-            document_name = self._document_name(doc, client, graph_name)
+            document_name = self.document_name(document=doc, client=client, graph_name=graph_name)
             table_part += f"""<tr>
               <td>{document_name}</td>
               <td>{self.collection}</td>
@@ -216,11 +234,18 @@ class DictRecord(Record):
                     project=project)
 
 
-class RecordDict:
+class RecordDict(MutableMapping):
     """A Dictionary that holds all records for an analysis"""
 
-    def __init__(self):
+    def __init__(self, record_collection=None):
         self.record_collection = {}
+        if record_collection:
+            for key, record in record_collection.items():
+                if isinstance(record, Record):
+                    self.record_collection[key] = record
+                else:
+                    raise ValueError(f"record collection must contain records,"
+                                     f"{key} contains an object of type: {type(record)}")
 
     def add(self, key, record, RecordType, collection):
         self.record_collection[key] = RecordType(record, collection)
@@ -229,5 +254,38 @@ class RecordDict:
         for key, record in self.record_collection.items():
             record.to_firestore(key, client)
 
-    def items(self):
-        return self.record_collection.items()
+    def get_record(self, key):
+        return self.record_collection[key].record
+
+    def __getitem__(self, item) -> Record:
+        return self.record_collection[item]
+
+    def __setitem__(self, key, value):
+        self.record_collection[key] = value
+
+    def __delitem__(self, key):
+        del self.record_collection[key]
+
+    def __iter__(self):
+        return iter(self.record_collection)
+
+    def __len__(self):
+        return len(self.record_collection)
+
+    def __eq__(self, other):
+        if self.__class__ != other.__class__:
+            return False
+
+        key_union = set(self) & set(other)
+
+        if not key_union == set(self) or not key_union == set(other):
+            return False
+
+        for key in key_union:
+            if self[key] != other[key]:
+                return False
+
+        return self.record_collection == other.record_collection
+
+    def __repr__(self):
+        return f"{self.__class__.__qualname__}({str(self.record_collection)})"

@@ -1,7 +1,6 @@
 import os
 try:
     from analyse.ETL import (
-        ExtractTransformProjectDataFirestoreToDfList,
         ExtractTransformPlanningData,
         ExtractTransformTargetData,
         ExtractTransformProjectDataFirestore
@@ -9,8 +8,7 @@ try:
     import analyse.config as config
 except ImportError as e:
     print(e)
-    from ETL import (
-        ExtractTransformProjectDataFirestoreToDfList,
+    from tests.analyse_old.ETL import (
         ExtractTransformPlanningData,
         ExtractTransformTargetData,
         ExtractTransformProjectDataFirestore
@@ -28,8 +26,10 @@ class Customer:
 
 class CustomerKPN(Customer):
     def get_data(self):
-        etl = ExtractTransformProjectDataFirestoreToDfList(
-            self.config["bucket"], self.config["projects"], self.config["columns"]
+        etl = ExtractTransformProjectDataFirestore(
+            bucket=self.config["bucket"],
+            projects=self.config["projects"],
+            col=self.config["columns"]
         )
         return etl.data
 

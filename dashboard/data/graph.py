@@ -31,9 +31,14 @@ def info_table():
 
 def pie_chart(client, key="overview"):
     if key == "overview":
-        fig = collection.get_graph(client=client, graph_name="reden_na_overview")
+        fig = collection.get_document(collection="Data",
+                                      client=client,
+                                      graph_name="reden_na_overview")['figure']
     else:
-        fig = collection.get_graph(client=client, graph_name="reden_na_projects", project="pie_na_" + key)
+        fig = collection.get_document(collection="Data",
+                                      client=client,
+                                      graph_name="reden_na_projects",
+                                      project="pie_na_" + key)['figure']
     data = fig['data']
     trace = go.Pie(data)
     layout = fig['layout']
