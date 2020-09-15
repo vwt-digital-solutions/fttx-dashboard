@@ -21,7 +21,7 @@ layout = dict(
 
 # APP LAYOUT
 def get_body():
-    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="kpn")
 
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",

@@ -25,8 +25,8 @@ def overview_reden_na_df(df, clusters):
 def individual_reden_na_df(project_data, clusters):
     record_dict = {}
     for project in project_data.project.unique():
-        project_data = project_data[project_data.project == project]
-        data, document = pie_chart_reden_na(project_data, clusters, project)
+        df_proj = project_data[project_data.project == project]
+        data, document = pie_chart_reden_na(df_proj, clusters, project)
         layout = get_pie_layout()
         fig = {
             'data': data,
