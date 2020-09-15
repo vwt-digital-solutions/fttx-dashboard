@@ -16,7 +16,7 @@ class Extract(ETLBase):
         super().__init__(**kwargs)
 
     def extract(self):
-        logger.debug("Extracting nothing the data in be base class")
+        logger.info("Extracting nothing the data in be base class")
 
 
 class Transform(ETLBase):
