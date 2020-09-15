@@ -3,7 +3,7 @@ import json
 import base64
 from gobits import Gobits
 import config
-from google.cloud import pubsub, firestore
+from google.cloud import pubsub
 from Record import DocumentListRecord, ListRecord
 from Analyse.KPN import KPNETL
 from Analyse.TMobile import TMobileETL
@@ -18,8 +18,8 @@ publisher = pubsub.PublisherClient()
 
 def analyse(request):
     try:
+        publish_project_data(request, 'kpn')
         analyseKPN('kpn')
-        publish_project_data(request)
         analyseTmobile('t-mobile')
         set_date_update()
         return 'OK', 200
@@ -50,27 +50,23 @@ def graph(request):
         df_l = get_data([project], config.col, None, None, 0)
         bar_names, document_list = masks_phases(project, df_l)
         dlr = DocumentListRecord(document_list, collection="Data", document_key=['filter', 'project'])
-        dlr.to_firestore(client="KPN")
+        dlr.to_firestore(client="kpn")
 
         lr = ListRecord(dict(bar_names=bar_names), collection="Data")
-        lr.to_firestore(graph_name="bar_names", client="KPN")
+        lr.to_firestore(graph_name="bar_names", client="kpn")
 
         logging.info(f'masks bar uploaded for {project}')
     except Exception:
         logging.exception('Graph calculation failed')
 
 
-def get_project_list():
-    # We could get this list from the config file
-    data = [
-        el['label'] for el in
-        firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['record']['filters']
-    ]
+def get_project_list(client):
+    data = config.client_config[client].get('projects')
     return data
 
 
-def publish_project_data(request):
-    data = get_project_list()
+def publish_project_data(request, client):
+    data = get_project_list(client)
     gobits = Gobits.from_request(request=request)
     i = 1
     for msg in data:
