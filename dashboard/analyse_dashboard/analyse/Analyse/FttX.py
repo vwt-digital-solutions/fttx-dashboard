@@ -40,15 +40,14 @@ class FttXExtract(Extract):
         Sets self.extracted_data to a pd.Dataframe of all data.
         """
         logger.info("Extracting the Projects collection")
-        records = []
+        df = pd.DataFrame([])
         for key in self.projects:
             start_time = time.time()
             logger.debug(f"Extracting {key}...")
             docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
             new_records = [doc.to_dict() for doc in docs]
-            records += new_records
+            df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True)
             logger.debug(f"Extracted {len(new_records)} records in {time.time() - start_time} seconds")
-        df = pd.DataFrame(records).fillna(np.nan)
 
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
