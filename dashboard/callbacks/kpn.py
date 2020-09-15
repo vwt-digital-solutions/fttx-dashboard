@@ -117,7 +117,7 @@ def middle_top_graphs(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_prog = collection.get_graph(client="KPN", graph_name="prognose_graph_dict", project=drop_selectie)
+    fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
     table_info = graph_info_table()
@@ -166,14 +166,14 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
                 pt_cell = 'HB0'
         mask_all += pt_x + pt_cell
 
-        doc = collection.get_document(collection="Data", client="KPN", graph_name="bar_names")['bar_names']
+        doc = collection.get_document(collection="Data", client="kpn", graph_name="bar_names")['bar_names']
         if mask_all not in doc:
             mask_all = '0'
     else:
         mask_all = '0'
     barLB = clickbar_lb(drop_selectie, mask_all)
     barHB = clickbar_hb(drop_selectie, mask_all)
-    pieNA = pie_chart(client='KPN', key=drop_selectie)
+    pieNA = pie_chart(client='kpn', key=drop_selectie)
 
     # return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
     return [barLB, barHB, pieNA, mask_all, drop_selectie]
@@ -221,7 +221,7 @@ def FTU_update(data):
     firestore.Client().collection('Data').document(record['id']).set(record)
 
     # to update overview graphs:
-    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="kpn")
     HC_HPend = jaaroverzicht['HC_HPend']
     HAS_werkvoorraad = jaaroverzicht["HAS_werkvoorraad"]
     doc = firestore.Client().collection('Data').document('analysis2').get().to_dict()
@@ -266,16 +266,17 @@ def FTU_update(data):
     prognose_graph(x_d, y_prog_l, d_real_l, y_target_l)
     info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err)
 
-    # jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+    # jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="kpn")
 
     out0 = 'HPend afgesproken: ' + jaaroverzicht['target']
     out1 = 'HPend gerealiseerd: ' + jaaroverzicht['real']
     out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht['plan']
     out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht['prog']
     out4 = jaaroverzicht['HC_HPend']
-    out5 = collection.get_graph(client="KPN", graph_name='graph_targets_M')
-    out6 = collection.get_graph(client="KPN", graph_name='graph_targets_W')
-    out7 = collection.get_graph(client="KPN", graph_name='project_performance')
+
+    out5 = collection.get_graph(client="kpn", graph_name='graph_targets_M')
+    out6 = collection.get_graph(client="kpn", graph_name='graph_targets_W')
+    out7 = collection.get_graph(client="kpn", graph_name='project_performance')
     out8 = HAS_werkvoorraad
 
     return [out0, out1, out2, out3, out4, out5, out6, out7, out8]

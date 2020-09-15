@@ -1223,8 +1223,8 @@ def pie_chart_reden_na(df_na, clusters, key):
     df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
     df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
 
-    df_na = df_na.groupby('cluster_redenna').size()
-    df_na = df_na.to_frame(name='count').reset_index()
+    df_na = df_na.groupby('cluster_redenna').size().copy()
+    df_na = df_na.to_frame(name='count').reset_index().copy()
     labels = df_na['cluster_redenna'].tolist()
     values = df_na['count'].tolist()
 

@@ -21,7 +21,7 @@ layout = dict(
 
 # APP LAYOUT
 def get_body():
-    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="KPN")
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="kpn")
 
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
@@ -57,13 +57,13 @@ def get_body():
                 [
                     figure(container_id="graph_targets_M_container",
                            graph_id="graph_targets_M",
-                           figure=collection.get_graph(client="KPN", graph_name="graph_targets_M")),
+                           figure=collection.get_graph(client="kpn", graph_name="graph_targets_M")),
                     figure(container_id="graph_targets_W_container",
                            graph_id="graph_targets_W",
-                           figure=collection.get_graph(client="KPN", graph_name="graph_targets_W")),
+                           figure=collection.get_graph(client="kpn", graph_name="graph_targets_W")),
                     figure(container_id="pie_chart_overview_kpn_container",
                            graph_id="pie_chart_overview_kpn",
-                           figure=pie_chart('KPN')),
+                           figure=pie_chart('kpn')),
                 ],
                 id="main_graphs0",
                 className="container-display",
@@ -73,7 +73,7 @@ def get_body():
 
                     figure(container_id="graph_speed_c",
                            graph_id="project_performance",
-                           figure=collection.get_graph(client="KPN",
+                           figure=collection.get_graph(client="kpn",
                                                        graph_name="project_performance")),
                     html.Div([
                         html.Div(id='ww_c',
@@ -97,7 +97,7 @@ def get_body():
                 [
                     html.Div(
                         [dcc.Dropdown(id='project-dropdown',
-                                      options=collection.get_document(collection="Data", client="KPN",
+                                      options=collection.get_document(collection="Data", client="kpn",
                                                                       graph_name="project_names")['filters'],
                                       value=None)],
                         className="two-third column",
