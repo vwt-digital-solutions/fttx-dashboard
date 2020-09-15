@@ -273,6 +273,7 @@ def FTU_update(data):
     out2 = 'HPend gepland vanaf nu: ' + jaaroverzicht['plan']
     out3 = 'HPend voorspeld vanaf nu: ' + jaaroverzicht['prog']
     out4 = jaaroverzicht['HC_HPend']
+
     out5 = collection.get_graph(client="kpn", graph_name='graph_targets_M')
     out6 = collection.get_graph(client="kpn", graph_name='graph_targets_W')
     out7 = collection.get_graph(client="kpn", graph_name='project_performance')
