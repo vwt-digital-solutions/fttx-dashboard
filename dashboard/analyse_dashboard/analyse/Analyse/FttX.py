@@ -9,8 +9,8 @@ import pickle  # nosec
 
 import logging
 
-from Record import RecordDict, Record, DictRecord
-from functions import calculate_projectspecs, overview_reden_na, individual_reden_na
+from Record import RecordDict, Record, DictRecord, ListRecord
+from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -119,6 +119,7 @@ class FttXAnalyse(FttXBase):
         logger.info("Analysing using the FttX protocol")
         self._calculate_projectspecs()
         self._reden_na()
+        self._set_filters()
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
@@ -142,6 +143,9 @@ class FttXAnalyse(FttXBase):
         record_dict = individual_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
         self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
         self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
+
+    def _set_filters(self):
+        self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
 
 
 class FttXLoad(Load, FttXBase):

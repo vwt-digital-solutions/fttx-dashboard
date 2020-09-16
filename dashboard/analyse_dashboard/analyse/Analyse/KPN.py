@@ -5,7 +5,7 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, calculate_y_voorraad_act, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, set_filters
+    info_table, analyse_documents
 import pandas as pd
 
 import logging
@@ -275,9 +275,6 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add("analysis", doc1, Record, "Data")
         self.record_dict.add("analysis2", doc2, Record, "Data")
         self.record_dict.add("analysis3", doc3, Record, "Data")
-
-    def _set_filters(self):
-        self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
 
 
 class KPNETL(FttXETL, KPNExtract, KPNTransform, KPNAnalyse):
