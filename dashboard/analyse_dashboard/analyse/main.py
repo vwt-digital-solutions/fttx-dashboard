@@ -4,7 +4,7 @@ import base64
 from gobits import Gobits
 import config
 from google.cloud import pubsub
-from Record import DocumentListRecord, ListRecord
+from Analyse.Record import DocumentListRecord, ListRecord
 from Analyse.KPN import KPNETL
 from Analyse.TMobile import TMobileETL
 from functions import set_date_update, get_data, masks_phases

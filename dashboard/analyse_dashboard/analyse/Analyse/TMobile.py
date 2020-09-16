@@ -1,5 +1,5 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
-from Record import Record, DocumentListRecord
+from Analyse.Record import Record, DocumentListRecord
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
 
 import logging

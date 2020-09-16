@@ -3,7 +3,7 @@ import dash_html_components as html
 import dash_bootstrap_components as dbc
 
 from layout.components.header import header
-from layout.pages.tmobile import overview, detail
+from layout.pages.tmobile import overview, project_view
 from data import collection
 
 layout = dict(
@@ -53,8 +53,8 @@ def get_body():
             ),
             html.Div(
                 style={'display': 'none'},
-                id="tmobile-detail",
-                children=detail.get_html(""),
+                id="tmobile-project-view",
+                children=project_view.get_html(""),
             ),
         ],
         id="mainContainer",
