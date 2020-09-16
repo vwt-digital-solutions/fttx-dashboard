@@ -149,6 +149,8 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
 
     def _calculate_status_counts_per_project(self):
+        logger.info("Calculating completed status counts per project")
+
         def _calculate_status_df(df: pd.DataFrame):
             has_calculation = pd.concat([
                 df['opleverdatum'].isna(),
