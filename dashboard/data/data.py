@@ -9,7 +9,7 @@ def has_planning_by(period, provider):
     has_opgeleverd = collection.get_document(collection="Data", id="count_opleverdatum_by_" + period, client=provider)
     has_planning = collection.get_document(collection="Data", id="count_hasdatum_by_" + period, client=provider)
     has_outlook = collection.get_document(collection="Data", id="count_outlookdatum_by_" + period, client=provider)
-    # temporary solution until we also have outlook data for T-Mobile
+    # temporary solution until we have outlook data for T-Mobile
     if not has_outlook:
         has_outlook['count_outlookdatum'] = has_opgeleverd['count_opleverdatum'].copy()
         for el in has_outlook['count_outlookdatum']:
