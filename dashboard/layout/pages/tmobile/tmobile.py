@@ -1,7 +1,7 @@
 import dash_core_components as dcc
 import dash_html_components as html
 
-from data.data import has_planning_by_week, has_planning_by_month
+from data.data import has_planning_by
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
@@ -74,18 +74,12 @@ def get_body():
             ),
             html.Div(
                 className="container-display",
-                children=[planning_has_graph.get_html_week(has_planning_by_week()),
-                          planning_has_graph.get_html_month(has_planning_by_month())]
+                children=[planning_has_graph.get_html_overview(has_planning_by('month', 't-mobile')),
+                          planning_has_graph.get_html_overview(has_planning_by('week', 't-mobile')),
+                          figure(container_id="pie_chart_overview_t-mobile_container",
+                                 graph_id="pie_chart_overview_t-mobile",
+                                 figure=pie_chart('t-mobile'))]
             ),
-            html.Div(
-                className="container-display",
-                children=[
-                    figure(container_id="pie_chart_overview_t-mobile_container",
-                           graph_id="pie_chart_overview_t-mobile",
-                           figure=pie_chart('t-mobile')
-                           )
-                ],
-            )
         ],
         id="mainContainer",
         style={"display": "flex", "flex-direction": "column"},
