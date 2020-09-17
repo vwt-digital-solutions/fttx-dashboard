@@ -3,6 +3,7 @@ import dash_html_components as html
 from data.data import completed_status_counts
 from layout.components.graphs import completed_status_counts_bar
 
+
 def get_html(project_name):
     status_counts = completed_status_counts(project_name)
 
@@ -17,4 +18,3 @@ def get_html(project_name):
             ]
         )
     ]
-
