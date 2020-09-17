@@ -582,7 +582,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
             'showlegend': True,
             'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
             'height': 300,
-            'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+            'margin': {'l': 5, 'r': 15, 'b': 10, 't': 40},
             'title': {'text': text_title},
             'xaxis': {'range': x_range,
                       'tickvals': x_ticks,
@@ -1284,7 +1284,7 @@ def get_pie_layout():
     layout = {
         #   'clickmode': 'event+select',
         'showlegend': True,
-        'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+        'margin': {'l': 5, 'r': 15, 'b': 15, 't': 40},
         'title': {'text': 'Opgegeven reden na'},
         'height': 350,
         'plot_bgcolor': colors['plot_bgcolor'],
