@@ -187,7 +187,7 @@ class AnalysisTmobile(Analysis):
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data")
 
     def get_counts_by_month(self):
-        counts_by_month = counts_by_time_period(self.data, freq="M")
+        counts_by_month = counts_by_time_period(self.data, freq="MS")
         drl = [dict(record={k: v},
                     id=f"{k}_by_month")
                for k, v in counts_by_month.items()]

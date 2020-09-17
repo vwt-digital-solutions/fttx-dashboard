@@ -96,40 +96,43 @@ def calculate_voorraadvormend(df):
     voorraad_project_counts = voorraad_project_counts.append(totals).set_index("project").to_dict()['voorraad_count'].copy()
     return voorraad_project_counts
 
-
-def calculate_planning_has_by_week(df):
-    count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='W-MON')]).count()
-    count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
-
-    count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='W-MON')]).count()
-    count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
-
-    merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
-    merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
-    merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
-    record = merged_df.set_index("date").to_dict()
-
-    return record
-
-
-def calculate_planning_has_by_month(df):
-    count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='M')]).count()
-    count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
-
-    count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='M')]).count()
-    count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
-
-    merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
-    merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
-    merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
-    record = merged_df.set_index("date").to_dict()
-
-    return record
+# Doesnt look like it is used
+# def calculate_planning_has_by_week(df):
+#     count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='W-MON')]).count()
+#     count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
+#
+#     count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='W-MON')]).count()
+#     count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
+#
+#     merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
+#     merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
+#     merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
+#     record = merged_df.set_index("date").to_dict()
+#
+#     return record
+#
+#
+# def calculate_planning_has_by_month(df):
+#     count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='M')]).count()
+#     count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
+#
+#     count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='M')]).count()
+#     count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
+#
+#     merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
+#     merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
+#     merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
+#     record = merged_df.set_index("date").to_dict()
+#
+#     return record
 
 
 def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+    We commonly use:
+        'MS' for the start of the month
+        'W-MON' for weeks starting on Monday.
     """
     date_cols = [col for col in df.columns if "datum" in col or "date" in col]
 
@@ -137,7 +140,12 @@ def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
 
     for col in date_cols:
         if len(df[~df[col].isna()]):
-            count_df = df[['project', col]].groupby(by=[pd.Grouper(key=col, freq=freq)]).count()
+            count_df = df[['project', col]].groupby(by=[pd.Grouper(key=col,
+                                                                   freq=freq,
+                                                                   closed='left',
+                                                                   label="left")
+                                                        ]
+                                                    ).count()
             count_df = count_df.reset_index().rename(columns={col: "date", "project": f"count_{col}"})
             counts_dfs.append(count_df)
         else:
