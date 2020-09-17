@@ -2,10 +2,10 @@ from google.cloud import firestore
 
 from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
-from Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
+from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, calculate_y_voorraad_act, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, set_filters
+    info_table, analyse_documents
 import pandas as pd
 
 import logging
@@ -55,7 +55,7 @@ class KPNTransform(FttXTransform):
         self._transform_planning()
 
     def _transform_planning(self):
-        logger.debug("Transforming planning for KPN")
+        logger.info("Transforming planning for KPN")
         HP = dict(HPendT=[0] * 52)
         df = self.transformed_data.planning
         for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
@@ -102,7 +102,7 @@ class KPNAnalyse(FttXAnalyse):
         self._set_filters()
 
     def _error_check_FCBC(self):
-        logger.debug("Calculating errors for KPN")
+        logger.info("Calculating errors for KPN")
         n_err, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
         # self.record_dict.add('n_err', n_err, Record, 'Data')
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
@@ -110,7 +110,7 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.n_err = n_err
 
     def _prognose(self):
-        logger.debug("Calculating prognose for KPN")
+        logger.info("Calculating prognose for KPN")
 
         start_time = get_start_time(self.transformed_data.df)
         timeline = get_timeline(start_time)
@@ -145,7 +145,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
 
     def _set_input_fields(self):
-        logger.debug("Setting input fields for KPN")
+        logger.info("Setting input fields for KPN")
         self.record_dict.add("analysis",
                              dict(FTU0=self.extracted_data.ftu['date_FTU0'],
                                   FTU1=self.extracted_data.ftu['date_FTU1']),
@@ -159,7 +159,7 @@ class KPNAnalyse(FttXAnalyse):
                              collection="Data")
 
     def _targets(self):
-        logger.debug("Calculating targets for KPN")
+        logger.info("Calculating targets for KPN")
         y_target_l, t_diff = targets(self.intermediate_results.x_prog,
                                      self.intermediate_results.timeline,
                                      self.intermediate_results.t_shift,
@@ -172,13 +172,13 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('y_target_l', y_target_l, ListRecord, 'Data')
 
     def _calculate_y_voorraad_act(self):
-        logger.debug("Calculating y voorraad act for KPN")
+        logger.info("Calculating y voorraad act for KPN")
         y_voorraad_act = calculate_y_voorraad_act(self.transformed_data.df)
         self.intermediate_results.y_voorraad_act = y_voorraad_act
         self.record_dict.add('y_voorraad_act', y_voorraad_act, Record, 'Data')
 
     def _performance_matrix(self):
-        logger.debug("Calculating performance matrix for KPN")
+        logger.info("Calculating performance matrix for KPN")
         graph = performance_matrix(
             self.intermediate_results.timeline,
             self.intermediate_results.y_target_l,
@@ -190,7 +190,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('project_performance', graph, Record, 'Graphs')
 
     def _prognose_graph(self):
-        logger.debug("Calculating prognose graph for KPN")
+        logger.info("Calculating prognose graph for KPN")
         result_dict = prognose_graph(
             self.intermediate_results.timeline,
             self.intermediate_results.y_prog_l,
@@ -283,9 +283,6 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add("analysis", doc1, Record, "Data")
         self.record_dict.add("analysis2", doc2, Record, "Data")
         self.record_dict.add("analysis3", doc3, Record, "Data")
-
-    def _set_filters(self):
-        self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
 
 
 class KPNETL(FttXETL, KPNExtract, KPNTransform, KPNAnalyse):

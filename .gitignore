@@ -9,3 +9,5 @@ deploy.sh
 *.ipynb_checkpoints*
 *.ipynb
 test.py
+*.pickle
+*.pkl

@@ -192,7 +192,7 @@ body {
   font-size: 1.5em; /* currently ems cause chrome bug misinterpreting rems on body element */
   line-height: 1.6;
   font-weight: 400;
-  font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial,
+  font-family: "Source sans pro", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial,
     sans-serif;
   color: rgb(50, 50, 50);
 }
@@ -258,7 +258,7 @@ p {
 /* Blockquotes
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 blockquote {
-  border-left: 4px lightgrey solid;
+  border-left: 4px lightgray solid;
   padding-left: 1rem;
   margin-top: 2rem;
   margin-bottom: 2rem;
