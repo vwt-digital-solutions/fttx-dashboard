@@ -2,7 +2,7 @@ from google.cloud import firestore
 
 from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
-from Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
+from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, calculate_y_voorraad_act, performance_matrix, prognose_graph, overview, graph_overview, \
     info_table, analyse_documents

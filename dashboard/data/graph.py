@@ -46,13 +46,11 @@ def pie_chart(client, key="overview"):
     trace = go.Pie(data)
     layout = fig['layout']
     data = [trace]
-    print(data)
     fig = go.Figure(data, layout=layout)
     return fig
 
 
 def clickbar_lb(drop_selectie, mask_all):
-    print(drop_selectie)
     fig = collection.get_document(collection="Data",
                                   graph_name='status_bar_chart',
                                   project=drop_selectie,
@@ -231,7 +229,8 @@ def geomap_data_table(drop_selectie, mask_all):
             plot_bgcolor="#F9F9F9",
             paper_bgcolor="#F9F9F9",
             legend=dict(font=dict(size=10), orientation="h"),
-            title="Status oplevering per woning (kleine marker) & DP (grote marker)<br>[groen = opgeleverd, rood = niet opgeleverd]",
+            title="Status oplevering per woning (kleine marker) & DP"
+                  "(grote marker)<br>[groen = opgeleverd, rood = niet opgeleverd]",
             mapbox=dict(
                 accesstoken=mapbox_at,
                 style="light",

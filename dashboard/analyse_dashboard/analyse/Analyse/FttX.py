@@ -9,7 +9,7 @@ import pickle  # nosec
 
 import logging
 
-from Record import RecordDict, Record, DictRecord, ListRecord
+from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters
 
 logger = logging.getLogger('FttX Analyse')
@@ -120,6 +120,7 @@ class FttXAnalyse(FttXBase):
         self._calculate_projectspecs()
         self._reden_na()
         self._set_filters()
+        self._calculate_status_counts_per_project()
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
@@ -146,6 +147,59 @@ class FttXAnalyse(FttXBase):
 
     def _set_filters(self):
         self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
+
+    def _calculate_status_counts_per_project(self):
+        logger.info("Calculating completed status counts per project")
+
+        def _calculate_status_df(df: pd.DataFrame):
+            has_calculation = pd.concat([
+                df['opleverdatum'].isna(),
+                df['opleverstatus'] == '2',
+                (
+                        (df['opleverstatus'] != '2') &
+                        (~df['opleverdatum'].isna())
+                )
+            ], axis=1).astype(int)
+            has_calculation.columns = ['niet_opgeleverd', "opgeleverd", "opgeleverd_zonder_hc"]
+
+            has_col = ((1 * has_calculation.niet_opgeleverd) + (2 * has_calculation.opgeleverd) + (
+                    3 * has_calculation.opgeleverd_zonder_hc)) - 1
+            has = has_col.apply(lambda x: has_calculation.columns[x])
+
+            business_rules_list = [
+                [~df['toestemming'].isna(), "geschouwd"],
+                [df['opleverstatus'] != '0', "bis_gereed"],
+                [df['soort_bouw'] == 'Laag', "laagbouw"],
+                [df['laswerkdpgereed'] == '1', "lasDP"],
+                [df['laswerkapgereed'] == '1', "lasAP"],
+                [has, "HAS"],
+
+            ]
+            neccesary_info_list = [
+                [df['sleutel'], "count"],
+                [df['project'], "project"]
+            ]
+
+            series_list = business_rules_list + neccesary_info_list
+
+            cols, colnames = list(zip(*series_list))
+            status_df = pd.concat(cols, axis=1)
+            status_df.columns = colnames
+            cols = ['geschouwd', 'bis_gereed', 'lasDP', 'lasAP']
+            status_df.loc[:, cols] = status_df.loc[:, cols].replace(True, "opgeleverd", inplace=False)
+            status_df.loc[:, cols] = status_df.loc[:, cols].replace(False, "niet_opgeleverd", inplace=False)
+            return status_df
+
+        status_df = _calculate_status_df(self.transformed_data.df)
+        status_counts_dict = {}
+        col_names = list(status_df.columns)
+        for project in status_df.project.unique():
+            project_status = status_df[status_df.project == project][col_names[:-1]]
+            status_counts_dict[project] = project_status.groupby(col_names[:-2]) \
+                .count() \
+                .reset_index() \
+                .to_dict(orient='records')
+        self.record_dict.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
 
 
 class FttXLoad(Load, FttXBase):

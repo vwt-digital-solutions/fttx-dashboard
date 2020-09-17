@@ -1,7 +1,7 @@
 from app import app
 from dash.dependencies import Input, Output
 
-from layout.pages.tmobile import detail
+from layout.pages.tmobile import project_view
 
 
 @app.callback(
@@ -20,17 +20,17 @@ def tmobile_overview(dropdown_selection):
 
 @app.callback(
     [
-        Output(component_id="tmobile-detail", component_property='style'),
-        Output("tmobile-detail", "children"),
+        Output(component_id="tmobile-project-view", component_property='style'),
+        Output("tmobile-project-view", "children"),
     ],
     [
         Input('project-dropdown-tmobile', 'value'),
     ],
 )
-def tmobile_detail(dropdown_selection):
+def tmobile_project_view(dropdown_selection):
     if dropdown_selection:
-        return [{'display': 'block'}, detail.get_html(dropdown_selection)]
-    return [{'display': 'none'}, detail.get_html(dropdown_selection)]
+        return [{'display': 'block'}, project_view.get_html(dropdown_selection)]
+    return [{'display': 'none'}, project_view.get_html(dropdown_selection)]
 
 
 @app.callback(

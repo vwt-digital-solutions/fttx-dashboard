@@ -1,5 +1,5 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
-from Record import Record, DocumentListRecord
+from Analyse.Record import Record, DocumentListRecord
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
 
 import logging
@@ -44,7 +44,7 @@ class TMobileAnalyse(FttXAnalyse):
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
-        counts_by_month = counts_by_time_period(self.transformed_data.df, freq="M")
+        counts_by_month = counts_by_time_period(self.transformed_data.df, freq="MS")
         drl = [dict(record={k: v},
                     id=f"{k}_by_month")
                for k, v in counts_by_month.items()]
