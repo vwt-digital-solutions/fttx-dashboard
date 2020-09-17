@@ -1,5 +1,8 @@
 from config_pages import config_pages
 import dash_bootstrap_components as dbc
+import config
+
+colors = config.colors_vwt
 
 
 def nav_bar(huidige_pagina, brand):
@@ -15,7 +18,8 @@ def nav_bar(huidige_pagina, brand):
             dbc.DropdownMenuItem(
                 config_pages[page]['name'],
                 href=config_pages[page]['link'][0],
-                style={'font-size': '1.5rem'}
+                style={'font-size': '1.5rem',
+                       'color': colors['vwt_blue']}
             ),
             dbc.DropdownMenuItem(divider=True)
         ]
@@ -29,16 +33,18 @@ def nav_bar(huidige_pagina, brand):
             in_navbar=True,
             label='Menu',
             children=dropdown_items,
-            style={'font-size': '1.5rem'}
+            style={'font-size': '1.5rem',
+                   'color': colors['vwt_blue']}
         )
     ]
 
     return dbc.NavbarSimple(
+        id='navbar',
         children=children,
         brand=brand,
         sticky='top',
         dark=True,
-        color='grey',
+        color=colors['vwt_blue'],
         style={
             'top': 0,
             'left': 0,

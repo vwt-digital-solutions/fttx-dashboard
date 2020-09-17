@@ -5,29 +5,15 @@ import dash_bootstrap_components as dbc
 from layout.components.header import header
 from layout.pages.tmobile import overview, project_view
 from data import collection
+import config
 
-layout = dict(
-    autosize=True,
-    automargin=True,
-    margin=dict(le=30, r=30, b=20, t=40),
-    hovermode="closest",
-    plot_bgcolor="#F9F9F9",
-    paper_bgcolor="#F9F9F9",
-    legend=dict(font=dict(size=10), orientation="h"),
-)
+colors = config.colors_vwt
 
 
 # APP LAYOUT
 def get_body():
     page = html.Div(
         [
-            dcc.Store(id="project_filter_tmobile"),
-            dcc.Store(id="aggregate_data",
-                      data=None),
-            dcc.Store(id="aggregate_data2",
-                      data=None),
-            dcc.Store(id="aggregate_data3",
-                      data=None),
             header("Status projecten T-Mobile in 2020"),
 
             html.Div(
@@ -44,7 +30,9 @@ def get_body():
                         className="two-third column",
                     ),
                     html.Div(
-                        [dbc.Button('Terug naar overzicht alle projecten', id='overzicht-button-tmobile')],
+                        [dbc.Button('Terug naar overzicht alle projecten',
+                                    id='overzicht-button-tmobile',
+                                    style={'background-color': colors['vwt_blue']})],
                         className="one-third column",
                     ),
                 ],

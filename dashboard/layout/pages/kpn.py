@@ -7,16 +7,9 @@ from layout.components.figure import figure
 from data.graph import pie_chart, ftu_table
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
+import config
 
-layout = dict(
-    autosize=True,
-    automargin=True,
-    margin=dict(le=30, r=30, b=20, t=40),
-    hovermode="closest",
-    plot_bgcolor="#F9F9F9",
-    paper_bgcolor="#F9F9F9",
-    legend=dict(font=dict(size=10), orientation="h"),
-)
+colors = config.colors_vwt
 
 
 # APP LAYOUT
@@ -47,8 +40,6 @@ def get_body():
                       data=None),
             dcc.Store(id="aggregate_data2",
                       data=None),
-            dcc.Store(id="aggregate_data3",
-                      data=None),
             header("Status projecten KPN in 2020"),
             global_info_list(jaaroverzicht_list,
                              id="info-container1",
@@ -76,17 +67,17 @@ def get_body():
                            figure=collection.get_graph(client="kpn",
                                                        graph_name="project_performance")),
                     html.Div([
-                        html.Div(id='ww_c',
-                                 children=dcc.Input(id='ww', value=' ', type='text'),
-                                 className="pretty_container column",
-                                 hidden=False,
-                                 ),
                         html.Div(
                             ftu_table(),
                             id='FTU_table_c',
                             className="pretty_container column",
                             hidden=False,
                         ),
+                        html.Div(id='ww_c',
+                                 children=dcc.Input(id='ww', value=' ', type='text'),
+                                 className="pretty_container column",
+                                 hidden=False,
+                                 ),
                     ],
                         className="pretty_container column",
                     ),
@@ -103,7 +94,9 @@ def get_body():
                         className="two-third column",
                     ),
                     html.Div(
-                        [dbc.Button('Terug naar overzicht alle projecten', id='overzicht_button')],
+                        [dbc.Button('Terug naar overzicht alle projecten',
+                                    id='overzicht_button',
+                                    style={'background-color': colors['vwt_blue']})],
                         className="one-third column",
                     ),
                 ],

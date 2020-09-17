@@ -8,3 +8,5 @@ export.sh
 deploy.sh
 *.ipynb_checkpoints*
 *.ipynb
+*.pickle
+*.pkl

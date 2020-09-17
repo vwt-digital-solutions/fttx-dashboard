@@ -28,7 +28,9 @@ body {
 
 .pretty_container_red {
   border-radius: 5px;
-  background-color: #e91010;
+  border-style: solid;
+  border-color: #de425b;
+  background-color: #f9f9f9;
   margin: 10px;
   padding: 15px;
   position: relative;

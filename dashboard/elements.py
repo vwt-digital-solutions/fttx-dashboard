@@ -1,3 +1,5 @@
+from config import colors_vwt as colors
+
 site_colors = {
     'black': '#000000',
     'indigo': '#1E22AA',
@@ -14,14 +16,14 @@ table_style_header = {
     'backgroundColor': 'white',
     'fontWeight': 'bold',
     'borderBottom': '1px solid black',
-    'color': site_colors['indigo'],
+    'color': colors['vwt_blue'],
     'align': 'center',
 }
 
 table_style_cell_problem = {
     'font-family': 'helvetica',
     'boxShadow': '0 0',
-    'backgroundColor': site_colors['grey20'],
+    'backgroundColor': colors['lightgray'],
     'textAlign': 'center',
     'minWidth': '120px',
     'maxWidth': '500px',
@@ -33,7 +35,7 @@ table_style_cell_action['maxWidth'] = '300px'
 table_styles = {
     'filter': {
         'font-family': 'helvetica',
-        'backgroundColor': site_colors['grey20'],
+        'backgroundColor': colors['lightgray'],
         'textAlign': 'left',
     },
     'header': table_style_header,
