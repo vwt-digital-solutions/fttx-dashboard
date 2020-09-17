@@ -58,7 +58,5 @@ def get_html():
                       figure(container_id="pie_chart_overview_t-mobile_container",
                              graph_id="pie_chart_overview_t-mobile",
                              figure=pie_chart('t-mobile'))]
-        ),
-            ],
         )
     ]
