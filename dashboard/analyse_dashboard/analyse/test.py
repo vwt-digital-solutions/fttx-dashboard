@@ -2,13 +2,13 @@
 import os
 import time
 import config
-from Analyse.KPN import KPNETL
+from Analyse.KPN import KPNETL, PickleExtract
 from functions import graph_overview
 import logging
 
-# from Analyse.TMobile import TMobileETL
+from Analyse.TMobile import TMobileETL
 
-logging.basicConfig(format=' %(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logging.basicConfig(format=' %(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -24,8 +24,13 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_d
 # %% Get data from state collection Projects
 t_start = time.time()
 
+
+class KPNPickleETL(PickleExtract, KPNETL):
+    pass
+
+
 client_name = "kpn"
-kpn = KPNETL(client=client_name, config=config.client_config[client_name])
+kpn = KPNPickleETL(client=client_name, config=config.client_config[client_name])
 kpn.extract()
 kpn.transform()
 kpn.analyse()
@@ -55,8 +60,15 @@ graph_targets_W = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend,
 # kpn.perform()
 # logging.info("KPN Done")
 
-# client_name = "t-mobile"
-# tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
-# tmobile.perform()
-# logging.info("T-mobile Done")
-# logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
+
+class TMobilePickleETL(PickleExtract, TMobileETL):
+    pass
+
+
+client_name = "t-mobile"
+tmobile = TMobilePickleETL(client=client_name, config=config.client_config[client_name])
+tmobile.perform()
+logging.info("T-mobile Done")
+logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
+
+# Record.to_firestore...

@@ -497,7 +497,6 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
 
 def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res):
     if 'W' in res:
-        data_res = 'week'
         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
         x_ticks = list(range(n_now - n_d, n_now + 5 - n_d))
@@ -537,7 +536,6 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
     plan[0:n_now] = real[0:n_now]  # gelijk trekken afgelopen periode
 
     if 'M' == res:
-        data_res = 'month'
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
                              plan=str(round(sum(plan[n_now:]) - real[n_now])),
                              prog=str(round(sum(prog[n_now:]) - real[n_now])),
@@ -603,19 +601,19 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
     }
 
     prog0.index = prog0.index.strftime('%Y-%m-%d')
+    data_pr = dict(count_voorspellingdatum=prog0.to_dict())
     target0.index = target0.index.strftime('%Y-%m-%d')
+    data_t = dict(count_outlookdatum=target0.to_dict())
     real0.index = real0.index.strftime('%Y-%m-%d')
+    data_r = dict(count_opleverdatum=real0.to_dict())
     plan0.index = plan0.index.strftime('%Y-%m-%d')
-    data_p = dict(id='count_voorspellingdatum_by_' + data_res, client='kpn', record=prog0.to_dict())
-    data_t = dict(id='count_outlookdatum_by_' + data_res, client='kpn', record=target0.to_dict())
-    data_r = dict(id='count_opleverdatum_by_' + data_res, client='kpn', record=real0.to_dict())
-    data_p = dict(id='count_hasdatum_by_' + data_res, client='kpn', record=plan0.to_dict())
+    data_p = dict(count_hasdatum=plan0.to_dict())
     if 'W' in res:
         record = dict(id='graph_targets_W', figure=fig)
-        return record, data_p, data_t, data_r, data_p
+        return record, data_pr, data_t, data_r, data_p
     if 'M' == res:
         record = dict(id='graph_targets_M', figure=fig)
-        return record, jaaroverzicht, data_p, data_t, data_r, data_p
+        return record, jaaroverzicht, data_pr, data_t, data_r, data_p
 
 
 def meters(d_sheets, tot_l, x_d, y_target_l):

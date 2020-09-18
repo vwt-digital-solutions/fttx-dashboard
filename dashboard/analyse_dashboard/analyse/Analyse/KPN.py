@@ -212,7 +212,7 @@ class KPNAnalyse(FttXAnalyse):
 
     def _calculate_graph_overview(self):
         logger.debug("Calculating graph overview")
-        graph_targets_W, data_p, data_t, data_r, data_p = graph_overview(
+        graph_targets_W, data_pr, data_t, data_r, data_p = graph_overview(
             self.intermediate_results.df_prog,
             self.intermediate_results.df_target,
             self.intermediate_results.df_real,
@@ -221,12 +221,12 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.HAS_werkvoorraad,
             res='W-MON')
         self.record_dict.add('graph_targets_W', graph_targets_W, Record, 'Graphs')
-        self.record_dict.add('count_voorspellingdatum_by_week', data_p, Record, 'Data')
+        self.record_dict.add('count_voorspellingdatum_by_week', data_pr, Record, 'Data')
         self.record_dict.add('count_outlookdatum_by_week', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_week', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_week', data_p, Record, 'Data')
 
-        graph_targets_M, jaaroverzicht, data_p, data_t, data_r, data_p = graph_overview(
+        graph_targets_M, jaaroverzicht, data_pr, data_t, data_r, data_p = graph_overview(
             self.intermediate_results.df_prog,
             self.intermediate_results.df_target,
             self.intermediate_results.df_real,
@@ -236,7 +236,7 @@ class KPNAnalyse(FttXAnalyse):
             res='M')
         self.record_dict.add('graph_targets_M', graph_targets_M, Record, 'Graphs')
         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
-        self.record_dict.add('count_voorspellingdatum_by_month', data_p, Record, 'Data')
+        self.record_dict.add('count_voorspellingdatum_by_month', data_pr, Record, 'Data')
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')

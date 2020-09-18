@@ -38,17 +38,17 @@ class TMobileAnalyse(FttXAnalyse):
         logger.info("Calculating counts by week")
         counts_by_week = counts_by_time_period(self.transformed_data.df)
         drl = [dict(record={k: v},
-                    id=f"{k}_by_week")
+                    graph_name=f"{k}_by_week")
                for k, v in counts_by_week.items()]
-        self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data")
+        self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
         counts_by_month = counts_by_time_period(self.transformed_data.df, freq="MS")
         drl = [dict(record={k: v},
-                    id=f"{k}_by_month")
+                    graph_name=f"{k}_by_month")
                for k, v in counts_by_month.items()]
-        self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data")
+        self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
 
 class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):

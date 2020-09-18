@@ -1,4 +1,4 @@
-from data.data import has_planning_by_week, has_planning_by_month
+from data.data import has_planning_by
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
 from layout.pages.tmobile import planning_has_graph, new_component
