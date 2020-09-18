@@ -1,7 +1,7 @@
 from data.data import has_planning_by
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
-from layout.pages.tmobile import planning_has_graph, new_component
+from layout.pages.tmobile import planning_has_graph
 from data import collection
 from data.graph import pie_chart
 
@@ -31,26 +31,6 @@ def get_html():
         global_info_list(jaaroverzicht_list,
                          id="info-container1",
                          className="container-display"),
-        html.Div(
-            className="container-display",
-            children=[
-                new_component.get_html(value=379,
-                                       previous_value=402,
-                                       title="Order te laat",
-                                       sub_title="> 12 weken",
-                                       font_color="red"),
-                new_component.get_html(value=42,
-                                       previous_value=38,
-                                       title="Order nog beperkte tijd",
-                                       sub_title="> 8 weken < 12 weken",
-                                       font_color="orange"),
-                new_component.get_html(value=823,
-                                       previous_value=789,
-                                       title="Order op tijd",
-                                       sub_title="< 8 weken",
-                                       font_color="green"),
-            ]
-        ),
         html.Div(
             className="container-display",
             children=[planning_has_graph.get_html_overview(has_planning_by('month', 't-mobile')),

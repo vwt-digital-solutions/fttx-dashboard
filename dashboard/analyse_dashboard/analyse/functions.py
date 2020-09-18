@@ -1301,9 +1301,10 @@ def get_pie_layout():
     layout = {
         #   'clickmode': 'event+select',
         'showlegend': True,
-        'margin': {'l': 5, 'r': 15, 'b': 15, 't': 40},
+        'autosize': True,
+        'margin': {'l': 50, 'r': 50, 'b': 100, 't': 100},
         'title': {'text': 'Opgegeven reden na'},
-        'height': 350,
+        'height': 500,
         'plot_bgcolor': colors['plot_bgcolor'],
         'paper_bgcolor': colors['paper_bgcolor'],
     }
