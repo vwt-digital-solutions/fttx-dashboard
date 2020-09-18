@@ -8,7 +8,7 @@ from data.graph import pie_chart
 import dash_html_components as html
 
 
-def get_html():
+def get_html(client):
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
              title='Outlook (KPN)',
@@ -24,17 +24,22 @@ def get_html():
              value='0.66'),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
              value=str(collection.get_document(
-                 collection="Data", client="t-mobile", graph_name="voorraadvormend")['all'])),
+                 collection="Data", client=client, graph_name="voorraadvormend")['all'])),
     ]
-
     return [
         global_info_list(jaaroverzicht_list,
                          id="info-container1",
                          className="container-display"),
         html.Div(
             className="container-display",
-            children=[planning_has_graph.get_html_overview(has_planning_by('month', 't-mobile')),
-                      planning_has_graph.get_html_overview(has_planning_by('week', 't-mobile')),
+            children=[
+                html.Button('Reset', id='overview-reset', n_clicks=0, style={"margin-left": "10px"}),
+            ]
+        ),
+        html.Div(
+            className="container-display",
+            children=[planning_has_graph.get_html_overview(has_planning_by(period='month', client=client)),
+                      planning_has_graph.get_html_overview(has_planning_by(period='week', client=client)),
                       figure(container_id="pie_chart_overview_t-mobile_container",
                              graph_id="pie_chart_overview_t-mobile",
                              figure=pie_chart('t-mobile'))]

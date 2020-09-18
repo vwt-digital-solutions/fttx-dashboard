@@ -1,7 +1,11 @@
+import dash
 from app import app
 from dash.dependencies import Input, Output
 
+from data import collection
+from layout.components.graphs import pie_chart
 from layout.pages.tmobile import project_view
+from data.graph import pie_chart as original_pie_chart
 
 
 @app.callback(
@@ -43,3 +47,36 @@ def tmobile_project_view(dropdown_selection):
 )
 def tmobile_overview_button(_):
     return [None]
+
+
+@app.callback(
+    Output('pie_chart_overview_t-mobile', 'figure'),
+    [Input('week-overview', 'clickData'),
+     Input('month-overview', 'clickData'),
+     Input('overview-reset', 'n_clicks')
+     ]
+)
+def display_click_data(week_click_data, month_click_data, reset):
+    ctx = dash.callback_context
+    first_day_of_period = ""
+    period = ""
+    if ctx.triggered:
+        for trigger in ctx.triggered:
+            period, _, _ = trigger['prop_id'].partition("-")
+            if period == "overview":
+                return original_pie_chart('t-mobile')
+            for point in trigger['value']['points']:
+                first_day_of_period = point['customdata']
+                break
+            break
+
+        redenna_by_period = collection.get_document(collection="Data",
+                                                    client="t-mobile",
+                                                    graph_name=f"redenna_by_{period}")
+
+        fig = pie_chart.get_html(labels=list(redenna_by_period.get(first_day_of_period, dict()).keys()),
+                                 values=list(redenna_by_period.get(first_day_of_period, dict()).values()),
+                                 title=f"Reden na voor de {period} {first_day_of_period}")
+
+        return fig
+    return original_pie_chart('t-mobile')

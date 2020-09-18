@@ -10,7 +10,8 @@ import pickle  # nosec
 import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
-from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters
+from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
+    calculate_redenna_per_period
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -121,6 +122,7 @@ class FttXAnalyse(FttXBase):
         self._reden_na()
         self._set_filters()
         self._calculate_status_counts_per_project()
+        self._calculate_redenna_per_period()
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
@@ -201,6 +203,18 @@ class FttXAnalyse(FttXBase):
                 .to_dict(orient='records')
         self.record_dict.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
 
+    def _calculate_redenna_per_period(self):
+        logger.info("Calculating redenna per period (week & month)")
+        by_week = calculate_redenna_per_period(self.transformed_data.df,
+                                               date_column="hasdatum",
+                                               freq="W-MON")
+        self.record_dict.add('redenna_by_week', by_week, Record, 'Data')
+
+        by_month = calculate_redenna_per_period(self.transformed_data.df,
+                                                date_column="hasdatum",
+                                                freq="MS")
+        self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
+
 
 class FttXLoad(Load, FttXBase):
 
@@ -219,7 +233,9 @@ class FttXTestLoad(FttXLoad):
         logger.info("Nothing is loaded to the firestore as this is a test")
         logger.info("The following documents would have been updated/set:")
         for document in self.record_dict:
-            logger.info(self.record_dict[document].document_name(client=self.client, graph_name=document, document=None))
+            logger.info(self.record_dict[document].document_name(client=self.client,
+                                                                 graph_name=document,
+                                                                 document=None))
 
 
 class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):
