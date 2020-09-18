@@ -1,7 +1,7 @@
 from data.data import has_planning_by
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
-from layout.pages.tmobile import planning_has_graph
+from layout.pages.tmobile import new_component
 from data import collection
 from data.graph import pie_chart
 
@@ -32,16 +32,10 @@ def get_html(client):
                          className="container-display"),
         html.Div(
             className="container-display",
-            children=[
-                html.Button('Reset', id='overview-reset', n_clicks=0, style={"margin-left": "10px"}),
-            ]
-        ),
-        html.Div(
-            className="container-display",
-            children=[planning_has_graph.get_html_overview(has_planning_by(period='month', client=client)),
-                      planning_has_graph.get_html_overview(has_planning_by(period='week', client=client)),
+            children=[figure(graph_id="month-overview", figure=new_component.get_html_overview(has_planning_by('month', client))),
+                      figure(graph_id="week-overview", figure=new_component.get_html_overview(has_planning_by('week', client))),
                       figure(container_id="pie_chart_overview_t-mobile_container",
                              graph_id="pie_chart_overview_t-mobile",
                              figure=pie_chart('t-mobile'))]
-        )
+        ),
     ]

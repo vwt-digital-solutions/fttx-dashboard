@@ -7,6 +7,8 @@ from layout.components.figure import figure
 from data.graph import pie_chart, ftu_table
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
+from layout.pages.tmobile import new_component
+from data.data import has_planning_by
 import config
 
 colors = config.colors_vwt
@@ -48,16 +50,35 @@ def get_body():
                 [
                     figure(container_id="graph_targets_M_container",
                            graph_id="graph_targets_M",
-                           figure=collection.get_graph(client="kpn", graph_name="graph_targets_M")),
+                           figure=new_component.get_html_overview(has_planning_by('month', 'kpn'))),
                     figure(container_id="graph_targets_W_container",
                            graph_id="graph_targets_W",
-                           figure=collection.get_graph(client="kpn", graph_name="graph_targets_W")),
+                           figure=new_component.get_html_overview(has_planning_by('week', 'kpn'))),
                     figure(container_id="pie_chart_overview_kpn_container",
                            graph_id="pie_chart_overview_kpn",
                            figure=pie_chart('kpn')),
                 ],
                 id="main_graphs0",
                 className="container-display",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        [dcc.Dropdown(id='project-dropdown',
+                                      options=collection.get_document(collection="Data", client="kpn",
+                                                                      graph_name="project_names")['filters'],
+                                      value=None)],
+                        className="two-third column",
+                    ),
+                    html.Div(
+                        [dbc.Button('Terug naar overzicht alle projecten',
+                                    id='overzicht_button',
+                                    style={'background-color': colors['vwt_blue']})],
+                        className="one-third column",
+                    ),
+                ],
+                className="container-display",
+                id="title",
             ),
             html.Div(
                 [
@@ -83,25 +104,6 @@ def get_body():
                     ),
                 ],
                 className="container-display",
-            ),
-            html.Div(
-                [
-                    html.Div(
-                        [dcc.Dropdown(id='project-dropdown',
-                                      options=collection.get_document(collection="Data", client="kpn",
-                                                                      graph_name="project_names")['filters'],
-                                      value=None)],
-                        className="two-third column",
-                    ),
-                    html.Div(
-                        [dbc.Button('Terug naar overzicht alle projecten',
-                                    id='overzicht_button',
-                                    style={'background-color': colors['vwt_blue']})],
-                        className="one-third column",
-                    ),
-                ],
-                className="container-display",
-                id="title",
             ),
             html.Div(
                 [

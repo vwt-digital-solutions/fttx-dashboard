@@ -40,6 +40,10 @@ def get_body():
                 id="title",
             ),
             html.Div(
+                className="container-display",
+                children=[html.Button('Reset', id='overview-reset', n_clicks=0, style={"margin-left": "10px"})],
+            ),
+            html.Div(
                 style={'display': 'none'},
                 id="tmobile-project-view",
                 children=project_view.get_html(""),
