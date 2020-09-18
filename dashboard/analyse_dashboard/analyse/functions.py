@@ -12,6 +12,7 @@ import datetime
 import hashlib
 import config
 from collections import namedtuple
+from pandas.api.types import CategoricalDtype
 
 colors = config.colors_vwt
 
@@ -1244,6 +1245,8 @@ def pie_chart_reden_na(df_na, clusters, key):
         warnings.simplefilter("ignore")
         df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
         df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
+        df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
 
         df_na = df_na.groupby('cluster_redenna').size().copy()
         df_na = df_na.to_frame(name='count').reset_index().copy()
@@ -1256,9 +1259,10 @@ def pie_chart_reden_na(df_na, clusters, key):
         'marker': {
             'colors':
                 [
-                    colors['green'],
+                    colors['vwt_blue'],
                     colors['yellow'],
-                    colors['red']
+                    colors['red'],
+                    colors['green']
                 ]
         }
     }
