@@ -8,6 +8,7 @@ def get_html_overview(data):
     x_count = list(range(1, len(data.date) + 1))
     y_range = [0, 1.2 * data.count_hasdatum.max()]
     date_list = data.date.dt.strftime("%Y-%m-%d")
+
     if data.period.iloc[0] == 'month':
         n_now = datetime.date.today().month - 1
         x_tick_text = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
