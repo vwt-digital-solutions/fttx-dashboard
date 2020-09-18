@@ -1,14 +1,14 @@
 from data.data import has_planning_by_week, has_planning_by_month
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
-from layout.pages.tmobile import planning_has_graph, new_component
+from layout.pages.tmobile import planning_has_graph, new_component, redenna_pie
 from data import collection
 from data.graph import pie_chart
 
 import dash_html_components as html
 
 
-def get_html():
+def get_html(client):
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
              title='Outlook (KPN)',
@@ -24,7 +24,7 @@ def get_html():
              value='0.66'),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
              value=str(collection.get_document(
-                 collection="Data", client="t-mobile", graph_name="voorraadvormend")['all'])),
+                 collection="Data", client=client, graph_name="voorraadvormend")['all'])),
     ]
 
     return [
@@ -53,8 +53,13 @@ def get_html():
         ),
         html.Div(
             className="container-display",
-            children=[planning_has_graph.get_html_week(has_planning_by_week()),
-                      planning_has_graph.get_html_month(has_planning_by_month())]
+            children=[planning_has_graph.get_html_week(has_planning_by_week(client=client)),
+                      planning_has_graph.get_html_month(has_planning_by_month(client=client)),
+                      redenna_pie.get_html(collection.get_document(collection="Data",
+                                                                   client=client,
+                                                                   graph_name="redenna_by_week"),
+                                           "2020-08-31", graph_id="redenna_by_week")
+                      ]
         ),
         html.Div(
             className="container-display",

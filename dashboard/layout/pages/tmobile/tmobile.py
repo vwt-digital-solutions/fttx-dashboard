@@ -32,7 +32,7 @@ def get_body():
 
             html.Div(
                 id="tmobile-overview",
-                children=overview.get_html(),
+                children=overview.get_html("t-mobile"),
             ),
             html.Div(
                 [
