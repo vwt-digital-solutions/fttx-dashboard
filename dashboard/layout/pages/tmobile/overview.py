@@ -26,11 +26,16 @@ def get_html(client):
              value=str(collection.get_document(
                  collection="Data", client=client, graph_name="voorraadvormend")['all'])),
     ]
-
     return [
         global_info_list(jaaroverzicht_list,
                          id="info-container1",
                          className="container-display"),
+        html.Div(
+            className="container-display",
+            children=[
+                html.Button('Reset', id='overview-reset', n_clicks=0, style={"margin-left": "10px"}),
+            ]
+        ),
         html.Div(
             className="container-display",
             children=[planning_has_graph.get_html_overview(has_planning_by(period='month', client=client)),

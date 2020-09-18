@@ -50,20 +50,23 @@ def tmobile_overview_button(_):
 
 
 @app.callback(
-    Output('redenna_by_week', 'figure'),
+    Output('pie_chart_overview_t-mobile', 'figure'),
     [Input('week-overview', 'clickData'),
-     Input('month-overview', 'clickData')
+     Input('month-overview', 'clickData'),
+     Input('overview-reset', 'n_clicks')
      ]
 )
-def display_click_data(week_click_data, month_click_data):
+def display_click_data(week_click_data, month_click_data, reset):
     ctx = dash.callback_context
     first_day_of_period = ""
     period = ""
     if ctx.triggered:
         for trigger in ctx.triggered:
             period, _, _ = trigger['prop_id'].partition("-")
+            if period == "overview":
+                return original_pie_chart('t-mobile')
             for point in trigger['value']['points']:
-                first_day_of_period = point['label']
+                first_day_of_period = point['customdata']
                 break
             break
 
