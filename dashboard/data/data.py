@@ -1,26 +1,33 @@
+from datetime import datetime
 from collections import namedtuple
-from datetime import datetime, timedelta
 
 from data import collection
 import pandas as pd
 
 
-def has_planning_by_week(days_before=30, days_after=30, client=""):
-    has_done = collection.get_document(collection="Data", id="count_opleverdatum_by_week", client=client)
-    has_planning = collection.get_document(collection="Data", id="count_hasdatum_by_week", client=client)
-    df = pd.DataFrame({**has_planning, **has_done}).reset_index().fillna(0).rename(columns={"index": "date"})
-    df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
-    start_date = datetime.now() - timedelta(days=days_before)
-    end_date = datetime.now() + timedelta(days=days_after)
-    mask = (df['date'] > start_date) & (df['date'] <= end_date)
-    return df[mask]
+def has_planning_by(period, client):
+    has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
+    has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period, client=client)
+    has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period, client=client)
+    # temporary solution until we have outlook data for T-Mobile
+    if not has_outlook:
+        has_outlook['count_outlookdatum'] = has_opgeleverd['count_opleverdatum'].copy()
+        for el in has_outlook['count_outlookdatum']:
+            has_outlook['count_outlookdatum'][el] = 0
+        if period == 'month':
+            has_outlook['count_outlookdatum']['2020-11-02'] = 0
+            has_outlook['count_outlookdatum']['2020-12-01'] = 0
+    # temporary solution until we also have voorspelling data for T-Mobile
+    if not has_voorspeld:
+        has_voorspeld['count_voorspellingdatum'] = has_opgeleverd['count_opleverdatum'].copy()
+        for el in has_voorspeld['count_voorspellingdatum'].keys():
+            has_voorspeld['count_voorspellingdatum'][el] = 0
 
-
-def has_planning_by_month(client=""):
-    has_done = collection.get_document(collection="Data", id="count_opleverdatum_by_month", client=client)
-    has_planning = collection.get_document(collection="Data", id="count_hasdatum_by_month", client=client)
-    df = pd.DataFrame({**has_planning, **has_done}).reset_index().fillna(0).rename(columns={"index": "date"})
+    df = pd.DataFrame({**has_planning, **has_opgeleverd, **has_outlook,
+                       **has_voorspeld}).reset_index().fillna(0).rename(columns={"index": "date"})
     df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
+    df['period'] = period
     start_date = pd.to_datetime(str(datetime.now().year) + '-01-01', format="%Y-%m-%d")
     end_date = pd.to_datetime(str(datetime.now().year) + '-12-31', format="%Y-%m-%d")
     mask = (df['date'] >= start_date) & (df['date'] <= end_date)

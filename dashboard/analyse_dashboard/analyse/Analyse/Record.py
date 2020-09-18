@@ -247,8 +247,8 @@ class RecordDict(MutableMapping):
                     raise ValueError(f"record collection must contain records,"
                                      f"{key} contains an object of type: {type(record)}")
 
-    def add(self, key, record, RecordType, collection):
-        self.record_collection[key] = RecordType(record, collection)
+    def add(self, key, record, RecordType, collection, **kwargs):
+        self.record_collection[key] = RecordType(record, collection, **kwargs)
 
     def to_firestore(self, client):
         for key, record in self.record_collection.items():

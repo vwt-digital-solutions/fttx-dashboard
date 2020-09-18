@@ -14,3 +14,4 @@ numpy==1.16.4
 Flask-SSLify==0.1.5
 Flask-Cors==3.0.8
 firestore==0.0.8
+gcsfs==0.7.1

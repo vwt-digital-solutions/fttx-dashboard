@@ -6,6 +6,9 @@ from elements import table_styles
 import json
 import dash_table
 from data import collection
+import config
+
+colors = config.colors_vwt
 
 
 def info_table():
@@ -63,26 +66,28 @@ def clickbar_lb(drop_selectie, mask_all):
                         'HASLB1'],
                     name='Opgeleverd HC',
                     type='bar',
-                    marker=dict(color='rgb(0, 200, 0)'),
+                    marker=dict(color=colors['green']),
                     )
     barLB1HP = dict(x=labels,
                     y=[0] + [0] + [0] + [0] + bar['HASLB1HP'],
                     name='Opgeleverd zonder HC',
                     type='bar',
-                    marker=dict(color='rgb(200, 200, 0)')
+                    marker=dict(color=colors['yellow'])
                     )
     barLB0 = dict(x=labels,
                   y=bar['SchouwenLB0'] + bar['BISLB0'] + bar['Montage-lasAPLB0'] + bar['Montage-lasDPLB0'] + bar[
                       'HASLB0'],
                   name='Niet opgeleverd',
                   type='bar',
-                  marker=dict(color='rgb(200, 0, 0)')
+                  marker=dict(color=colors['red'])
                   )
     fig = dict(data=[barLB1HC, barLB1HP, barLB0],
                layout=dict(barmode='stack',
                            clickmode='event+select',
                            showlegend=True,
                            height=350,
+                           plot_bgcolor=colors['plot_bgcolor'],
+                           paper_bgcolor=colors['paper_bgcolor'],
                            title={'text': 'Status oplevering per fase (LB)<br>[selectie resets na 3x klikken]:',
                                   'x': 0.5},
                            yaxis={'title': '[aantal woningen]'},
@@ -106,26 +111,28 @@ def clickbar_hb(drop_selectie, mask_all):
                         'HASHB1'],
                     name='Opgeleverd HC',
                     type='bar',
-                    marker=dict(color='rgb(0, 200, 0)')
+                    marker=dict(color=colors['green'])
                     )
     barHB1HP = dict(x=labels,
                     y=[0] + [0] + [0] + [0] + bar['HASHB1HP'],
                     name='Opgeleverd zonder HC',
                     type='bar',
-                    marker=dict(color='rgb(200, 200, 0)')
+                    marker=dict(color=colors['yellow'])
                     )
     barHB0 = dict(x=labels,
                   y=bar['SchouwenHB0'] + bar['BISHB0'] + bar['Montage-lasAPHB0'] + bar['Montage-lasDPHB0'] + bar[
                       'HASHB0'],
                   name='Niet opgeleverd',
                   type='bar',
-                  marker=dict(color='rgb(200, 0, 0)')
+                  marker=dict(color=colors['red'])
                   )
     fig = dict(data=[barHB1HC, barHB1HP, barHB0],
                layout=dict(barmode='stack',
                            clickmode='event+select',
                            showlegend=True,
                            height=350,
+                           plot_bgcolor=colors['plot_bgcolor'],
+                           paper_bgcolor=colors['paper_bgcolor'],
                            title={
                                'text': 'Status oplevering per fase (HB & Duplex)<br>[selectie resets na 3x klikken]:',
                                'x': 0.5},
@@ -151,7 +158,7 @@ def ftu_table():
         data=df.to_dict("rows"),
         filter_action="native",
         sort_action="native",
-        style_table={'overflowX': 'auto'},
+        style_table={'overflowX': 'auto', 'overflowY': 'auto'},
         style_header=table_styles['header'],
         style_cell=table_styles['cell']['action'],
         style_filter=table_styles['filter'],
@@ -203,9 +210,11 @@ def geomap_data_table(drop_selectie, mask_all):
                     cmax=50,
                     cmin=0,
                     color=df['clr-DP'].to_list() + df['clr'].to_list(),
-                    colorscale=['green', 'yellow', 'red'],
+                    colorscale=[colors['green'], colors['yellow'], colors['red']],
                     reversescale=True,
                     size=normalized_size * 7,
+                    plot_bgcolor=colors['plot_bgcolor'],
+                    paper_bgcolor=colors['paper_bgcolor']
                 ),
                 text=df['clr'],
                 hoverinfo='text'

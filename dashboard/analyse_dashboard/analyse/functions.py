@@ -10,8 +10,11 @@ import time
 import json
 import datetime
 import hashlib
-
+import config
 from collections import namedtuple
+from pandas.api.types import CategoricalDtype
+
+colors = config.colors_vwt
 
 
 def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
@@ -523,10 +526,14 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.month.to_list()
         x[0] = 0
 
-    prog = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
-    target = df_target[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
-    real = df_real[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
-    plan = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
+    prog0 = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+    prog = prog0.to_list()
+    target0 = df_target[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+    target = target0.to_list()
+    real0 = df_real[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+    real = real0.to_list()
+    plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+    plan = plan0.to_list()
     plan[0:n_now] = real[0:n_now]  # gelijk trekken afgelopen periode
 
     if 'M' == res:
@@ -541,35 +548,35 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    y=[y_range[1]],
                    name='Huidige week',
                    type='bar',
-                   marker=dict(color='rgb(0, 0, 0)'),
+                   marker=dict(color=colors['black']),
                    width=0.5 * width,
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
                  name='Outlook (KPN)',
                  type='bar',
-                 marker=dict(color='rgb(170, 170, 170)'),
+                 marker=dict(color=colors['lightgray']),
                  width=width,
                  )
     bar_pr = dict(x=x,
                   y=prog,
                   name='Voorspelling (VQD)',
                   mode='markers',
-                  marker=dict(color='rgb(200, 200, 0)', symbol='diamond', size=15),
+                  marker=dict(color=colors['yellow'], symbol='diamond', size=15),
                   #   width=0.2,
                   )
     bar_r = dict(x=[el + 0.5 * width for el in x],
                  y=real,
                  name='Realisatie (FC)',
                  type='bar',
-                 marker=dict(color='rgb(0, 200, 0)'),
+                 marker=dict(color=colors['green']),
                  width=width,
                  )
     bar_pl = dict(x=x,
                   y=plan,
                   name='Planning HP (VWT)',
                   type='lines',
-                  marker=dict(color='rgb(200, 0, 0)'),
+                  marker=dict(color=colors['red']),
                   width=width,
                   )
     fig = {
@@ -580,23 +587,34 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
             'showlegend': True,
             'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
             'height': 300,
-            'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+            'margin': {'l': 5, 'r': 15, 'b': 10, 't': 40},
             'title': {'text': text_title},
             'xaxis': {'range': x_range,
                       'tickvals': x_ticks,
                       'ticktext': x_ticks_text,
                       'title': ' '},
             'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
+            'plot_bgcolor': colors['plot_bgcolor'],
+            'paper_bgcolor': colors['paper_bgcolor'],
             #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
             #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
         },
     }
+
+    prog0.index = prog0.index.strftime('%Y-%m-%d')
+    data_pr = dict(count_voorspellingdatum=prog0.to_dict())
+    target0.index = target0.index.strftime('%Y-%m-%d')
+    data_t = dict(count_outlookdatum=target0.to_dict())
+    real0.index = real0.index.strftime('%Y-%m-%d')
+    data_r = dict(count_opleverdatum=real0.to_dict())
+    plan0.index = plan0.index.strftime('%Y-%m-%d')
+    data_p = dict(count_hasdatum=plan0.to_dict())
     if 'W' in res:
         record = dict(id='graph_targets_W', figure=fig)
-        return record
+        return record, data_pr, data_t, data_r, data_p
     if 'M' == res:
         record = dict(id='graph_targets_M', figure=fig)
-        return record, jaaroverzicht
+        return record, jaaroverzicht, data_pr, data_t, data_r, data_p
 
 
 def meters(d_sheets, tot_l, x_d, y_target_l):
@@ -683,7 +701,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'x': list(x_d.strftime('%Y-%m-%d')),
             'y': list(y_prog_l[key]),
             'mode': 'lines',
-            'line': dict(color='rgb(200, 200, 0)'),
+            'line': dict(color=colors['yellow']),
             'name': 'Voorspelling (VQD)',
         }],
             'layout': {
@@ -692,7 +710,9 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'title': {'text': 'Voortgang project vs outlook KPN:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                'height': 350
+                'height': 350,
+                'plot_bgcolor': colors['plot_bgcolor'],
+                'paper_bgcolor': colors['paper_bgcolor'],
             },
         }
         if key in d_real_l:
@@ -700,7 +720,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
                 'y': d_real_l[key]['Aantal'].to_list(),
                 'mode': 'markers',
-                'line': dict(color='rgb(0, 200, 0)'),
+                'line': dict(color=colors['green']),
                 'name': 'Realisatie (FC)',
             }]
 
@@ -709,7 +729,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'x': list(x_d.strftime('%Y-%m-%d')),
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
-                'line': dict(color='rgb(170, 170, 170)'),
+                'line': dict(color=colors['lightgray']),
                 'name': 'Outlook (KPN)',
             }]
         record = dict(id='project_' + key, figure=fig)
@@ -870,7 +890,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'mode': 'lines',
             'fill': 'toself',
             'opacity': 1,
-            'line': {'color': 'rgb(200, 0, 0)'}
+            'line': {'color': colors['red']}
         },
         {
             'x': [1 / 70 * x_min, 1 / 70 * x_max, 1 / 70 * x_max, 15, 15, 1 / 70 * x_min],
@@ -879,7 +899,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'mode': 'lines',
             'fill': 'toself',
             'opacity': 1,
-            'line': {'color': 'rgb(0, 200, 0)'}
+            'line': {'color': colors['green']}
         },
         {
             'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, 15, 15, 1 / 70 * x_max,
@@ -890,7 +910,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'mode': 'lines',
             'fill': 'toself',
             'opacity': 1,
-            'line': {'color': 'rgb(200, 200, 0)'}
+            'line': {'color': colors['yellow']}
         },
         {
             'x': x,
@@ -898,7 +918,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'text': names,
             'name': 'Trace 1',
             'mode': 'markers',
-            'marker': {'size': 15, 'color': 'rgb(0, 0, 0)'}
+            'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
                    'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
@@ -907,35 +927,35 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                              'zeroline': False},
                    'showlegend': False,
                    'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
-                   'annotations': [dict(x=-20, y=50, ax=0, ay=40, xref="x", yref="y",
+                   'annotations': [dict(x=-12.5, y=25, ax=0, ay=40, xref="x", yref="y",
                                         text='Verhoog schouw of BIS capaciteit', alignment='left',
                                         showarrow=True, arrowhead=2)] +
-                                  [dict(x=20, y=50, ax=0, ay=40, xref="x", yref="y",
+                                  [dict(x=12.5, y=25, ax=0, ay=40, xref="x", yref="y",
                                         text='Verhoog schouw of BIS capaciteit', alignment='left',
                                         showarrow=True, arrowhead=2)] +
-                                  [dict(x=-23.5, y=135, ax=-100, ay=0, xref="x", yref="y",
+                                  [dict(x=-13.5, y=160, ax=-100, ay=0, xref="x", yref="y",
                                         text='Verhoog HAS capaciteit',
                                         alignment='left', showarrow=True, arrowhead=2)] +
-                                  [dict(x=-23.5, y=65, ax=-100, ay=0, xref="x", yref="y",
+                                  [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
                                         text='Verruim afspraak KPN',
                                         alignment='left', showarrow=True, arrowhead=2)] +
-                                  [dict(x=23.5, y=135, ax=100, ay=0, xref="x", yref="y",
+                                  [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
                                         text='Verlaag HAS capcaciteit',
                                         alignment='right', showarrow=True, arrowhead=2)] +
-                                  [dict(x=23.5, y=65, ax=100, ay=0, xref="x", yref="y",
+                                  [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
                                         text='Verscherp afspraak KPN',
                                         alignment='right', showarrow=True, arrowhead=2)] +
-                                  [dict(x=20, y=160, ax=0, ay=-40, xref="x", yref="y",
+                                  [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
                                         showarrow=True, arrowhead=2)] +
-                                  [dict(x=-20, y=160, ax=0, ay=-40, xref="x", yref="y",
+                                  [dict(x=-12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
                                         showarrow=True, arrowhead=2)],
-                   'height': 500,
-                   'width': 1700,
                    'margin': {'l': 60, 'r': 15, 'b': 40, 't': 40},
+                   'plot_bgcolor': colors['plot_bgcolor'],
+                   'paper_bgcolor': colors['paper_bgcolor'],
                    }
-    }
+        }
     record = dict(id='project_performance', figure=fig)
     return record
 
@@ -1225,6 +1245,8 @@ def pie_chart_reden_na(df_na, clusters, key):
         warnings.simplefilter("ignore")
         df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
         df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
+        df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
 
         df_na = df_na.groupby('cluster_redenna').size().copy()
         df_na = df_na.to_frame(name='count').reset_index().copy()
@@ -1237,9 +1259,10 @@ def pie_chart_reden_na(df_na, clusters, key):
         'marker': {
             'colors':
                 [
-                    'rgb(0, 204, 0)',
-                    'rgb(255, 255, 0)',
-                    'rgb(204, 0, 0)'
+                    colors['vwt_blue'],
+                    colors['yellow'],
+                    colors['red'],
+                    colors['green']
                 ]
         }
     }
@@ -1278,9 +1301,12 @@ def get_pie_layout():
     layout = {
         #   'clickmode': 'event+select',
         'showlegend': True,
-        'margin': {'l': 5, 'r': 15, 'b': 5, 't': 40},
+        'autosize': True,
+        'margin': {'l': 50, 'r': 50, 'b': 100, 't': 100},
         'title': {'text': 'Opgegeven reden na'},
-        'height': 350,
+        'height': 500,
+        'plot_bgcolor': colors['plot_bgcolor'],
+        'paper_bgcolor': colors['paper_bgcolor'],
     }
     return layout
 
