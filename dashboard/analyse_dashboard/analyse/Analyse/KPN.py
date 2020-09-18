@@ -211,7 +211,7 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.df_plan = result.df_plan
 
     def _calculate_graph_overview(self):
-        logger.debug("Calculating graph overview")
+        logger.info("Calculating graph overview")
         graph_targets_W, data_pr, data_t, data_r, data_p = graph_overview(
             self.intermediate_results.df_prog,
             self.intermediate_results.df_target,
