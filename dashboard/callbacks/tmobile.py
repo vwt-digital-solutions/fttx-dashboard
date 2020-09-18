@@ -55,7 +55,7 @@ def tmobile_overview_button(_):
      Input('month-overview', 'clickData')
      ]
 )
-def display_click_data(**_):
+def display_click_data(week_click_data, month_click_data):
     ctx = dash.callback_context
     first_day_of_period = ""
     period = ""
