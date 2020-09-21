@@ -76,7 +76,9 @@ def completed_status_counts(project_name, click_filter=None):
         lb_df = pd.DataFrame(laagbouw_matrix, columns=["phase", "status", "count"])
         hb_df = pd.DataFrame(hoogbouw_matrix, columns=["phase", "status", "count"])
 
-        status_category = pd.CategoricalDtype(categories=['niet_opgeleverd', "opgeleverd", "opgeleverd_zonder_hc"])
+        status_category = pd.CategoricalDtype(
+            categories=['niet_opgeleverd', "ingeplanned", "opgeleverd", "opgeleverd_zonder_hc"]
+        )
         phase_category = pd.CategoricalDtype(categories=['geschouwd', 'bis_gereed', 'lasAP', 'lasDP', 'HAS'])
         lb_df['status'] = lb_df.status.astype(status_category)
         lb_df['phase'] = lb_df.phase.astype(phase_category)

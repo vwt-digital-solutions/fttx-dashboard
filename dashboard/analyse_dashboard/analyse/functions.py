@@ -1377,3 +1377,23 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
                  ).count().unstack().fillna(0).project
     redenna_period_df.index = redenna_period_df.index.strftime('%Y-%m-%d')
     return redenna_period_df.to_dict(orient="index")
+
+
+def rules_to_state(rules_list, state_list):
+    """
+    This function calculates the state of each row. The provided rules MUST NOT overlap, otherwise there can be no
+    unique state determined.
+
+    :param rules_list: A list of masks for a particular datafame.
+    :param state_list: The states that the rules describe
+    :return: A series of the state for each row in the dataframe.
+    """
+    if len(rules_list) != len(state_list):
+        raise ValueError("The number of rules must be equal to the number of states")
+    calculation_df = pd.concat(rules_list, axis=1).astype(int)
+    index_list = range(len(state_list))
+    state = calculation_df.apply(
+        lambda x: state_list[sum(i * x.iloc[i] for i in index_list)],
+        axis=1
+    )
+    return state
