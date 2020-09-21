@@ -43,17 +43,40 @@ class FttXExtract(Extract):
         logger.info("Extracting the Projects collection")
         df = pd.DataFrame([])
         for key in self.projects:
-            start_time = time.time()
-            logger.info(f"Extracting {key}...")
-            docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
-            new_records = [doc.to_dict() for doc in docs]
-            df = df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True, sort=True)
-            logger.info(f"Extracted {len(new_records)} records in {time.time() - start_time} seconds")
+            df = df.append(self._extract_project(key), ignore_index=True, sort=True)
 
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
 
         self.extracted_data.df = df
+
+    @staticmethod
+    def _extract_project(project_name, cursor=None):
+        start_time = time.time()
+        logger.info(f"Extracting {project_name}...")
+        collection = firestore.Client().collection('Projects')
+        limit = 5000
+        df = pd.DataFrame([])
+        new_records = []
+        docs = []
+        while True:
+            new_records.clear()
+            docs.clear()
+            query = collection.where('project', '==', project_name).limit(limit).order_by('__name__')
+            if cursor:
+                docs = [snapshot for snapshot in query.start_after(cursor).stream()]
+            else:
+                docs = [snapshot for snapshot in query.stream()]
+
+            new_records = [doc.to_dict() for doc in docs]
+            df = df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True, sort=True)
+
+            if len(docs) == limit:
+                cursor = docs[-1]
+                continue
+            break
+        logger.info(f"Extracted {len(df)} records in {time.time() - start_time} seconds")
+        return df
 
 
 class PickleExtract(Extract, FttXBase):
