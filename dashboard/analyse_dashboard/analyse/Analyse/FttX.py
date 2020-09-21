@@ -11,7 +11,7 @@ import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period
+    calculate_redenna_per_period, rules_to_state
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -153,27 +153,63 @@ class FttXAnalyse(FttXBase):
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
 
-        def _calculate_status_df(df: pd.DataFrame):
-            has_calculation = pd.concat([
-                df['opleverdatum'].isna(),
-                df['opleverstatus'] == '2',
+        def _calculate_status_df(df):
+            state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
+            df['false'] = False
+            has_rules_list = [
+                (
+                        df['opleverdatum'].isna() &
+                        df['hasdatum'].isna()
+                ),
+                (
+                        df['opleverdatum'].isna() &
+                        ~df['hasdatum'].isna()
+                ),
                 (
                         (df['opleverstatus'] != '2') &
                         (~df['opleverdatum'].isna())
-                )
-            ], axis=1).astype(int)
-            has_calculation.columns = ['niet_opgeleverd', "opgeleverd", "opgeleverd_zonder_hc"]
+                ),
+                df['opleverstatus'] == '2'
+            ]
+            has = rules_to_state(has_rules_list, state_list)
+            geschouwd_rules_list = [
+                df['toestemming'].isna(),
+                df['false'],
+                df['false'],
+                ~df['toestemming'].isna()
+            ]
+            geschouwd = rules_to_state(geschouwd_rules_list, state_list)
 
-            has_col = ((1 * has_calculation.niet_opgeleverd) + (2 * has_calculation.opgeleverd) + (
-                    3 * has_calculation.opgeleverd_zonder_hc)) - 1
-            has = has_col.apply(lambda x: has_calculation.columns[x])
+            bis_gereed_rules_list = [
+                (df['opleverstatus'] == '0'),
+                df['false'],
+                df['false'],
+                df['opleverstatus'] != '0'
+            ]
+            bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
+
+            laswerkdpgereed_rules_list = [
+                (df['laswerkdpgereed'] != '1'),
+                df['false'],
+                df['false'],
+                df['laswerkdpgereed'] == '1'
+            ]
+            laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
+
+            laswerkapgereed_rules_list = [
+                (df['laswerkapgereed'] != '1'),
+                df['false'],
+                df['false'],
+                df['laswerkapgereed'] == '1'
+            ]
+            laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
 
             business_rules_list = [
-                [~df['toestemming'].isna(), "geschouwd"],
-                [df['opleverstatus'] != '0', "bis_gereed"],
+                [geschouwd, "geschouwd"],
+                [bis_gereed, "bis_gereed"],
                 [df['soort_bouw'] == 'Laag', "laagbouw"],
-                [df['laswerkdpgereed'] == '1', "lasDP"],
-                [df['laswerkapgereed'] == '1', "lasAP"],
+                [laswerkdpgereed, "lasDP"],
+                [laswerkapgereed, "lasAP"],
                 [has, "HAS"],
 
             ]
@@ -187,9 +223,6 @@ class FttXAnalyse(FttXBase):
             cols, colnames = list(zip(*series_list))
             status_df = pd.concat(cols, axis=1)
             status_df.columns = colnames
-            cols = ['geschouwd', 'bis_gereed', 'lasDP', 'lasAP']
-            status_df.loc[:, cols] = status_df.loc[:, cols].replace(True, "opgeleverd", inplace=False)
-            status_df.loc[:, cols] = status_df.loc[:, cols].replace(False, "niet_opgeleverd", inplace=False)
             return status_df
 
         status_df = _calculate_status_df(self.transformed_data.df)
