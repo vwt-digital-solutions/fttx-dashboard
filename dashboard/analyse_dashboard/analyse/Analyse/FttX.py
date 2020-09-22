@@ -10,7 +10,8 @@ import pickle  # nosec
 import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
-from functions import calculate_projectspecs, calculate_y_voorraad_act, overview_reden_na, individual_reden_na, set_filters
+from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -42,17 +43,40 @@ class FttXExtract(Extract):
         logger.info("Extracting the Projects collection")
         df = pd.DataFrame([])
         for key in self.projects:
-            start_time = time.time()
-            logger.info(f"Extracting {key}...")
-            docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
-            new_records = [doc.to_dict() for doc in docs]
-            df = df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True, sort=True)
-            logger.info(f"Extracted {len(new_records)} records in {time.time() - start_time} seconds")
+            df = df.append(self._extract_project(key), ignore_index=True, sort=True)
 
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
 
         self.extracted_data.df = df
+
+    @staticmethod
+    def _extract_project(project_name, cursor=None):
+        start_time = time.time()
+        logger.info(f"Extracting {project_name}...")
+        collection = firestore.Client().collection('Projects')
+        limit = 5000
+        df = pd.DataFrame([])
+        new_records = []
+        docs = []
+        while True:
+            new_records.clear()
+            docs.clear()
+            query = collection.where('project', '==', project_name).limit(limit).order_by('__name__')
+            if cursor:
+                docs = [snapshot for snapshot in query.start_after(cursor).stream()]
+            else:
+                docs = [snapshot for snapshot in query.stream()]
+
+            new_records = [doc.to_dict() for doc in docs]
+            df = df.append(pd.DataFrame(new_records).fillna(np.nan), ignore_index=True, sort=True)
+
+            if len(docs) == limit:
+                cursor = docs[-1]
+                continue
+            break
+        logger.info(f"Extracted {len(df)} records in {time.time() - start_time} seconds")
+        return df
 
 
 class PickleExtract(Extract, FttXBase):
@@ -122,6 +146,7 @@ class FttXAnalyse(FttXBase):
         self._reden_na()
         self._set_filters()
         self._calculate_status_counts_per_project()
+        self._calculate_redenna_per_period()
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
@@ -158,27 +183,63 @@ class FttXAnalyse(FttXBase):
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
 
-        def _calculate_status_df(df: pd.DataFrame):
-            has_calculation = pd.concat([
-                df['opleverdatum'].isna(),
-                df['opleverstatus'] == '2',
+        def _calculate_status_df(df):
+            state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
+            df['false'] = False
+            has_rules_list = [
+                (
+                        df['opleverdatum'].isna() &
+                        df['hasdatum'].isna()
+                ),
+                (
+                        df['opleverdatum'].isna() &
+                        ~df['hasdatum'].isna()
+                ),
                 (
                         (df['opleverstatus'] != '2') &
                         (~df['opleverdatum'].isna())
-                )
-            ], axis=1).astype(int)
-            has_calculation.columns = ['niet_opgeleverd', "opgeleverd", "opgeleverd_zonder_hc"]
+                ),
+                df['opleverstatus'] == '2'
+            ]
+            has = rules_to_state(has_rules_list, state_list)
+            geschouwd_rules_list = [
+                df['toestemming'].isna(),
+                df['false'],
+                df['false'],
+                ~df['toestemming'].isna()
+            ]
+            geschouwd = rules_to_state(geschouwd_rules_list, state_list)
 
-            has_col = ((1 * has_calculation.niet_opgeleverd) + (2 * has_calculation.opgeleverd) + (
-                    3 * has_calculation.opgeleverd_zonder_hc)) - 1
-            has = has_col.apply(lambda x: has_calculation.columns[x])
+            bis_gereed_rules_list = [
+                (df['opleverstatus'] == '0'),
+                df['false'],
+                df['false'],
+                df['opleverstatus'] != '0'
+            ]
+            bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
+
+            laswerkdpgereed_rules_list = [
+                (df['laswerkdpgereed'] != '1'),
+                df['false'],
+                df['false'],
+                df['laswerkdpgereed'] == '1'
+            ]
+            laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
+
+            laswerkapgereed_rules_list = [
+                (df['laswerkapgereed'] != '1'),
+                df['false'],
+                df['false'],
+                df['laswerkapgereed'] == '1'
+            ]
+            laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
 
             business_rules_list = [
-                [~df['toestemming'].isna(), "geschouwd"],
-                [df['opleverstatus'] != '0', "bis_gereed"],
+                [geschouwd, "geschouwd"],
+                [bis_gereed, "bis_gereed"],
                 [df['soort_bouw'] == 'Laag', "laagbouw"],
-                [df['laswerkdpgereed'] == '1', "lasDP"],
-                [df['laswerkapgereed'] == '1', "lasAP"],
+                [laswerkdpgereed, "lasDP"],
+                [laswerkapgereed, "lasAP"],
                 [has, "HAS"],
 
             ]
@@ -192,9 +253,6 @@ class FttXAnalyse(FttXBase):
             cols, colnames = list(zip(*series_list))
             status_df = pd.concat(cols, axis=1)
             status_df.columns = colnames
-            cols = ['geschouwd', 'bis_gereed', 'lasDP', 'lasAP']
-            status_df.loc[:, cols] = status_df.loc[:, cols].replace(True, "opgeleverd", inplace=False)
-            status_df.loc[:, cols] = status_df.loc[:, cols].replace(False, "niet_opgeleverd", inplace=False)
             return status_df
 
         status_df = _calculate_status_df(self.transformed_data.df)
@@ -207,6 +265,18 @@ class FttXAnalyse(FttXBase):
                 .reset_index() \
                 .to_dict(orient='records')
         self.record_dict.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
+
+    def _calculate_redenna_per_period(self):
+        logger.info("Calculating redenna per period (week & month)")
+        by_week = calculate_redenna_per_period(self.transformed_data.df,
+                                               date_column="hasdatum",
+                                               freq="W-MON")
+        self.record_dict.add('redenna_by_week', by_week, Record, 'Data')
+
+        by_month = calculate_redenna_per_period(self.transformed_data.df,
+                                                date_column="hasdatum",
+                                                freq="MS")
+        self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
 
 
 class FttXLoad(Load, FttXBase):
@@ -226,7 +296,9 @@ class FttXTestLoad(FttXLoad):
         logger.info("Nothing is loaded to the firestore as this is a test")
         logger.info("The following documents would have been updated/set:")
         for document in self.record_dict:
-            logger.info(self.record_dict[document].document_name(client=self.client, graph_name=document, document=None))
+            logger.info(self.record_dict[document].document_name(client=self.client,
+                                                                 graph_name=document,
+                                                                 document=None))
 
 
 class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):

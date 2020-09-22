@@ -1,7 +1,7 @@
 from data.data import has_planning_by
 from layout.components.figure import figure
 from layout.components.global_info_list import global_info_list
-from layout.pages.tmobile import planning_has_graph
+from layout.pages.tmobile import new_component
 from data import collection
 from data.graph import pie_chart
 
@@ -9,7 +9,8 @@ import dash_html_components as html
 
 
 def get_html():
-    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="t-mobile")
+    client = 't-mobile'
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client=client)
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
              title='Outlook (KPN)',
@@ -25,19 +26,18 @@ def get_html():
              value='0.66'),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
              value=str(collection.get_document(
-                 collection="Data", client="t-mobile", graph_name="voorraadvormend")['all'])),
+                 collection="Data", client=client, graph_name="voorraadvormend")['all'])),
     ]
-
     return [
         global_info_list(jaaroverzicht_list,
                          id="info-container1",
                          className="container-display"),
         html.Div(
             className="container-display",
-            children=[planning_has_graph.get_html_overview(has_planning_by('month', 't-mobile')),
-                      planning_has_graph.get_html_overview(has_planning_by('week', 't-mobile')),
+            children=[figure(graph_id="month-overview", figure=new_component.get_html_overview(has_planning_by('month', client))),
+                      figure(graph_id="week-overview", figure=new_component.get_html_overview(has_planning_by('week', client))),
                       figure(container_id="pie_chart_overview_t-mobile_container",
                              graph_id="pie_chart_overview_t-mobile",
                              figure=pie_chart('t-mobile'))]
-        )
+        ),
     ]

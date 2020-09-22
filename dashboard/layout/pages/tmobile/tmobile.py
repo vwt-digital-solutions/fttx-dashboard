@@ -18,7 +18,7 @@ def get_body():
 
             html.Div(
                 id="tmobile-overview",
-                children=overview.get_html(),
+                children=overview.get_html("t-mobile"),
             ),
             html.Div(
                 [
@@ -38,6 +38,10 @@ def get_body():
                 ],
                 className="container-display",
                 id="title",
+            ),
+            html.Div(
+                className="container-display",
+                children=[html.Button('Reset', id='overview-reset', n_clicks=0, style={"margin-left": "10px"})],
             ),
             html.Div(
                 style={'display': 'none'},

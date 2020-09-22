@@ -1361,3 +1361,52 @@ def analyse_documents(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real
                      Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
     analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
     return analysis, analysis2, analysis3
+
+
+def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum', freq: str = 'W-MON') -> dict:
+    """
+    Calculates the number of each reden na cluster (as defined in the config) grouped by
+    the date of the 'date_column'. The date is grouped in buckets of the period. For example by week or month.
+
+    Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+    We commonly use:
+        'MS' for the start of the month
+        'W-MON' for weeks starting on Monday.
+
+        :param df: The data set
+        :param date_column: The column used to group on
+        :param freq: The period to use in the grouper
+        :return: a dictionary with the first day of the period as key, and the clusters with their occurence counts
+                 as value.
+    """
+    redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
+        .groupby(by=[pd.Grouper(key=date_column,
+                                freq=freq,
+                                closed='left',
+                                label="left"
+                                ),
+                     "cluster_redenna",
+                     ]
+                 ).count().unstack().fillna(0).project
+    redenna_period_df.index = redenna_period_df.index.strftime('%Y-%m-%d')
+    return redenna_period_df.to_dict(orient="index")
+
+
+def rules_to_state(rules_list, state_list):
+    """
+    This function calculates the state of each row. The provided rules MUST NOT overlap, otherwise there can be no
+    unique state determined.
+
+    :param rules_list: A list of masks for a particular datafame.
+    :param state_list: The states that the rules describe
+    :return: A series of the state for each row in the dataframe.
+    """
+    if len(rules_list) != len(state_list):
+        raise ValueError("The number of rules must be equal to the number of states")
+    calculation_df = pd.concat(rules_list, axis=1).astype(int)
+    index_list = range(len(state_list))
+    state = calculation_df.apply(
+        lambda x: state_list[sum(i * x.iloc[i] for i in index_list)],
+        axis=1
+    )
+    return state

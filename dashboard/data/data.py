@@ -8,8 +8,10 @@ import pandas as pd
 def has_planning_by(period, client):
     has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
     has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
-    has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period, client=client)
-    has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period, client=client)
+    has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
+                                          client=client) if client == 'kpn' else {}  # temp fix
+    has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
+                                            client=client) if client == 'kpn' else {}  # temp fix
     # temporary solution until we have outlook data for T-Mobile
     if not has_outlook:
         has_outlook['count_outlookdatum'] = has_opgeleverd['count_opleverdatum'].copy()
@@ -74,7 +76,9 @@ def completed_status_counts(project_name, click_filter=None):
         lb_df = pd.DataFrame(laagbouw_matrix, columns=["phase", "status", "count"])
         hb_df = pd.DataFrame(hoogbouw_matrix, columns=["phase", "status", "count"])
 
-        status_category = pd.CategoricalDtype(categories=['niet_opgeleverd', "opgeleverd", "opgeleverd_zonder_hc"])
+        status_category = pd.CategoricalDtype(
+            categories=['niet_opgeleverd', "ingeplanned", "opgeleverd", "opgeleverd_zonder_hc"]
+        )
         phase_category = pd.CategoricalDtype(categories=['geschouwd', 'bis_gereed', 'lasAP', 'lasDP', 'HAS'])
         lb_df['status'] = lb_df.status.astype(status_category)
         lb_df['phase'] = lb_df.phase.astype(phase_category)
