@@ -5,7 +5,7 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, calculate_jaaroverzicht
+    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht
 import pandas as pd
 
 import logging
@@ -95,8 +95,8 @@ class KPNAnalyse(FttXAnalyse):
         self._performance_matrix()
         self._prognose_graph()
         self._overview()
-        self._jaaroverzicht()
         self._calculate_graph_overview()
+        self._jaaroverzicht()
         self._info_table()
         self._analysis_documents()
         self._set_filters()
@@ -239,14 +239,24 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
+    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
+    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
+    #                                       client=client) if client == 'kpn' else {}  # temp fix
+    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
+    #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
+        prog, target, real, plan = preprocess_for_jaaroverzicht(
+            self.intermediate_results.df_prog,
+            self.intermediate_results.df_target,
+            self.intermediate_results.df_real,
+            self.intermediate_results.df_plan,
+        )
         jaaroverzicht = calculate_jaaroverzicht(
-            self.intermediate_results.data_pr,
-            self.intermediate_results.data_t,
-            self.intermediate_results.data_r,
-            self.intermediate_results.data_p,
-            self.intermediate_results.HAS_werkvoorraad
+            prog, target, real, plan,
+            self.intermediate_results.HAS_werkvoorraad,
+            self.intermediate_results.HC_HPend
         )
         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 

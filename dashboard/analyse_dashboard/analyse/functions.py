@@ -614,17 +614,44 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
         return record, data_pr, data_t, data_r, data_p
     if 'M' == res:
         record = dict(id='graph_targets_M', figure=fig)
-        return record, jaaroverzicht, data_pr, data_t, data_r, data_p
+        return record, data_pr, data_t, data_r, data_p
+
+
+def slice_for_jaaroverzicht(data):
+    res = 'M'
+    close = 'left'
+    loff = None
+    period = ['2019-12-23', '2020-12-27']
+    return data[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
+
+
+def preprocess_for_jaaroverzicht(*args):
+    return [slice_for_jaaroverzicht(arg) for arg in args]
+    # prog = slice_for_jaaroverzicht(df_prog)
+    # target = slice_for_jaaroverzicht(df_target)
+    # real = slice_for_jaaroverzicht(df_real)
+    # plan = slice_for_jaaroverzicht(df_plan)
+    # return prog, target, real, plan
 
 
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
     n_now = datetime.date.today().month
+    planning[0:n_now] = realisatie[0:n_now]  # gelijk trekken afgelopen periode
+
     target_sum = str(round(sum(target[1:])))
+    realisatie_now = realisatie[n_now]
+    planning_sum = sum(planning[n_now:])
+    prognose_sum = sum(prognose[n_now:])
+    planning_result = planning_sum - realisatie_now
+    prognose_result = prognose_sum - realisatie_now
     realisatie_sum = str(round(sum(realisatie[1:])))
+
     jaaroverzicht = dict(id='jaaroverzicht', target=target_sum, real=realisatie_sum,
-                         plan=str(round(sum(planning[n_now:]) - realisatie[n_now])),
-                         prog=str(round(sum(prognose[n_now:]) - realisatie[n_now])),
-                         HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
+                         plan=str(planning_result),
+                         prog=str(prognose_result),
+                         HC_HPend=str(HC_HPend),
+                         HAS_werkvoorraad=str(HAS_werkvoorraad),
+                         prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
     return jaaroverzicht

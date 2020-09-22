@@ -1,5 +1,5 @@
 # %% Initialize
-from Analyse.TMobile import TMobileETL
+from Analyse.TMobile import TMobileETL, TMobileTestETL
 from Analyse.KPN import KPNTestETL
 import os
 import time
@@ -7,6 +7,7 @@ import config
 from Analyse.KPN import KPNETL, PickleExtract
 from functions import graph_overview
 import logging
+from functions_tmobile import calculate_jaaroverzicht, preprocess_for_jaaroverzicht
 logging.basicConfig(format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
                     level=logging.INFO)
 
@@ -81,6 +82,36 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 kpn = KPNTestETL(client='kpn', config=config.client_config['kpn'])
 kpn.extract()
 kpn.transform()
+kpn._calculate_projectspecs()
+kpn._calculate_y_voorraad_act()
+kpn._prognose()
+kpn._set_input_fields()
+kpn._targets()
+kpn._performance_matrix()
+kpn._prognose_graph()
+kpn._overview()
+kpn._calculate_graph_overview()
+kpn._jaaroverzicht()
 
+
+# %% Test jaaroverzciht tmobile
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+tmobile = TMobileTestETL(client='t-mobile', config=config.client_config['t-mobile'])
+tmobile.perform()
+# %%
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+tmobile = TMobileTestETL(client='t-mobile', config=config.client_config['t-mobile'])
+tmobile.perform()
+real, plan = preprocess_for_jaaroverzicht(
+            tmobile.intermediate_results.counts_by_month['count_opleverdatum'],
+            tmobile.intermediate_results.counts_by_month['count_plandatum'],
+        )
+has = tmobile.intermediate_results.HAS_werkvoorraad
+hc = tmobile.intermediate_results.HC_HPend
+calculate_jaaroverzicht(real, plan, has, hc)
 
 # %%
