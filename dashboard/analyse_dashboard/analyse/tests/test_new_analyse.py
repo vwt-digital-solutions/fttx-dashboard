@@ -1,7 +1,7 @@
 import pickle
 
 from Analyse.TMobile import TMobileTestETL
-from analyse_dashboard.analyse import config
+import config
 from Analyse.KPN import KPNTestETL
 
 import logging

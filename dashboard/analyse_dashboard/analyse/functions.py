@@ -617,6 +617,19 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
         return record, jaaroverzicht, data_pr, data_t, data_r, data_p
 
 
+def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
+    n_now = datetime.date.today().month
+    target_sum = str(round(sum(target[1:])))
+    realisatie_sum = str(round(sum(realisatie[1:])))
+    jaaroverzicht = dict(id='jaaroverzicht', target=target_sum, real=realisatie_sum,
+                         plan=str(round(sum(planning[n_now:]) - realisatie[n_now])),
+                         prog=str(round(sum(prognose[n_now:]) - realisatie[n_now])),
+                         HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
+    if jaaroverzicht['prog'] < jaaroverzicht['plan']:
+        jaaroverzicht['prog_c'] = 'pretty_container_red'
+    return jaaroverzicht
+
+
 def meters(d_sheets, tot_l, x_d, y_target_l):
     teams_BIS_all = []
     m_BIS_all = []

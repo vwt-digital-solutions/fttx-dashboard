@@ -10,7 +10,7 @@ import pickle  # nosec
 import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
-from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters
+from functions import calculate_projectspecs, calculate_y_voorraad_act, overview_reden_na, individual_reden_na, set_filters
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -118,6 +118,7 @@ class FttXAnalyse(FttXBase):
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
         self._calculate_projectspecs()
+        self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
         self._calculate_status_counts_per_project()
@@ -137,6 +138,12 @@ class FttXAnalyse(FttXBase):
         self.intermediate_results.Schouw_BIS = results.has_ready
         self.intermediate_results.HPend_l = results.homes_ended
         self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
+
+    def _calculate_y_voorraad_act(self):
+        logger.info("Calculating y voorraad act for KPN")
+        y_voorraad_act = calculate_y_voorraad_act(self.transformed_data.df)
+        self.intermediate_results.y_voorraad_act = y_voorraad_act
+        self.record_dict.add('y_voorraad_act', y_voorraad_act, Record, 'Data')
 
     def _reden_na(self):
         logger.info("Calculating reden na graphs")

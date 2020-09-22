@@ -1,7 +1,7 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
 from Analyse.Record import Record, DocumentListRecord
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
-
+from functions import calculate_jaaroverzicht
 import logging
 logger = logging.getLogger('T-mobile Analyse')
 
@@ -41,6 +41,16 @@ class TMobileAnalyse(FttXAnalyse):
                     graph_name=f"{k}_by_week")
                for k, v in counts_by_week.items()]
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
+
+        def _jaaroverzicht(self):
+            jaaroverzicht = calculate_jaaroverzicht(
+                self.intermediate_results.data_pr,
+                self.intermediate_results.data_t,  # has-datum
+                self.intermediate_results.data_r,  # opleverdatum
+                self.intermediate_results.data_p,  # Has-datum
+                self.intermediate_results.HAS_werkvoorraad
+            )
+            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")

@@ -1,14 +1,14 @@
 # %% Initialize
+from Analyse.TMobile import TMobileETL
+from Analyse.KPN import KPNTestETL
 import os
 import time
 import config
 from Analyse.KPN import KPNETL, PickleExtract
 from functions import graph_overview
 import logging
-
-from Analyse.TMobile import TMobileETL
-
-logging.basicConfig(format=' %(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
+                    level=logging.INFO)
 
 # %% Set environment variables and permissions and data path
 keys = os.listdir(config.path_jsons)
@@ -66,9 +66,21 @@ class TMobilePickleETL(PickleExtract, TMobileETL):
 
 
 client_name = "t-mobile"
-tmobile = TMobilePickleETL(client=client_name, config=config.client_config[client_name])
+tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
 tmobile.perform()
 logging.info("T-mobile Done")
 logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
 
 # Record.to_firestore...
+
+
+# %% test jaaroverzicht
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+kpn = KPNTestETL(client='kpn', config=config.client_config['kpn'])
+kpn.extract()
+kpn.transform()
+
+
+# %%

@@ -4,8 +4,8 @@ from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
-    prognose, targets, calculate_y_voorraad_act, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents
+    prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
+    info_table, analyse_documents, calculate_jaaroverzicht
 import pandas as pd
 
 import logging
@@ -57,7 +57,7 @@ class KPNTransform(FttXTransform):
     def _transform_planning(self):
         logger.info("Transforming planning for KPN")
         HP = dict(HPendT=[0] * 52)
-        df = self.transformed_data.planning
+        df = self.extracted_data.planning
         for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
             if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
                 HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
@@ -92,10 +92,10 @@ class KPNAnalyse(FttXAnalyse):
         self._prognose()
         self._set_input_fields()
         self._targets()
-        self._calculate_y_voorraad_act()
         self._performance_matrix()
         self._prognose_graph()
         self._overview()
+        self._jaaroverzicht()
         self._calculate_graph_overview()
         self._info_table()
         self._analysis_documents()
@@ -171,12 +171,6 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.t_diff = t_diff
         self.record_dict.add('y_target_l', y_target_l, ListRecord, 'Data')
 
-    def _calculate_y_voorraad_act(self):
-        logger.info("Calculating y voorraad act for KPN")
-        y_voorraad_act = calculate_y_voorraad_act(self.transformed_data.df)
-        self.intermediate_results.y_voorraad_act = y_voorraad_act
-        self.record_dict.add('y_voorraad_act', y_voorraad_act, Record, 'Data')
-
     def _performance_matrix(self):
         logger.info("Calculating performance matrix for KPN")
         graph = performance_matrix(
@@ -226,7 +220,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('count_opleverdatum_by_week', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_week', data_p, Record, 'Data')
 
-        graph_targets_M, jaaroverzicht, data_pr, data_t, data_r, data_p = graph_overview(
+        graph_targets_M, data_pr, data_t, data_r, data_p = graph_overview(
             self.intermediate_results.df_prog,
             self.intermediate_results.df_target,
             self.intermediate_results.df_real,
@@ -234,12 +228,27 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.HC_HPend,
             self.intermediate_results.HAS_werkvoorraad,
             res='M')
+
+        self.intermediate_results.data_pr = data_pr
+        self.intermediate_results.data_t = data_t
+        self.intermediate_results.data_r = data_r
+        self.intermediate_results.data_p = data_p
+
         self.record_dict.add('graph_targets_M', graph_targets_M, Record, 'Graphs')
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
         self.record_dict.add('count_voorspellingdatum_by_month', data_pr, Record, 'Data')
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
+
+    def _jaaroverzicht(self):
+        jaaroverzicht = calculate_jaaroverzicht(
+            self.intermediate_results.data_pr,
+            self.intermediate_results.data_t,
+            self.intermediate_results.data_r,
+            self.intermediate_results.data_p,
+            self.intermediate_results.HAS_werkvoorraad
+        )
+        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _info_table(self):
         record = info_table(

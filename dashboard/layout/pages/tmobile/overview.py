@@ -9,15 +9,16 @@ import dash_html_components as html
 
 
 def get_html():
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="t-mobile")
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
              title='Outlook (KPN)',
              text="HPend afgesproken: ",
              value='31991'),
         dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-             value='5279'),
+             value=jaaroverzicht['real']),
         dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-             value='1014'),
+             value=jaaroverzicht['plan']),
         dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
              text="HPend voorspeld vanaf nu: ", value='1400'),
         dict(id_="info_globaal_container4", title='Ratio <8 weken',
