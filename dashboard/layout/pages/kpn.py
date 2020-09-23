@@ -20,7 +20,7 @@ def get_body():
 
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
-             title='Outlook (KPN)',
+             title='Outlook',
              text="HPend afgesproken: ",
              value=jaaroverzicht['target']),
         dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
@@ -30,10 +30,13 @@ def get_body():
         dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
              text="HPend voorspeld vanaf nu: ", value=jaaroverzicht['prog'],
              className=jaaroverzicht["prog_c"] + "  column"),
-        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
-             value=jaaroverzicht['HC_HPend']),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
              value=jaaroverzicht['HAS_werkvoorraad']),
+        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
+             value=jaaroverzicht['HC_HPend']),
+        dict(id_="info_globaal_container4", title='Ratio <8 weken',
+             value='n.v.t.'),
+
     ]
 
     page = html.Div(
