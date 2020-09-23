@@ -8,23 +8,28 @@ from data.graph import pie_chart
 import dash_html_components as html
 
 
-def get_html(client):
+def get_html():
+    client = 't-mobile'
+    # jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client=client)
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
-             title='Outlook (KPN)',
+             title='Outlook',
              text="HPend afgesproken: ",
-             value='31991'),
+             value='10000'),
         dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-             value='5279'),
+             value='1000'),
         dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-             value='1014'),
+             value='100'),
         dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
-             text="HPend voorspeld vanaf nu: ", value='1400'),
-        dict(id_="info_globaal_container4", title='Ratio <8 weken',
-             value='0.66'),
+             text="HPend voorspeld vanaf nu: ", value='100'),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
              value=str(collection.get_document(
                  collection="Data", client=client, graph_name="voorraadvormend")['all'])),
+        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
+             value='n.v.t.'),
+        dict(id_="info_globaal_container4", title='Ratio <8 weken',
+             value='0.5'),
+
     ]
     return [
         global_info_list(jaaroverzicht_list,

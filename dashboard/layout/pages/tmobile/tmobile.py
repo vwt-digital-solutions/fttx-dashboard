@@ -18,7 +18,7 @@ def get_body():
 
             html.Div(
                 id="tmobile-overview",
-                children=overview.get_html("t-mobile"),
+                children=overview.get_html(),
             ),
             html.Div(
                 [
