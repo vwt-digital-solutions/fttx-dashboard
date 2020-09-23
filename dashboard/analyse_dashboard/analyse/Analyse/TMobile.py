@@ -53,7 +53,7 @@ class TMobileAnalyse(FttXAnalyse):
     def _jaaroverzicht(self):
         real, plan = preprocess_for_jaaroverzicht(
             self.intermediate_results.counts_by_month['count_opleverdatum'],
-            self.intermediate_results.counts_by_month['count_plandatum'],
+            self.intermediate_results.counts_by_month['count_hasdatum'],
         )
         jaaroverzicht = calculate_jaaroverzicht(
             real,

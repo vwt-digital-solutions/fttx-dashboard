@@ -8,8 +8,7 @@ from data.graph import pie_chart
 import dash_html_components as html
 
 
-def get_html():
-    client = 't-mobile'
+def get_html(client):
     jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client=client)
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
@@ -21,7 +20,7 @@ def get_html():
         dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
              value=jaaroverzicht['plan']),
         dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
-             text="HPend voorspeld vanaf nu: ", value='1400'),
+             text="HPend voorspeld vanaf nu: ", value='1000'),
         dict(id_="info_globaal_container4", title='Ratio <8 weken',
              value='0.66'),
         dict(id_="info_globaal_container5", title='Werkvoorraad HAS',

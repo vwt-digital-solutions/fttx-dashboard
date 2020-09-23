@@ -1,6 +1,5 @@
 from functools import reduce
 import pandas as pd
-import datetime
 
 try:
     from functions import pie_chart_reden_na, get_pie_layout
@@ -162,9 +161,10 @@ def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
 
 
 def slice_for_jaaroverzicht(data):
-    df = pd.DataFrame.from_dict(data, orient='index')
-    df.index = pd.to_datetime(df.index).month
-    return df
+    df = pd.DataFrame.from_dict(data, orient='index', columns=['count_by_month'])
+    df.index = pd.to_datetime(df.index)
+    period = ['2019-12-23', '2020-12-27']
+    return df.loc[period[0]:period[1], 'count_by_month'].to_list()
 
 
 def preprocess_for_jaaroverzicht(*args):
@@ -172,20 +172,16 @@ def preprocess_for_jaaroverzicht(*args):
 
 
 def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend):
-    n_now = datetime.date.today().month
-    planning[0:n_now] = realisatie[0:n_now]  # gelijk trekken afgelopen periode
 
-    realisatie_now = realisatie[n_now]
-    planning_sum = sum(planning[n_now:])
-    planning_result = planning_sum - realisatie_now
-    realisatie_sum = str(round(sum(realisatie[1:])))
+    realisatie_sum = round(sum(realisatie))
+    planning_sum = sum(planning)
+    planning_result = planning_sum - realisatie_sum
 
     jaaroverzicht = dict(id='jaaroverzicht',
-                         real=realisatie_sum,
+                         real=str(realisatie_sum),
                          plan=str(planning_result),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(HAS_werkvoorraad),
                          prog_c='pretty_container')
-    if jaaroverzicht['prog'] < jaaroverzicht['plan']:
-        jaaroverzicht['prog_c'] = 'pretty_container_red'
+
     return jaaroverzicht
