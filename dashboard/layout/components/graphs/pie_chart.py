@@ -15,7 +15,7 @@ def get_html(labels, values, title="", colors=None):
     }
 
     if colors:
-        update_traces["colors"] = colors
+        update_traces["marker"] = dict(colors=colors)
     fig.update_traces(**update_traces)
 
     fig.update_layout(

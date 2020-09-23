@@ -7,6 +7,8 @@ from layout.components.graphs import pie_chart
 from layout.pages.tmobile import project_view
 from data.graph import pie_chart as original_pie_chart
 
+from config import colors_vwt as colors
+
 
 @app.callback(
     [
@@ -76,7 +78,13 @@ def display_click_data(week_click_data, month_click_data, reset):
 
         fig = pie_chart.get_html(labels=list(redenna_by_period.get(first_day_of_period, dict()).keys()),
                                  values=list(redenna_by_period.get(first_day_of_period, dict()).values()),
-                                 title=f"Reden na voor de {period} {first_day_of_period}")
+                                 title=f"Reden na voor de {period} {first_day_of_period}",
+                                 colors=[
+                                     colors['green'],
+                                     colors['yellow'],
+                                     colors['red'],
+                                     colors['vwt_blue'],
+                                 ])
 
         return fig
     return original_pie_chart('t-mobile')
