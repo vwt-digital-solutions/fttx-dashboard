@@ -3,7 +3,7 @@ from tests.old_functions import calculate_projectspecs_old, prognose_old, error_
 
 from functions import targets, graph_overview, \
     performance_matrix, prognose_graph, info_table, analyse_documents
-from Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict, \
+from Analyse.Record import Record, ListRecord, StringRecord, DateRecord, IntRecord, DictRecord, RecordDict, \
     DocumentListRecord
 from functions_tmobile import overview_reden_na_df, individual_reden_na_df
 from functions_tmobile import column_to_datetime, add_weeknumber, calculate_voorraadvormend
@@ -187,7 +187,7 @@ class AnalysisTmobile(Analysis):
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data")
 
     def get_counts_by_month(self):
-        counts_by_month = counts_by_time_period(self.data, freq="M")
+        counts_by_month = counts_by_time_period(self.data, freq="MS")
         drl = [dict(record={k: v},
                     id=f"{k}_by_month")
                for k, v in counts_by_month.items()]

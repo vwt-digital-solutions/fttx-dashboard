@@ -7,16 +7,11 @@ from layout.components.figure import figure
 from data.graph import pie_chart, ftu_table
 from layout.components.global_info_list import global_info_list
 from layout.components.header import header
+from layout.pages.tmobile import new_component
+from data.data import has_planning_by
+import config
 
-layout = dict(
-    autosize=True,
-    automargin=True,
-    margin=dict(le=30, r=30, b=20, t=40),
-    hovermode="closest",
-    plot_bgcolor="#F9F9F9",
-    paper_bgcolor="#F9F9F9",
-    legend=dict(font=dict(size=10), orientation="h"),
-)
+colors = config.colors_vwt
 
 
 # APP LAYOUT
@@ -25,7 +20,7 @@ def get_body():
 
     jaaroverzicht_list = [
         dict(id_="info_globaal_container0",
-             title='Outlook (KPN)',
+             title='Outlook',
              text="HPend afgesproken: ",
              value=jaaroverzicht['target']),
         dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
@@ -35,10 +30,13 @@ def get_body():
         dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
              text="HPend voorspeld vanaf nu: ", value=jaaroverzicht['prog'],
              className=jaaroverzicht["prog_c"] + "  column"),
-        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
-             value=jaaroverzicht['HC_HPend']),
-        dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
+        dict(id_="info_globaal_container4", title='Werkvoorraad HAS',
              value=jaaroverzicht['HAS_werkvoorraad']),
+        dict(id_="info_globaal_container5", title='Actuele HC / HPend',
+             value=jaaroverzicht['HC_HPend']),
+        dict(id_="info_globaal_container6", title='Ratio <8 weken',
+             value='n.v.t.'),
+
     ]
 
     page = html.Div(
@@ -46,8 +44,6 @@ def get_body():
             dcc.Store(id="aggregate_data",
                       data=None),
             dcc.Store(id="aggregate_data2",
-                      data=None),
-            dcc.Store(id="aggregate_data3",
                       data=None),
             header("Status projecten KPN in 2020"),
             global_info_list(jaaroverzicht_list,
@@ -57,40 +53,15 @@ def get_body():
                 [
                     figure(container_id="graph_targets_M_container",
                            graph_id="graph_targets_M",
-                           figure=collection.get_graph(client="kpn", graph_name="graph_targets_M")),
+                           figure=new_component.get_html_overview(has_planning_by('month', 'kpn'))),
                     figure(container_id="graph_targets_W_container",
                            graph_id="graph_targets_W",
-                           figure=collection.get_graph(client="kpn", graph_name="graph_targets_W")),
+                           figure=new_component.get_html_overview(has_planning_by('week', 'kpn'))),
                     figure(container_id="pie_chart_overview_kpn_container",
                            graph_id="pie_chart_overview_kpn",
                            figure=pie_chart('kpn')),
                 ],
                 id="main_graphs0",
-                className="container-display",
-            ),
-            html.Div(
-                [
-
-                    figure(container_id="graph_speed_c",
-                           graph_id="project_performance",
-                           figure=collection.get_graph(client="kpn",
-                                                       graph_name="project_performance")),
-                    html.Div([
-                        html.Div(id='ww_c',
-                                 children=dcc.Input(id='ww', value=' ', type='text'),
-                                 className="pretty_container column",
-                                 hidden=False,
-                                 ),
-                        html.Div(
-                            ftu_table(),
-                            id='FTU_table_c',
-                            className="pretty_container column",
-                            hidden=False,
-                        ),
-                    ],
-                        className="pretty_container column",
-                    ),
-                ],
                 className="container-display",
             ),
             html.Div(
@@ -103,12 +74,39 @@ def get_body():
                         className="two-third column",
                     ),
                     html.Div(
-                        [dbc.Button('Terug naar overzicht alle projecten', id='overzicht_button')],
+                        [dbc.Button('Terug naar overzicht alle projecten',
+                                    id='overzicht_button',
+                                    style={'background-color': colors['vwt_blue']})],
                         className="one-third column",
                     ),
                 ],
                 className="container-display",
                 id="title",
+            ),
+            html.Div(
+                [
+
+                    figure(container_id="graph_speed_c",
+                           graph_id="project_performance",
+                           figure=collection.get_graph(client="kpn",
+                                                       graph_name="project_performance")),
+                    html.Div([
+                        html.Div(
+                            ftu_table(),
+                            id='FTU_table_c',
+                            className="pretty_container column",
+                            hidden=False,
+                        ),
+                        html.Div(id='ww_c',
+                                 children=dcc.Input(id='ww', value=' ', type='text'),
+                                 className="pretty_container column",
+                                 hidden=False,
+                                 ),
+                    ],
+                        className="pretty_container column",
+                    ),
+                ],
+                className="container-display",
             ),
             html.Div(
                 [

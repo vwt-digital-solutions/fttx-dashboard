@@ -7,7 +7,7 @@ from tests.old_functions import get_start_time_old, get_total_objects_old, add_r
     get_homes_completed_old, get_HPend_old, get_has_ready_old, calculate_y_voorraad_act_old, get_has_werkvoorraad_old, \
     get_hc_hpend_ratio_old, preprocess_data_old, calculate_projectspecs_old, prognose_old, set_filters_old, \
     error_check_FCBC_old, overview_reden_na_old, individual_reden_na_old, get_HPend_2020_old
-from analyse_dashboard.analyse import config
+import config
 import pickle
 import os
 import pandas as pd
@@ -185,11 +185,11 @@ class TestKPNdflToBigDf:
             assert old_result[1][x] == new_result[1][x]
 
     def test_overview_reden_na(self):
-        old_result = overview_reden_na_old(self.df_l, config.clusters_reden_na)
-        new_result = overview_reden_na(self.df, config.clusters_reden_na)
+        old_result = overview_reden_na_old(self.df_l, self.client_config['clusters_reden_na'])
+        new_result = overview_reden_na(self.df, self.client_config['clusters_reden_na'])
         assert old_result == new_result
 
     def test_individual_reden_na(self):
-        old_result = individual_reden_na_old(self.df_l, config.clusters_reden_na)
-        new_result = individual_reden_na(self.df, config.clusters_reden_na)
+        old_result = individual_reden_na_old(self.df_l, self.client_config['clusters_reden_na'])
+        new_result = individual_reden_na(self.df, self.client_config['clusters_reden_na'])
         assert old_result == new_result

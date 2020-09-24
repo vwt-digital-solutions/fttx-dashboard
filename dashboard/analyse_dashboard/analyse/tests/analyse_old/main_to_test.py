@@ -5,17 +5,17 @@ import base64
 
 from tests.old_functions import get_start_time_old, get_total_objects_old, preprocess_data_old, error_check_FCBC_old
 
-from gobits import Gobits
+# from gobits import Gobits
 import config
 from tests.analyse_old.Customer import CustomerKPN
 from functions import get_timeline, get_data
 from functions import overview
 from functions import masks_phases, set_date_update
 from tests.analyse_old.Analysis import AnalysisKPN, AnalysisTmobile
-from google.cloud import pubsub, firestore
-from Record import DocumentListRecord, ListRecord
+# from google.cloud import firestore
+from Analyse.Record import DocumentListRecord, ListRecord
 
-publisher = pubsub.PublisherClient()
+# publisher = pubsub.PublisherClient()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 def analyse(request):
     try:
         analyseKPN('kpn')
-        publish_project_data(request)
+        #  publish_project_data(request)
         analyseTmobile('t-mobile')
         set_date_update()
         return 'OK', 200
@@ -107,38 +107,38 @@ def graph(request):
         logging.exception('Graph calculation failed')
 
 
-def get_project_list():
-    # We could get this list from the config file
-    data = [
-        el['label'] for el in
-        firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['record']['filters']
-    ]
-    return data
+# def get_project_list():
+#     # We could get this list from the config file
+#     data = [
+#         el['label'] for el in
+#         firestore.Client().collection('Data').document('kpn_project_names').get().to_dict()['record']['filters']
+#     ]
+#     return data
 
 
-def publish_project_data(request):
-    data = get_project_list()
-    gobits = Gobits.from_request(request=request)
-    i = 1
-    for msg in data:
-        publish_json(gobits, msg_data=msg, rowcount=i, rowmax=len(data), **config.TOPIC_SETTINGS)
-        i += 1
+# def publish_project_data(request):
+#     data = get_project_list()
+#     gobits = Gobits.from_request(request=request)
+#     i = 1
+#     for msg in data:
+#         publish_json(gobits, msg_data=msg, rowcount=i, rowmax=len(data), **config.TOPIC_SETTINGS)
+#         i += 1
 
 
-def publish_json(gobits, msg_data, rowcount, rowmax, topic_project_id, topic_name, subject=None):
-    topic_path = publisher.topic_path(topic_project_id, topic_name)
-    if subject:
-        msg = {
-            "gobits": [gobits.to_json()],
-            subject: msg_data
-        }
-    else:
-        msg = msg_data
-        logging.info(f'Publish to {topic_path}: {msg}')
-    future = publisher.publish(
-        topic_path, bytes(json.dumps(msg).encode('utf-8')))
-    future.add_done_callback(
-        lambda x: logging.debug(
-            'Published msg with ID {} ({}/{} rows).'.format(
-                future.result(), rowcount, rowmax))
-    )
+# def publish_json(gobits, msg_data, rowcount, rowmax, topic_project_id, topic_name, subject=None):
+#     topic_path = publisher.topic_path(topic_project_id, topic_name)
+#     if subject:
+#         msg = {
+#             "gobits": [gobits.to_json()],
+#             subject: msg_data
+#         }
+#     else:
+#         msg = msg_data
+#         logging.info(f'Publish to {topic_path}: {msg}')
+#     future = publisher.publish(
+#         topic_path, bytes(json.dumps(msg).encode('utf-8')))
+#     future.add_done_callback(
+#         lambda x: logging.debug(
+#             'Published msg with ID {} ({}/{} rows).'.format(
+#                 future.result(), rowcount, rowmax))
+#     )

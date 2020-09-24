@@ -1,7 +1,7 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
-from Record import Record, DocumentListRecord
-from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
-
+from Analyse.Record import Record, DocumentListRecord
+from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
+from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
 import logging
 logger = logging.getLogger('T-mobile Analyse')
 
@@ -28,6 +28,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_month()
         self._get_counts_by_week()
         self._get_voorraadvormend()
+        self._jaaroverzicht()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
@@ -38,17 +39,37 @@ class TMobileAnalyse(FttXAnalyse):
         logger.info("Calculating counts by week")
         counts_by_week = counts_by_time_period(self.transformed_data.df)
         drl = [dict(record={k: v},
-                    id=f"{k}_by_week")
+                    graph_name=f"{k}_by_week")
                for k, v in counts_by_week.items()]
-        self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data")
+        self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
+
+    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
+    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
+    #                                       client=client) if client == 'kpn' else {}  # temp fix
+    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
+    #                                         client=client) if client == 'kpn' else {}  # temp fix
+
+    def _jaaroverzicht(self):
+        real, plan = preprocess_for_jaaroverzicht(
+            self.intermediate_results.counts_by_month['count_opleverdatum'],
+            self.intermediate_results.counts_by_month['count_hasdatum'],
+        )
+        jaaroverzicht = calculate_jaaroverzicht(
+            real,
+            plan,
+            self.intermediate_results.HAS_werkvoorraad,
+            self.intermediate_results.HC_HPend
+        )
+        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
-        counts_by_month = counts_by_time_period(self.transformed_data.df, freq="M")
+        self.intermediate_results.counts_by_month = counts_by_time_period(self.transformed_data.df, freq="MS")
         drl = [dict(record={k: v},
-                    id=f"{k}_by_month")
-               for k, v in counts_by_month.items()]
-        self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data")
+                    graph_name=f"{k}_by_month")
+               for k, v in self.intermediate_results.counts_by_month.items()]
+        self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
 
 class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):

@@ -7,8 +7,8 @@ from analyse.functions import get_data_FC, get_data_meters
 sns.set()
 
 # %% Set environment variables and permissions and data path
-path_jsons = 'C:/Users/agvanturnhout/Documents/ProjectenVWT/Git_repos/fttx-dashboard-vqd-analysis/jsonkey/'
-path_data = 'C:/Users/agvanturnhout/Documents/ProjectenVWT/Git_repos/fttx-dashboard-vqd-analysis/Firestore_data/'
+path_jsons = ''
+path_data = ''
 keys = os.listdir(path_jsons)
 for fn in keys:
     if ('-d-' in fn) & ('-fttx-' in fn):
