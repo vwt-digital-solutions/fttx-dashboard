@@ -646,11 +646,13 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     prognose_result = prognose_sum - realisatie_now
     realisatie_sum = str(round(sum(realisatie[1:])))
 
-    jaaroverzicht = dict(id='jaaroverzicht', target=target_sum, real=realisatie_sum,
-                         plan=str(planning_result),
-                         prog=str(prognose_result),
+    jaaroverzicht = dict(id='jaaroverzicht',
+                         target=str(int(target_sum)),
+                         real=str(int(realisatie_sum)),
+                         plan=str(int(planning_result)),
+                         prog=str(int(prognose_result)),
                          HC_HPend=str(HC_HPend),
-                         HAS_werkvoorraad=str(HAS_werkvoorraad),
+                         HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
                          prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
