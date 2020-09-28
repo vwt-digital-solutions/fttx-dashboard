@@ -66,7 +66,7 @@ class AzureOAuth(Auth):
                 return Response(status=401)
 
             response = f(*args, **kwargs)
-            logging.info(response)
+            logging.debug(response)
             return response
         return wrap
 

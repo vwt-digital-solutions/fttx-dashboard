@@ -35,7 +35,11 @@ def get_body():
                                        n_clicks=0,
                                        style={"margin-left": "10px",
                                               "margin-right": "55px",
-                                              'background-color': colors['vwt_blue']}),
+                                              'background-color': colors['vwt_blue']})
+                        ]
+                    ),
+                    html.Div(
+                        [
                             dbc.Button('Terug naar overzicht alle projecten',
                                        id='overzicht-button-tmobile',
                                        style={'background-color': colors['vwt_blue']})
@@ -53,7 +57,7 @@ def get_body():
             html.Div(
                 style={'display': 'none'},
                 id="tmobile-project-view",
-                children=project_view.get_html(""),
+                children=project_view.get_html("", 't-mobile'),
             ),
         ],
         id="mainContainer",
