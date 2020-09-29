@@ -24,7 +24,6 @@ from data.graph import info_table as graph_info_table
      ]
 )
 def update_dropdown(value):
-    print(value)
     return [value['points'][0]['text']]
 
 

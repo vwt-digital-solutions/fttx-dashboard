@@ -8,6 +8,11 @@ from config_pages import config_pages
 from layout.pages import error
 import importlib
 from callbacks import *  # noqa: F403, F401
+import logging
+
+logging.basicConfig(format='%(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
+                    level=logging.INFO)
+
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=True),
