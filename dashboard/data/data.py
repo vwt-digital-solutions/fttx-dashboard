@@ -42,11 +42,12 @@ def completed_status_counts(project_name, click_filter=None):
 
     if not click_filter:
         click_filter = {}
-    categories = ["geschouwd",
-                  "bis_gereed",
-                  "lasDP",
-                  "lasAP",
-                  "HAS"]
+
+    categories = ['schouw_status',
+                  'bis_status',
+                  'lasDP_status',
+                  'lasAP_status',
+                  'HAS_status']
 
     if project_name:
         counts = pd.DataFrame(collection.get_document(collection="Data",
@@ -79,7 +80,7 @@ def completed_status_counts(project_name, click_filter=None):
         status_category = pd.CategoricalDtype(
             categories=['niet_opgeleverd', "ingeplanned", "opgeleverd", "opgeleverd_zonder_hc"]
         )
-        phase_category = pd.CategoricalDtype(categories=['geschouwd', 'bis_gereed', 'lasAP', 'lasDP', 'HAS'])
+        phase_category = pd.CategoricalDtype(categories=categories)
         lb_df['status'] = lb_df.status.astype(status_category)
         lb_df['phase'] = lb_df.phase.astype(phase_category)
         lb_df = lb_df.groupby(by=['phase', 'status']).sum().reset_index()

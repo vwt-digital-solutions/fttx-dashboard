@@ -1433,9 +1433,8 @@ def rules_to_state(rules_list, state_list):
     if len(rules_list) != len(state_list):
         raise ValueError("The number of rules must be equal to the number of states")
     calculation_df = pd.concat(rules_list, axis=1).astype(int)
-    index_list = range(len(state_list))
     state = calculation_df.apply(
-        lambda x: state_list[sum(i * x.iloc[i] for i in index_list)],
+        lambda x: state_list[list(x).index(True)],
         axis=1
     )
     return state
