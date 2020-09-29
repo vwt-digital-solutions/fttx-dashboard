@@ -81,16 +81,6 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 kpn = KPNTestETL(client='kpn', config=config.client_config['kpn'])
 kpn.extract()
 kpn.transform()
-kpn._calculate_projectspecs()
-kpn._calculate_y_voorraad_act()
-kpn._prognose()
-kpn._set_input_fields()
-kpn._targets()
-kpn._performance_matrix()
-kpn._prognose_graph()
-kpn._overview()
-kpn._calculate_graph_overview()
-kpn._jaaroverzicht()
 
 
 # %% Test jaaroverzciht tmobile
@@ -102,7 +92,7 @@ tmobile.perform()
 # %%
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-tmobile = TMobileETL(client='t-mobile', config=config.client_config['t-mobile'])
+tmobile = TMobileTestETL(client='t-mobile', config=config.client_config['t-mobile'])
 tmobile.perform()
 
 # %%

@@ -11,8 +11,8 @@ import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act
-
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
+from pandas.api.types import CategoricalDtype
 logger = logging.getLogger('FttX Analyse')
 
 
@@ -105,6 +105,7 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._add_columns()
+        self._cluster_reden_na()
 
     def _fix_dates(self):
         logger.info("Changing columns to datetime column if there is 'datum' in column name.")
@@ -129,6 +130,13 @@ class FttXTransform(Transform):
                 (self.transformed_data.df.opleverstatus != '0') &
                 (self.transformed_data.df.opleverdatum.isna())
         )
+
+    def _cluster_reden_na(self):
+        clus = self.config['clusters_reden_na']
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
+        self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
 
 
 class FttXAnalyse(FttXBase):

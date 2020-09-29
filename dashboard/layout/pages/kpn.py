@@ -4,11 +4,9 @@ import dash_html_components as html
 
 from data import collection
 from layout.components.figure import figure
-from data.graph import pie_chart, ftu_table
-from layout.components.global_info_list import global_info_list
+from data.graph import ftu_table
 from layout.components.header import header
-from layout.pages.tmobile import new_component
-from data.data import has_planning_by
+from layout.pages.tmobile import overview
 import config
 
 colors = config.colors_vwt
@@ -16,29 +14,7 @@ colors = config.colors_vwt
 
 # APP LAYOUT
 def get_body():
-    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client="kpn")
-
-    jaaroverzicht_list = [
-        dict(id_="info_globaal_container0",
-             title='Outlook',
-             text="HPend afgesproken: ",
-             value=jaaroverzicht['target']),
-        dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-             value=jaaroverzicht['real']),
-        dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-             value=jaaroverzicht['plan']),
-        dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
-             text="HPend voorspeld vanaf nu: ", value=jaaroverzicht['prog'],
-             className=jaaroverzicht["prog_c"] + "  column"),
-        dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
-             value=jaaroverzicht['HAS_werkvoorraad']),
-        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
-             value=jaaroverzicht['HC_HPend']),
-        dict(id_="info_globaal_container4", title='Ratio <8 weken',
-             value='n.v.t.'),
-
-    ]
-
+    client = 'kpn'
     page = html.Div(
         [
             dcc.Store(id="aggregate_data",
@@ -46,23 +22,9 @@ def get_body():
             dcc.Store(id="aggregate_data2",
                       data=None),
             header("Status projecten KPN in 2020"),
-            global_info_list(jaaroverzicht_list,
-                             id="info-container1",
-                             className="container-display"),
             html.Div(
-                [
-                    figure(container_id="graph_targets_M_container",
-                           graph_id="graph_targets_M",
-                           figure=new_component.get_html_overview(has_planning_by('month', 'kpn'))),
-                    figure(container_id="graph_targets_W_container",
-                           graph_id="graph_targets_W",
-                           figure=new_component.get_html_overview(has_planning_by('week', 'kpn'))),
-                    figure(container_id="pie_chart_overview_kpn_container",
-                           graph_id="pie_chart_overview_kpn",
-                           figure=pie_chart('kpn')),
-                ],
-                id="main_graphs0",
-                className="container-display",
+                id="tmobile-overview",
+                children=overview.get_html(client),
             ),
             html.Div(
                 [

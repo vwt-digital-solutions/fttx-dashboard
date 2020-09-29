@@ -80,3 +80,8 @@ class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):
 class TMobileTestETL(PickleExtract, FttXTestLoad, TMobileETL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+class TMobileLocalETL(PickleExtract, TMobileETL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)

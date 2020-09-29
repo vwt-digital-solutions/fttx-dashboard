@@ -1287,8 +1287,9 @@ def pie_chart_reden_na(df_na, clusters, key):
         df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
-
-        df_na = df_na.groupby('cluster_redenna').size().copy()
+        df_na = df_na.groupby('cluster_redenna').size().copy().to_dict()
+        document = 'pie_na_' + key
+        return df_na, document
         df_na = df_na.to_frame(name='count').reset_index().copy()
         labels = df_na['cluster_redenna'].tolist()
         values = df_na['count'].tolist()
@@ -1306,7 +1307,7 @@ def pie_chart_reden_na(df_na, clusters, key):
                 ]
         }
     }
-    document = 'pie_na_' + key
+
     return data, document
 
 
@@ -1322,13 +1323,7 @@ def individual_reden_na(df: pd.DataFrame, clusters):
     record_dict = {}
     for project, df in df.groupby(by="project"):
         data, document = pie_chart_reden_na(df, clusters, project)
-        layout = get_pie_layout()
-        fig = {
-            'data': data,
-            'layout': layout
-        }
-        fig = dict(data=data, layout=layout)
-        record = dict(id=document, figure=fig)
+        record = dict(id=document, data=data)
         record_dict[document] = record
     return record_dict
 
