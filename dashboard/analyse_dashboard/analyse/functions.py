@@ -637,8 +637,8 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     n_now = datetime.date.today().month
 
     target_sum = str(round(sum(target[1:])))
-    planning_sum = sum(planning[n_now:])
-    prognose_sum = sum(prognose[n_now:])
+    planning_sum = sum(planning[n_now:]) - realisatie[n_now]
+    prognose_sum = sum(prognose[n_now:]) - realisatie[n_now]
     realisatie_sum = str(round(sum(realisatie[1:])))
 
     jaaroverzicht = dict(id='jaaroverzicht',
