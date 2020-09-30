@@ -6,7 +6,8 @@ import pandas as pd
 
 
 def has_planning_by(period, client):
-    has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
+                                             client=client)
     has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
     has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
                                           client=client) if client == 'kpn' else {}  # temp fix
@@ -34,6 +35,41 @@ def has_planning_by(period, client):
     end_date = pd.to_datetime(str(datetime.now().year) + '-12-31', format="%Y-%m-%d")
     mask = (df['date'] >= start_date) & (df['date'] <= end_date)
     return df[mask]
+
+
+def redenna_by_completed_status(project_name, click_filter=None):
+    RedenNADataFrames = namedtuple("RedenNADataFrames",
+                                   ["total", "laagbouw", "hoogbouw"])  # Used to return a named tuple
+
+    if not click_filter:
+        click_filter = {}
+
+    print(
+        project_name,
+        click_filter
+          )
+
+    if project_name:
+        counts = pd.DataFrame(collection.get_document(collection="Data",
+                                                      graph_name="completed_status_counts",
+                                                      project=project_name))
+
+        mask = pd.Series([True]).repeat(len(counts.index)).values
+        if click_filter:
+            for col, value in click_filter.items():
+                mask = mask & (counts[col] == value)
+
+        cols = list(dict.fromkeys(list(click_filter.keys()) + ['cluster_redenna']))
+        cols.append("laagbouw")
+        cols_to_see = cols + ["count"]
+        result = counts[mask][cols_to_see].groupby(cols).sum().reset_index()
+        total = result.groupby('cluster_redenna').sum().reset_index()[['cluster_redenna', 'count']]
+        laagbouw = result[result.laagbouw].groupby('cluster_redenna').sum().reset_index()[['cluster_redenna', 'count']]
+        hoogbouw = result[~result.laagbouw].groupby('cluster_redenna').sum().reset_index()[['cluster_redenna', 'count']]
+
+        return RedenNADataFrames(total, laagbouw, hoogbouw)
+
+    return None, None
 
 
 def completed_status_counts(project_name, click_filter=None):
