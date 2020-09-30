@@ -259,7 +259,7 @@ class FttXAnalyse(FttXBase):
 
         status_df: pd.DataFrame = self.transformed_data.df[['schouw_status', 'bis_status', 'laagbouw', 'lasDP_status',
                                                             'lasAP_status', 'HAS_status', 'sleutel', 'project']]
-        status_df.rename(columns={"sleutel": "count"})
+        status_df = status_df.rename(columns={"sleutel": "count"})
         status_counts_dict = {}
         col_names = list(status_df.columns)
         for project in status_df.project.unique():
