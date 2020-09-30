@@ -30,9 +30,20 @@ def get_body():
                         className="two-third column",
                     ),
                     html.Div(
-                        [dbc.Button('Terug naar overzicht alle projecten',
-                                    id='overzicht-button-tmobile',
-                                    style={'background-color': colors['vwt_blue']})],
+                        [
+                            dbc.Button('Reset overzicht', id='overview-reset',
+                                       n_clicks=0,
+                                       style={"margin-left": "10px",
+                                              "margin-right": "55px",
+                                              'background-color': colors['vwt_blue']})
+                        ]
+                    ),
+                    html.Div(
+                        [
+                            dbc.Button('Terug naar overzicht alle projecten',
+                                       id='overzicht-button-tmobile',
+                                       style={'background-color': colors['vwt_blue']})
+                        ],
                         className="one-third column",
                     ),
                 ],
@@ -41,12 +52,12 @@ def get_body():
             ),
             html.Div(
                 className="container-display",
-                children=[html.Button('Reset', id='overview-reset', n_clicks=0, style={"margin-left": "10px"})],
+                children=[],
             ),
             html.Div(
                 style={'display': 'none'},
                 id="tmobile-project-view",
-                children=project_view.get_html(""),
+                children=project_view.get_html("", 't-mobile'),
             ),
         ],
         id="mainContainer",

@@ -24,7 +24,6 @@ from data.graph import info_table as graph_info_table
      ]
 )
 def update_dropdown(value):
-    print(value)
     return [value['points'][0]['text']]
 
 
@@ -39,6 +38,7 @@ def update_dropdown(value):
         Output("info_globaal_container3", 'hidden'),
         Output("info_globaal_container4", 'hidden'),
         Output("info_globaal_container5", 'hidden'),
+        Output("info_globaal_container6", 'hidden'),
         Output("graph_speed_c", 'hidden'),
         Output("ww_c", 'hidden'),
         Output('FTU_table_c', 'hidden'),
@@ -86,6 +86,7 @@ def update_graphs(n_o, drop_selectie, mask_all):
         hidden,  # info_globaal_container3
         hidden,  # info_globaal_container4
         hidden,  # info_globaal_container5
+        hidden,  # info_globaal_container6
         hidden,  # graph_speed_c
         hidden,  # ww_c
         hidden,  # FTU_table_c

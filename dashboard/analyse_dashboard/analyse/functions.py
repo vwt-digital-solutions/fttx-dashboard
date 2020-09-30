@@ -646,11 +646,13 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     prognose_result = prognose_sum - realisatie_now
     realisatie_sum = str(round(sum(realisatie[1:])))
 
-    jaaroverzicht = dict(id='jaaroverzicht', target=target_sum, real=realisatie_sum,
-                         plan=str(planning_result),
-                         prog=str(prognose_result),
+    jaaroverzicht = dict(id='jaaroverzicht',
+                         target=str(int(target_sum)),
+                         real=str(int(realisatie_sum)),
+                         plan=str(int(planning_result)),
+                         prog=str(int(prognose_result)),
                          HC_HPend=str(HC_HPend),
-                         HAS_werkvoorraad=str(HAS_werkvoorraad),
+                         HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
                          prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -1426,9 +1428,8 @@ def rules_to_state(rules_list, state_list):
     if len(rules_list) != len(state_list):
         raise ValueError("The number of rules must be equal to the number of states")
     calculation_df = pd.concat(rules_list, axis=1).astype(int)
-    index_list = range(len(state_list))
     state = calculation_df.apply(
-        lambda x: state_list[sum(i * x.iloc[i] for i in index_list)],
+        lambda x: state_list[list(x).index(True)],
         axis=1
     )
     return state
