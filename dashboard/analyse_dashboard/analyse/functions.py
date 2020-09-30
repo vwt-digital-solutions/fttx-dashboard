@@ -534,7 +534,6 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
     real = real0.to_list()
     plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
     plan = plan0.to_list()
-    plan[0:n_now] = real[0:n_now]  # gelijk trekken afgelopen periode
 
     if 'M' == res:
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
@@ -636,21 +635,17 @@ def preprocess_for_jaaroverzicht(*args):
 
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
     n_now = datetime.date.today().month
-    planning[0:n_now] = realisatie[0:n_now]  # gelijk trekken afgelopen periode
 
     target_sum = str(round(sum(target[1:])))
-    realisatie_now = realisatie[n_now]
     planning_sum = sum(planning[n_now:])
     prognose_sum = sum(prognose[n_now:])
-    planning_result = planning_sum - realisatie_now
-    prognose_result = prognose_sum - realisatie_now
     realisatie_sum = str(round(sum(realisatie[1:])))
 
     jaaroverzicht = dict(id='jaaroverzicht',
                          target=str(int(target_sum)),
                          real=str(int(realisatie_sum)),
-                         plan=str(int(planning_result)),
-                         prog=str(int(prognose_result)),
+                         plan=str(int(planning_sum)),
+                         prog=str(int(prognose_sum)),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
                          prog_c='pretty_container')

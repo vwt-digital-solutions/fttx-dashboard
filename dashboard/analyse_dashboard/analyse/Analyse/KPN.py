@@ -239,12 +239,6 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
-    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
-    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
-    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
-    #                                       client=client) if client == 'kpn' else {}  # temp fix
-    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
-    #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
         prog, target, real, plan = preprocess_for_jaaroverzicht(
