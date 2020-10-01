@@ -12,20 +12,20 @@ colors = config.colors_vwt
 
 def get_html(project_name, client):
     if project_name:
-        status_counts = completed_status_counts(project_name)
+        status_counts = completed_status_counts(project_name, client=client)
         laagbouw_fig = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                            title="Status oplevering per fase (LB)")
         hoogbouw_fig = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
                                                            title="Status oplevering per fase (HB & Duplex)")
 
-        redenna_counts = redenna_by_completed_status(project_name)
+        redenna_counts = redenna_by_completed_status(project_name, client=client)
         redenna_pie = redenna_status_pie(redenna_counts,
                                          title="Opgegeven reden na",
                                          colors=[
-                                             colors['green'],
+                                             colors['vwt_blue'],
                                              colors['yellow'],
                                              colors['red'],
-                                             colors['vwt_blue'],
+                                             colors['green']
                                          ]
                                          )
 

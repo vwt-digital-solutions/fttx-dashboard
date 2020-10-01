@@ -97,7 +97,7 @@ def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_
 )
 def update_graphs_using_status_clicks(click_filter, project_name):
     if project_name:
-        status_counts = completed_status_counts(project_name, click_filter=click_filter)
+        status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
         laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                        title="Status oplevering per fase (LB)")
         hoogbouw = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
@@ -117,14 +117,14 @@ def update_graphs_using_status_clicks(click_filter, project_name):
 )
 def update_redenna_status_clicks(click_filter, project_name):
     if project_name:
-        redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter)
+        redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter, client=client)
         redenna_pie = redenna_status_pie.get_fig(redenna_counts,
                                                  title="Opgegeven reden na",
                                                  colors=[
-                                                     colors['green'],
+                                                     colors['vwt_blue'],
                                                      colors['yellow'],
                                                      colors['red'],
-                                                     colors['vwt_blue'],
+                                                     colors['green']
                                                  ])
         return [redenna_pie]
     return [{'data': None, 'layout': None}]
