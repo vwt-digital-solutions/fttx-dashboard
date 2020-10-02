@@ -1054,6 +1054,17 @@ def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPe
     return record
 
 
+def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
+    this_week = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
+    index_firstday_thisweek = int((pd.to_datetime('2019-12-30') - timeline[0]).days) + (this_week - 1) * 7
+    # index_today = int((pd.to_datetime('2019-12-30') - timeline[0]).days) + (pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days
+    if project in y_target_l:
+        return int(round((y_target_l[project][index_firstday_thisweek + 7] -
+                   y_target_l[project][index_firstday_thisweek - 1]) / 100 * total_objects[project]))
+    else:
+        return 0
+
+
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
     rc1_mean = sum(rc1.values()) / len(rc1.values())
     rc2_mean = sum(rc2.values()) / len(rc2.values())

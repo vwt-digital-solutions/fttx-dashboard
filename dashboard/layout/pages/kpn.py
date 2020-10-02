@@ -9,6 +9,7 @@ from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 from layout.pages.tmobile import new_component
 from data.data import has_planning_by
+from data.graph import info_table as graph_info_table
 import config
 
 colors = config.colors_vwt
@@ -109,6 +110,37 @@ def get_body():
                 className="container-display",
             ),
             html.Div(
+                id='table_info',
+                className="container-display",
+                children=[
+                    new_component.get_html(value=100,
+                                           previous_value=None,
+                                           title="Target (outlook)",
+                                           # sub_title="> 12 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=90,
+                                           title="Realisatie",
+                                           # sub_title="> 8 weken < 12 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=110,
+                                           title="Delta: Realisatie - Target",
+                                           # sub_title="< 8 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=None,
+                                           title="HC / HPend",
+                                           # sub_title="< 8 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=None,
+                                           title="Errors FC - BC",
+                                           # sub_title="< 8 weken",
+                                           font_color="green"),
+                ]
+            ),
+            html.Div(
                 [
                     html.Div(
                         [dcc.Graph(id="graph_prog")],
@@ -141,9 +173,10 @@ def get_body():
             html.Div(
                 [
                     html.Div(
-                        id='table_info',
+                        id='table_info2',
                         className="pretty_container column",
-                        hidden=True,
+                        hidden=False,
+                        children=graph_info_table()
                     ),
 
                 ],

@@ -5,7 +5,7 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht
+    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget
 import pandas as pd
 
 import logging
@@ -98,6 +98,7 @@ class KPNAnalyse(FttXAnalyse):
         self._calculate_graph_overview()
         self._jaaroverzicht()
         self._info_table()
+        self._calculate_project_indicators()
         self._analysis_documents()
         self._set_filters()
 
@@ -266,6 +267,19 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.HPend_l,
             self.intermediate_results.n_err)
         self.record_dict.add('info_table', record, Record, 'Graphs')
+
+    def _calculate_project_indicators(self):
+        projects = self.transformed_data.df.project.unique().to_list()
+        project_indicators = {}
+        for project in projects:
+            project_indicators['weektarget'] = calculate_weektarget(project,
+                                                                    self.intermediate_results.y_target_l,
+                                                                    self.intermediate_results.total_objects,
+                                                                    self.intermediate_results.timeline)
+            graph_name = 'project_indicators_' + project
+            print(graph_name)
+            print(project_indicators)
+            self.record_dict.add(graph_name, project_indicators, Record, 'Data')
 
     def _analysis_documents(self):
         doc1, doc2, doc3 = analyse_documents(self.transformed_data.ftu['date_FTU0'],

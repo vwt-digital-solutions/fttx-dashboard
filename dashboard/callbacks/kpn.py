@@ -5,6 +5,7 @@
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
+from layout.pages.tmobile import new_component
 
 import pandas as pd
 # import numpy as np
@@ -14,7 +15,7 @@ from app import app
 # update value dropdown given selection in scatter chart
 from data.graph import pie_chart, clickbar_lb, clickbar_hb
 from data import collection
-from data.graph import info_table as graph_info_table
+# from data.graph import info_table as graph_info_table
 
 
 @app.callback(
@@ -121,7 +122,36 @@ def middle_top_graphs(drop_selectie):
     fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
-    table_info = graph_info_table()
+    print(drop_selectie)
+    table_info = [
+                    new_component.get_html(value=collection.get_document(collection="Data",
+                                                                         graph_name="project_indicators_" + drop_selectie,
+                                                                         client='kpn')['weektarget'],
+                                           previous_value=None,
+                                           title="Target (outlook)",
+                                           # sub_title="> 12 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=90,
+                                           title="Realisatie",
+                                           # sub_title="> 8 weken < 12 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=110,
+                                           title="Delta: Realisatie - Target",
+                                           # sub_title="< 8 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=None,
+                                           title="HC / HPend",
+                                           # sub_title="< 8 weken",
+                                           font_color="green"),
+                    new_component.get_html(value=100,
+                                           previous_value=None,
+                                           title="Errors FC - BC",
+                                           # sub_title="< 8 weken",
+                                           font_color="green"),
+                ]
 
     return [fig_prog, table_info, -1]
 

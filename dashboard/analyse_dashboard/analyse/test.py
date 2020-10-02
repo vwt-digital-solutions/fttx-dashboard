@@ -4,6 +4,7 @@ from Analyse.KPN import KPNTestETL
 import os
 import time
 import config
+import pandas as pd
 from Analyse.KPN import KPNETL, PickleExtract
 from functions import graph_overview
 import logging
@@ -66,7 +67,21 @@ class TMobilePickleETL(PickleExtract, TMobileETL):
 
 
 client_name = "t-mobile"
-tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
+tmobile = TMobilePickleETL(client=client_name, config=config.client_config[client_name])
+tmobile.extract()
+tmobile.transform()
+tmobile.analyse()
+
+# small steekproef
+testdata = tmobile.transformed_data.df
+# testdata = testdata[testdata['project'] == 'Den Haag']
+# mask = (testdata.opleverstatus == '0')
+# mask = (testdata.opleverstatus == '2') & (testdata.soort_bouw == 'Laag')
+# mask = (testdata.laswerkdpgereed == '0') & (testdata.soort_bouw == 'Laag') & (testdata.opleverstatus == '2')
+# testdata[mask][testdata[mask].cluster_redenna == 'geplande aansluiting']
+mask = (~testdata.opleverdatum.isna()) & (testdata.opleverdatum >= pd.to_datetime('2020-09-01'))
+testdata[testdata.cluster_redenna == 'HC']
+
 tmobile.perform()
 logging.info("T-mobile Done")
 logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
