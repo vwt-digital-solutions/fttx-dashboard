@@ -38,7 +38,7 @@ def has_planning_by(period, client):
     return df[mask]
 
 
-def redenna_by_completed_status(project_name, click_filter=None, client='kpn'):
+def redenna_by_completed_status(project_name, client, click_filter=None, ):
     RedenNADataFrames = namedtuple("RedenNADataFrames",
                                    ["total", "laagbouw", "hoogbouw"])  # Used to return a named tuple
 
@@ -53,7 +53,8 @@ def redenna_by_completed_status(project_name, click_filter=None, client='kpn'):
     if project_name:
         counts = pd.DataFrame(collection.get_document(collection="Data",
                                                       graph_name="completed_status_counts",
-                                                      project=project_name))
+                                                      project=project_name,
+                                                      client=client))
 
         clusters = config.client_config[client]['clusters_reden_na']
         cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
@@ -77,7 +78,7 @@ def redenna_by_completed_status(project_name, click_filter=None, client='kpn'):
     return None, None
 
 
-def completed_status_counts(project_name, click_filter=None, client='kpn'):
+def completed_status_counts(project_name, client, click_filter=None):
     StatusCountDataFrames = namedtuple("StatusCountDataFrames",
                                        ["laagbouw", "hoogbouw"])  # Used to return a named tuple
 
@@ -93,7 +94,8 @@ def completed_status_counts(project_name, click_filter=None, client='kpn'):
     if project_name:
         counts = pd.DataFrame(collection.get_document(collection="Data",
                                                       graph_name="completed_status_counts",
-                                                      project=project_name))
+                                                      project=project_name,
+                                                      client=client))
         clusters = config.client_config[client]['clusters_reden_na']
         cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         counts['cluster_redenna'] = counts['cluster_redenna'].astype(cluster_types)
