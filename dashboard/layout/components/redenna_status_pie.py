@@ -4,11 +4,11 @@ import config
 
 
 def get_fig(redenna_counts, title="", colors=None):
-    fig = go.Figure()
 
     if not colors:
         colors = list(config.colors_vwt.values())
 
+    fig = go.Figure()
     fig.add_trace(
         go.Pie(labels=redenna_counts.total.cluster_redenna,
                values=redenna_counts.total['count'],
