@@ -258,7 +258,8 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating completed status counts per project")
 
         status_df: pd.DataFrame = self.transformed_data.df[['schouw_status', 'bis_status', 'laagbouw', 'lasDP_status',
-                                                            'lasAP_status', 'HAS_status', 'sleutel', 'project']]
+                                                            'lasAP_status', 'HAS_status', 'cluster_redenna', 'sleutel',
+                                                            'project']]
         status_df = status_df.rename(columns={"sleutel": "count"})
         status_counts_dict = {}
         col_names = list(status_df.columns)
@@ -267,6 +268,7 @@ class FttXAnalyse(FttXBase):
             status_counts_dict[project] = project_status.groupby(col_names[:-2]) \
                 .count() \
                 .reset_index() \
+                .dropna() \
                 .to_dict(orient='records')
         self.record_dict.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
 
@@ -289,6 +291,7 @@ class FttXLoad(Load, FttXBase):
         super().__init__(**kwargs)
 
     def load(self):
+        logger.info("Loading documents...")
         self.record_dict.to_firestore(self.client)
 
 

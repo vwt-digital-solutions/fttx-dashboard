@@ -48,6 +48,7 @@ class Record:
     def to_firestore(self, graph_name, client):
         document_name = self.document_name(graph_name=graph_name, client=client)
         document = firestore.Client().collection(self.collection).document(document_name)
+        logging.info(f"Set document {document_name}")
         document.set(self._to_document(graph_name, client))
 
     def document_name(self, **kwargs):

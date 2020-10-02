@@ -1286,7 +1286,7 @@ def pie_chart_reden_na(df_na, clusters, key):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
-        df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        df_na.loc[df_na['homes_completed'], ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
 

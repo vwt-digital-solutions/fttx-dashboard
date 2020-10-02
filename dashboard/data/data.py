@@ -1,12 +1,14 @@
 from datetime import datetime
 from collections import namedtuple
 
+import config
 from data import collection
 import pandas as pd
 
 
 def has_planning_by(period, client):
-    has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
+                                             client=client)
     has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
     has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
                                           client=client) if client == 'kpn' else {}  # temp fix
@@ -36,7 +38,47 @@ def has_planning_by(period, client):
     return df[mask]
 
 
-def completed_status_counts(project_name, click_filter=None):
+def redenna_by_completed_status(project_name, client, click_filter=None, ):
+    RedenNADataFrames = namedtuple("RedenNADataFrames",
+                                   ["total", "laagbouw", "hoogbouw"])  # Used to return a named tuple
+
+    if not click_filter:
+        click_filter = {}
+
+    print(
+        project_name,
+        click_filter
+          )
+
+    if project_name:
+        counts = pd.DataFrame(collection.get_document(collection="Data",
+                                                      graph_name="completed_status_counts",
+                                                      project=project_name,
+                                                      client=client))
+
+        clusters = config.client_config[client]['clusters_reden_na']
+        cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
+        counts['cluster_redenna'] = counts['cluster_redenna'].astype(cluster_types)
+
+        mask = pd.Series([True]).repeat(len(counts.index)).values
+        if click_filter:
+            for col, value in click_filter.items():
+                mask = mask & (counts[col] == value)
+
+        cols = list(dict.fromkeys(list(click_filter.keys()) + ['cluster_redenna']))
+        cols.append("laagbouw")
+        cols_to_see = cols + ["count"]
+        result = counts[mask][cols_to_see].groupby(cols).sum().reset_index()
+        total = result.groupby('cluster_redenna').sum().reset_index()[['cluster_redenna', 'count']]
+        laagbouw = result[result.laagbouw].groupby('cluster_redenna').sum().reset_index()[['cluster_redenna', 'count']]
+        hoogbouw = result[~result.laagbouw].groupby('cluster_redenna').sum().reset_index()[['cluster_redenna', 'count']]
+
+        return RedenNADataFrames(total, laagbouw, hoogbouw)
+
+    return None, None
+
+
+def completed_status_counts(project_name, client, click_filter=None):
     StatusCountDataFrames = namedtuple("StatusCountDataFrames",
                                        ["laagbouw", "hoogbouw"])  # Used to return a named tuple
 
@@ -45,14 +87,18 @@ def completed_status_counts(project_name, click_filter=None):
 
     categories = ['schouw_status',
                   'bis_status',
-                  'lasDP_status',
                   'lasAP_status',
+                  'lasDP_status',
                   'HAS_status']
 
     if project_name:
         counts = pd.DataFrame(collection.get_document(collection="Data",
                                                       graph_name="completed_status_counts",
-                                                      project=project_name))
+                                                      project=project_name,
+                                                      client=client))
+        clusters = config.client_config[client]['clusters_reden_na']
+        cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
+        counts['cluster_redenna'] = counts['cluster_redenna'].astype(cluster_types)
 
         mask = pd.Series([True]).repeat(len(counts.index)).values
         if click_filter:

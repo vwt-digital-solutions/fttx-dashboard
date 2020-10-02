@@ -3,9 +3,10 @@ from app import app
 from dash.dependencies import Input, Output, State
 
 from data import collection
-from data.data import completed_status_counts
+from data.data import completed_status_counts, redenna_by_completed_status
 from layout.components.graphs import pie_chart, completed_status_counts_bar
 from layout.pages.tmobile import project_view
+from layout.components import redenna_status_pie
 from data.graph import pie_chart as original_pie_chart
 
 from config import colors_vwt as colors
@@ -96,13 +97,37 @@ def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_
 )
 def update_graphs_using_status_clicks(click_filter, project_name):
     if project_name:
-        status_counts = completed_status_counts(project_name, click_filter=click_filter)
+        status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
         laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                        title="Status oplevering per fase (LB)")
         hoogbouw = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
                                                        title="Status oplevering per fase (HB & Duplex)")
         return laagbouw, hoogbouw
     return {'data': None, 'layout': None}, {'data': None, 'layout': None}
+
+
+@app.callback(
+    [
+        Output('redenna_project_t-mobile', 'figure')
+    ],
+    [
+        Input('status-count-filter-t-mobile', 'data'),
+        Input('project-dropdown-tmobile', 'value')
+    ]
+)
+def update_redenna_status_clicks(click_filter, project_name):
+    if project_name:
+        redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter, client=client)
+        redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+                                                 title="Opgegeven reden na",
+                                                 colors=[
+                                                     colors['vwt_blue'],
+                                                     colors['yellow'],
+                                                     colors['red'],
+                                                     colors['green']
+                                                 ])
+        return [redenna_pie]
+    return [{'data': None, 'layout': None}]
 
 
 @app.callback(
