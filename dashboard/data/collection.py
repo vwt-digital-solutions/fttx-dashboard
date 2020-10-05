@@ -2,13 +2,10 @@ from data import api
 from urllib import parse
 import logging
 
+from data.data import no_graph
+
 
 def get_document(collection, **url_params):
-    # collection_result_key = {
-    #     "Graphs": "figure",
-    #     "Data": "record"
-    # }
-
     url = f"/{collection}?{parse.urlencode(url_params)}"
     result = api.get(url)
     if not result or not len(result):
@@ -20,11 +17,4 @@ def get_document(collection, **url_params):
 
 
 def get_graph(**kwargs):
-    return get_document(collection="Graphs", **kwargs).get('figure', {
-        'data': [
-            {'x': [1, 2, 3], 'y': [4, 1, 2]},
-        ],
-        'layout': {
-            'title': 'Graph not found'
-        }
-    })
+    return get_document(collection="Graphs", **kwargs).get('figure', no_graph())

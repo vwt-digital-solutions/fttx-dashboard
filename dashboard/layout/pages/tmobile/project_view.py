@@ -1,25 +1,15 @@
 import dash_html_components as html
 
-from data.data import completed_status_counts
-from layout.components.graphs import completed_status_counts_bar
-from data.graph import pie_chart
+from data.data import no_graph
 from layout.components.figure import figure
 from layout.pages.tmobile import new_component
 import dash_core_components as dcc
 
 
-def get_html(project_name, client):
-    if project_name:
-        pie_chart_project = pie_chart(client=client, key=project_name)
-        status_counts = completed_status_counts(project_name)
-        laagbouw_fig = completed_status_counts_bar.get_fig(status_counts.laagbouw,
-                                                           title="Status oplevering per fase (LB)")
-        hoogbouw_fig = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
-                                                           title="Status oplevering per fase (HB & Duplex)")
-    else:
-        pie_chart_project = {'data': None, 'layout': None}
-        laagbouw_fig = {'data': None, 'layout': None}
-        hoogbouw_fig = {'data': None, 'layout': None}
+def get_html(client):
+    redenna_pie = no_graph(title="Opgegeven reden na", text='Loading...')
+    laagbouw_fig = no_graph(title="Status oplevering per fase (LB)", text='Loading...')
+    hoogbouw_fig = no_graph(title="Status oplevering per fase (HB)", text='Loading...')
 
     return [
         dcc.Store(id=f"status-count-filter-{client}"),
@@ -52,9 +42,9 @@ def get_html(project_name, client):
                 figure(figure=hoogbouw_fig,
                        container_id=f"status-counts-hoogbouw-{client}-container",
                        graph_id=f"status-counts-hoogbouw-{client}"),
-                figure(container_id="pie_chart_project_t-mobile_container",
-                       graph_id="pie_chart_project_t-mobile_container",
-                       figure=pie_chart_project)
+                figure(container_id="redenna_project_t-mobile_container",
+                       graph_id="redenna_project_t-mobile",
+                       figure=redenna_pie)
             ]
         )
     ]

@@ -3,9 +3,11 @@ from app import app
 from dash.dependencies import Input, Output, State
 
 from data import collection
-from data.data import completed_status_counts
+from data.data import completed_status_counts, redenna_by_completed_status, has_planning_by
+from layout.components.global_info_list import global_info_list
 from layout.components.graphs import pie_chart, completed_status_counts_bar
-from layout.pages.tmobile import project_view
+from layout.pages.tmobile import project_view, new_component
+from layout.components import redenna_status_pie
 from data.graph import pie_chart as original_pie_chart
 
 from config import colors_vwt as colors
@@ -15,10 +17,77 @@ client = "t-mobile"
 
 @app.callback(
     [
-        Output(component_id="tmobile-overview", component_property='style')
+        Output('project-dropdown-t-mobile', 'options')
     ],
     [
-        Input('project-dropdown-tmobile', 'value')
+        Input('t-mobile-overview', 'children')
+    ]
+)
+def load_dropdown(dummy_data):
+    return [collection.get_document(collection="Data",
+                                    client=client,
+                                    graph_name="project_names")['filters']]
+
+
+@app.callback(
+    Output('info-container-t-mobile', 'children'),
+    [
+        Input('t-mobile-overview', 'children')
+    ]
+)
+def load_project_info(dummy_data):
+    jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client=client)
+    jaaroverzicht_list = [
+        dict(id_="info_globaal_container0",
+             title='Outlook',
+             text="HPend afgesproken: ",
+             value='10000'),
+        dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
+             value=jaaroverzicht['real']),
+        dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
+             value=jaaroverzicht['plan']),
+        dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
+             text="HPend voorspeld vanaf nu: ", value='1000'),
+        dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
+             value=str(collection.get_document(
+                 collection="Data", client=client, graph_name="voorraadvormend")['all'])),
+        dict(id_="info_globaal_container4", title='Actuele HC / HPend',
+             value='n.v.t.'),
+        dict(id_="info_globaal_container4", title='Ratio <8 weken',
+             value='0.66'),
+    ]
+    return [
+        global_info_list(items=jaaroverzicht_list,
+                         className="container-display")
+    ]
+
+
+@app.callback(
+    Output('month-overview-t-mobile', 'figure'),
+    [
+        Input('t-mobile-overview', 'children')
+    ]
+)
+def load_month_overview(dummy_data):
+    return new_component.get_html_overview(has_planning_by('month', client))
+
+
+@app.callback(
+    Output('week-overview-t-mobile', 'figure'),
+    [
+        Input('t-mobile-overview', 'children')
+    ]
+)
+def load_week_overview(dummy_data):
+    return new_component.get_html_overview(has_planning_by('week', client))
+
+
+@app.callback(
+    [
+        Output(component_id="t-mobile-overview", component_property='style')
+    ],
+    [
+        Input('project-dropdown-t-mobile', 'value')
     ]
 )
 def tmobile_overview(dropdown_selection):
@@ -29,25 +98,25 @@ def tmobile_overview(dropdown_selection):
 
 @app.callback(
     [
-        Output(component_id="tmobile-project-view", component_property='style'),
-        Output("tmobile-project-view", "children")
+        Output(component_id="t-mobile-project-view", component_property='style'),
+        Output("t-mobile-project-view", "children")
     ],
     [
-        Input('project-dropdown-tmobile', 'value')
+        Input('project-dropdown-t-mobile', 'value')
     ]
 )
 def tmobile_project_view(dropdown_selection):
     if dropdown_selection:
-        return [{'display': 'block'}, project_view.get_html(dropdown_selection, "t-mobile")]
-    return [{'display': 'none'}, project_view.get_html(dropdown_selection, "t-mobile")]
+        return [{'display': 'block'}, project_view.get_html("t-mobile")]
+    return [{'display': 'none'}, project_view.get_html("t-mobile")]
 
 
 @app.callback(
     [
-        Output(component_id="project-dropdown-tmobile", component_property='value')
+        Output(component_id="project-dropdown-t-mobile", component_property='value')
     ],
     [
-        Input('overzicht-button-tmobile', 'n_clicks')
+        Input('overzicht-button-t-mobile', 'n_clicks')
     ]
 )
 def tmobile_overview_button(_):
@@ -91,12 +160,12 @@ def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_
     ],
     [
         Input('status-count-filter-t-mobile', 'data'),
-        Input('project-dropdown-tmobile', 'value')
+        Input('project-dropdown-t-mobile', 'value')
     ]
 )
 def update_graphs_using_status_clicks(click_filter, project_name):
     if project_name:
-        status_counts = completed_status_counts(project_name, click_filter=click_filter)
+        status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
         laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                        title="Status oplevering per fase (LB)")
         hoogbouw = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
@@ -106,9 +175,33 @@ def update_graphs_using_status_clicks(click_filter, project_name):
 
 
 @app.callback(
+    [
+        Output('redenna_project_t-mobile', 'figure')
+    ],
+    [
+        Input('status-count-filter-t-mobile', 'data'),
+        Input('project-dropdown-t-mobile', 'value')
+    ]
+)
+def update_redenna_status_clicks(click_filter, project_name):
+    if project_name:
+        redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter, client=client)
+        redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+                                                 title="Opgegeven reden na",
+                                                 colors=[
+                                                     colors['vwt_blue'],
+                                                     colors['yellow'],
+                                                     colors['red'],
+                                                     colors['green']
+                                                 ])
+        return [redenna_pie]
+    return [{'data': None, 'layout': None}]
+
+
+@app.callback(
     Output('pie_chart_overview_t-mobile', 'figure'),
-    [Input('week-overview', 'clickData'),
-     Input('month-overview', 'clickData'),
+    [Input('week-overview-t-mobile', 'clickData'),
+     Input('month-overview-t-mobile', 'clickData'),
      Input('overview-reset', 'n_clicks')
      ]
 )

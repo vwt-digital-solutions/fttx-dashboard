@@ -6,6 +6,8 @@ import config
 
 colors = config.colors_vwt
 
+client = "t-mobile"
+
 
 # APP LAYOUT
 def get_body():
