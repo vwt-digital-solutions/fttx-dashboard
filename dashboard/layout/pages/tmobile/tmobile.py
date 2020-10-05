@@ -1,10 +1,7 @@
-import dash_core_components as dcc
 import dash_html_components as html
-import dash_bootstrap_components as dbc
 
 from layout.components.header import header
 from layout.pages.tmobile import overview, project_view
-from data import collection
 import config
 
 colors = config.colors_vwt
@@ -12,52 +9,29 @@ colors = config.colors_vwt
 
 # APP LAYOUT
 def get_body():
+    client = 't-mobile'
     page = html.Div(
         [
             header("Status projecten T-Mobile in 2020"),
 
             html.Div(
-                id="tmobile-overview",
-                children=overview.get_html("t-mobile"),
+                id=client + "-overview",
+                children=overview.get_html(client),
             ),
             html.Div(
-                [
-                    html.Div(
-                        [dcc.Dropdown(id='project-dropdown-tmobile',
-                                      options=collection.get_document(collection="Data", client="t-mobile",
-                                                                      graph_name="project_names")['filters'],
-                                      value=None)],
-                        className="two-third column",
-                    ),
-                    html.Div(
-                        [
-                            dbc.Button('Reset overzicht', id='overview-reset',
-                                       n_clicks=0,
-                                       style={"margin-left": "10px",
-                                              "margin-right": "55px",
-                                              'background-color': colors['vwt_blue']})
-                        ]
-                    ),
-                    html.Div(
-                        [
-                            dbc.Button('Terug naar overzicht alle projecten',
-                                       id='overzicht-button-tmobile',
-                                       style={'background-color': colors['vwt_blue']})
-                        ],
-                        className="one-third column",
-                    ),
-                ],
+                overview.get_search_bar(client),
                 className="container-display",
                 id="title",
             ),
             html.Div(
+                overview.get_performance(client),
                 className="container-display",
-                children=[],
             ),
+            # Projectspecifieke view
             html.Div(
                 style={'display': 'none'},
-                id="tmobile-project-view",
-                children=project_view.get_html("", 't-mobile'),
+                id=client + "-project-view",
+                children=project_view.get_html("", client),
             ),
         ],
         id="mainContainer",

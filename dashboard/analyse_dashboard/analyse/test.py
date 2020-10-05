@@ -1,6 +1,5 @@
 # %% Initialize
 from Analyse.TMobile import TMobileETL, TMobileTestETL
-from Analyse.KPN import KPNTestETL
 import os
 import time
 import config
@@ -76,11 +75,10 @@ logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
 
 # %% test jaaroverzicht
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-4d6e30ff0dd4.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-kpn = KPNTestETL(client='kpn', config=config.client_config['kpn'])
-kpn.extract()
-kpn.transform()
+kpn = KPNETL(client='kpn', config=config.client_config['kpn'])
+kpn.perform()
 
 
 # %% Test jaaroverzciht tmobile

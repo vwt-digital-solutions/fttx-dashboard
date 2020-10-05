@@ -5,7 +5,7 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht
+    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, get_project_dates
 import pandas as pd
 
 import logging
@@ -99,6 +99,7 @@ class KPNAnalyse(FttXAnalyse):
         self._jaaroverzicht()
         self._info_table()
         self._analysis_documents()
+        self._calculate_project_dates()
         self._set_filters()
 
     def _error_check_FCBC(self):
@@ -239,7 +240,8 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
-    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
+    #  client=client)
     # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
     # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
     #                                       client=client) if client == 'kpn' else {}  # temp fix
@@ -273,33 +275,42 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.n_err)
         self.record_dict.add('info_table', record, Record, 'Graphs')
 
+    def _calculate_project_dates(self):
+        project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
+                                          self.transformed_data.ftu['date_FTU1'],
+                                          self.intermediate_results.y_target_l,
+                                          self.intermediate_results.x_prog,
+                                          self.intermediate_results.x_d,
+                                          self.intermediate_results.rc1,
+                                          self.intermediate_results.d_real_l
+                                          )
+        self.record_dict.add("project_dates", project_dates, Record, "Data")
+
     def _analysis_documents(self):
-        doc1, doc2, doc3 = analyse_documents(self.transformed_data.ftu['date_FTU0'],
-                                             self.transformed_data.ftu['date_FTU1'],
-                                             self.intermediate_results.y_target_l,
-                                             self.intermediate_results.rc1,
-                                             self.intermediate_results.x_prog,
-                                             self.intermediate_results.timeline,
-                                             self.intermediate_results.d_real_l,
-                                             self.intermediate_results.df_prog,
-                                             self.intermediate_results.df_target,
-                                             self.intermediate_results.df_real,
-                                             self.intermediate_results.df_plan,
-                                             self.intermediate_results.HC_HPend,
-                                             self.intermediate_results.y_prog_l,
-                                             self.intermediate_results.total_objects,
-                                             self.transformed_data.planning,
-                                             self.intermediate_results.t_shift,
-                                             self.intermediate_results.rc2,
-                                             self.intermediate_results.cutoff,
-                                             self.intermediate_results.y_voorraad_act,
-                                             self.intermediate_results.HC_HPend_l,
-                                             self.intermediate_results.Schouw_BIS,
-                                             self.intermediate_results.HPend_l,
-                                             self.intermediate_results.n_err,
-                                             None,
-                                             None)
-        self.record_dict.add("analysis", doc1, Record, "Data")
+        doc2, doc3 = analyse_documents(self.intermediate_results.y_target_l,
+                                       self.intermediate_results.rc1,
+                                       self.intermediate_results.x_prog,
+                                       self.intermediate_results.timeline,
+                                       self.intermediate_results.d_real_l,
+                                       self.intermediate_results.df_prog,
+                                       self.intermediate_results.df_target,
+                                       self.intermediate_results.df_real,
+                                       self.intermediate_results.df_plan,
+                                       self.intermediate_results.HC_HPend,
+                                       self.intermediate_results.y_prog_l,
+                                       self.intermediate_results.total_objects,
+                                       self.transformed_data.planning,
+                                       self.intermediate_results.t_shift,
+                                       self.intermediate_results.rc2,
+                                       self.intermediate_results.cutoff,
+                                       self.intermediate_results.y_voorraad_act,
+                                       self.intermediate_results.HC_HPend_l,
+                                       self.intermediate_results.Schouw_BIS,
+                                       self.intermediate_results.HPend_l,
+                                       self.intermediate_results.n_err,
+                                       None,
+                                       None)
+
         self.record_dict.add("analysis2", doc2, Record, "Data")
         self.record_dict.add("analysis3", doc3, Record, "Data")
 

@@ -1,10 +1,6 @@
 import dash_core_components as dcc
-import dash_bootstrap_components as dbc
 import dash_html_components as html
 
-from data import collection
-from layout.components.figure import figure
-from data.graph import ftu_table
 from layout.components.header import header
 from layout.pages.tmobile import overview
 import config
@@ -27,47 +23,12 @@ def get_body():
                 children=overview.get_html(client),
             ),
             html.Div(
-                [
-                    html.Div(
-                        [dcc.Dropdown(id='project-dropdown',
-                                      options=collection.get_document(collection="Data", client="kpn",
-                                                                      graph_name="project_names")['filters'],
-                                      value=None)],
-                        className="two-third column",
-                    ),
-                    html.Div(
-                        [dbc.Button('Terug naar overzicht alle projecten',
-                                    id='overzicht_button',
-                                    style={'background-color': colors['vwt_blue']})],
-                        className="one-third column",
-                    ),
-                ],
+                overview.get_search_bar(client),
                 className="container-display",
                 id="title",
             ),
             html.Div(
-                [
-
-                    figure(container_id="graph_speed_c",
-                           graph_id="project_performance",
-                           figure=collection.get_graph(client="kpn",
-                                                       graph_name="project_performance")),
-                    html.Div([
-                        html.Div(
-                            ftu_table(),
-                            id='FTU_table_c',
-                            className="pretty_container column",
-                            hidden=False,
-                        ),
-                        html.Div(id='ww_c',
-                                 children=dcc.Input(id='ww', value=' ', type='text'),
-                                 className="pretty_container column",
-                                 hidden=False,
-                                 ),
-                    ],
-                        className="pretty_container column",
-                    ),
-                ],
+                overview.get_performance(client),
                 className="container-display",
             ),
             html.Div(

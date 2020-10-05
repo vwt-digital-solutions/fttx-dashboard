@@ -16,7 +16,7 @@ def get_document(collection, **url_params):
         return {}
     if len(result) > 1:
         logging.warning(f"Query {url} resulted in {len(result)} results, only the first is returned")
-    return result[0]['record']
+    return result[0].get('record', 'n.v.t.')
 
 
 def get_graph(**kwargs):
