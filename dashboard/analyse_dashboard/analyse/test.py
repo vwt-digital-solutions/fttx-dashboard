@@ -6,6 +6,7 @@ import os
 import time
 import config
 from Analyse.KPN import KPNETL, PickleExtract
+from Analyse.DFN import DFNETL
 from functions import graph_overview
 import logging
 logging.basicConfig(format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
@@ -72,8 +73,18 @@ tmobile.perform()
 logging.info("T-mobile Done")
 logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
 
-# Record.to_firestore...
 
+# to test dfn
+class DFNPickleETL(PickleExtract, DFNETL):
+    pass
+
+
+client_name = "dfn"
+dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
+dfn.extract()
+dfn.transform()
+dfn.analyse()
+dfn.load()
 
 # %% test jaaroverzicht
 

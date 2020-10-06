@@ -245,7 +245,11 @@ def get_start_time(df: pd.DataFrame):
 
 
 def get_timeline(t_s):
-    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    if min(t_s.values()) < pd.to_datetime('2020-01-01'):
+        x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    else:
+        # for now we have to ensure that the x-axis contains data over all 2020 for the overview calculations
+        x_axis = pd.date_range(pd.to_datetime('2019-12-01'), periods=1000 + 1, freq='D')
     return x_axis
 
 
@@ -452,7 +456,11 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
             #     y_prog_l[project] = y_prog1.copy()
 
     rc1_mean = sum(rc1.values()) / len(rc1.values())
-    rc2_mean = sum(rc2.values()) / len(rc2.values())
+    if rc2:
+        rc2_mean = sum(rc2.values()) / len(rc2.values())
+    else:
+        rc2_mean = 0.5 * rc1_mean  # temp assumption that after cutoff value effectivity of has process decreases by 50%
+
     for project, project_df in df.groupby(by="project"):
         if (project in rc1) & (project not in rc2):  # the case of 2 realisation dates, rc1 but no rc2
             if max(y_prog_l[project]) > cutoff:
