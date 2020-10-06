@@ -1,12 +1,12 @@
 # %% Initialize
 from Analyse.TMobile import TMobileETL
 from Analyse.KPN import KPNTestETL
-from Analyse.DFN import DFNTestETL
+# from Analyse.DFN import DFNTestETL
 import os
 import time
 import config
 from Analyse.KPN import KPNETL, PickleExtract
-from Analyse.DFN import DFNETL
+# from Analyse.DFN import DFNETL
 from functions import graph_overview
 import logging
 logging.basicConfig(format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
@@ -81,16 +81,16 @@ logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
 # Record.to_firestore...
 
 
-class DFNPickleETL(PickleExtract, DFNETL):
-    pass
+# class DFNPickleETL(PickleExtract, DFNETL):
+#     pass
 
 
-client_name = "dfn"
-dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
-dfn.extract()
-tmobile.transform()
-tmobile.analyse()
-tmobile.load()
+# client_name = "dfn"
+# dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
+# dfn.extract()
+# tmobile.transform()
+# tmobile.analyse()
+# tmobile.load()
 
 # %% test jaaroverzicht
 
@@ -109,18 +109,3 @@ kpn._prognose_graph()
 kpn._overview()
 kpn._calculate_graph_overview()
 kpn._jaaroverzicht()
-
-
-# %% Test jaaroverzciht dfn
-
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-77d2e0bd2465.json'
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-dfn = DFNTestETL(client='dfn', config=config.client_config['dfn'])
-dfn.perform()
-# %%
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-tmobile = TMobileETL(client='t-mobile', config=config.client_config['t-mobile'])
-tmobile.perform()
-
-# %%

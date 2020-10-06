@@ -270,15 +270,13 @@ class KPNAnalyse(FttXAnalyse):
 
     def _calculate_project_indicators(self):
         projects = self.transformed_data.df.project.unique().to_list()
-        project_indicators = {}
         for project in projects:
+            project_indicators = {}
             project_indicators['weektarget'] = calculate_weektarget(project,
                                                                     self.intermediate_results.y_target_l,
                                                                     self.intermediate_results.total_objects,
                                                                     self.intermediate_results.timeline)
             graph_name = 'project_indicators_' + project
-            print(graph_name)
-            print(project_indicators)
             self.record_dict.add(graph_name, project_indicators, Record, 'Data')
 
     def _analysis_documents(self):
