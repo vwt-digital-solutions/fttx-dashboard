@@ -117,6 +117,12 @@ def get_data_planning(path_data, subset_KPN_2020):
     return HP
 
 
+def get_data_planning_dfn(path_data, projects_dfn):
+    df = extract_data_planning(path_data)
+    HP = transform_data_planning(df)
+    return HP
+
+
 def get_data_targets(path_data):
     doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
     if doc is not None:
@@ -125,7 +131,7 @@ def get_data_targets(path_data):
         dates = date_FTU0, date_FTU1
     else:
         print("Could not retrieve FTU0 and FTU1 from firestore, setting from original file")
-        dates = get_data_targets_init(path_data)
+        dates = get_data_targets_init_dfn(path_data)
     return dates
 
 
@@ -166,6 +172,25 @@ def get_data_targets_init(path_data):
                 date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
             if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
                 date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+
+    return date_FTU0, date_FTU1
+
+
+def get_data_targets_init_dfn(path_data):
+    map_key2 = {
+        'CAIW GOES': 'CAIW GOES',
+        'CAIW Terneuzen': 'CAIW Terneuzen',
+        'CAIW Terneuzen West': 'CAIW Terneuzen West',
+    }
+    df_targetsDFN = pd.read_excel(path_data, sheet_name='KPN')
+    date_FTU0 = {}
+    date_FTU1 = {}
+    for i, key in enumerate(df_targetsDFN['d.d. 01-05-2020 v11']):
+        if key in map_key2:
+            if not pd.isnull(df_targetsDFN.loc[i, '1e FTU']):
+                date_FTU0[map_key2[key]] = df_targetsDFN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+            if (not pd.isnull(df_targetsDFN.loc[i, 'Laatste FTU'])) & (df_targetsDFN.loc[i, 'Laatste FTU'] != '?'):
+                date_FTU1[map_key2[key]] = df_targetsDFN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
 

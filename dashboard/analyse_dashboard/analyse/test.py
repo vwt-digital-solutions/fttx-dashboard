@@ -1,6 +1,7 @@
 # %% Initialize
-from Analyse.TMobile import TMobileETL, TMobileTestETL
+from Analyse.TMobile import TMobileETL
 from Analyse.KPN import KPNTestETL
+from Analyse.DFN import DFNTestETL
 import os
 import time
 import config
@@ -93,12 +94,12 @@ kpn._calculate_graph_overview()
 kpn._jaaroverzicht()
 
 
-# %% Test jaaroverzciht tmobile
+# %% Test jaaroverzciht dfn
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-77d2e0bd2465.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-tmobile = TMobileTestETL(client='t-mobile', config=config.client_config['t-mobile'])
-tmobile.perform()
+dfn = DFNTestETL(client='dfn', config=config.client_config['dfn'])
+dfn.perform()
 # %%
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'

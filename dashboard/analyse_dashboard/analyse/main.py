@@ -7,6 +7,7 @@ from google.cloud import pubsub
 from Analyse.Record import DocumentListRecord, ListRecord
 from Analyse.KPN import KPNETL
 from Analyse.TMobile import TMobileETL
+from Analyse.DFN import DFNETL
 from functions import set_date_update, get_data, masks_phases
 
 import logging
@@ -19,8 +20,10 @@ publisher = pubsub.PublisherClient()
 def analyse(request):
     try:
         publish_project_data(request, 'kpn')
+        publish_project_data(request, 'dfn')
         analyseKPN('kpn')
         analyseTmobile('t-mobile')
+        analyseDFN('dfn')
         set_date_update()
         return 'OK', 200
 
@@ -35,6 +38,11 @@ def analyse(request):
 def analyseKPN(client_name):
     kpn = KPNETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
+
+
+def analyseDFN(client_name):
+    dfn = DFNETL(client=client_name, config=config.client_config[client_name])
+    dfn.perform()
 
 
 def analyseTmobile(client_name):
