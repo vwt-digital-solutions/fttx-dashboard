@@ -9,7 +9,6 @@ from layout.components.global_info_list import global_info_list
 from layout.components.header import header
 from layout.pages.tmobile import new_component
 from data.data import has_planning_by
-from data.graph import info_table as graph_info_table
 import config
 
 colors = config.colors_vwt
@@ -112,6 +111,7 @@ def get_body():
             html.Div(
                 id='table_info',
                 className="container-display",
+                hidden=True,
                 children=[
                     new_component.get_html(value=100,
                                            previous_value=None,
@@ -170,23 +170,6 @@ def get_body():
                 id="main_graphs",
                 className="container-display",
             ),
-            html.Div(
-                [
-                    html.Div(
-                        id='table_info2',
-                        className="pretty_container column",
-                        hidden=False,
-                        children=graph_info_table()
-                    ),
-
-                ],
-                id="main_graphs",
-                className="container-display",
-            ),
-            # html.Div(
-            #     [dbc.Button('Project details [eerste 3000 resultaten]', id='detail_button')],
-            #     className="one-third column"
-            # ),
             html.Div(
                 [
                     html.Div(

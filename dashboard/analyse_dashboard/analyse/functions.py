@@ -1058,15 +1058,50 @@ def firstday_week1_2020():
     return pd.to_datetime('2019-12-30')
 
 
+def days_in_2019(timeline):
+    return len(timeline[timeline < pd.to_datetime('2020-01-01')])
+
+
 def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
-    this_week = int((pd.Timestamp.now() - firstday_week1_2020()).days / 7) + 1
-    index_firstday_thisweek = int((firstday_week1_2020() - timeline[0]).days) + (this_week - 1) * 7
+    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
     if project in y_target_l:
-        target = int(round((y_target_l[project][index_firstday_thisweek + 7] -
-                     y_target_l[project][index_firstday_thisweek - 1]) / 100 * total_objects[project]))
+        value_atstartweek = y_target_l[project][index_firstdaythisweek - 1]
+        value_atendweek = y_target_l[project][index_firstdaythisweek + 7]
+        target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
     return target
+
+
+def calculate_weekrealisatie(project, d_real_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
+    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
+    if project in d_real_l:
+        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1]['Aantal'].max()
+        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7]['Aantal'].max()
+        value_atstartweek_min1W = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 - 7]['Aantal'].max()
+        value_atendweek_min1W = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 - 7]['Aantal'].max()
+        realisatie = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
+        realisatie_min1W = int(round((value_atendweek_min1W - value_atstartweek_min1W) / 100 * total_objects[project]))
+    else:
+        realisatie = 0
+        realisatie_min1W = 0
+    return realisatie, realisatie_min1W
+
+
+def calculate_weekdelta(project, y_target_l, d_real_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
+    target = calculate_weektarget(project, y_target_l, total_objects, timeline)
+    realisatie, realisatie_min1W = calculate_weekrealisatie(project, d_real_l, total_objects, timeline)
+    delta = realisatie - target
+    delta_min1W = realisatie_min1W - target
+    return delta, delta_min1W
+
+
+def calculate_weekHCHPend(project, HC_HPend_l):
+    return round(HC_HPend_l[project]) / 100
+
+
+def calculate_weeknerr(project, n_err):
+    return n_err[project]
 
 
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):

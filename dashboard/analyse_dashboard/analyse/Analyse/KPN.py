@@ -5,7 +5,8 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget
+    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
+    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
 import pandas as pd
 
 import logging
@@ -276,6 +277,20 @@ class KPNAnalyse(FttXAnalyse):
                                                                     self.intermediate_results.y_target_l,
                                                                     self.intermediate_results.total_objects,
                                                                     self.intermediate_results.timeline)
+            project_indicators['weekrealisatie'], \
+                project_indicators['weekrealisatie_min1W'] = calculate_weekrealisatie(project,
+                                                                                      self.intermediate_results.d_real_l,
+                                                                                      self.intermediate_results.total_objects,
+                                                                                      self.intermediate_results.timeline)
+            project_indicators['weekdelta'], \
+                project_indicators['weekdelta_min1W'] = calculate_weekdelta(project,
+                                                                            self.intermediate_results.y_target_l,
+                                                                            self.intermediate_results.d_real_l,
+                                                                            self.intermediate_results.total_objects,
+                                                                            self.intermediate_results.timeline)
+            project_indicators['weekHCHPend'] = calculate_weekHCHPend(project, self.intermediate_results.HC_HPend_l)
+            project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
+
             graph_name = 'project_indicators_' + project
             self.record_dict.add(graph_name, project_indicators, Record, 'Data')
 

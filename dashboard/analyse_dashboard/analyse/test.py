@@ -38,6 +38,7 @@ kpn.transform()
 kpn.analyse()
 kpn.load()
 
+# %% test kpn
 kpn.perform()
 
 kpn._calculate_projectspecs()
@@ -49,6 +50,11 @@ kpn.intermediate_results.keys()
 kpn.intermediate_results.y_target_l
 kpn.record_dict['graph_targets_W']
 
+project = 'KPN Spijkernisse'
+y_target_l = kpn.intermediate_results.y_target_l
+d_real_l = kpn.intermediate_results.d_real_l
+timeline = kpn.intermediate_results.timeline
+total_objects = kpn.intermediate_results.total_objects
 df_prog = kpn.intermediate_results.df_prog
 df_target = kpn.intermediate_results.df_target
 df_real = kpn.intermediate_results.df_real
