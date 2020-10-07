@@ -48,7 +48,10 @@ kpn._overview()
 kpn._calculate_graph_overview()
 kpn.intermediate_results.keys()
 kpn.intermediate_results.y_target_l
+kpn.extracted_data.ftu['date_FTU0']
+kpn.extracted_data.ftu['date_FTU1']
 kpn.record_dict['graph_targets_W']
+kpn.record_dict['analysis'].record
 
 project = 'KPN Spijkernisse'
 y_target_l = kpn.intermediate_results.y_target_l
@@ -67,6 +70,11 @@ graph_targets_W = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend,
 
 # kpn.perform()
 # logging.info("KPN Done")
+# firestore.Client().collection('Data').document('xxx').delete()
+# firestore.Client().collection('Data').document('analysis').set(rec)
+# docs = firestore.Client().collection('Data').where('id', '==', 'analysis').get()
+# for doc in docs:
+#     rec = doc.to_dict()
 
 
 class TMobilePickleETL(PickleExtract, TMobileETL):

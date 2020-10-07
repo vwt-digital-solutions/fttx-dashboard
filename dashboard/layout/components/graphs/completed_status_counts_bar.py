@@ -36,7 +36,6 @@ def get_fig(df: pd.DataFrame, title="") -> go.Figure:
         fig.update_layout(barmode='stack',
                           title=title,
                           yaxis_title="Aantal woningen",
-                          width=500,
                           height=500,
                           )
         return fig

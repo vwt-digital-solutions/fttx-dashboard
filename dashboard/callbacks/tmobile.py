@@ -3,9 +3,10 @@ from app import app
 from dash.dependencies import Input, Output, State
 
 from data import collection
-from data.data import completed_status_counts
+from data.data import completed_status_counts, redenna_by_completed_status
 from layout.components.graphs import pie_chart, completed_status_counts_bar
-from layout.pages.tmobile import project_view
+from layout.components.indicator import indicator
+from layout.components import redenna_status_pie
 from data.graph import pie_chart as original_pie_chart
 
 from config import colors_vwt as colors
@@ -15,7 +16,7 @@ client = "t-mobile"
 
 @app.callback(
     [
-        Output(component_id="tmobile-overview", component_property='style')
+        Output("tmobile-overview", 'style')
     ],
     [
         Input('project-dropdown-tmobile', 'value')
@@ -29,8 +30,7 @@ def tmobile_overview(dropdown_selection):
 
 @app.callback(
     [
-        Output(component_id="tmobile-project-view", component_property='style'),
-        Output("tmobile-project-view", "children")
+        Output("tmobile-project-view", 'style'),
     ],
     [
         Input('project-dropdown-tmobile', 'value')
@@ -38,13 +38,48 @@ def tmobile_overview(dropdown_selection):
 )
 def tmobile_project_view(dropdown_selection):
     if dropdown_selection:
-        return [{'display': 'block'}, project_view.get_html(dropdown_selection, "t-mobile")]
-    return [{'display': 'none'}, project_view.get_html(dropdown_selection, "t-mobile")]
+        return [{'display': 'block'}]
+    return [{'display': 'none'}]
 
 
 @app.callback(
     [
-        Output(component_id="project-dropdown-tmobile", component_property='value')
+        Output("quality-measures-t-mobile", "children")
+    ],
+    [
+        Input('project-dropdown-tmobile', 'value')
+    ]
+)
+def tmobile_quality_measures(dropdown_selection):
+    if dropdown_selection:
+        result = collection.get_document(collection="Data",
+                                         client=client,
+                                         graph_name="quality_measure",
+                                         project=dropdown_selection)
+
+        return [[
+            indicator(value=result['late']['counts'],
+                      previous_value=result['late']['counts_prev'],
+                      title="Order te laat",
+                      sub_title="> 12 weken",
+                      font_color="red"),
+            indicator(value=result['limited_time']['counts'],
+                      previous_value=result['limited_time']['counts_prev'],
+                      title="Order nog beperkte tijd",
+                      sub_title="> 8 weken < 12 weken",
+                      font_color="orange"),
+            indicator(value=result['on_time']['counts'],
+                      previous_value=result['on_time']['counts_prev'],
+                      title="Order op tijd",
+                      sub_title="< 8 weken",
+                      font_color="green"),
+        ]]
+    return [None]
+
+
+@app.callback(
+    [
+        Output("project-dropdown-tmobile", 'value')
     ],
     [
         Input('overzicht-button-tmobile', 'n_clicks')
@@ -96,13 +131,37 @@ def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_
 )
 def update_graphs_using_status_clicks(click_filter, project_name):
     if project_name:
-        status_counts = completed_status_counts(project_name, click_filter=click_filter)
+        status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
         laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                        title="Status oplevering per fase (LB)")
         hoogbouw = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
                                                        title="Status oplevering per fase (HB & Duplex)")
         return laagbouw, hoogbouw
     return {'data': None, 'layout': None}, {'data': None, 'layout': None}
+
+
+@app.callback(
+    [
+        Output('redenna_project_t-mobile', 'figure')
+    ],
+    [
+        Input('status-count-filter-t-mobile', 'data'),
+        Input('project-dropdown-tmobile', 'value')
+    ]
+)
+def update_redenna_status_clicks(click_filter, project_name):
+    if project_name:
+        redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter, client=client)
+        redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+                                                 title="Opgegeven reden na",
+                                                 colors=[
+                                                     colors['vwt_blue'],
+                                                     colors['yellow'],
+                                                     colors['red'],
+                                                     colors['green']
+                                                 ])
+        return [redenna_pie]
+    return [{'data': None, 'layout': None}]
 
 
 @app.callback(

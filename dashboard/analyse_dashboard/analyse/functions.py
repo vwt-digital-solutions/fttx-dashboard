@@ -1331,7 +1331,7 @@ def pie_chart_reden_na(df_na, clusters, key):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
-        df_na.loc[df_na['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        df_na.loc[df_na['homes_completed'], ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
 
@@ -1483,3 +1483,35 @@ def rules_to_state(rules_list, state_list):
         axis=1
     )
     return state
+
+
+def count_toestemming(df, time_delta_days=0):
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    mask = (
+            (
+                    df.opleverdatum.isna() |
+                    (
+                            df.opleverdatum >= time_point
+                    )
+            ) &
+            (
+                ~df.toestemming.isna()
+            )
+    )
+    toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+
+    toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
+    toestemming_df['counts'] = pd.cut(toestemming_df.waiting_time,
+                                      bins=[-np.inf, 0, 8, 12, np.inf],
+                                      labels=['before_order', 'on_time', 'limited_time', 'late'])
+    counts = toestemming_df.counts.value_counts()
+    return counts
+
+
+def quality_measures_by_project(df: pd.DataFrame):
+    counts_by_project = {}
+    for project, project_df in df.groupby(by='project'):
+        counts = count_toestemming(project_df)
+        counts_prev = count_toestemming(project_df, time_delta_days=1)
+        counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
+        counts_by_project[project] = counts_df.to_dict(orient='index')
