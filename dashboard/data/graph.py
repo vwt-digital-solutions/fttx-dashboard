@@ -175,10 +175,11 @@ def ftu_table(data):
 
 
 def get_dummy_table():
+    df = pd.DataFrame(columns=['n.b.', 'n.b.', 'n.b.'])
     fig = dash_table.DataTable(
         id='table_FTU',
-        columns=[{"name": "n.b.", "id": 'n.b.'}],
-        data=pd.DataFrame().to_dict(),
+        columns=[{"name": i, "id": i} for i in df.columns],
+        data=df.to_dict("rows"),
         filter_action="native",
         sort_action="native",
         style_table={'overflowX': 'auto', 'overflowY': 'auto'},

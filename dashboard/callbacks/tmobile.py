@@ -12,15 +12,15 @@ from data.graph import pie_chart as original_pie_chart
 
 from config import colors_vwt as colors
 
-client = "t-mobile"
+client = "tmobile"
 
 
 @app.callback(
     [
-        Output('project-dropdown-t-mobile', 'options')
+        Output('project-dropdown-tmobile', 'options')
     ],
     [
-        Input('t-mobile-overview', 'children')
+        Input('tmobile-overview', 'children')
     ]
 )
 def load_dropdown(dummy_data):
@@ -30,9 +30,9 @@ def load_dropdown(dummy_data):
 
 
 @app.callback(
-    Output('info-container-t-mobile', 'children'),
+    Output('info-container-tmobile', 'children'),
     [
-        Input('t-mobile-overview', 'children')
+        Input('tmobile-overview', 'children')
     ]
 )
 def load_project_info(dummy_data):
@@ -63,9 +63,9 @@ def load_project_info(dummy_data):
 
 
 @app.callback(
-    Output('month-overview-t-mobile', 'figure'),
+    Output('month-overview-tmobile', 'figure'),
     [
-        Input('t-mobile-overview', 'children')
+        Input('tmobile-overview', 'children')
     ]
 )
 def load_month_overview(dummy_data):
@@ -73,9 +73,9 @@ def load_month_overview(dummy_data):
 
 
 @app.callback(
-    Output('week-overview-t-mobile', 'figure'),
+    Output('week-overview-tmobile', 'figure'),
     [
-        Input('t-mobile-overview', 'children')
+        Input('tmobile-overview', 'children')
     ]
 )
 def load_week_overview(dummy_data):
@@ -84,10 +84,10 @@ def load_week_overview(dummy_data):
 
 @app.callback(
     [
-        Output(component_id="t-mobile-overview", component_property='style')
+        Output(component_id="tmobile-overview", component_property='style')
     ],
     [
-        Input('project-dropdown-t-mobile', 'value')
+        Input('project-dropdown-tmobile', 'value')
     ]
 )
 def tmobile_overview(dropdown_selection):
@@ -98,25 +98,25 @@ def tmobile_overview(dropdown_selection):
 
 @app.callback(
     [
-        Output(component_id="t-mobile-project-view", component_property='style'),
-        Output("t-mobile-project-view", "children")
+        Output(component_id="tmobile-project-view", component_property='style'),
+        Output("tmobile-project-view", "children")
     ],
     [
-        Input('project-dropdown-t-mobile', 'value')
+        Input('project-dropdown-tmobile', 'value')
     ]
 )
 def tmobile_project_view(dropdown_selection):
     if dropdown_selection:
-        return [{'display': 'block'}, project_view.get_html("t-mobile")]
-    return [{'display': 'none'}, project_view.get_html("t-mobile")]
+        return [{'display': 'block'}, project_view.get_html("tmobile")]
+    return [{'display': 'none'}, project_view.get_html("tmobile")]
 
 
 @app.callback(
     [
-        Output(component_id="project-dropdown-t-mobile", component_property='value')
+        Output(component_id="project-dropdown-tmobile", component_property='value')
     ],
     [
-        Input('overzicht-button-t-mobile', 'n_clicks')
+        Input('overzicht-button-tmobile', 'n_clicks')
     ]
 )
 def tmobile_overview_button(_):
@@ -125,15 +125,15 @@ def tmobile_overview_button(_):
 
 @app.callback(
     [
-        Output('status-count-filter-t-mobile', 'data')
+        Output('status-count-filter-tmobile', 'data')
     ],
     [
-        Input('status-counts-laagbouw-t-mobile', 'clickData'),
-        Input('status-counts-hoogbouw-t-mobile', 'clickData'),
+        Input('status-counts-laagbouw-tmobile', 'clickData'),
+        Input('status-counts-hoogbouw-tmobile', 'clickData'),
         Input('overview-reset', 'n_clicks')
     ],
     [
-        State('status-count-filter-t-mobile', "data")
+        State('status-count-filter-tmobile', "data")
     ]
 )
 def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_filter):
@@ -155,12 +155,12 @@ def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_
 
 @app.callback(
     [
-        Output('status-counts-laagbouw-t-mobile', 'figure'),
-        Output('status-counts-hoogbouw-t-mobile', 'figure')
+        Output('status-counts-laagbouw-tmobile', 'figure'),
+        Output('status-counts-hoogbouw-tmobile', 'figure')
     ],
     [
-        Input('status-count-filter-t-mobile', 'data'),
-        Input('project-dropdown-t-mobile', 'value')
+        Input('status-count-filter-tmobile', 'data'),
+        Input('project-dropdown-tmobile', 'value')
     ]
 )
 def update_graphs_using_status_clicks(click_filter, project_name):
@@ -176,11 +176,11 @@ def update_graphs_using_status_clicks(click_filter, project_name):
 
 @app.callback(
     [
-        Output('redenna_project_t-mobile', 'figure')
+        Output('redenna_project_tmobile', 'figure')
     ],
     [
-        Input('status-count-filter-t-mobile', 'data'),
-        Input('project-dropdown-t-mobile', 'value')
+        Input('status-count-filter-tmobile', 'data'),
+        Input('project-dropdown-tmobile', 'value')
     ]
 )
 def update_redenna_status_clicks(click_filter, project_name):
@@ -199,9 +199,9 @@ def update_redenna_status_clicks(click_filter, project_name):
 
 
 @app.callback(
-    Output('pie_chart_overview_t-mobile', 'figure'),
-    [Input('week-overview-t-mobile', 'clickData'),
-     Input('month-overview-t-mobile', 'clickData'),
+    Output('pie_chart_overview_tmobile', 'figure'),
+    [Input('week-overview-tmobile', 'clickData'),
+     Input('month-overview-tmobile', 'clickData'),
      Input('overview-reset', 'n_clicks')
      ]
 )
@@ -213,14 +213,14 @@ def display_click_data(week_click_data, month_click_data, reset):
         for trigger in ctx.triggered:
             period, _, _ = trigger['prop_id'].partition("-")
             if period == "overview":
-                return original_pie_chart('t-mobile')
+                return original_pie_chart('tmobile')
             for point in trigger['value']['points']:
                 first_day_of_period = point['customdata']
                 break
             break
 
         redenna_by_period = collection.get_document(collection="Data",
-                                                    client="t-mobile",
+                                                    client="tmobile",
                                                     graph_name=f"redenna_by_{period}")
 
         fig = pie_chart.get_html(labels=list(redenna_by_period.get(first_day_of_period, dict()).keys()),
@@ -234,4 +234,4 @@ def display_click_data(week_click_data, month_click_data, reset):
                                  ])
 
         return fig
-    return original_pie_chart('t-mobile')
+    return original_pie_chart('tmobile')

@@ -3,21 +3,20 @@ import dash_html_components as html
 from layout.components.header import header
 from layout.pages.tmobile import overview, project_view
 import config
+import importlib
 
 colors = config.colors_vwt
 
-client = "t-mobile"
-
 
 # APP LAYOUT
-def get_body():
-    client = 't-mobile'
+def get_body(client):
+    importlib.import_module(f"layout.pages.{client}.project_view")
     page = html.Div(
         [
             header("Status projecten T-Mobile in 2020"),
 
             html.Div(
-                id=client + "-overview",
+                id=client + "-ohverview",
                 children=overview.get_html(client),
             ),
             html.Div(
@@ -33,7 +32,7 @@ def get_body():
             html.Div(
                 style={'display': 'none'},
                 id=client + "-project-view",
-                children=project_view.get_html("", client),
+                children=project_view.get_html(client),
             ),
         ],
         id="mainContainer",

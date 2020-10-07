@@ -42,8 +42,8 @@ def get_html(client):
             className="container-display",
             children=[figure(graph_id=f"month-overview-{client}", figure=no_graph(title="Jaaroverzicht", text='Loading...')),
                       figure(graph_id=f"week-overview-{client}", figure=no_graph(title="Maandoverzicht", text='Loading...')),
-                      figure(container_id="pie_chart_overview_t-mobile_container",
-                             graph_id="pie_chart_overview_t-mobile",
+                      figure(container_id=f"pie_chart_overview_{client}_container",
+                             graph_id=f"pie_chart_overview_{client}",
                              figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
         ),
     ]
@@ -52,7 +52,7 @@ def get_html(client):
 def get_search_bar(client):
     return [
                 html.Div(
-                    [dcc.Dropdown(id='project-dropdown-' + client,
+                    [dcc.Dropdown(id='project-dropdown',
                                   options=collection.get_document(collection="Data", client=client,
                                                                   graph_name="project_names")['filters'],
                                   value=None)],
@@ -81,15 +81,16 @@ def get_search_bar(client):
 def get_performance(client):
     ftu_data = collection.get_document(collection="Data", graph_name="project_dates", client=client)
     table = ftu_table(ftu_data)
+    print(f'CLIENT: {client}')
     return [
                 figure(container_id="graph_speed_c",
-                       graph_id="project_performance",
+                       graph_id=f"project_performance_{client}",
                        figure=collection.get_graph(client=client,
                                                    graph_name="project_performance")),
                 html.Div([
                     html.Div(
                         table,
-                        id='FTU_table_c',
+                        id=f'FTU_table_c_{client}',
                         className="pretty_container column",
                         hidden=False,
                     ),

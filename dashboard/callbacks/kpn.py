@@ -204,10 +204,10 @@ def FTU_table_editable(ww):
         # Output('info_globaal_container5_text', 'children'),
         # Output('graph_targets_M', 'figure'),
         # Output('graph_targets_W', 'figure'),
-        Output('project_performance', 'figure'),
+        Output('project_performance_kpn', 'figure'),
     ],
     [
-        Input('table_FTU', 'data'),
+        Input('table_FTU_kpn', 'data'),
     ],
 )
 def FTU_update(data):
