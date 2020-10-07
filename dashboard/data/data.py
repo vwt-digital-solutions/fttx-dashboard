@@ -45,11 +45,6 @@ def redenna_by_completed_status(project_name, client, click_filter=None, ):
     if not click_filter:
         click_filter = {}
 
-    print(
-        project_name,
-        click_filter
-          )
-
     if project_name:
         counts = pd.DataFrame(collection.get_document(collection="Data",
                                                       graph_name="completed_status_counts",
