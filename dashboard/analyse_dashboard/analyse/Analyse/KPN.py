@@ -275,28 +275,34 @@ class KPNAnalyse(FttXAnalyse):
 
     def _calculate_project_indicators(self):
         projects = self.transformed_data.df.project.unique().to_list()
+        record = {}
         for project in projects:
             project_indicators = {}
-            project_indicators['weektarget'] = calculate_weektarget(project,
-                                                                    self.intermediate_results.y_target_l,
-                                                                    self.intermediate_results.total_objects,
-                                                                    self.intermediate_results.timeline)
-            project_indicators['weekrealisatie'], \
-                project_indicators['weekrealisatie_min1W'] = calculate_weekrealisatie(project,
-                                                                                      self.intermediate_results.d_real_l,
-                                                                                      self.intermediate_results.total_objects,
-                                                                                      self.intermediate_results.timeline)
-            project_indicators['weekdelta'], \
-                project_indicators['weekdelta_min1W'] = calculate_weekdelta(project,
-                                                                            self.intermediate_results.y_target_l,
-                                                                            self.intermediate_results.d_real_l,
-                                                                            self.intermediate_results.total_objects,
-                                                                            self.intermediate_results.timeline)
-            project_indicators['weekHCHPend'] = calculate_weekHCHPend(project, self.intermediate_results.HC_HPend_l)
-            project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
-
-            graph_name = 'project_indicators_' + project
-            self.record_dict.add(graph_name, project_indicators, Record, 'Data')
+            project_indicators['weektarget'] = calculate_weektarget(
+                project,
+                self.intermediate_results.y_target_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline)
+            project_indicators['weekrealisatie'] = calculate_weekrealisatie(
+                project,
+                self.intermediate_results.d_real_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline)
+            project_indicators['weekdelta'] = calculate_weekdelta(
+                project,
+                self.intermediate_results.y_target_l,
+                self.intermediate_results.d_real_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline)
+            project_indicators['weekHCHPend'] = calculate_weekHCHPend(
+                project,
+                self.intermediate_results.HC_HPend_l)
+            project_indicators['weeknerr'] = calculate_weeknerr(
+                project,
+                self.intermediate_results.n_err)
+            record[project] = project_indicators
+        graph_name = 'project_indicators'
+        self.record_dict.add(graph_name, record, DictRecord, 'Data')
 
     def _analysis_documents(self):
         doc1, doc2, doc3 = analyse_documents(self.transformed_data.ftu['date_FTU0'],

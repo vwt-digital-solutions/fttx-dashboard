@@ -5,7 +5,7 @@
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
-from layout.pages.tmobile import new_component
+from layout.components.indicator import indicator
 
 import pandas as pd
 # import numpy as np
@@ -122,48 +122,17 @@ def middle_top_graphs(drop_selectie):
     fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
-    print(drop_selectie)
-    table_info = [
-                    new_component.get_html(value=collection.get_document(collection="Data",
-                                                                         graph_name="project_indicators_" + drop_selectie,
-                                                                         client='kpn')['weektarget'],
-                                           previous_value=None,
-                                           title="Target",
-                                           # sub_title="> 12 weken",
-                                           font_color="green"),
-                    new_component.get_html(value=collection.get_document(collection="Data",
-                                                                         graph_name="project_indicators_" + drop_selectie,
-                                                                         client='kpn')['weekrealisatie'],
-                                           previous_value=collection.get_document(collection="Data",
-                                                                                  graph_name="project_indicators_" + drop_selectie,
-                                                                                  client='kpn')['weekrealisatie_min1W'],
-                                           title="Realisatie",
-                                           # sub_title="> 8 weken < 12 weken",
-                                           font_color="green"),
-                    new_component.get_html(value=collection.get_document(collection="Data",
-                                                                         graph_name="project_indicators_" + drop_selectie,
-                                                                         client='kpn')['weekdelta'],
-                                           previous_value=collection.get_document(collection="Data",
-                                                                                  graph_name="project_indicators_" + drop_selectie,
-                                                                                  client='kpn')['weekdelta_min1W'],
-                                           title="Delta",
-                                           # sub_title="< 8 weken",
-                                           font_color="green"),
-                    new_component.get_html(value=collection.get_document(collection="Data",
-                                                                         graph_name="project_indicators_" + drop_selectie,
-                                                                         client='kpn')['weekHCHPend'],
-                                           previous_value=None,
-                                           title="HC / HPend",
-                                           # sub_title="< 8 weken",
-                                           font_color="green"),
-                    new_component.get_html(value=collection.get_document(collection="Data",
-                                                                         graph_name="project_indicators_" + drop_selectie,
-                                                                         client='kpn')['weeknerr'],
-                                           previous_value=None,
-                                           title="Errors FC - BC",
-                                           # sub_title="< 8 weken",
-                                           font_color="green"),
-                ]
+
+    indicators = collection.get_document(collection="Data",
+                                         graph_name="project_indicators",
+                                         project=drop_selectie,
+                                         client='kpn')
+    indicator_types = ['weektarget', 'weekrealisatie', 'weekdelta', 'weekHCHPend', 'weeknerr']
+    table_info = [indicator(value=indicators[el]['counts'],
+                            previous_value=indicators[el]['counts_prev'],
+                            title=indicators[el]['title'],
+                            sub_title=indicators[el]['subtitle'],
+                            font_color=indicators[el]['font_color']) for el in indicator_types]
 
     return [fig_prog, table_info, -1]
 

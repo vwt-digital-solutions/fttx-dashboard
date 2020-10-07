@@ -1070,7 +1070,7 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
-    return target
+    return dict(counts=target, counts_prev=None, title='Target', subtitle='', font_color='green')
 
 
 def calculate_weekrealisatie(project, d_real_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
@@ -1085,23 +1085,23 @@ def calculate_weekrealisatie(project, d_real_l, total_objects, timeline):  # ber
     else:
         realisatie = 0
         realisatie_min1W = 0
-    return realisatie, realisatie_min1W
+    return dict(counts=realisatie, counts_prev=realisatie_min1W, title='Realisatie', subtitle='', font_color='green')
 
 
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
-    target = calculate_weektarget(project, y_target_l, total_objects, timeline)
-    realisatie, realisatie_min1W = calculate_weekrealisatie(project, d_real_l, total_objects, timeline)
-    delta = realisatie - target
-    delta_min1W = realisatie_min1W - target
-    return delta, delta_min1W
+    target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
+    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline)
+    delta = record['counts'] - target
+    delta_min1W = record['counts_prev'] - target
+    return dict(counts=delta, counts_prev=delta_min1W, title='Delta', subtitle='', font_color='green')
 
 
 def calculate_weekHCHPend(project, HC_HPend_l):
-    return round(HC_HPend_l[project]) / 100
+    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='', font_color='green')
 
 
 def calculate_weeknerr(project, n_err):
-    return n_err[project]
+    return dict(counts=n_err[project], counts_prev=None, title='Errors FC- BC', subtitle='', font_color='green')
 
 
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
