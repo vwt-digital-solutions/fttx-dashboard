@@ -8,6 +8,9 @@ from Analyse.Record import DocumentListRecord, ListRecord
 from Analyse.KPN import KPNETL
 from Analyse.TMobile import TMobileETL
 from functions import set_date_update, get_data, masks_phases
+from datetime import datetime, timedelta
+from google.cloud import firestore_v1
+import pandas as pd
 
 import logging
 
@@ -15,14 +18,29 @@ logging.basicConfig(level=logging.INFO)
 
 publisher = pubsub.PublisherClient()
 
+db = firestore_v1.Client()
+
 
 def analyse(request):
     try:
-        publish_project_data(request, 'kpn')
-        analyseKPN('kpn')
-        analyseTmobile('t-mobile')
-        set_date_update()
-        return 'OK', 200
+        latest_consume = str_to_datetime(
+            db.collection('Graphs').
+            document('update_date_consume').
+            get().to_dict().get('date'))
+        latest_analysis = str_to_datetime(
+            db.collection('Graphs').
+            document('update_date').
+            get().to_dict().get('date'))
+
+        if ((datetime.now() - latest_consume) > timedelta(minutes=5)) and (latest_analysis < latest_consume):
+            publish_project_data(request, 'kpn')
+            analyseKPN('kpn')
+            analyseTmobile('t-mobile')
+            set_date_update()
+            return 'OK', 200
+        else:
+            logging.info('Analyse skipped, already up to date')
+            return 'OK', 200
 
     except Exception as e:
         logging.exception(f'Analyse failed {e}')
@@ -91,3 +109,7 @@ def publish_json(gobits, msg_data, rowcount, rowmax, topic_project_id, topic_nam
             'Published msg with ID {} ({}/{} rows).'.format(
                 future.result(), rowcount, rowmax))
     )
+
+
+def str_to_datetime(str):
+    return pd.to_datetime(str, errors='coerce', infer_datetime_format=True)
