@@ -131,41 +131,16 @@ def get_data_targets(path_data):
 
 # Function to use only when data_targets in database need to be reset.
 # TODO: Create function structure that can reinitialise the database, partially as well as completely.
-def get_data_targets_init(path_data):
-    map_key2 = {
-        # FT0 en FT1
-        'Arnhem Klarendal': 'Arnhem Klarendal',
-        'Arnhem Gulden Bodem Schaarsbergen': 'Arnhem Gulden Bodem Schaarsbergen',
-        'Breda Tuinzicht': 'Breda Tuinzicht',
-        'Breda Brabantpark': 'Breda Brabantpark',
-        'Bergen op Zoom Oost': 'Bergen op Zoom Oost',
-        'Bergen op Zoom Oude Stad + West wijk 03': 'Bergen op Zoom oude stad',
-        'Nijmegen Oosterhout': 'Nijmegen Oosterhout',
-        'Nijmegen centrum Bottendaal': 'Nijmegen Bottendaal',
-        'Nijmegen Biezen Wolfskuil Hatert': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-        'Den Haag-Wijk 34 Eskamp-Morgenstond-West': 'Den Haag Morgenstond west',
-        'Spijkenisse': 'KPN Spijkernisse',
-        'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
-        # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord Halsteren',  # niet in FC
-        'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag Bezuidenhout',  # niet in FC??
-        'Den Haag - Vrederust en Bouwlust': 'Den Haag Vredelust Bouwlust',  # niet in FC??
-        'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
-        # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
-        # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
-        # afgerond in FC...FTU0/FTU1 schatten
-        # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
-    }
-    df_targetsKPN = pd.read_excel(path_data, sheet_name='KPN')
+def get_data_targets_init(path_data, map_key):
+    df_targets = pd.read_excel(path_data, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
-    for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
-        if key in map_key2:
-            if not pd.isnull(df_targetsKPN.loc[i, '1e FTU']):
-                date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
-            if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+    for i, key in enumerate(df_targets['d.d. 01-05-2020 v11']):
+        if key in map_key:
+            if not pd.isnull(df_targets.loc[i, '1e FTU']):
+                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+            if (not pd.isnull(df_targets.loc[i, 'Laatste FTU'])) & (df_targets.loc[i, 'Laatste FTU'] != '?'):
+                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
 
@@ -220,7 +195,11 @@ def get_start_time(df: pd.DataFrame):
 
 
 def get_timeline(t_s):
-    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    if min(t_s.values()) < pd.to_datetime('2020-01-01'):
+        x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    else:
+        # for now we have to ensure that the x-axis contains data over all 2020 for the overview calculations
+        x_axis = pd.date_range(pd.to_datetime('2019-12-01'), periods=1000 + 1, freq='D')
     return x_axis
 
 
@@ -427,7 +406,11 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
             #     y_prog_l[project] = y_prog1.copy()
 
     rc1_mean = sum(rc1.values()) / len(rc1.values())
-    rc2_mean = sum(rc2.values()) / len(rc2.values())
+    if rc2:
+        rc2_mean = sum(rc2.values()) / len(rc2.values())
+    else:
+        rc2_mean = 0.5 * rc1_mean  # temp assumption that after cutoff value effectivity of has process decreases by 50%
+
     for project, project_df in df.groupby(by="project"):
         if (project in rc1) & (project not in rc2):  # the case of 2 realisation dates, rc1 but no rc2
             if max(y_prog_l[project]) > cutoff:

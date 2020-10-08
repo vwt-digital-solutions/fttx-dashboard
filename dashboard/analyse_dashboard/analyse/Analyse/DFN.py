@@ -10,10 +10,10 @@ import pandas as pd
 
 import logging
 
-logger = logging.getLogger('KPN Analyse')
+logger = logging.getLogger('DFN Analyse')
 
 
-class KPNExtract(FttXExtract):
+class DFNExtract(FttXExtract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.planning_location = kwargs['config'].get("planning_location")
@@ -53,14 +53,14 @@ class KPNExtract(FttXExtract):
             raise ValueError("No planning_location is configured to extract the planning.")
 
 
-class KPNTransform(FttXTransform):
+class DFNTransform(FttXTransform):
 
     def transform(self):
         super().transform()
         self._transform_planning()
 
     def _transform_planning(self):
-        logger.info("Transforming planning for KPN")
+        logger.info("Transforming planning for DFN")
         HP = dict(HPendT=[0] * 52)
         df = self.extracted_data.planning
         for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
@@ -86,7 +86,7 @@ class KPNTransform(FttXTransform):
         self.transformed_data.planning = HP
 
 
-class KPNAnalyse(FttXAnalyse):
+class DFNAnalyse(FttXAnalyse):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -107,7 +107,7 @@ class KPNAnalyse(FttXAnalyse):
         self._set_filters()
 
     def _error_check_FCBC(self):
-        logger.info("Calculating errors for KPN")
+        logger.info("Calculating errors for DFN")
         n_err, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
         # self.record_dict.add('n_err', n_err, Record, 'Data')
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
@@ -115,7 +115,7 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.n_err = n_err
 
     def _prognose(self):
-        logger.info("Calculating prognose for KPN")
+        logger.info("Calculating prognose for DFN")
 
         start_time = get_start_time(self.transformed_data.df)
         timeline = get_timeline(start_time)
@@ -150,7 +150,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
 
     # def _set_input_fields(self):
-    #     logger.info("Setting input fields for KPN")
+    #     logger.info("Setting input fields for DFN")
     #     self.record_dict.add("analysis",
     #                          dict(FTU0=self.extracted_data.ftu['date_FTU0'],
     #                               FTU1=self.extracted_data.ftu['date_FTU1']),
@@ -164,7 +164,7 @@ class KPNAnalyse(FttXAnalyse):
     #                          collection="Data")
 
     def _targets(self):
-        logger.info("Calculating targets for KPN")
+        logger.info("Calculating targets for DFN")
         y_target_l, t_diff = targets(self.intermediate_results.x_prog,
                                      self.intermediate_results.timeline,
                                      self.intermediate_results.t_shift,
@@ -177,7 +177,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('y_target_l', y_target_l, ListRecord, 'Data')
 
     def _performance_matrix(self):
-        logger.info("Calculating performance matrix for KPN")
+        logger.info("Calculating performance matrix for DFN")
         graph = performance_matrix(
             self.intermediate_results.timeline,
             self.intermediate_results.y_target_l,
@@ -189,7 +189,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('project_performance', graph, Record, 'Graphs')
 
     def _prognose_graph(self):
-        logger.info("Calculating prognose graph for KPN")
+        logger.info("Calculating prognose graph for DFN")
         result_dict = prognose_graph(
             self.intermediate_results.timeline,
             self.intermediate_results.y_prog_l,
@@ -309,10 +309,10 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add("analysis3", doc3, Record, "Data")
 
 
-class KPNETL(FttXETL, KPNExtract, KPNTransform, KPNAnalyse):
+class DFNETL(FttXETL, DFNExtract, DFNTransform, DFNAnalyse):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
-class KPNTestETL(PickleExtract, FttXTestLoad, KPNETL):
+class DFNTestETL(PickleExtract, FttXTestLoad, DFNETL):
     pass
