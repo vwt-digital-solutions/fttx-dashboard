@@ -1021,39 +1021,6 @@ def get_intersect(a1, a2, b1, b2):
     return (x / z, y / z)
 
 
-def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
-    n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-    n_d = int((pd.Timestamp.now() - x_d[0]).days)
-    n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
-    col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
-           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w), 'Diff - W' + str(n_w), 'HC / HP actueel',
-           'Errors FC - BC']
-    records = []
-    for key in d_real_l:
-        if d_real_l[key].max()[0] < 100:
-            record = dict(project=key)
-            record[col[1]] = round(y_target_l[key][n_dw - 7] / 100 * tot_l[key])
-            real_latest = d_real_l[key][d_real_l[key].index <= n_dw - 7]
-            if not real_latest.empty:
-                record[col[2]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
-            else:
-                record[col[2]] = 0
-            record[col[3]] = record[col[2]] - record[col[1]]
-            record[col[4]] = round(y_target_l[key][n_d] / 100 * tot_l[key])
-            real_latest = d_real_l[key][d_real_l[key].index <= n_d]
-            if not real_latest.empty:
-                record[col[5]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
-            else:
-                record[col[5]] = 0
-            record[col[6]] = record[col[5]] - record[col[4]]
-            record[col[7]] = round(HC_HPend_l[key])
-            record[col[8]] = n_err[key]
-            records += [record]
-    df_table = pd.DataFrame(records).to_json(orient='records')
-    record = dict(id='info_table', table=df_table, col=col)
-    return record
-
-
 def firstday_week1_2020():
     return pd.to_datetime('2019-12-30')
 
@@ -1516,7 +1483,7 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                             data=['< 8 weken', '> 8 weken < 12 weken', '> 12 weken', ''],
                             columns=['subtitle'])
     font_color = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
-                              data=['green', 'yellow', 'red', ''],
+                              data=['green', 'orange', 'red', ''],
                               columns=['font_color'])
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):

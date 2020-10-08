@@ -5,7 +5,7 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
+    analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
     calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
 import pandas as pd
 
@@ -95,14 +95,12 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
         self._prognose()
-        # self._set_input_fields()
         self._targets()
         self._performance_matrix()
         self._prognose_graph()
         self._overview()
         self._calculate_graph_overview()
         self._jaaroverzicht()
-        self._info_table()
         self._calculate_project_indicators()
         self._analysis_documents()
         self._set_filters()
@@ -245,19 +243,6 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.HC_HPend
         )
         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
-
-    def _info_table(self):
-        record = info_table(
-            self.intermediate_results.total_objects,
-            self.intermediate_results.d_real_l,
-            self.transformed_data.planning,
-            self.intermediate_results.y_target_l,
-            self.intermediate_results.timeline,
-            self.intermediate_results.HC_HPend_l,
-            self.intermediate_results.Schouw_BIS,
-            self.intermediate_results.HPend_l,
-            self.intermediate_results.n_err)
-        self.record_dict.add('info_table', record, Record, 'Graphs')
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")

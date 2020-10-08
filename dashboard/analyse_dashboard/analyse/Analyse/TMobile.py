@@ -45,13 +45,6 @@ class TMobileAnalyse(FttXAnalyse):
                for k, v in counts_by_week.items()]
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
-    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
-    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
-    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
-    #                                       client=client) if client == 'kpn' else {}  # temp fix
-    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
-    #                                         client=client) if client == 'kpn' else {}  # temp fix
-
     def _jaaroverzicht(self):
         real, plan = preprocess_for_jaaroverzicht(
             self.intermediate_results.counts_by_month['count_opleverdatum'],
