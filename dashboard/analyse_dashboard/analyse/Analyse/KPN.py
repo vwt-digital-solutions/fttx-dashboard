@@ -259,7 +259,14 @@ class KPNAnalyse(FttXAnalyse):
                 project,
                 self.intermediate_results.d_real_l,
                 self.intermediate_results.total_objects,
-                self.intermediate_results.timeline)
+                self.intermediate_results.timeline,
+                delay=0)  # in weeks
+            project_indicators['vorigeweekrealisatie'] = calculate_weekrealisatie(
+                project,
+                self.intermediate_results.d_real_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline,
+                delay=-1)  # in weeks
             project_indicators['weekdelta'] = calculate_weekdelta(
                 project,
                 self.intermediate_results.y_target_l,

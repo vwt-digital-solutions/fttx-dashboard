@@ -152,7 +152,7 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicator_types = ['weektarget', 'weekrealisatie', 'weekdelta', 'weekHCHPend', 'weeknerr']
+    indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,
