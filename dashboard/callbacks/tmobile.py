@@ -79,6 +79,7 @@ def load_month_overview(dummy_data):
     ]
 )
 def load_week_overview(dummy_data):
+    print("Running week overview")
     return new_component.get_html_overview(has_planning_by('week', client))
 
 

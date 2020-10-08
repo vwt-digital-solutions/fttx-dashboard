@@ -1289,9 +1289,8 @@ def pie_chart_reden_na(df_na, clusters, key):
         df_na.loc[df_na['homes_completed'], ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
-        df_na = df_na.groupby('cluster_redenna').size().copy().to_dict()
+        df_na = df_na.groupby('cluster_redenna').size().copy()
         document = 'pie_na_' + key
-        return df_na, document
         df_na = df_na.to_frame(name='count').reset_index().copy()
         labels = df_na['cluster_redenna'].tolist()
         values = df_na['count'].tolist()

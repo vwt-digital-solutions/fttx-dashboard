@@ -16,7 +16,7 @@ def get_body(client):
             header("Status projecten T-Mobile in 2020"),
 
             html.Div(
-                id=client + "-ohverview",
+                id=client + "-overview",
                 children=overview.get_html(client),
             ),
             html.Div(
