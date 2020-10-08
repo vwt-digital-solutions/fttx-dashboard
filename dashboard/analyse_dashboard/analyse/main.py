@@ -7,6 +7,7 @@ from google.cloud import pubsub
 from Analyse.Record import DocumentListRecord, ListRecord
 from Analyse.KPN import KPNETL
 from Analyse.TMobile import TMobileETL
+from Analyse.DFN import DFNETL
 from functions import set_date_update, get_data, masks_phases
 from datetime import datetime, timedelta
 from google.cloud import firestore_v1
@@ -37,6 +38,8 @@ def analyse(request):
             analyseKPN('kpn')
             analyseTmobile('t-mobile')
             set_date_update()
+            analyseDFN('dfn')
+            publish_project_data(request, 'dfn')
             return 'OK', 200
         else:
             logging.info('Analyse skipped, already up to date')
@@ -53,6 +56,11 @@ def analyse(request):
 def analyseKPN(client_name):
     kpn = KPNETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
+
+
+def analyseDFN(client_name):
+    dfn = DFNETL(client=client_name, config=config.client_config[client_name])
+    dfn.perform()
 
 
 def analyseTmobile(client_name):

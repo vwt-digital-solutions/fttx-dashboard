@@ -131,41 +131,16 @@ def get_data_targets(path_data):
 
 # Function to use only when data_targets in database need to be reset.
 # TODO: Create function structure that can reinitialise the database, partially as well as completely.
-def get_data_targets_init(path_data):
-    map_key2 = {
-        # FT0 en FT1
-        'Arnhem Klarendal': 'Arnhem Klarendal',
-        'Arnhem Gulden Bodem Schaarsbergen': 'Arnhem Gulden Bodem Schaarsbergen',
-        'Breda Tuinzicht': 'Breda Tuinzicht',
-        'Breda Brabantpark': 'Breda Brabantpark',
-        'Bergen op Zoom Oost': 'Bergen op Zoom Oost',
-        'Bergen op Zoom Oude Stad + West wijk 03': 'Bergen op Zoom oude stad',
-        'Nijmegen Oosterhout': 'Nijmegen Oosterhout',
-        'Nijmegen centrum Bottendaal': 'Nijmegen Bottendaal',
-        'Nijmegen Biezen Wolfskuil Hatert': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-        'Den Haag-Wijk 34 Eskamp-Morgenstond-West': 'Den Haag Morgenstond west',
-        'Spijkenisse': 'KPN Spijkernisse',
-        'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
-        # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord Halsteren',  # niet in FC
-        'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag Bezuidenhout',  # niet in FC??
-        'Den Haag - Vrederust en Bouwlust': 'Den Haag Vredelust Bouwlust',  # niet in FC??
-        'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
-        # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
-        # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
-        # afgerond in FC...FTU0/FTU1 schatten
-        # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
-    }
-    df_targetsKPN = pd.read_excel(path_data, sheet_name='KPN')
+def get_data_targets_init(path_data, map_key):
+    df_targets = pd.read_excel(path_data, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
-    for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
-        if key in map_key2:
-            if not pd.isnull(df_targetsKPN.loc[i, '1e FTU']):
-                date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
-            if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+    for i, key in enumerate(df_targets['d.d. 01-05-2020 v11']):
+        if key in map_key:
+            if not pd.isnull(df_targets.loc[i, '1e FTU']):
+                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+            if (not pd.isnull(df_targets.loc[i, 'Laatste FTU'])) & (df_targets.loc[i, 'Laatste FTU'] != '?'):
+                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
 
@@ -220,7 +195,11 @@ def get_start_time(df: pd.DataFrame):
 
 
 def get_timeline(t_s):
-    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    if min(t_s.values()) < pd.to_datetime('2020-01-01'):
+        x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    else:
+        # for now we have to ensure that the x-axis contains data over all 2020 for the overview calculations
+        x_axis = pd.date_range(pd.to_datetime('2019-12-01'), periods=1000 + 1, freq='D')
     return x_axis
 
 
@@ -427,7 +406,11 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
             #     y_prog_l[project] = y_prog1.copy()
 
     rc1_mean = sum(rc1.values()) / len(rc1.values())
-    rc2_mean = sum(rc2.values()) / len(rc2.values())
+    if rc2:
+        rc2_mean = sum(rc2.values()) / len(rc2.values())
+    else:
+        rc2_mean = 0.5 * rc1_mean  # temp assumption that after cutoff value effectivity of has process decreases by 50%
+
     for project, project_df in df.groupby(by="project"):
         if (project in rc1) & (project not in rc2):  # the case of 2 realisation dates, rc1 but no rc2
             if max(y_prog_l[project]) > cutoff:
@@ -1037,7 +1020,8 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
-    return dict(counts=target, counts_prev=None, title='Target week ' + str(pd.Timestamp.now().week), subtitle='', font_color='green')
+    return dict(counts=target, counts_prev=None, title='Target week ' + str(pd.Timestamp.now().week),
+                subtitle='', font_color='green', id=None)
 
 
 def calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay):  # berekent voor de week t/m de huidige dag
@@ -1055,7 +1039,7 @@ def calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay):
         realisatie = 0
         # realisatie_min1W = 0
     return dict(counts=realisatie, counts_prev=None,
-                title='Realisatie week ' + str(pd.Timestamp.now().week + delay), subtitle='', font_color='green')
+                title='Realisatie week ' + str(pd.Timestamp.now().week + delay), subtitle='', font_color='green', id=None)
 
 
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
@@ -1063,15 +1047,15 @@ def calculate_weekdelta(project, y_target_l, d_real_l, total_objects, timeline):
     record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay=0)
     delta = record['counts'] - target
     # delta_min1W = record['counts_prev'] - target
-    return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green')
+    return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
 
 
 def calculate_weekHCHPend(project, HC_HPend_l):
-    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='', font_color='green')
+    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='', font_color='green', id=None)
 
 
 def calculate_weeknerr(project, n_err):
-    return dict(counts=n_err[project], counts_prev=None, title='Errors FC- BC', subtitle='', font_color='green')
+    return dict(counts=n_err[project], counts_prev=None, title='Errors FC- BC', subtitle='', font_color='green', id=None)
 
 
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
@@ -1455,25 +1439,35 @@ def rules_to_state(rules_list, state_list):
     return state
 
 
-def count_toestemming(df, time_delta_days=0):
+def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
+    """
+    This function counts the wait between toestemming datum and now (or a reference date, based on time_delta_days).
+    It only considers houses which are not connected yet.
+    :param df:
+    :param time_delta_days:
+    :return:
+    """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    mask = (
-            (
-                    df.opleverdatum.isna() |
-                    (
-                            df.opleverdatum >= time_point
-                    )
-            ) &
-            (
-                ~df.toestemming.isna()
-            )
-    )
-    toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+    toestemming_df = df[
+        (
+                df.opleverdatum.isna() |
+                (
+                        df.opleverdatum >= time_point
+                )
+        ) &
+        (
+            ~df.toestemming.isna()
+        )][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
 
     toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
-    toestemming_df['counts'] = pd.cut(toestemming_df.waiting_time,
-                                      bins=[-np.inf, 0, 8, 12, np.inf],
-                                      labels=['before_order', 'on_time', 'limited_time', 'late'])
+    toestemming_df['bins'] = pd.cut(toestemming_df.waiting_time,
+                                    bins=[-np.inf, 0, 8, 12, np.inf],
+                                    labels=['before_order', 'on_time', 'limited_time', 'late'])
+    return toestemming_df
+
+
+def count_toestemming(toestemming_df):
+    toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
     counts = toestemming_df.counts.value_counts()
     return counts
 
@@ -1488,11 +1482,24 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
     font_color = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
                               data=['green', 'orange', 'red', ''],
                               columns=['font_color'])
+    id_ = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                       data=["indicator-on_time-t-mobile", "indicator-limited_time-t-mobile", "indicator-late-t-mobile", ''],
+                       columns=['font_color'])
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):
         counts = count_toestemming(project_df)
         counts_prev = count_toestemming(project_df, time_delta_days=7)
 
-        counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev").join(title).join(subtitle).join(font_color)
+        counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev").join(
+            title).join(subtitle).join(font_color).join(id_)
         counts_by_project[project] = counts_df.to_dict(orient='index')
+
     return counts_by_project
+
+
+def wait_bin_cluster_redenna(toestemming_df):
+    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
+        by=['bins', 'cluster_redenna']).count()
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
+    return wait_bin_cluster_redenna_df

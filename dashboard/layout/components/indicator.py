@@ -3,7 +3,7 @@ import plotly.graph_objects as go
 from layout.components.figure import figure
 
 
-def indicator(value, previous_value, title="", sub_title="", font_color=None):
+def indicator(value, previous_value, title="", sub_title="", font_color=None, id=""):
     fig = go.Figure(
         layout={
             "height": 200,
@@ -21,4 +21,4 @@ def indicator(value, previous_value, title="", sub_title="", font_color=None):
 
         )
     )
-    return figure(figure=fig)
+    return figure(figure=fig, container_id=id)

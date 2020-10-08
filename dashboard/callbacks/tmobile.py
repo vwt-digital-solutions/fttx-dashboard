@@ -5,6 +5,8 @@ from dash.exceptions import PreventUpdate
 
 from data import collection
 from data.data import completed_status_counts, redenna_by_completed_status
+import dash_bootstrap_components as dbc
+from layout.components.figure import figure
 from layout.components.graphs import pie_chart, completed_status_counts_bar
 from layout.components.indicator import indicator
 from layout.components import redenna_status_pie
@@ -45,7 +47,47 @@ def tmobile_project_view(dropdown_selection):
 
 @app.callback(
     [
-        Output("indicators-t-mobile", "children")
+        Output("modal-sm", "is_open"),
+        Output(f"indicator-modal-{client}", 'figure')
+    ],
+    [
+        Input("indicator-late-t-mobile", "n_clicks"),
+        Input("indicator-limited_time-t-mobile", "n_clicks"),
+        Input("indicator-on_time-t-mobile", "n_clicks"),
+        Input("close-sm", "n_clicks"),
+    ],
+    [
+        State("modal-sm", "is_open"),
+        State(f"indicator-data-{client}", "data")
+    ]
+)
+def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print(changed_id)
+    if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
+        key = changed_id.partition("-")[-1].partition("-")[0]
+        print(key)
+        figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
+                                    values=list(result[key]['cluster_redenna'].values()),
+                                    title="Reden na",
+                                    colors=[
+                                        colors['green'],
+                                        colors['yellow'],
+                                        colors['red'],
+                                        colors['vwt_blue'],
+                                    ])
+
+        return [not is_open, figure]
+
+    if close_clicks:
+        return [not is_open, {'data': None, 'layout': None}]
+    return [is_open, {'data': None, 'layout': None}]
+
+
+@app.callback(
+    [
+        Output("indicators-t-mobile", "children"),
+        Output(f"indicator-data-{client}", 'data')
     ],
     [
         Input('project-dropdown-tmobile', 'value')
@@ -64,9 +106,27 @@ def update_indicators(dropdown_selection):
                                 previous_value=indicators[el]['counts_prev'],
                                 title=indicators[el]['title'],
                                 sub_title=indicators[el]['subtitle'],
-                                font_color=indicators[el]['font_color']) for el in indicator_types]
+                                font_color=indicators[el]['font_color'],
+                                id=indicators[el]['id_l']) for el in indicator_types]
+    indicator_info = indicator_info + [
+                                        dbc.Modal(
+                                            [
+                                                dbc.ModalBody(
+                                                    figure(graph_id=f"indicator-modal-{client}",
+                                                           className="",
+                                                           figure={'data': None, 'layout': None})
+                                                ),
+                                                dbc.ModalFooter(
+                                                    dbc.Button("Close", id="close-sm", className="ml-auto")
+                                                ),
+                                            ],
+                                            id="modal-sm",
+                                            size="lg",
+                                            centered=True,
+                                        )
+                                        ]
 
-    return [indicator_info]
+    return [indicator_info, indicators]
 
 
 @app.callback(
@@ -161,9 +221,12 @@ def update_redenna_status_clicks(click_filter, project_name):
     [Input('week-overview', 'clickData'),
      Input('month-overview', 'clickData'),
      Input('overview-reset', 'n_clicks')
-     ]
+     ],
+    [
+        State('pie_chart_overview_t-mobile', 'figure')
+    ]
 )
-def display_click_data(week_click_data, month_click_data, reset):
+def display_click_data(week_click_data, month_click_data, reset, original_figure):
     ctx = dash.callback_context
     first_day_of_period = ""
     period = ""
@@ -172,6 +235,8 @@ def display_click_data(week_click_data, month_click_data, reset):
             period, _, _ = trigger['prop_id'].partition("-")
             if period == "overview":
                 return original_pie_chart('t-mobile')
+            if trigger['value']['points'][0]['curveNumber'] != 1:
+                return original_figure
             for point in trigger['value']['points']:
                 first_day_of_period = point['customdata']
                 break
