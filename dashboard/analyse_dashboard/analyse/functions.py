@@ -1181,7 +1181,7 @@ def from_rd(x: int, y: int) -> tuple:
 
 
 def set_date_update():
-    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%d'))
+    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
@@ -1515,3 +1515,4 @@ def quality_measures_by_project(df: pd.DataFrame):
         counts_prev = count_toestemming(project_df, time_delta_days=1)
         counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
         counts_by_project[project] = counts_df.to_dict(orient='index')
+    return counts_by_project
