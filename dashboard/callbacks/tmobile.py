@@ -230,9 +230,12 @@ def update_redenna_status_clicks(click_filter, project_name):
     [Input('week-overview', 'clickData'),
      Input('month-overview', 'clickData'),
      Input('overview-reset', 'n_clicks')
-     ]
+     ],
+    [
+        State('pie_chart_overview_t-mobile', 'figure')
+    ]
 )
-def display_click_data(week_click_data, month_click_data, reset):
+def display_click_data(week_click_data, month_click_data, reset, original_figure):
     ctx = dash.callback_context
     first_day_of_period = ""
     period = ""
@@ -241,6 +244,8 @@ def display_click_data(week_click_data, month_click_data, reset):
             period, _, _ = trigger['prop_id'].partition("-")
             if period == "overview":
                 return original_pie_chart('t-mobile')
+            if trigger['value']['points'][0]['curveNumber'] != 1:
+                return original_figure
             for point in trigger['value']['points']:
                 first_day_of_period = point['customdata']
                 break
