@@ -18,6 +18,7 @@ class KPNExtract(FttXExtract):
         super().__init__(**kwargs)
         self.planning_location = kwargs['config'].get("planning_location")
         self.target_location = kwargs['config'].get("target_location")
+        self.map_key = kwargs['config'].get('map_key')
 
     def extract(self):
         self._extract_ftu()
@@ -33,10 +34,10 @@ class KPNExtract(FttXExtract):
                 date_FTU1 = doc['FTU1']
             else:
                 logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
-                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location)
+                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
         else:
             logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
-            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location)
+            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
         self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
 
     def _extract_planning(self):

@@ -1,7 +1,9 @@
+from google.cloud import firestore
+
 from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
-from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
-from functions import get_data_targets_init_dfn, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
+from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
+from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
     info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht
 import pandas as pd
@@ -16,6 +18,7 @@ class DFNExtract(FttXExtract):
         super().__init__(**kwargs)
         self.planning_location = kwargs['config'].get("planning_location")
         self.target_location = kwargs['config'].get("target_location")
+        self.map_key = kwargs['config'].get('map_key')
 
     def extract(self):
         self._extract_ftu()
@@ -24,14 +27,17 @@ class DFNExtract(FttXExtract):
 
     def _extract_ftu(self):
         logger.info("Extracting FTU")
-        # doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
-        doc = None
+        doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
         if doc is not None:
-            date_FTU0 = doc['FTU0']
-            date_FTU1 = doc['FTU1']
+            if doc['FTU0']:
+                date_FTU0 = doc['FTU0']
+                date_FTU1 = doc['FTU1']
+            else:
+                logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
+                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
         else:
             logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
-            date_FTU0, date_FTU1 = get_data_targets_init_dfn(self.target_location)
+            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
         self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
 
     def _extract_planning(self):
@@ -86,10 +92,10 @@ class DFNAnalyse(FttXAnalyse):
 
     def analyse(self):
         super().analyse()
-        logger.info("Analysing using the DFN protocol")
+        logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
         self._prognose()
-        self._set_input_fields()
+        # self._set_input_fields()
         self._targets()
         self._performance_matrix()
         self._prognose_graph()
@@ -143,19 +149,19 @@ class DFNAnalyse(FttXAnalyse):
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
 
-    def _set_input_fields(self):
-        logger.info("Setting input fields for DFN")
-        self.record_dict.add("analysis",
-                             dict(FTU0=self.extracted_data.ftu['date_FTU0'],
-                                  FTU1=self.extracted_data.ftu['date_FTU1']),
-                             Record,
-                             "Data")
+    # def _set_input_fields(self):
+    #     logger.info("Setting input fields for DFN")
+    #     self.record_dict.add("analysis",
+    #                          dict(FTU0=self.extracted_data.ftu['date_FTU0'],
+    #                               FTU1=self.extracted_data.ftu['date_FTU1']),
+    #                          Record,
+    #                          "Data")
 
-        # TODO is this document still needed? Is the timeline document used instead?
-        self.record_dict.add("x_d",
-                             self.intermediate_results.timeline,
-                             DateRecord,
-                             collection="Data")
+    #     # TODO is this document still needed? Is the timeline document used instead?
+    #     self.record_dict.add("x_d",
+    #                          self.intermediate_results.timeline,
+    #                          DateRecord,
+    #                          collection="Data")
 
     def _targets(self):
         logger.info("Calculating targets for DFN")
@@ -238,6 +244,12 @@ class DFNAnalyse(FttXAnalyse):
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
+    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
+    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
+    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
+    #                                       client=client) if client == 'kpn' else {}  # temp fix
+    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
+    #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
         prog, target, real, plan = preprocess_for_jaaroverzicht(

@@ -117,12 +117,6 @@ def get_data_planning(path_data, subset_KPN_2020):
     return HP
 
 
-def get_data_planning_dfn(path_data, projects_dfn):
-    df = extract_data_planning(path_data)
-    HP = transform_data_planning(df)
-    return HP
-
-
 def get_data_targets(path_data):
     doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
     if doc is not None:
@@ -131,66 +125,22 @@ def get_data_targets(path_data):
         dates = date_FTU0, date_FTU1
     else:
         print("Could not retrieve FTU0 and FTU1 from firestore, setting from original file")
-        dates = get_data_targets_init_dfn(path_data)
+        dates = get_data_targets_init(path_data)
     return dates
 
 
 # Function to use only when data_targets in database need to be reset.
 # TODO: Create function structure that can reinitialise the database, partially as well as completely.
-def get_data_targets_init(path_data):
-    map_key2 = {
-        # FT0 en FT1
-        'Arnhem Klarendal': 'Arnhem Klarendal',
-        'Arnhem Gulden Bodem Schaarsbergen': 'Arnhem Gulden Bodem Schaarsbergen',
-        'Breda Tuinzicht': 'Breda Tuinzicht',
-        'Breda Brabantpark': 'Breda Brabantpark',
-        'Bergen op Zoom Oost': 'Bergen op Zoom Oost',
-        'Bergen op Zoom Oude Stad + West wijk 03': 'Bergen op Zoom oude stad',
-        'Nijmegen Oosterhout': 'Nijmegen Oosterhout',
-        'Nijmegen centrum Bottendaal': 'Nijmegen Bottendaal',
-        'Nijmegen Biezen Wolfskuil Hatert': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-        'Den Haag-Wijk 34 Eskamp-Morgenstond-West': 'Den Haag Morgenstond west',
-        'Spijkenisse': 'KPN Spijkernisse',
-        'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
-        # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord Halsteren',  # niet in FC
-        'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag Bezuidenhout',  # niet in FC??
-        'Den Haag - Vrederust en Bouwlust': 'Den Haag Vredelust Bouwlust',  # niet in FC??
-        'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
-        # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
-        # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
-        # afgerond in FC...FTU0/FTU1 schatten
-        # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
-    }
-    df_targetsKPN = pd.read_excel(path_data, sheet_name='KPN')
+def get_data_targets_init(path_data, map_key):
+    df_targets = pd.read_excel(path_data, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
-    for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
-        if key in map_key2:
-            if not pd.isnull(df_targetsKPN.loc[i, '1e FTU']):
-                date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
-            if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
-
-    return date_FTU0, date_FTU1
-
-
-def get_data_targets_init_dfn(path_data):
-    map_key2 = {
-        'CAIW GOES': 'CAIW GOES',
-        'CAIW Terneuzen': 'CAIW Terneuzen',
-        'CAIW Terneuzen West': 'CAIW Terneuzen West',
-    }
-    df_targetsDFN = pd.read_excel(path_data, sheet_name='KPN')
-    date_FTU0 = {}
-    date_FTU1 = {}
-    for i, key in enumerate(df_targetsDFN['d.d. 01-05-2020 v11']):
-        if key in map_key2:
-            if not pd.isnull(df_targetsDFN.loc[i, '1e FTU']):
-                date_FTU0[map_key2[key]] = df_targetsDFN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
-            if (not pd.isnull(df_targetsDFN.loc[i, 'Laatste FTU'])) & (df_targetsDFN.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key2[key]] = df_targetsDFN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+    for i, key in enumerate(df_targets['d.d. 01-05-2020 v11']):
+        if key in map_key:
+            if not pd.isnull(df_targets.loc[i, '1e FTU']):
+                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+            if (not pd.isnull(df_targets.loc[i, 'Laatste FTU'])) & (df_targets.loc[i, 'Laatste FTU'] != '?'):
+                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
 
