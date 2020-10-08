@@ -1,14 +1,14 @@
 # %% Initialize
 from Analyse.TMobile import TMobileETL
 from Analyse.KPN import KPNTestETL
-from Analyse.DFN import DFNTestETL
+from Analyse.DFN import DFNTestETL, DFNETL
 import os
 import time
 import config
 from Analyse.KPN import KPNETL, PickleExtract
-from Analyse.DFN import DFNETL
 from functions import graph_overview
 import logging
+
 logging.basicConfig(format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
                     level=logging.INFO)
 
@@ -110,6 +110,7 @@ kpn._jaaroverzicht()
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-77d2e0bd2465.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 dfn = DFNTestETL(client='dfn', config=config.client_config['dfn'])
+dfn = DFNETL(client='dfn', config=config.client_config['dfn'])
 dfn.perform()
 # %%
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
