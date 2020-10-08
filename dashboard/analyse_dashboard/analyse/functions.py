@@ -1508,11 +1508,21 @@ def count_toestemming(df, time_delta_days=0):
     return counts
 
 
-def quality_measures_by_project(df: pd.DataFrame):
+def calculate_projectindicators_tmobile(df: pd.DataFrame):
+    title = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                         data=['Order op tijd', 'Order nog beperkte tijd', 'Order op tijd', ''],
+                         columns=['title'])
+    subtitle = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                            data=['< 8 weken', '> 8 weken < 12 weken', '> 12 weken', ''],
+                            columns=['subtitle'])
+    font_color = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                              data=['green', 'yellow', 'red', ''],
+                              columns=['font_color'])
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):
         counts = count_toestemming(project_df)
-        counts_prev = count_toestemming(project_df, time_delta_days=1)
-        counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
+        counts_prev = count_toestemming(project_df, time_delta_days=7)
+
+        counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev").join(title).join(subtitle).join(font_color)
         counts_by_project[project] = counts_df.to_dict(orient='index')
     return counts_by_project

@@ -1,6 +1,7 @@
 import dash
 from app import app
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 from data import collection
 from data.data import completed_status_counts, redenna_by_completed_status
@@ -44,37 +45,28 @@ def tmobile_project_view(dropdown_selection):
 
 @app.callback(
     [
-        Output("quality-measures-t-mobile", "children")
+        Output("indicators-t-mobile", "children")
     ],
     [
         Input('project-dropdown-tmobile', 'value')
     ]
 )
-def tmobile_quality_measures(dropdown_selection):
-    if dropdown_selection:
-        result = collection.get_document(collection="Data",
-                                         client=client,
-                                         graph_name="quality_measure",
-                                         project=dropdown_selection)
+def update_indicators(dropdown_selection):
+    if dropdown_selection is None:
+        raise PreventUpdate
 
-        return [[
-            indicator(value=result['late']['counts'],
-                      previous_value=result['late']['counts_prev'],
-                      title="Order te laat",
-                      sub_title="> 12 weken",
-                      font_color="red"),
-            indicator(value=result['limited_time']['counts'],
-                      previous_value=result['limited_time']['counts_prev'],
-                      title="Order nog beperkte tijd",
-                      sub_title="> 8 weken < 12 weken",
-                      font_color="orange"),
-            indicator(value=result['on_time']['counts'],
-                      previous_value=result['on_time']['counts_prev'],
-                      title="Order op tijd",
-                      sub_title="< 8 weken",
-                      font_color="green"),
-        ]]
-    return [None]
+    indicator_types = ['late', 'limited_time', 'on_time']
+    indicators = collection.get_document(collection="Data",
+                                         graph_name="project_indicators",
+                                         project=dropdown_selection,
+                                         client=client)
+    indicator_info = [indicator(value=indicators[el]['counts'],
+                                previous_value=indicators[el]['counts_prev'],
+                                title=indicators[el]['title'],
+                                sub_title=indicators[el]['subtitle'],
+                                font_color=indicators[el]['font_color']) for el in indicator_types]
+
+    return [indicator_info]
 
 
 @app.callback(

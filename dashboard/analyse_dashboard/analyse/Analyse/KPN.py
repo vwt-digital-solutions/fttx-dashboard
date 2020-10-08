@@ -150,20 +150,6 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
 
-    # def _set_input_fields(self):
-    #     logger.info("Setting input fields for KPN")
-    #     self.record_dict.add("analysis",
-    #                          dict(FTU0=self.extracted_data.ftu['date_FTU0'],
-    #                               FTU1=self.extracted_data.ftu['date_FTU1']),
-    #                          Record,
-    #                          "Data")
-
-    #     # TODO is this document still needed? Is the timeline document used instead?
-    #     self.record_dict.add("x_d",
-    #                          self.intermediate_results.timeline,
-    #                          DateRecord,
-    #                          collection="Data")
-
     def _targets(self):
         logger.info("Calculating targets for KPN")
         y_target_l, t_diff = targets(self.intermediate_results.x_prog,
@@ -274,6 +260,7 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('info_table', record, Record, 'Graphs')
 
     def _calculate_project_indicators(self):
+        logger.info("Calculating project indicators")
         projects = self.transformed_data.df.project.unique().to_list()
         record = {}
         for project in projects:

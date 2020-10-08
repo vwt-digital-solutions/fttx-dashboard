@@ -37,7 +37,7 @@ def get_html(project_name, client):
         dcc.Store(id=f"status-count-filter-{client}"),
         html.Div(
             className="container-display",
-            id=f"quality-measures-{client}"
+            id=f"indicators-{client}"
         ),
         html.Div(
             className="container-display",

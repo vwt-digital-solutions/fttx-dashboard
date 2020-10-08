@@ -17,6 +17,8 @@ from data.graph import pie_chart, clickbar_lb, clickbar_hb
 from data import collection
 # from data.graph import info_table as graph_info_table
 
+client = 'kpn'
+
 
 @app.callback(
     [Output("project-dropdown", 'value'),
@@ -44,7 +46,7 @@ def update_dropdown(value):
         Output("ww_c", 'hidden'),
         Output('FTU_table_c', 'hidden'),
         Output("graph_prog_c", "hidden"),
-        Output("table_info", "hidden"),
+        Output("indicators-kpn", "hidden"),
         Output("Bar_LB_c", "hidden"),
         Output("Bar_HB_c", "hidden"),
         Output("pie_chart_overview_kpn_container", "hidden"),
@@ -92,7 +94,7 @@ def update_graphs(n_o, drop_selectie, mask_all):
         hidden,  # ww_c
         hidden,  # FTU_table_c
         not hidden,  # graph_prog_c
-        not hidden,  # table_info
+        not hidden,  # indicators-kpn
         not hidden,  # Bar_LB_c
         not hidden,  # Bar_HB_c
         hidden,  # Pie_NA_oid
@@ -104,18 +106,30 @@ def update_graphs(n_o, drop_selectie, mask_all):
     ]
 
 
-# update middle-top charts given dropdown selection
 @app.callback(
     [
-        Output("graph_prog", 'figure'),
-        Output("table_info", 'children'),
         Output("overzicht_button", 'n_clicks'),
     ],
     [
         Input('project-dropdown', 'value'),
     ],
 )
-def middle_top_graphs(drop_selectie):
+def update_overzicht_button(drop_selectie):
+    if drop_selectie is None:
+        raise PreventUpdate
+
+    return [-1]
+
+
+@app.callback(
+    [
+        Output("graph_prog", 'figure'),
+    ],
+    [
+        Input('project-dropdown', 'value'),
+    ],
+)
+def update_prognose_graph(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
@@ -123,18 +137,33 @@ def middle_top_graphs(drop_selectie):
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
 
+    return [fig_prog]
+
+
+@app.callback(
+    [
+        Output("indicators-kpn", 'children'),
+    ],
+    [
+        Input('project-dropdown', 'value'),
+    ],
+)
+def update_indicators(dropdown_selection):
+    if dropdown_selection is None:
+        raise PreventUpdate
+
+    indicator_types = ['weektarget', 'weekrealisatie', 'weekdelta', 'weekHCHPend', 'weeknerr']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
-                                         project=drop_selectie,
-                                         client='kpn')
-    indicator_types = ['weektarget', 'weekrealisatie', 'weekdelta', 'weekHCHPend', 'weeknerr']
-    table_info = [indicator(value=indicators[el]['counts'],
-                            previous_value=indicators[el]['counts_prev'],
-                            title=indicators[el]['title'],
-                            sub_title=indicators[el]['subtitle'],
-                            font_color=indicators[el]['font_color']) for el in indicator_types]
+                                         project=dropdown_selection,
+                                         client=client)
+    indicator_info = [indicator(value=indicators[el]['counts'],
+                                previous_value=indicators[el]['counts_prev'],
+                                title=indicators[el]['title'],
+                                sub_title=indicators[el]['subtitle'],
+                                font_color=indicators[el]['font_color']) for el in indicator_types]
 
-    return [fig_prog, table_info, -1]
+    return [indicator_info]
 
 
 # update click bar charts
