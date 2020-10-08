@@ -2,7 +2,7 @@ from google.cloud import firestore
 
 from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
-from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DateRecord, DictRecord
+from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
     info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht
@@ -28,8 +28,12 @@ class KPNExtract(FttXExtract):
         logger.info("Extracting FTU")
         doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
         if doc is not None:
-            date_FTU0 = doc['FTU0']
-            date_FTU1 = doc['FTU1']
+            if doc['FTU0']:
+                date_FTU0 = doc['FTU0']
+                date_FTU1 = doc['FTU1']
+            else:
+                logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
+                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location)
         else:
             logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
             date_FTU0, date_FTU1 = get_data_targets_init(self.target_location)
@@ -90,7 +94,7 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
         self._prognose()
-        self._set_input_fields()
+        # self._set_input_fields()
         self._targets()
         self._performance_matrix()
         self._prognose_graph()
@@ -144,19 +148,19 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
 
-    def _set_input_fields(self):
-        logger.info("Setting input fields for KPN")
-        self.record_dict.add("analysis",
-                             dict(FTU0=self.extracted_data.ftu['date_FTU0'],
-                                  FTU1=self.extracted_data.ftu['date_FTU1']),
-                             Record,
-                             "Data")
+    # def _set_input_fields(self):
+    #     logger.info("Setting input fields for KPN")
+    #     self.record_dict.add("analysis",
+    #                          dict(FTU0=self.extracted_data.ftu['date_FTU0'],
+    #                               FTU1=self.extracted_data.ftu['date_FTU1']),
+    #                          Record,
+    #                          "Data")
 
-        # TODO is this document still needed? Is the timeline document used instead?
-        self.record_dict.add("x_d",
-                             self.intermediate_results.timeline,
-                             DateRecord,
-                             collection="Data")
+    #     # TODO is this document still needed? Is the timeline document used instead?
+    #     self.record_dict.add("x_d",
+    #                          self.intermediate_results.timeline,
+    #                          DateRecord,
+    #                          collection="Data")
 
     def _targets(self):
         logger.info("Calculating targets for KPN")

@@ -38,7 +38,7 @@ def get_html(project_name, client):
         dcc.Store(id=f"indicator-data-{client}"),
         html.Div(
             className="container-display",
-            id="quality-measures-t-mobile"
+            id=f"quality-measures-{client}"
         ),
         html.Div(
             className="container-display",
