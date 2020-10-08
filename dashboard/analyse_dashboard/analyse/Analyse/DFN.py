@@ -27,7 +27,7 @@ class DFNExtract(FttXExtract):
 
     def _extract_ftu(self):
         logger.info("Extracting FTU")
-        doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
+        doc = next(firestore.Client().collection('Data').where('id', '==', 'analysis').where('client', '==', 'dfn').stream(), None)
         if doc is not None:
             if doc['FTU0']:
                 date_FTU0 = doc['FTU0']
