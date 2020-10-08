@@ -42,8 +42,8 @@ def get_html(client):
                 figure(figure=hoogbouw_fig,
                        container_id=f"status-counts-hoogbouw-{client}-container",
                        graph_id=f"status-counts-hoogbouw-{client}"),
-                figure(container_id="redenna_project_t-mobile_container",
-                       graph_id="redenna_project_t-mobile",
+                figure(container_id="redenna_project_tmobile_container",
+                       graph_id="redenna_project_tmobile",
                        figure=redenna_pie)
             ]
         )
