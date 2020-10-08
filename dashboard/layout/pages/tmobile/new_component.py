@@ -69,6 +69,7 @@ def get_html_overview(data):
                 'yaxis': {'title': 'Aantal HPend', 'range': y_range},
                 'xaxis': {'tickvals': x_count, 'ticktext': x_tick_text, 'range': x_range},
                 'plot_bgcolor': colors['plot_bgcolor'],
-                'paper_bgcolor': colors['paper_bgcolor']
+                'paper_bgcolor': colors['paper_bgcolor'],
+                'hovermode': 'closest'
             }
         )
