@@ -1440,34 +1440,62 @@ def rules_to_state(rules_list, state_list):
     return state
 
 
-def count_toestemming(df, time_delta_days=0):
+def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
+    """
+    This function counts the wait between toestemming datum and now (or a reference date, based on time_delta_days).
+    It only considers houses which are not connected yet.
+    :param df:
+    :param time_delta_days:
+    :return:
+    """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    mask = (
-            (
-                    df.opleverdatum.isna() |
-                    (
-                            df.opleverdatum >= time_point
-                    )
-            ) &
-            (
-                ~df.toestemming.isna()
-            )
-    )
-    toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+    toestemming_df = df[
+        (
+                df.opleverdatum.isna() |
+                (
+                        df.opleverdatum >= time_point
+                )
+        ) &
+        (
+            ~df.toestemming.isna()
+        )][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
 
     toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
-    toestemming_df['counts'] = pd.cut(toestemming_df.waiting_time,
-                                      bins=[-np.inf, 0, 8, 12, np.inf],
-                                      labels=['before_order', 'on_time', 'limited_time', 'late'])
+    toestemming_df['bins'] = pd.cut(toestemming_df.waiting_time,
+                                    bins=[-np.inf, 0, 8, 12, np.inf],
+                                    labels=['before_order', 'on_time', 'limited_time', 'late'])
+    return toestemming_df
+
+
+def count_toestemming(toestemming_df):
+    toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
     counts = toestemming_df.counts.value_counts()
     return counts
+
+
+def wait_bin_cluster_redenna(toestemming_df):
+    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
+        by=['bins', 'cluster_redenna']).count()
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
+    return wait_bin_cluster_redenna_df
 
 
 def quality_measures_by_project(df: pd.DataFrame):
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):
-        counts = count_toestemming(project_df)
-        counts_prev = count_toestemming(project_df, time_delta_days=1)
+        toestemming_df = wait_bins(project_df)
+        toestemming_df_prev = wait_bins(project_df, time_delta_days=1)
+
+        counts = count_toestemming(toestemming_df)
+        counts_prev = count_toestemming(toestemming_df_prev)
+
         counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
         counts_by_project[project] = counts_df.to_dict(orient='index')
+
+        wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
+        for index, grouped_df in wait_bin_cluster_redenna_df.groupby('bins'):
+            counts_by_project[project][index]['cluster_redenna'] = \
+                grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
+
     return counts_by_project

@@ -1,9 +1,10 @@
 import dash
 from app import app
 from dash.dependencies import Input, Output, State
-
+import dash_bootstrap_components as dbc
 from data import collection
 from data.data import completed_status_counts, redenna_by_completed_status
+from layout.components.figure import figure
 from layout.components.graphs import pie_chart, completed_status_counts_bar
 from layout.components.indicator import indicator
 from layout.components import redenna_status_pie
@@ -44,7 +45,8 @@ def tmobile_project_view(dropdown_selection):
 
 @app.callback(
     [
-        Output("quality-measures-t-mobile", "children")
+        Output("quality-measures-t-mobile", "children"),
+        Output(f"indicator-data-{client}", 'data')
     ],
     [
         Input('project-dropdown-tmobile', 'value')
@@ -57,24 +59,83 @@ def tmobile_quality_measures(dropdown_selection):
                                          graph_name="quality_measure",
                                          project=dropdown_selection)
 
-        return [[
+        indicators = [
             indicator(value=result['late']['counts'],
                       previous_value=result['late']['counts_prev'],
                       title="Order te laat",
                       sub_title="> 12 weken",
-                      font_color="red"),
+                      font_color="red",
+                      id=f"indicator-late-{client}"),
             indicator(value=result['limited_time']['counts'],
                       previous_value=result['limited_time']['counts_prev'],
                       title="Order nog beperkte tijd",
                       sub_title="> 8 weken < 12 weken",
-                      font_color="orange"),
+                      font_color="orange",
+                      id=f"indicator-limited_time-{client}"),
             indicator(value=result['on_time']['counts'],
                       previous_value=result['on_time']['counts_prev'],
                       title="Order op tijd",
                       sub_title="< 8 weken",
-                      font_color="green"),
-        ]]
-    return [None]
+                      font_color="green",
+                      id=f"indicator-on_time-{client}"),
+            dbc.Modal(
+                [
+                    dbc.ModalBody(
+                        figure(graph_id=f"indicator-modal-{client}",
+                               className="",
+                               figure={'data': None, 'layout': None})
+                    ),
+                    dbc.ModalFooter(
+                        dbc.Button("Close", id="close-sm", className="ml-auto")
+                    ),
+                ],
+                id="modal-sm",
+                size="lg",
+                centered=True,
+            )
+
+        ]
+        return [indicators, result]
+    return [None, None]
+
+
+@app.callback(
+    [
+        Output("modal-sm", "is_open"),
+        Output(f"indicator-modal-{client}", 'figure')
+    ],
+    [
+        Input("indicator-late-t-mobile", "n_clicks"),
+        Input("indicator-limited_time-t-mobile", "n_clicks"),
+        Input("indicator-on_time-t-mobile", "n_clicks"),
+        Input("close-sm", "n_clicks"),
+    ],
+    [
+        State("modal-sm", "is_open"),
+        State(f"indicator-data-{client}", "data")
+    ]
+)
+def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print(changed_id)
+    if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
+        key = changed_id.partition("-")[-1].partition("-")[0]
+        print(key)
+        figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
+                                    values=list(result[key]['cluster_redenna'].values()),
+                                    title="Reden na",
+                                    colors=[
+                                        colors['green'],
+                                        colors['yellow'],
+                                        colors['red'],
+                                        colors['vwt_blue'],
+                                    ])
+
+        return [not is_open, figure]
+
+    if close_clicks:
+        return [not is_open, {'data': None, 'layout': None}]
+    return [is_open, {'data': None, 'layout': None}]
 
 
 @app.callback(
