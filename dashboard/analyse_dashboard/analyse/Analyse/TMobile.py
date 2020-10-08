@@ -1,5 +1,6 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
-from Analyse.Record import Record, DocumentListRecord
+from Analyse.Record import Record, DocumentListRecord, DictRecord
+from functions import quality_measures_by_project
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
 import logging
@@ -29,6 +30,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_week()
         self._get_voorraadvormend()
         self._jaaroverzicht()
+        self._quality_measures()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
@@ -70,6 +72,14 @@ class TMobileAnalyse(FttXAnalyse):
                     graph_name=f"{k}_by_month")
                for k, v in self.intermediate_results.counts_by_month.items()]
         self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
+
+    def _quality_measures(self):
+        logger.info("Calculating Quality measure")
+        counts_by_project = quality_measures_by_project(self.transformed_data.df)
+        self.record_dict.add(key="quality_measure",
+                             collection="Data",
+                             RecordType=DictRecord,
+                             record=counts_by_project)
 
 
 class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):
