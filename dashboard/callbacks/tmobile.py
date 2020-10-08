@@ -14,7 +14,7 @@ from data.graph import pie_chart as original_pie_chart
 
 from config import colors_vwt as colors
 
-client = "t-mobile"
+client = "tmobile"
 
 
 @app.callback(
@@ -107,7 +107,7 @@ def update_indicators(dropdown_selection):
                                 title=indicators[el]['title'],
                                 sub_title=indicators[el]['subtitle'],
                                 font_color=indicators[el]['font_color'],
-                                id=indicators[el]['id_l']) for el in indicator_types]
+                                id=indicators[el]['id_']) for el in indicator_types]
     indicator_info = indicator_info + [
                                         dbc.Modal(
                                             [

@@ -51,7 +51,7 @@ def redenna_by_completed_status(project_name, client, click_filter=None, ):
                                                       project=project_name,
                                                       client=client))
 
-        clusters = config.client_config[client]['clusters_reden_na']
+        clusters = config.client_config['tmobile']['clusters_reden_na']
         cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         counts['cluster_redenna'] = counts['cluster_redenna'].astype(cluster_types)
 
@@ -91,7 +91,7 @@ def completed_status_counts(project_name, client, click_filter=None):
                                                       graph_name="completed_status_counts",
                                                       project=project_name,
                                                       client=client))
-        clusters = config.client_config[client]['clusters_reden_na']
+        clusters = config.client_config['tmobile']['clusters_reden_na']
         cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         counts['cluster_redenna'] = counts['cluster_redenna'].astype(cluster_types)
 

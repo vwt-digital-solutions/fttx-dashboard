@@ -1472,6 +1472,14 @@ def count_toestemming(toestemming_df):
     return counts
 
 
+def wait_bin_cluster_redenna(toestemming_df):
+    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
+        by=['bins', 'cluster_redenna']).count()
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
+    return wait_bin_cluster_redenna_df
+
+
 def calculate_projectindicators_tmobile(df: pd.DataFrame):
     title = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
                          data=['Order op tijd', 'Order nog beperkte tijd', 'Order op tijd', ''],
@@ -1484,22 +1492,22 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                               columns=['font_color'])
     id_ = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
                        data=["indicator-on_time-t-mobile", "indicator-limited_time-t-mobile", "indicator-late-t-mobile", ''],
-                       columns=['font_color'])
+                       columns=['id_'])
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):
-        counts = count_toestemming(project_df)
-        counts_prev = count_toestemming(project_df, time_delta_days=7)
+        toestemming_df = wait_bins(project_df)
+        toestemming_df_prev = wait_bins(project_df, time_delta_days=7)
+
+        counts = count_toestemming(toestemming_df)
+        counts_prev = count_toestemming(toestemming_df_prev)
 
         counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev").join(
             title).join(subtitle).join(font_color).join(id_)
         counts_by_project[project] = counts_df.to_dict(orient='index')
 
+        wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
+        for index, grouped_df in wait_bin_cluster_redenna_df.groupby('bins'):
+            counts_by_project[project][index]['cluster_redenna'] = \
+                grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
+
     return counts_by_project
-
-
-def wait_bin_cluster_redenna(toestemming_df):
-    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
-        by=['bins', 'cluster_redenna']).count()
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
-    return wait_bin_cluster_redenna_df
