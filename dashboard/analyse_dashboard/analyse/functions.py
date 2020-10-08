@@ -1136,7 +1136,7 @@ def from_rd(x: int, y: int) -> tuple:
 
 
 def set_date_update():
-    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%d'))
+    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
