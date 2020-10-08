@@ -5,7 +5,6 @@ from data.data import completed_status_counts, redenna_by_completed_status
 from layout.components.graphs import completed_status_counts_bar
 from layout.components.redenna_status_pie import get_fig as redenna_status_pie
 from layout.components.figure import figure
-from layout.pages.tmobile import new_component
 import dash_core_components as dcc
 colors = config.colors_vwt
 
@@ -36,25 +35,10 @@ def get_html(project_name, client):
 
     return [
         dcc.Store(id=f"status-count-filter-{client}"),
+        dcc.Store(id=f"indicator-data-{client}"),
         html.Div(
             className="container-display",
-            children=[
-                new_component.get_html(value=100,
-                                       previous_value=110,
-                                       title="Order te laat",
-                                       sub_title="> 12 weken",
-                                       font_color="red"),
-                new_component.get_html(value=100,
-                                       previous_value=90,
-                                       title="Order nog beperkte tijd",
-                                       sub_title="> 8 weken < 12 weken",
-                                       font_color="orange"),
-                new_component.get_html(value=100,
-                                       previous_value=110,
-                                       title="Order op tijd",
-                                       sub_title="< 8 weken",
-                                       font_color="green"),
-            ]
+            id="quality-measures-t-mobile"
         ),
         html.Div(
             className="container-display",
