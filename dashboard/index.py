@@ -1,10 +1,5 @@
 import logging
 import dash
-
-logging.basicConfig(format='%(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
-                    level=logging.INFO)
-
-
 logging.basicConfig(
     format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
     level=logging.INFO)
