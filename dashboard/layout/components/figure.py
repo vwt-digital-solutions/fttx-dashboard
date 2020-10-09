@@ -9,5 +9,6 @@ def figure(container_id="", graph_id="", className="pretty_container column", fi
         ],
         className=className,
         hidden=False,
-        id=container_id
+        id=container_id,
+        n_clicks=0
     )

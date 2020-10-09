@@ -7,6 +7,8 @@ import importlib
 
 colors = config.colors_vwt
 
+client = "tmobile"
+
 
 # APP LAYOUT
 def get_body(client):
@@ -31,7 +33,7 @@ def get_body(client):
             # Projectspecifieke view
             html.Div(
                 style={'display': 'none'},
-                id=client + "-project-view",
+                id=f"{client}-project-view",
                 children=project_view.get_html(client),
             ),
         ],

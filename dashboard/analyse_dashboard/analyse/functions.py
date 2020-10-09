@@ -131,41 +131,16 @@ def get_data_targets(path_data):
 
 # Function to use only when data_targets in database need to be reset.
 # TODO: Create function structure that can reinitialise the database, partially as well as completely.
-def get_data_targets_init(path_data):
-    map_key2 = {
-        # FT0 en FT1
-        'Arnhem Klarendal': 'Arnhem Klarendal',
-        'Arnhem Gulden Bodem Schaarsbergen': 'Arnhem Gulden Bodem Schaarsbergen',
-        'Breda Tuinzicht': 'Breda Tuinzicht',
-        'Breda Brabantpark': 'Breda Brabantpark',
-        'Bergen op Zoom Oost': 'Bergen op Zoom Oost',
-        'Bergen op Zoom Oude Stad + West wijk 03': 'Bergen op Zoom oude stad',
-        'Nijmegen Oosterhout': 'Nijmegen Oosterhout',
-        'Nijmegen centrum Bottendaal': 'Nijmegen Bottendaal',
-        'Nijmegen Biezen Wolfskuil Hatert': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-        'Den Haag-Wijk 34 Eskamp-Morgenstond-West': 'Den Haag Morgenstond west',
-        'Spijkenisse': 'KPN Spijkernisse',
-        'Gouda Centrum': 'Gouda Centrum',  # niet in FC, ?? waar is deze
-        # FT0 in 2020 --> eind datum schatten
-        'Bergen op Zoom Noord  wijk 01 + Halsteren': 'Bergen op Zoom Noord Halsteren',  # niet in FC
-        'Nijmegen Dukenburg': 'Nijmegen Dukenburg',  # niet in FC
-        'Den Haag - Haagse Hout-Bezuidenhout West': 'Den Haag Bezuidenhout',  # niet in FC??
-        'Den Haag - Vrederust en Bouwlust': 'Den Haag Vredelust Bouwlust',  # niet in FC??
-        'Gouda Kort Haarlem en Noord': 'KPN Gouda Kort Haarlem en Noord',
-        # wel in FC, geen FT0 of FT1, niet afgerond, niet actief in FC...
-        # Den Haag Cluster B (geen KPN), Den Haag Regentessekwatier (ON HOLD), Den Haag (??)
-        # afgerond in FC...FTU0/FTU1 schatten
-        # Arnhem Marlburgen, Arnhem Spijkerbuurt, Bavel, Brielle, Helvoirt, LCM project
-    }
-    df_targetsKPN = pd.read_excel(path_data, sheet_name='KPN')
+def get_data_targets_init(path_data, map_key):
+    df_targets = pd.read_excel(path_data, sheet_name='KPN')
     date_FTU0 = {}
     date_FTU1 = {}
-    for i, key in enumerate(df_targetsKPN['d.d. 01-05-2020 v11']):
-        if key in map_key2:
-            if not pd.isnull(df_targetsKPN.loc[i, '1e FTU']):
-                date_FTU0[map_key2[key]] = df_targetsKPN.loc[i, '1e FTU'].strftime('%Y-%m-%d')
-            if (not pd.isnull(df_targetsKPN.loc[i, 'Laatste FTU'])) & (df_targetsKPN.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key2[key]] = df_targetsKPN.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+    for i, key in enumerate(df_targets['d.d. 01-05-2020 v11']):
+        if key in map_key:
+            if not pd.isnull(df_targets.loc[i, '1e FTU']):
+                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+            if (not pd.isnull(df_targets.loc[i, 'Laatste FTU'])) & (df_targets.loc[i, 'Laatste FTU'] != '?'):
+                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
 
@@ -220,7 +195,11 @@ def get_start_time(df: pd.DataFrame):
 
 
 def get_timeline(t_s):
-    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    if min(t_s.values()) < pd.to_datetime('2020-01-01'):
+        x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    else:
+        # for now we have to ensure that the x-axis contains data over all 2020 for the overview calculations
+        x_axis = pd.date_range(pd.to_datetime('2019-12-01'), periods=1000 + 1, freq='D')
     return x_axis
 
 
@@ -427,7 +406,11 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
             #     y_prog_l[project] = y_prog1.copy()
 
     rc1_mean = sum(rc1.values()) / len(rc1.values())
-    rc2_mean = sum(rc2.values()) / len(rc2.values())
+    if rc2:
+        rc2_mean = sum(rc2.values()) / len(rc2.values())
+    else:
+        rc2_mean = 0.5 * rc1_mean  # temp assumption that after cutoff value effectivity of has process decreases by 50%
+
     for project, project_df in df.groupby(by="project"):
         if (project in rc1) & (project not in rc2):  # the case of 2 realisation dates, rc1 but no rc2
             if max(y_prog_l[project]) > cutoff:
@@ -534,7 +517,6 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
     real = real0.to_list()
     plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
     plan = plan0.to_list()
-    plan[0:n_now] = real[0:n_now]  # gelijk trekken afgelopen periode
 
     if 'M' == res:
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
@@ -636,21 +618,17 @@ def preprocess_for_jaaroverzicht(*args):
 
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
     n_now = datetime.date.today().month
-    planning[0:n_now] = realisatie[0:n_now]  # gelijk trekken afgelopen periode
 
     target_sum = str(round(sum(target[1:])))
-    realisatie_now = realisatie[n_now]
-    planning_sum = sum(planning[n_now:])
-    prognose_sum = sum(prognose[n_now:])
-    planning_result = planning_sum - realisatie_now
-    prognose_result = prognose_sum - realisatie_now
+    planning_sum = sum(planning[n_now:]) - realisatie[n_now]
+    prognose_sum = sum(prognose[n_now:]) - realisatie[n_now]
     realisatie_sum = str(round(sum(realisatie[1:])))
 
     jaaroverzicht = dict(id='jaaroverzicht',
                          target=str(int(target_sum)),
                          real=str(int(realisatie_sum)),
-                         plan=str(int(planning_result)),
-                         prog=str(int(prognose_result)),
+                         plan=str(int(planning_sum)),
+                         prog=str(int(prognose_sum)),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
                          prog_c='pretty_container')
@@ -1026,37 +1004,58 @@ def get_intersect(a1, a2, b1, b2):
     return (x / z, y / z)
 
 
-def info_table(tot_l, d_real_l, HP, y_target_l, x_d, HC_HPend_l, Schouw_BIS, HPend_l, n_err):
-    n_w = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-    n_d = int((pd.Timestamp.now() - x_d[0]).days)
-    n_dw = int((pd.to_datetime('2019-12-30') - x_d[0]).days) + (n_w - 1) * 7
-    col = ['project', 'KPN HPend - W' + str(n_w - 1), 'Real HPend - W' + str(n_w - 1), 'Diff - W' + str(n_w - 1),
-           'KPN HPend - W' + str(n_w), 'Real HPend - W' + str(n_w), 'Diff - W' + str(n_w), 'HC / HP actueel',
-           'Errors FC - BC']
-    records = []
-    for key in d_real_l:
-        if d_real_l[key].max()[0] < 100:
-            record = dict(project=key)
-            record[col[1]] = round(y_target_l[key][n_dw - 7] / 100 * tot_l[key])
-            real_latest = d_real_l[key][d_real_l[key].index <= n_dw - 7]
-            if not real_latest.empty:
-                record[col[2]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
-            else:
-                record[col[2]] = 0
-            record[col[3]] = record[col[2]] - record[col[1]]
-            record[col[4]] = round(y_target_l[key][n_d] / 100 * tot_l[key])
-            real_latest = d_real_l[key][d_real_l[key].index <= n_d]
-            if not real_latest.empty:
-                record[col[5]] = round(real_latest.iloc[-1][0] / 100 * tot_l[key])
-            else:
-                record[col[5]] = 0
-            record[col[6]] = record[col[5]] - record[col[4]]
-            record[col[7]] = round(HC_HPend_l[key])
-            record[col[8]] = n_err[key]
-            records += [record]
-    df_table = pd.DataFrame(records).to_json(orient='records')
-    record = dict(id='info_table', table=df_table, col=col)
-    return record
+def firstday_week1_2020():
+    return pd.to_datetime('2019-12-30')
+
+
+def days_in_2019(timeline):
+    return len(timeline[timeline < pd.to_datetime('2020-01-01')])
+
+
+def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
+    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
+    if project in y_target_l:
+        value_atstartweek = y_target_l[project][index_firstdaythisweek - 1]
+        value_atendweek = y_target_l[project][index_firstdaythisweek + 7]
+        target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
+    else:
+        target = 0
+    return dict(counts=target, counts_prev=None, title='Target week ' + str(pd.Timestamp.now().week),
+                subtitle='', font_color='green', id=None)
+
+
+def calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay):  # berekent voor de week t/m de huidige dag
+    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
+    if project in d_real_l:
+        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7]['Aantal'].max()
+        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7]['Aantal'].max()
+        # value_atstartweek_min1W = d_real_l[project][
+        #   d_real_l[project].index <= index_firstdaythisweek - 1 - 7 + delay * 7]['Aantal'].max()
+        # value_atendweek_min1W = d_real_l[project][
+        #   d_real_l[project].index <= index_firstdaythisweek + 7 - 7 + delay * 7]['Aantal'].max()
+        realisatie = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
+        # realisatie_min1W = int(round((value_atendweek_min1W - value_atstartweek_min1W) / 100 * total_objects[project]))
+    else:
+        realisatie = 0
+        # realisatie_min1W = 0
+    return dict(counts=realisatie, counts_prev=None,
+                title='Realisatie week ' + str(pd.Timestamp.now().week + delay), subtitle='', font_color='green', id=None)
+
+
+def calculate_weekdelta(project, y_target_l, d_real_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
+    target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
+    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay=0)
+    delta = record['counts'] - target
+    # delta_min1W = record['counts_prev'] - target
+    return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
+
+
+def calculate_weekHCHPend(project, HC_HPend_l):
+    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='', font_color='green', id=None)
+
+
+def calculate_weeknerr(project, n_err):
+    return dict(counts=n_err[project], counts_prev=None, title='Errors FC- BC', subtitle='', font_color='green', id=None)
 
 
 def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
@@ -1136,7 +1135,7 @@ def from_rd(x: int, y: int) -> tuple:
 
 
 def set_date_update():
-    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%d'))
+    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
@@ -1436,3 +1435,75 @@ def rules_to_state(rules_list, state_list):
         axis=1
     )
     return state
+
+
+def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
+    """
+    This function counts the wait between toestemming datum and now (or a reference date, based on time_delta_days).
+    It only considers houses which are not connected yet.
+    :param df:
+    :param time_delta_days:
+    :return:
+    """
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    toestemming_df = df[
+        (
+                df.opleverdatum.isna() |
+                (
+                        df.opleverdatum >= time_point
+                )
+        ) &
+        (
+            ~df.toestemming.isna()
+        )][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+
+    toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
+    toestemming_df['bins'] = pd.cut(toestemming_df.waiting_time,
+                                    bins=[-np.inf, 0, 8, 12, np.inf],
+                                    labels=['before_order', 'on_time', 'limited_time', 'late'])
+    return toestemming_df
+
+
+def count_toestemming(toestemming_df):
+    toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
+    counts = toestemming_df.counts.value_counts()
+    return counts
+
+
+def wait_bin_cluster_redenna(toestemming_df):
+    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
+        by=['bins', 'cluster_redenna']).count()
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
+    return wait_bin_cluster_redenna_df
+
+
+def calculate_projectindicators_tmobile(df: pd.DataFrame):
+    title = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                         data=['Order op tijd', 'Order nog beperkte tijd', 'Order op tijd', ''],
+                         columns=['title'])
+    subtitle = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                            data=['< 8 weken', '> 8 weken < 12 weken', '> 12 weken', ''],
+                            columns=['subtitle'])
+    font_color = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
+                              data=['green', 'orange', 'red', ''],
+                              columns=['font_color'])
+
+    counts_by_project = {}
+    for project, project_df in df.groupby(by='project'):
+        toestemming_df = wait_bins(project_df)
+        toestemming_df_prev = wait_bins(project_df, time_delta_days=7)
+
+        counts = count_toestemming(toestemming_df)
+        counts_prev = count_toestemming(toestemming_df_prev)
+
+        counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev").join(
+            title).join(subtitle).join(font_color)
+        counts_by_project[project] = counts_df.to_dict(orient='index')
+
+        wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
+        for index, grouped_df in wait_bin_cluster_redenna_df.groupby('bins'):
+            counts_by_project[project][index]['cluster_redenna'] = \
+                grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
+
+    return counts_by_project

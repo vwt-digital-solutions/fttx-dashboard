@@ -43,7 +43,7 @@ def write_records_to_fs(records, collection_name, primary_key=None):
             logging.info(f'Write {i} message(s) to the firestore')
     batch.commit()
     db.collection('Graphs').document('update_date_consume').set(dict(
-        id='update_date_consume', date=datetime.now().strftime('%Y-%m-%d')))
+        id='update_date_consume', date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
     logging.info(f'Writing message to {collection_name} finished')
 
 
@@ -53,7 +53,7 @@ def create_log(key, value, record, record_fs=None):
         'key': key,
         'from_value': record_fs[key] if record_fs else 'First entry',
         'to_value': record[key],
-        'date': datetime.now().strftime('%Y-%m-%d'),
+        'date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
         'project': record[value['project']]
     }
 
@@ -77,7 +77,7 @@ def prepare_records(records):
                 if value in record_fs:
                     record[value] = record_fs[value]
                 elif '1' in str(record[key]):
-                    record[value] = datetime.now().strftime('%Y-%m-%d')
+                    record[value] = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
             # add transition log if the status changed
             for key, value in status_change_columns.items():
@@ -92,7 +92,7 @@ def prepare_records(records):
                 updated_log.append(create_log(key, value, record))
             for key, value in history_columns.items():
                 if '1' in str(record[key]):
-                    record[value] = datetime.now().strftime('%Y-%m-%d')
+                    record[value] = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
         updated_records.append(record)
 

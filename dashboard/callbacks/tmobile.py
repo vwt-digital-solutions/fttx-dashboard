@@ -1,15 +1,18 @@
 import dash
 from app import app
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 from data import collection
 from data.data import completed_status_counts, redenna_by_completed_status, has_planning_by
 from layout.components.global_info_list import global_info_list
 from layout.components.graphs import pie_chart, completed_status_counts_bar
 from layout.pages.tmobile import project_view, new_component
+import dash_bootstrap_components as dbc
+from layout.components.figure import figure
+from layout.components.indicator import indicator
 from layout.components import redenna_status_pie
 from data.graph import pie_chart as original_pie_chart
-
 from config import colors_vwt as colors
 
 client = "tmobile"
@@ -85,7 +88,7 @@ def load_week_overview(dummy_data):
 
 @app.callback(
     [
-        Output(component_id=f"{client}-overview", component_property='style')
+        Output(f"{client}-overview", 'style')
     ],
     [
         Input(f'project-dropdown-{client}', 'value')
@@ -99,8 +102,7 @@ def tmobile_overview(dropdown_selection):
 
 @app.callback(
     [
-        Output(component_id=f"{client}-project-view", component_property='style'),
-        Output(f"{client}-project-view", "children")
+        Output(f"{client}-project-view", 'style'),
     ],
     [
         Input(f'project-dropdown-{client}', 'value')
@@ -114,7 +116,91 @@ def tmobile_project_view(dropdown_selection):
 
 @app.callback(
     [
-        Output(component_id=f"project-dropdown-{client}", component_property='value')
+        Output("modal-sm", "is_open"),
+        Output(f"indicator-modal-{client}", 'figure')
+    ],
+    [
+        Input(f"indicator-late-{client}", "n_clicks"),
+        Input(f"indicator-limited_time-{client}", "n_clicks"),
+        Input(f"indicator-on_time-{client}", "n_clicks"),
+        Input("close-sm", "n_clicks"),
+    ],
+    [
+        State("modal-sm", "is_open"),
+        State(f"indicator-data-{client}", "data")
+    ]
+)
+def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result):
+    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
+    print(changed_id)
+    if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
+        key = changed_id.partition("-")[-1].partition("-")[0]
+        print(key)
+        figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
+                                    values=list(result[key]['cluster_redenna'].values()),
+                                    title="Reden na",
+                                    colors=[
+                                        colors['green'],
+                                        colors['yellow'],
+                                        colors['red'],
+                                        colors['vwt_blue'],
+                                    ])
+
+        return [not is_open, figure]
+
+    if close_clicks:
+        return [not is_open, {'data': None, 'layout': None}]
+    return [is_open, {'data': None, 'layout': None}]
+
+
+@app.callback(
+    [
+        Output(f"indicators-{client}", "children"),
+        Output(f"indicator-data-{client}", 'data')
+    ],
+    [
+        Input(f'project-dropdown-{client}', 'value')
+    ]
+)
+def update_indicators(dropdown_selection):
+    if dropdown_selection is None:
+        raise PreventUpdate
+
+    indicator_types = ['late', 'limited_time', 'on_time']
+    indicators = collection.get_document(collection="Data",
+                                         graph_name="project_indicators",
+                                         project=dropdown_selection,
+                                         client=client)
+    indicator_info = [indicator(value=indicators[el]['counts'],
+                                previous_value=indicators[el]['counts_prev'],
+                                title=indicators[el]['title'],
+                                sub_title=indicators[el]['subtitle'],
+                                font_color=indicators[el]['font_color'],
+                                id=f"indicator-{el}-{client}") for el in indicator_types]
+    indicator_info = indicator_info + [
+                                        dbc.Modal(
+                                            [
+                                                dbc.ModalBody(
+                                                    figure(graph_id=f"indicator-modal-{client}",
+                                                           className="",
+                                                           figure={'data': None, 'layout': None})
+                                                ),
+                                                dbc.ModalFooter(
+                                                    dbc.Button("Close", id="close-sm", className="ml-auto")
+                                                ),
+                                            ],
+                                            id="modal-sm",
+                                            size="lg",
+                                            centered=True,
+                                        )
+                                        ]
+
+    return [indicator_info, indicators]
+
+
+@app.callback(
+    [
+        Output(f"project-dropdown-{client}", 'value')
     ],
     [
         Input(f'overzicht-button-{client}', 'n_clicks')
@@ -204,9 +290,12 @@ def update_redenna_status_clicks(click_filter, project_name):
     [Input(f'week-overview-{client}', 'clickData'),
      Input(f'month-overview-{client}', 'clickData'),
      Input(f'overview-reset-{client}', 'n_clicks')
-     ]
+     ],
+    [
+        State(f'pie_chart_overview_{client}', 'figure')
+    ]
 )
-def display_click_data(week_click_data, month_click_data, reset):
+def display_click_data(week_click_data, month_click_data, reset, original_figure):
     ctx = dash.callback_context
     first_day_of_period = ""
     period = ""
@@ -214,14 +303,16 @@ def display_click_data(week_click_data, month_click_data, reset):
         for trigger in ctx.triggered:
             period, _, _ = trigger['prop_id'].partition("-")
             if period == "overview":
-                return original_pie_chart(f'{client}')
+                return original_pie_chart(client)
+            if trigger['value']['points'][0]['curveNumber'] != 1:
+                return original_figure
             for point in trigger['value']['points']:
                 first_day_of_period = point['customdata']
                 break
             break
 
         redenna_by_period = collection.get_document(collection="Data",
-                                                    client=f"{client}",
+                                                    client=client,
                                                     graph_name=f"redenna_by_{period}")
 
         fig = pie_chart.get_html(labels=list(redenna_by_period.get(first_day_of_period, dict()).keys()),
@@ -235,4 +326,4 @@ def display_click_data(week_click_data, month_click_data, reset):
                                  ])
 
         return fig
-    return original_pie_chart(f'{client}')
+    return original_pie_chart(client)
