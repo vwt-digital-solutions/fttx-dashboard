@@ -52,7 +52,7 @@ def get_html(client):
 def get_search_bar(client):
     return [
                 html.Div(
-                    [dcc.Dropdown(id='project-dropdown',
+                    [dcc.Dropdown(id=f'project-dropdown-{client}',
                                   options=collection.get_document(collection="Data", client=client,
                                                                   graph_name="project_names")['filters'],
                                   value=None)],
@@ -60,7 +60,7 @@ def get_search_bar(client):
                 ),
                 html.Div(
                     [
-                        dbc.Button('Reset overzicht', id='overview-reset',
+                        dbc.Button('Reset overzicht', id=f'overview-reset-{client}',
                                    n_clicks=0,
                                    style={"margin-left": "10px",
                                           "margin-right": "55px",

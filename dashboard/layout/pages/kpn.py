@@ -19,7 +19,7 @@ def get_body():
                       data=None),
             header("Status projecten KPN in 2020"),
             html.Div(
-                id="tmobile-overview",
+                id=f"{client}-overview",
                 children=overview.get_html(client),
             ),
             html.Div(
