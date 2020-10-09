@@ -7,7 +7,7 @@ from data import collection
 from data.data import completed_status_counts, redenna_by_completed_status, has_planning_by
 from layout.components.global_info_list import global_info_list
 from layout.components.graphs import pie_chart, completed_status_counts_bar
-from layout.pages.tmobile import project_view, new_component
+from layout.pages.tmobile import new_component
 import dash_bootstrap_components as dbc
 from layout.components.figure import figure
 from layout.components.indicator import indicator
@@ -110,8 +110,8 @@ def tmobile_overview(dropdown_selection):
 )
 def tmobile_project_view(dropdown_selection):
     if dropdown_selection:
-        return [{'display': 'block'}, project_view.get_html(f"{client}")]
-    return [{'display': 'none'}, project_view.get_html(f"{client}")]
+        return [{'display': 'block'}]
+    return [{'display': 'none'}]
 
 
 @app.callback(
