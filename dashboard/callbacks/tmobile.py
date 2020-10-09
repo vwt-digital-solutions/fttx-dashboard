@@ -19,10 +19,10 @@ client = "tmobile"
 
 @app.callback(
     [
-        Output("tmobile-overview", 'style')
+        Output(f"{client}-overview", 'style')
     ],
     [
-        Input('project-dropdown-tmobile', 'value')
+        Input(f'project-dropdown-{client}', 'value')
     ]
 )
 def tmobile_overview(dropdown_selection):
@@ -33,10 +33,10 @@ def tmobile_overview(dropdown_selection):
 
 @app.callback(
     [
-        Output("tmobile-project-view", 'style'),
+        Output(f"{client}-project-view", 'style'),
     ],
     [
-        Input('project-dropdown-tmobile', 'value')
+        Input(f'project-dropdown-{client}', 'value')
     ]
 )
 def tmobile_project_view(dropdown_selection):
@@ -51,9 +51,9 @@ def tmobile_project_view(dropdown_selection):
         Output(f"indicator-modal-{client}", 'figure')
     ],
     [
-        Input("indicator-late-t-mobile", "n_clicks"),
-        Input("indicator-limited_time-t-mobile", "n_clicks"),
-        Input("indicator-on_time-t-mobile", "n_clicks"),
+        Input(f"indicator-late-{client}", "n_clicks"),
+        Input(f"indicator-limited_time-{client}", "n_clicks"),
+        Input(f"indicator-on_time-{client}", "n_clicks"),
         Input("close-sm", "n_clicks"),
     ],
     [
@@ -86,11 +86,11 @@ def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clic
 
 @app.callback(
     [
-        Output("indicators-t-mobile", "children"),
+        Output(f"indicators-{client}", "children"),
         Output(f"indicator-data-{client}", 'data')
     ],
     [
-        Input('project-dropdown-tmobile', 'value')
+        Input(f'project-dropdown-{client}', 'value')
     ]
 )
 def update_indicators(dropdown_selection):
@@ -131,10 +131,10 @@ def update_indicators(dropdown_selection):
 
 @app.callback(
     [
-        Output("project-dropdown-tmobile", 'value')
+        Output(f"project-dropdown-{client}", 'value')
     ],
     [
-        Input('overzicht-button-tmobile', 'n_clicks')
+        Input(f'overzicht-button-{client}', 'n_clicks')
     ]
 )
 def tmobile_overview_button(_):
@@ -143,15 +143,15 @@ def tmobile_overview_button(_):
 
 @app.callback(
     [
-        Output('status-count-filter-t-mobile', 'data')
+        Output(f'status-count-filter-{client}', 'data')
     ],
     [
-        Input('status-counts-laagbouw-t-mobile', 'clickData'),
-        Input('status-counts-hoogbouw-t-mobile', 'clickData'),
+        Input(f'status-counts-laagbouw-{client}', 'clickData'),
+        Input(f'status-counts-hoogbouw-{client}', 'clickData'),
         Input('overview-reset', 'n_clicks')
     ],
     [
-        State('status-count-filter-t-mobile', "data")
+        State(f'status-count-filter-{client}', "data")
     ]
 )
 def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_filter):
@@ -173,12 +173,12 @@ def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_
 
 @app.callback(
     [
-        Output('status-counts-laagbouw-t-mobile', 'figure'),
-        Output('status-counts-hoogbouw-t-mobile', 'figure')
+        Output(f'status-counts-laagbouw-{client}', 'figure'),
+        Output(f'status-counts-hoogbouw-{client}', 'figure')
     ],
     [
-        Input('status-count-filter-t-mobile', 'data'),
-        Input('project-dropdown-tmobile', 'value')
+        Input(f'status-count-filter-{client}', 'data'),
+        Input(f'project-dropdown-{client}', 'value')
     ]
 )
 def update_graphs_using_status_clicks(click_filter, project_name):
@@ -194,11 +194,11 @@ def update_graphs_using_status_clicks(click_filter, project_name):
 
 @app.callback(
     [
-        Output('redenna_project_t-mobile', 'figure')
+        Output(f'redenna_project_{client}', 'figure')
     ],
     [
-        Input('status-count-filter-t-mobile', 'data'),
-        Input('project-dropdown-tmobile', 'value')
+        Input(f'status-count-filter-{client}', 'data'),
+        Input(f'project-dropdown-{client}', 'value')
     ]
 )
 def update_redenna_status_clicks(click_filter, project_name):
@@ -217,13 +217,13 @@ def update_redenna_status_clicks(click_filter, project_name):
 
 
 @app.callback(
-    Output('pie_chart_overview_t-mobile', 'figure'),
+    Output(f'pie_chart_overview_{client}', 'figure'),
     [Input('week-overview', 'clickData'),
      Input('month-overview', 'clickData'),
      Input('overview-reset', 'n_clicks')
      ],
     [
-        State('pie_chart_overview_t-mobile', 'figure')
+        State(f'pie_chart_overview_{client}', 'figure')
     ]
 )
 def display_click_data(week_click_data, month_click_data, reset, original_figure):
@@ -234,7 +234,7 @@ def display_click_data(week_click_data, month_click_data, reset, original_figure
         for trigger in ctx.triggered:
             period, _, _ = trigger['prop_id'].partition("-")
             if period == "overview":
-                return original_pie_chart('t-mobile')
+                return original_pie_chart(client)
             if trigger['value']['points'][0]['curveNumber'] != 1:
                 return original_figure
             for point in trigger['value']['points']:
@@ -243,7 +243,7 @@ def display_click_data(week_click_data, month_click_data, reset, original_figure
             break
 
         redenna_by_period = collection.get_document(collection="Data",
-                                                    client="t-mobile",
+                                                    client=client,
                                                     graph_name=f"redenna_by_{period}")
 
         fig = pie_chart.get_html(labels=list(redenna_by_period.get(first_day_of_period, dict()).keys()),
@@ -257,4 +257,4 @@ def display_click_data(week_click_data, month_click_data, reset, original_figure
                                  ])
 
         return fig
-    return original_pie_chart('t-mobile')
+    return original_pie_chart(client)
