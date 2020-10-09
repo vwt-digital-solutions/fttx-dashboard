@@ -1490,9 +1490,7 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
     font_color = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
                               data=['green', 'orange', 'red', ''],
                               columns=['font_color'])
-    id_ = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
-                       data=["indicator-on_time-tmobile", "indicator-limited_time-tmobile", "indicator-late-tmobile", ''],
-                       columns=['id_'])
+
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):
         toestemming_df = wait_bins(project_df)
@@ -1502,7 +1500,7 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
         counts_prev = count_toestemming(toestemming_df_prev)
 
         counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev").join(
-            title).join(subtitle).join(font_color).join(id_)
+            title).join(subtitle).join(font_color)
         counts_by_project[project] = counts_df.to_dict(orient='index')
 
         wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
