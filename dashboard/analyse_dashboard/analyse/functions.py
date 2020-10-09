@@ -1491,7 +1491,7 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                               data=['green', 'orange', 'red', ''],
                               columns=['font_color'])
     id_ = pd.DataFrame(index=['on_time', 'limited_time', 'late', 'before_order'],
-                       data=["indicator-on_time-t-mobile", "indicator-limited_time-t-mobile", "indicator-late-t-mobile", ''],
+                       data=["indicator-on_time-tmobile", "indicator-limited_time-tmobile", "indicator-late-tmobile", ''],
                        columns=['id_'])
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):

@@ -9,6 +9,8 @@ import config
 
 colors = config.colors_vwt
 
+client = "tmobile"
+
 
 # APP LAYOUT
 def get_body():
@@ -17,14 +19,14 @@ def get_body():
             header("Status projecten T-Mobile in 2020"),
 
             html.Div(
-                id="tmobile-overview",
-                children=overview.get_html("t-mobile"),
+                id=f"{client}-overview",
+                children=overview.get_html(client),
             ),
             html.Div(
                 [
                     html.Div(
-                        [dcc.Dropdown(id='project-dropdown-tmobile',
-                                      options=collection.get_document(collection="Data", client="t-mobile",
+                        [dcc.Dropdown(id=f'project-dropdown-{client}',
+                                      options=collection.get_document(collection="Data", client=client,
                                                                       graph_name="project_names")['filters'],
                                       value=None)],
                         className="two-third column",
@@ -41,7 +43,7 @@ def get_body():
                     html.Div(
                         [
                             dbc.Button('Terug naar overzicht alle projecten',
-                                       id='overzicht-button-tmobile',
+                                       id=f'overzicht-button-{client}',
                                        style={'background-color': colors['vwt_blue']})
                         ],
                         className="one-third column",
@@ -56,8 +58,8 @@ def get_body():
             ),
             html.Div(
                 style={'display': 'none'},
-                id="tmobile-project-view",
-                children=project_view.get_html("", 't-mobile'),
+                id=f"{client}-project-view",
+                children=project_view.get_html("", client),
             ),
         ],
         id="mainContainer",
