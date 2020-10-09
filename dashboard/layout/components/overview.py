@@ -46,6 +46,10 @@ def get_html(client):
                              graph_id=f"pie_chart_overview_{client}",
                              figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
         ),
+        html.Div(
+            get_performance(client),
+            className="container-display",
+        ),
     ]
 
 
@@ -84,7 +88,7 @@ def get_performance(client):
     print(f'CLIENT: {client}')
     return [
                 figure(container_id="graph_speed_c",
-                       graph_id=f"project_performance_{client}",
+                       graph_id=f"project-performance-{client}",
                        figure=collection.get_graph(client=client,
                                                    graph_name="project_performance")),
                 html.Div([

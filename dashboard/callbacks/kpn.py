@@ -15,19 +15,10 @@ from app import app
 # update value dropdown given selection in scatter chart
 from data.graph import pie_chart, clickbar_lb, clickbar_hb
 from data import collection
+
 # from data.graph import info_table as graph_info_table
 
 client = 'kpn'
-
-
-@app.callback(
-    [Output("project-dropdown", 'value'),
-     ],
-    [Input("project_performance", 'clickData'),
-     ]
-)
-def update_dropdown(value):
-    return [value['points'][0]['text']]
 
 
 # update graphs
@@ -244,7 +235,7 @@ def FTU_table_editable(ww):
         # Output('info_globaal_container5_text', 'children'),
         # Output('graph_targets_M', 'figure'),
         # Output('graph_targets_W', 'figure'),
-        Output('project_performance_kpn', 'figure'),
+        Output('project-performance-kpn', 'figure'),
     ],
     [
         Input('table_FTU_kpn', 'data'),
