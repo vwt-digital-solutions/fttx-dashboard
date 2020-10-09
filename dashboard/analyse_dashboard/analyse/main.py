@@ -36,7 +36,7 @@ def analyse(request):
         if ((datetime.now() - latest_consume) > timedelta(minutes=5)) and (latest_analysis < latest_consume):
             publish_project_data(request, 'kpn')
             analyseKPN('kpn')
-            analyseTmobile('t-mobile')
+            analyseTmobile('tmobile')
             set_date_update()
             analyseDFN('dfn')
             publish_project_data(request, 'dfn')
