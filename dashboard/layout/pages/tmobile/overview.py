@@ -38,8 +38,8 @@ def get_html(client):
             className="container-display",
             children=[figure(graph_id="month-overview", figure=new_component.get_html_overview(has_planning_by('month', client))),
                       figure(graph_id="week-overview", figure=new_component.get_html_overview(has_planning_by('week', client))),
-                      figure(container_id="pie_chart_overview_t-mobile_container",
-                             graph_id="pie_chart_overview_t-mobile",
-                             figure=pie_chart('t-mobile'))]
+                      figure(container_id=f"pie_chart_overview_{client}_container",
+                             graph_id=f"pie_chart_overview_{client}",
+                             figure=pie_chart(client))]
         ),
     ]

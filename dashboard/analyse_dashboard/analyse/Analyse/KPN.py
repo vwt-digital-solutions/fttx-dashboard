@@ -5,7 +5,8 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
-    info_table, analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht
+    analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
+    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
 import pandas as pd
 
 import logging
@@ -95,14 +96,13 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
         self._prognose()
-        # self._set_input_fields()
         self._targets()
         self._performance_matrix()
         self._prognose_graph()
         self._overview()
         self._calculate_graph_overview()
         self._jaaroverzicht()
-        self._info_table()
+        self._calculate_project_indicators()
         self._analysis_documents()
         self._set_filters()
 
@@ -148,20 +148,6 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('x_prog', results.x_prog, IntRecord, 'Data')
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
-
-    # def _set_input_fields(self):
-    #     logger.info("Setting input fields for KPN")
-    #     self.record_dict.add("analysis",
-    #                          dict(FTU0=self.extracted_data.ftu['date_FTU0'],
-    #                               FTU1=self.extracted_data.ftu['date_FTU1']),
-    #                          Record,
-    #                          "Data")
-
-    #     # TODO is this document still needed? Is the timeline document used instead?
-    #     self.record_dict.add("x_d",
-    #                          self.intermediate_results.timeline,
-    #                          DateRecord,
-    #                          collection="Data")
 
     def _targets(self):
         logger.info("Calculating targets for KPN")
@@ -244,12 +230,6 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
-    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
-    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
-    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
-    #                                       client=client) if client == 'kpn' else {}  # temp fix
-    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
-    #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
         prog, target, real, plan = preprocess_for_jaaroverzicht(
@@ -265,18 +245,44 @@ class KPNAnalyse(FttXAnalyse):
         )
         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
-    def _info_table(self):
-        record = info_table(
-            self.intermediate_results.total_objects,
-            self.intermediate_results.d_real_l,
-            self.transformed_data.planning,
-            self.intermediate_results.y_target_l,
-            self.intermediate_results.timeline,
-            self.intermediate_results.HC_HPend_l,
-            self.intermediate_results.Schouw_BIS,
-            self.intermediate_results.HPend_l,
-            self.intermediate_results.n_err)
-        self.record_dict.add('info_table', record, Record, 'Graphs')
+    def _calculate_project_indicators(self):
+        logger.info("Calculating project indicators")
+        projects = self.transformed_data.df.project.unique().to_list()
+        record = {}
+        for project in projects:
+            project_indicators = {}
+            project_indicators['weektarget'] = calculate_weektarget(
+                project,
+                self.intermediate_results.y_target_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline)
+            project_indicators['weekrealisatie'] = calculate_weekrealisatie(
+                project,
+                self.intermediate_results.d_real_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline,
+                delay=0)  # in weeks
+            project_indicators['vorigeweekrealisatie'] = calculate_weekrealisatie(
+                project,
+                self.intermediate_results.d_real_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline,
+                delay=-1)  # in weeks
+            project_indicators['weekdelta'] = calculate_weekdelta(
+                project,
+                self.intermediate_results.y_target_l,
+                self.intermediate_results.d_real_l,
+                self.intermediate_results.total_objects,
+                self.intermediate_results.timeline)
+            project_indicators['weekHCHPend'] = calculate_weekHCHPend(
+                project,
+                self.intermediate_results.HC_HPend_l)
+            project_indicators['weeknerr'] = calculate_weeknerr(
+                project,
+                self.intermediate_results.n_err)
+            record[project] = project_indicators
+        graph_name = 'project_indicators'
+        self.record_dict.add(graph_name, record, DictRecord, 'Data')
 
     def _analysis_documents(self):
         doc1, doc2, doc3 = analyse_documents(self.transformed_data.ftu['date_FTU0'],

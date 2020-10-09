@@ -109,6 +109,11 @@ def get_body():
                 className="container-display",
             ),
             html.Div(
+                id='indicators-kpn',
+                className="container-display",
+                hidden=True,
+            ),
+            html.Div(
                 [
                     html.Div(
                         [dcc.Graph(id="graph_prog")],
@@ -138,22 +143,6 @@ def get_body():
                 id="main_graphs",
                 className="container-display",
             ),
-            html.Div(
-                [
-                    html.Div(
-                        id='table_info',
-                        className="pretty_container column",
-                        hidden=True,
-                    ),
-
-                ],
-                id="main_graphs",
-                className="container-display",
-            ),
-            # html.Div(
-            #     [dbc.Button('Project details [eerste 3000 resultaten]', id='detail_button')],
-            #     className="one-third column"
-            # ),
             html.Div(
                 [
                     html.Div(

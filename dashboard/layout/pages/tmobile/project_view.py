@@ -38,7 +38,7 @@ def get_html(project_name, client):
         dcc.Store(id=f"indicator-data-{client}"),
         html.Div(
             className="container-display",
-            id=f"quality-measures-{client}"
+            id=f"indicators-{client}"
         ),
         html.Div(
             className="container-display",
@@ -49,8 +49,8 @@ def get_html(project_name, client):
                 figure(figure=hoogbouw_fig,
                        container_id=f"status-counts-hoogbouw-{client}-container",
                        graph_id=f"status-counts-hoogbouw-{client}"),
-                figure(container_id="redenna_project_t-mobile_container",
-                       graph_id="redenna_project_t-mobile",
+                figure(container_id=f"redenna_project_{client}_container",
+                       graph_id=f"redenna_project_{client}",
                        figure=redenna_pie)
             ]
         )

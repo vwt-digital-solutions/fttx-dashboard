@@ -76,7 +76,7 @@ class TMobilePickleETL(PickleExtract, TMobileETL):
     pass
 
 
-client_name = "t-mobile"
+client_name = "tmobile"
 tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
 tmobile.perform()
 logging.info("T-mobile Done")
