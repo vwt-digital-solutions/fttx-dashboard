@@ -113,7 +113,10 @@ class FttXTransform(Transform):
         datums = [col for col in self.transformed_data.df.columns if "datum" in col]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(pd.to_datetime,
                                                                                   infer_datetime_format=True,
-                                                                                  errors="coerce")
+                                                                                  errors="coerce",
+                                                                                  utc=True)
+
+        self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
 
     def _add_columns(self):
         logger.info("Adding columns to dataframe")
