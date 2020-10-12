@@ -5,6 +5,9 @@
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
+
+from data.data import redenna_by_completed_status
+from layout.components import redenna_status_pie
 from layout.components.indicator import indicator
 
 import pandas as pd
@@ -13,8 +16,9 @@ import pandas as pd
 from app import app
 
 # update value dropdown given selection in scatter chart
-from data.graph import pie_chart, clickbar_lb, clickbar_hb
+from data.graph import clickbar_lb, clickbar_hb
 from data import collection
+from config import colors_vwt as colors
 
 client = 'kpn'
 
@@ -127,10 +131,17 @@ def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
         mask_all = '0'
     barLB = clickbar_lb(drop_selectie, mask_all)
     barHB = clickbar_hb(drop_selectie, mask_all)
-    pieNA = pie_chart(client='kpn', key=drop_selectie)
+    redenna_counts = redenna_by_completed_status(drop_selectie, client=client)
+    redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+                                             title="Opgegeven reden na",
+                                             colors=[
+                                                 colors['vwt_blue'],
+                                                 colors['yellow'],
+                                                 colors['red'],
+                                                 colors['green']
+                                             ])
 
-    # return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
-    return [barLB, barHB, pieNA, mask_all, drop_selectie]
+    return [barLB, barHB, redenna_pie, mask_all, drop_selectie]
 
 
 # update FTU table for editing
