@@ -24,8 +24,8 @@ def get_html(client):
                 figure(figure=no_graph(title="Status oplevering per fase (HB)", text='Loading...'),
                        container_id=f"status-counts-hoogbouw-{client}-container",
                        graph_id=f"status-counts-hoogbouw-{client}"),
-                figure(container_id="redenna_project_tmobile_container",
-                       graph_id="redenna_project_tmobile",
+                figure(container_id=f"redenna_project_{client}_container",
+                       graph_id=f"redenna_project_{client}",
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))
             ]
         )

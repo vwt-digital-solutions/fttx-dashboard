@@ -1,5 +1,7 @@
 import dash
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
+from dash.exceptions import PreventUpdate
+
 from data.graph import pie_chart as original_pie_chart
 from layout.components.graphs import pie_chart
 from app import app
@@ -125,12 +127,9 @@ for client in config.client_config.keys():
         [Input(f'week-overview-{client}', 'clickData'),
          Input(f'month-overview-{client}', 'clickData'),
          Input(f'overview-reset-{client}', 'n_clicks')
-         ],
-        [
-            State(f'pie_chart_overview_{client}', 'figure')
-        ]
+         ]
     )
-    def display_click_data(week_click_data, month_click_data, reset, original_figure, client=client):
+    def display_click_data(week_click_data, month_click_data, reset, client=client):
         ctx = dash.callback_context
         first_day_of_period = ""
         period = ""
@@ -140,7 +139,7 @@ for client in config.client_config.keys():
                 if period == "overview":
                     return original_pie_chart(client)
                 if trigger['value']['points'][0]['curveNumber'] != 1:
-                    return original_figure
+                    raise PreventUpdate
                 for point in trigger['value']['points']:
                     first_day_of_period = point['customdata']
                     break
