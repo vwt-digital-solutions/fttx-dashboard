@@ -113,6 +113,12 @@ kpn._overview()
 kpn._calculate_graph_overview()
 kpn._jaaroverzicht()
 
+client_name = "dfn"
+dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
+dfn.extract()
+dfn.transform()
+dfn.analyse()
+dfn.load()
 
 # %% Test jaaroverzciht dfn
 
@@ -124,7 +130,5 @@ dfn.perform()
 # %%
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-tmobile = TMobileETL(client='t-mobile', config=config.client_config['t-mobile'])
-tmobile.perform()
-
-# %%
+kpn = KPNETL(client='kpn', config=config.client_config['kpn'])
+kpn.perform()

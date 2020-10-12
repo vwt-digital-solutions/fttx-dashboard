@@ -6,6 +6,31 @@ from data import collection
 import pandas as pd
 
 
+def no_graph(title="", text="No Data"):
+    return {
+        "layout": {
+            "xaxis": {
+                "visible": False
+            },
+            "yaxis": {
+                "visible": False
+            },
+            "annotations": [
+                {
+                    "text": text,
+                    "xref": "paper",
+                    "yref": "paper",
+                    "showarrow": False,
+                    "font": {
+                        "size": 28
+                    }
+                }
+            ],
+            'title': title
+        }
+    }
+
+
 def has_planning_by(period, client):
     has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
                                              client=client)
@@ -51,7 +76,7 @@ def redenna_by_completed_status(project_name, client, click_filter=None, ):
                                                       project=project_name,
                                                       client=client))
 
-        clusters = config.client_config['tmobile']['clusters_reden_na']
+        clusters = config.client_config[client]['clusters_reden_na']
         cluster_types = pd.CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         counts['cluster_redenna'] = counts['cluster_redenna'].astype(cluster_types)
 

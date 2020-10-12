@@ -1,23 +1,24 @@
+import dash_core_components as dcc
 import dash_html_components as html
 
 from layout.components.header import header
-from layout.pages.tmobile import project_view
 from layout.components import overview
 import config
-# import importlib
+from layout.pages.kpn import project_view
 
 colors = config.colors_vwt
 
-client = "tmobile"
-
 
 # APP LAYOUT
-def get_body(client):
-    # importlib.import_module(f"layout.pages.{client}.project_view")
+def get_body():
+    client = 'kpn'
     page = html.Div(
         [
-            header("Status projecten T-Mobile in 2020"),
-
+            dcc.Store(id="aggregate_data",
+                      data=None),
+            dcc.Store(id="aggregate_data2",
+                      data=None),
+            header("Status projecten KPN in 2020"),
             html.Div(
                 overview.get_search_bar(client),
                 className="container-display",
@@ -27,7 +28,6 @@ def get_body(client):
                 id=f"{client}-overview",
                 children=overview.get_html(client),
             ),
-            # Projectspecifieke view
             html.Div(
                 style={'display': 'none'},
                 id=f"{client}-project-view",

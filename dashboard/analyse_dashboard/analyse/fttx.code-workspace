@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../.."
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.pythonPath": "/Users/caspervanhouten/anaconda3/envs/ftx-analyse-3/bin/python"
+	}
+}

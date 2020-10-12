@@ -11,8 +11,8 @@ import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act
-
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
+from pandas.api.types import CategoricalDtype
 logger = logging.getLogger('FttX Analyse')
 
 
@@ -105,6 +105,7 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._add_columns()
+        self._cluster_reden_na()
         self._add_status_columns()
 
     def _fix_dates(self):
@@ -112,7 +113,10 @@ class FttXTransform(Transform):
         datums = [col for col in self.transformed_data.df.columns if "datum" in col]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(pd.to_datetime,
                                                                                   infer_datetime_format=True,
-                                                                                  errors="coerce")
+                                                                                  errors="coerce",
+                                                                                  utc=True)
+
+        self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
 
     def _add_columns(self):
         logger.info("Adding columns to dataframe")
@@ -130,6 +134,13 @@ class FttXTransform(Transform):
                 (self.transformed_data.df.opleverstatus != '0') &
                 (self.transformed_data.df.opleverdatum.isna())
         )
+
+    def _cluster_reden_na(self):
+        clus = self.config['clusters_reden_na']
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
+        self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
 
     def _add_status_columns(self):
         logger.info("Adding status columns to dataframe")

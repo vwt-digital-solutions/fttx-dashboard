@@ -1288,8 +1288,8 @@ def pie_chart_reden_na(df_na, clusters, key):
         df_na.loc[df_na['homes_completed'], ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
         df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
-
         df_na = df_na.groupby('cluster_redenna').size().copy()
+        document = 'pie_na_' + key
         df_na = df_na.to_frame(name='count').reset_index().copy()
         labels = df_na['cluster_redenna'].tolist()
         values = df_na['count'].tolist()
@@ -1307,7 +1307,7 @@ def pie_chart_reden_na(df_na, clusters, key):
                 ]
         }
     }
-    document = 'pie_na_' + key
+
     return data, document
 
 
@@ -1323,13 +1323,7 @@ def individual_reden_na(df: pd.DataFrame, clusters):
     record_dict = {}
     for project, df in df.groupby(by="project"):
         data, document = pie_chart_reden_na(df, clusters, project)
-        layout = get_pie_layout()
-        fig = {
-            'data': data,
-            'layout': layout
-        }
-        fig = dict(data=data, layout=layout)
-        record = dict(id=document, figure=fig)
+        record = dict(id=document, data=data)
         record_dict[document] = record
     return record_dict
 
@@ -1352,18 +1346,22 @@ def get_pie_layout():
     return layout
 
 
-def analyse_documents(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-                      df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                      Schouw_BIS, HPend_l, n_err, Schouw, BIS):
+def get_project_dates(date_FTU0, date_FTU1, y_target_l, x_prog, x_d, rc1, d_real_l):
     for key in y_target_l:
         if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
             date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
-                                           (100 / (sum(rc1.values()) / len(rc1.values())))[0]))].strftime('%Y-%m-%d')
+                                     (100 / (sum(rc1.values()) / len(rc1.values())))[0]))].strftime('%Y-%m-%d')
         if (key not in date_FTU0):  # project has finished, estimate target on what has been done
             date_FTU0[key] = x_d[d_real_l[key].index.min()].strftime('%Y-%m-%d')
             date_FTU1[key] = x_d[d_real_l[key].index.max()].strftime('%Y-%m-%d')
 
-    analysis = dict(id='analysis', FTU0=date_FTU0, FTU1=date_FTU1)
+    analysis = dict(FTU0=date_FTU0, FTU1=date_FTU1)
+    return analysis
+
+
+def analyse_documents(y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
+                      df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+                      Schouw_BIS, HPend_l, n_err, Schouw, BIS):
 
     y_prog_l_r = {}
     y_target_l_r = {}
@@ -1388,7 +1386,7 @@ def analyse_documents(date_FTU0, date_FTU1, y_target_l, rc1, x_prog, x_d, d_real
                      x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
                      Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
     analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
-    return analysis, analysis2, analysis3
+    return analysis2, analysis3
 
 
 def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum', freq: str = 'W-MON') -> dict:

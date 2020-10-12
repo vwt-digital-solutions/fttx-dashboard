@@ -5,6 +5,7 @@ from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, Pickl
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
+    get_project_dates, \
     analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
     calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
 import pandas as pd
@@ -104,6 +105,7 @@ class KPNAnalyse(FttXAnalyse):
         self._jaaroverzicht()
         self._calculate_project_indicators()
         self._analysis_documents()
+        self._calculate_project_dates()
         self._set_filters()
 
     def _error_check_FCBC(self):
@@ -284,33 +286,44 @@ class KPNAnalyse(FttXAnalyse):
         graph_name = 'project_indicators'
         self.record_dict.add(graph_name, record, DictRecord, 'Data')
 
+    def _calculate_project_dates(self):
+        project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
+                                          self.transformed_data.ftu['date_FTU1'],
+                                          self.intermediate_results.y_target_l,
+                                          self.intermediate_results.x_prog,
+                                          self.intermediate_results.timeline,
+                                          self.intermediate_results.rc1,
+                                          self.intermediate_results.d_real_l
+                                          )
+        self.record_dict.add("project_dates", project_dates, Record, "Data")
+
     def _analysis_documents(self):
-        doc1, doc2, doc3 = analyse_documents(self.transformed_data.ftu['date_FTU0'],
-                                             self.transformed_data.ftu['date_FTU1'],
-                                             self.intermediate_results.y_target_l,
-                                             self.intermediate_results.rc1,
-                                             self.intermediate_results.x_prog,
-                                             self.intermediate_results.timeline,
-                                             self.intermediate_results.d_real_l,
-                                             self.intermediate_results.df_prog,
-                                             self.intermediate_results.df_target,
-                                             self.intermediate_results.df_real,
-                                             self.intermediate_results.df_plan,
-                                             self.intermediate_results.HC_HPend,
-                                             self.intermediate_results.y_prog_l,
-                                             self.intermediate_results.total_objects,
-                                             self.transformed_data.planning,
-                                             self.intermediate_results.t_shift,
-                                             self.intermediate_results.rc2,
-                                             self.intermediate_results.cutoff,
-                                             self.intermediate_results.y_voorraad_act,
-                                             self.intermediate_results.HC_HPend_l,
-                                             self.intermediate_results.Schouw_BIS,
-                                             self.intermediate_results.HPend_l,
-                                             self.intermediate_results.n_err,
-                                             None,
-                                             None)
-        self.record_dict.add("analysis", doc1, Record, "Data")
+        doc2, doc3 = analyse_documents(
+            y_target_l=self.intermediate_results.y_target_l,
+            rc1=self.intermediate_results.rc1,
+            x_prog=self.intermediate_results.x_prog,
+            x_d=self.intermediate_results.timeline,
+            d_real_l=self.intermediate_results.d_real_l,
+            df_prog=self.intermediate_results.df_prog,
+            df_target=self.intermediate_results.df_target,
+            df_real=self.intermediate_results.df_real,
+            df_plan=self.intermediate_results.df_plan,
+            HC_HPend=self.intermediate_results.HC_HPend,
+            y_prog_l=self.intermediate_results.y_prog_l,
+            tot_l=self.intermediate_results.total_objects,
+            HP=self.transformed_data.planning,
+            t_shift=self.intermediate_results.t_shift,
+            rc2=self.intermediate_results.rc2,
+            cutoff=self.intermediate_results.cutoff,
+            y_voorraad_act=self.intermediate_results.y_voorraad_act,
+            HC_HPend_l=self.intermediate_results.HC_HPend_l,
+            Schouw_BIS=self.intermediate_results.Schouw_BIS,
+            HPend_l=self.intermediate_results.HPend_l,
+            n_err=self.intermediate_results.n_err,
+            Schouw=None,
+            BIS=None
+        )
+
         self.record_dict.add("analysis2", doc2, Record, "Data")
         self.record_dict.add("analysis3", doc3, Record, "Data")
 

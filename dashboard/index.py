@@ -1,5 +1,5 @@
 import logging
-
+import dash
 logging.basicConfig(
     format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
     level=logging.INFO)
@@ -47,6 +47,9 @@ def get_page(page):
     ]
 )
 def display_page(pathname):
+    ctx = dash.callback_context
+    print(ctx.triggered)
+    client = pathname[1:]
     logging.info(f"Display page {pathname}")
     page_body = error
     layout = default.get_layout
@@ -55,8 +58,14 @@ def display_page(pathname):
         if pathname in config_pages[page]['link']:
             page_body = get_page(page)
             break
+    # client uit URL, toevoegen als kwarg aan layout
+    try:
+        client = pathname[1:]
+        body = page_body.get_body(client)
+    except TypeError:
+        body = page_body.get_body()
 
-    return [layout(pathname=pathname, brand="FttX", children=page_body.get_body())]
+    return [layout(pathname=pathname, brand="FttX", children=body)]
 
 
 if __name__ == "__main__":

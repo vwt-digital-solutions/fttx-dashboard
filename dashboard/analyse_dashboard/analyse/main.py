@@ -38,8 +38,8 @@ def analyse(request):
             analyseKPN('kpn')
             analyseTmobile('tmobile')
             set_date_update()
-            analyseDFN('dfn')
-            publish_project_data(request, 'dfn')
+            # analyseDFN('dfn')
+            # publish_project_data(request, 'dfn')
             return 'OK', 200
         else:
             logging.info('Analyse skipped, already up to date')

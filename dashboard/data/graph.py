@@ -147,11 +147,35 @@ def update_date():
     return min([date_an, date_con])
 
 
-def ftu_table():
-    df = pd.DataFrame(columns=['Project', 'FTU0', 'FTU1'])
-    df['Project'] = list(api.get('/Data?id=analysis')[0]['FTU0'].keys())
-    df['FTU0'] = list(api.get('/Data?id=analysis')[0]['FTU0'].values())
-    df['FTU1'] = list(api.get('/Data?id=analysis')[0]['FTU1'].values())
+def ftu_table(data):
+    if data:
+        df = pd.DataFrame(columns=['Project', 'FTU0', 'FTU1'])
+        df['Project'] = data['FTU0'].keys()
+        df['FTU0'] = data['FTU0'].values()
+        df['FTU1'] = data['FTU1'].values()
+        fig = dash_table.DataTable(
+            id='table_FTU',
+            columns=[{"name": i, "id": i} for i in df.columns],
+            data=df.to_dict("rows"),
+            filter_action="native",
+            sort_action="native",
+            style_table={'overflowX': 'auto', 'overflowY': 'auto'},
+            style_header=table_styles['header'],
+            style_cell=table_styles['cell']['action'],
+            style_filter=table_styles['filter'],
+            css=[{
+                'selector': 'table',
+                'rule': 'width: 100%;'
+            }],
+            editable=False,
+        )
+    else:
+        fig = get_dummy_table()
+    return fig
+
+
+def get_dummy_table():
+    df = pd.DataFrame(columns=['n.b.', 'n.b.', 'n.b.'])
     fig = dash_table.DataTable(
         id='table_FTU',
         columns=[{"name": i, "id": i} for i in df.columns],
