@@ -16,127 +16,15 @@ from app import app
 from data.graph import pie_chart, clickbar_lb, clickbar_hb
 from data import collection
 
-# from data.graph import info_table as graph_info_table
-
 client = 'kpn'
 
 
-# update graphs
 @app.callback(
     [
-        Output("graph_targets_W_container", 'hidden'),
-        Output("graph_targets_M_container", 'hidden'),
-        Output("info_globaal_container0", 'hidden'),
-        Output("info_globaal_container1", 'hidden'),
-        Output("info_globaal_container2", 'hidden'),
-        Output("info_globaal_container3", 'hidden'),
-        Output("info_globaal_container4", 'hidden'),
-        Output("info_globaal_container5", 'hidden'),
-        Output("info_globaal_container6", 'hidden'),
-        Output("graph_speed_c", 'hidden'),
-        Output("ww_c", 'hidden'),
-        Output('FTU_table_c', 'hidden'),
-        Output("graph_prog_c", "hidden"),
-        Output("indicators-kpn", "hidden"),
-        Output("Bar_LB_c", "hidden"),
-        Output("Bar_HB_c", "hidden"),
-        Output("pie_chart_overview_kpn_container", "hidden"),
-        Output("Pie_NA_cid", "hidden"),
-        Output("geo_plot", 'figure'),
-        Output("table_c", 'children'),
-        Output("geo_plot_c", "hidden"),
-        Output("table_c", "hidden"),
+        Output(f"indicators-{client}", 'children'),
     ],
     [
-        Input("overzicht_button", 'n_clicks'),
-        # Input("detail_button", "n_clicks")
-    ],
-    [
-        State('project-dropdown', 'value'),
-        State("aggregate_data", 'data'),
-    ],
-)
-# def update_graphs(n_o, n_d, drop_selectie, mask_all):
-def update_graphs(n_o, drop_selectie, mask_all):
-    if drop_selectie is None:
-        raise PreventUpdate
-    if n_o == -1:
-        hidden = True
-    else:
-        hidden = False
-        # n_d = 0
-    # if n_d in [1, 3, 5]:
-    #     hidden1 = False
-    #     fig = geomap_data_table(drop_selectie, mask_all)
-    # else:
-    hidden1 = True
-    fig = dict(geo={'data': None, 'layout': dict()}, table=None)
-    return [
-        hidden,  # graph_targets_overall_c
-        hidden,  # graph_targets_overallM_c
-        hidden,  # info_globaal_container0
-        hidden,  # info_globaal_container1
-        hidden,  # info_globaal_container2
-        hidden,  # info_globaal_container3
-        hidden,  # info_globaal_container4
-        hidden,  # info_globaal_container5
-        hidden,  # info_globaal_container6
-        hidden,  # graph_speed_c
-        hidden,  # ww_c
-        hidden,  # FTU_table_c
-        not hidden,  # graph_prog_c
-        not hidden,  # indicators-kpn
-        not hidden,  # Bar_LB_c
-        not hidden,  # Bar_HB_c
-        hidden,  # Pie_NA_oid
-        not hidden,  # Pie_NA_cid
-        fig['geo'],  # geo_plot
-        fig['table'],  # table_c
-        hidden1,  # geo_plot_c
-        hidden1  # table_c
-    ]
-
-
-@app.callback(
-    [
-        Output("overzicht_button", 'n_clicks'),
-    ],
-    [
-        Input('project-dropdown', 'value'),
-    ],
-)
-def update_overzicht_button(drop_selectie):
-    if drop_selectie is None:
-        raise PreventUpdate
-
-    return [-1]
-
-
-@app.callback(
-    [
-        Output("graph_prog", 'figure'),
-    ],
-    [
-        Input('project-dropdown', 'value'),
-    ],
-)
-def update_prognose_graph(drop_selectie):
-    if drop_selectie is None:
-        raise PreventUpdate
-
-    fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
-    for i, item in enumerate(fig_prog['data']):
-        fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
-
-    return [fig_prog]
-
-
-@app.callback(
-    [
-        Output("indicators-kpn", 'children'),
-    ],
-    [
-        Input('project-dropdown', 'value'),
+        Input(f'project-dropdown-{client}', 'value'),
     ],
 )
 def update_indicators(dropdown_selection):
@@ -157,6 +45,40 @@ def update_indicators(dropdown_selection):
     return [indicator_info]
 
 
+@app.callback(
+    [
+        Output("overzicht_button", 'n_clicks'),
+    ],
+    [
+        Input(f'project-dropdown-{client}', 'value'),
+    ],
+)
+def update_overzicht_button(drop_selectie):
+    if drop_selectie is None:
+        raise PreventUpdate
+
+    return [-1]
+
+
+@app.callback(
+    [
+        Output(f"graph_prog-{client}", 'figure'),
+    ],
+    [
+        Input(f'project-dropdown-{client}', 'value'),
+    ],
+)
+def update_prognose_graph(drop_selectie):
+    if drop_selectie is None:
+        raise PreventUpdate
+
+    fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
+    for i, item in enumerate(fig_prog['data']):
+        fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
+
+    return [fig_prog]
+
+
 # update click bar charts
 @app.callback(
     [
@@ -167,7 +89,7 @@ def update_indicators(dropdown_selection):
         Output("aggregate_data2", 'data'),
         # Output("detail_button", "n_clicks")
     ],
-    [Input('project-dropdown', 'value'),
+    [Input(f'project-dropdown-{client}', 'value'),
      Input("Bar_LB", 'clickData'),
      Input("Bar_HB", 'clickData'),
      ],
