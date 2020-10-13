@@ -136,6 +136,7 @@ class FttXTransform(Transform):
         )
 
     def _cluster_reden_na(self):
+        logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
         self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
         self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
