@@ -122,10 +122,10 @@ dfn.load()
 
 # %% Test jaaroverzciht dfn
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-77d2e0bd2465.json'
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-0897813ea028.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 dfn = DFNTestETL(client='dfn', config=config.client_config['dfn'])
-# dfn = DFNETL(client='dfn', config=config.client_config['dfn'])
+dfn = DFNETL(client='dfn', config=config.client_config['dfn'])
 dfn.perform()
 # %%
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'

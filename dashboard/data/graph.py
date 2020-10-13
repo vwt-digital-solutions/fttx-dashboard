@@ -147,14 +147,14 @@ def update_date():
     return min([date_an, date_con])
 
 
-def ftu_table(data):
+def ftu_table(data, client):
     if data:
         df = pd.DataFrame(columns=['Project', 'FTU0', 'FTU1'])
         df['Project'] = data['FTU0'].keys()
         df['FTU0'] = data['FTU0'].values()
         df['FTU1'] = data['FTU1'].values()
         fig = dash_table.DataTable(
-            id='table_FTU',
+            id=f'table_FTU_{client}',
             columns=[{"name": i, "id": i} for i in df.columns],
             data=df.to_dict("rows"),
             filter_action="native",

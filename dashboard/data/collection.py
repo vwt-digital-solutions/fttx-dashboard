@@ -1,8 +1,6 @@
-from data import api
+from data import api, data
 from urllib import parse
 import logging
-
-from data.data import no_graph
 
 
 def get_document(collection, **url_params):
@@ -17,4 +15,4 @@ def get_document(collection, **url_params):
 
 
 def get_graph(**kwargs):
-    return get_document(collection="Graphs", **kwargs).get('figure', no_graph())
+    return get_document(collection="Graphs", **kwargs).get('figure', data.no_graph())
