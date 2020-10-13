@@ -10,6 +10,7 @@ from flask_dance.contrib.azure import azure, make_azure_blueprint
 class AzureOAuth(Auth):
     def __init__(self, app, client_id, client_secret, expected_issuer, expected_audience, jwks_url, tenant,
                  session_secret, role, scopes=None):
+        logging.info("Initializing AzureOauth")
         super(AzureOAuth, self).__init__(app)
         azure_bp = make_azure_blueprint(
             client_id=client_id,
@@ -66,7 +67,7 @@ class AzureOAuth(Auth):
                 return Response(status=401)
 
             response = f(*args, **kwargs)
-            logging.info(response)
+            logging.debug(response)
             return response
         return wrap
 

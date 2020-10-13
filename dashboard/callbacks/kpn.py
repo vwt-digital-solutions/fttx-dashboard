@@ -1,10 +1,15 @@
 # from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
 # from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 # from analyse_dashboard.analyse.functions import info_table, overview
-
+import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
+
+from data.data import redenna_by_completed_status, completed_status_counts
+from layout.components import redenna_status_pie
+from layout.components.graphs import completed_status_counts_bar
+from layout.components.indicator import indicator
 
 import pandas as pd
 # import numpy as np
@@ -12,173 +17,207 @@ import pandas as pd
 from app import app
 
 # update value dropdown given selection in scatter chart
-from data.graph import pie_chart, clickbar_lb, clickbar_hb
 from data import collection
-from data.graph import info_table as graph_info_table
+from config import colors_vwt as colors
+
+client = 'kpn'
 
 
 @app.callback(
-    [Output("project-dropdown", 'value'),
-     ],
-    [Input("project_performance", 'clickData'),
-     ]
-)
-def update_dropdown(value):
-    print(value)
-    return [value['points'][0]['text']]
-
-
-# update graphs
-@app.callback(
     [
-        Output("graph_targets_W_container", 'hidden'),
-        Output("graph_targets_M_container", 'hidden'),
-        Output("info_globaal_container0", 'hidden'),
-        Output("info_globaal_container1", 'hidden'),
-        Output("info_globaal_container2", 'hidden'),
-        Output("info_globaal_container3", 'hidden'),
-        Output("info_globaal_container4", 'hidden'),
-        Output("info_globaal_container5", 'hidden'),
-        Output("info_globaal_container6", 'hidden'),
-        Output("graph_speed_c", 'hidden'),
-        Output("ww_c", 'hidden'),
-        Output('FTU_table_c', 'hidden'),
-        Output("graph_prog_c", "hidden"),
-        Output("table_info", "hidden"),
-        Output("Bar_LB_c", "hidden"),
-        Output("Bar_HB_c", "hidden"),
-        Output("pie_chart_overview_kpn_container", "hidden"),
-        Output("Pie_NA_cid", "hidden"),
-        Output("geo_plot", 'figure'),
-        Output("table_c", 'children'),
-        Output("geo_plot_c", "hidden"),
-        Output("table_c", "hidden"),
+        Output(f"indicators-{client}", 'children'),
     ],
     [
-        Input("overzicht_button", 'n_clicks'),
-        # Input("detail_button", "n_clicks")
-    ],
-    [
-        State('project-dropdown', 'value'),
-        State("aggregate_data", 'data'),
+        Input(f'project-dropdown-{client}', 'value'),
     ],
 )
-# def update_graphs(n_o, n_d, drop_selectie, mask_all):
-def update_graphs(n_o, drop_selectie, mask_all):
-    if drop_selectie is None:
+def update_indicators(dropdown_selection):
+    if dropdown_selection is None:
         raise PreventUpdate
-    if n_o == -1:
-        hidden = True
-    else:
-        hidden = False
-        # n_d = 0
-    # if n_d in [1, 3, 5]:
-    #     hidden1 = False
-    #     fig = geomap_data_table(drop_selectie, mask_all)
-    # else:
-    hidden1 = True
-    fig = dict(geo={'data': None, 'layout': dict()}, table=None)
-    return [
-        hidden,  # graph_targets_overall_c
-        hidden,  # graph_targets_overallM_c
-        hidden,  # info_globaal_container0
-        hidden,  # info_globaal_container1
-        hidden,  # info_globaal_container2
-        hidden,  # info_globaal_container3
-        hidden,  # info_globaal_container4
-        hidden,  # info_globaal_container5
-        hidden,  # info_globaal_container6
-        hidden,  # graph_speed_c
-        hidden,  # ww_c
-        hidden,  # FTU_table_c
-        not hidden,  # graph_prog_c
-        not hidden,  # table_info
-        not hidden,  # Bar_LB_c
-        not hidden,  # Bar_HB_c
-        hidden,  # Pie_NA_oid
-        not hidden,  # Pie_NA_cid
-        fig['geo'],  # geo_plot
-        fig['table'],  # table_c
-        hidden1,  # geo_plot_c
-        hidden1  # table_c
-    ]
+
+    indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
+    indicators = collection.get_document(collection="Data",
+                                         graph_name="project_indicators",
+                                         project=dropdown_selection,
+                                         client=client)
+    indicator_info = [indicator(value=indicators[el]['counts'],
+                                previous_value=indicators[el]['counts_prev'],
+                                title=indicators[el]['title'],
+                                sub_title=indicators[el]['subtitle'],
+                                font_color=indicators[el]['font_color']) for el in indicator_types]
+
+    return [indicator_info]
 
 
-# update middle-top charts given dropdown selection
 @app.callback(
     [
-        Output("graph_prog", 'figure'),
-        Output("table_info", 'children'),
         Output("overzicht_button", 'n_clicks'),
     ],
     [
-        Input('project-dropdown', 'value'),
+        Input(f'project-dropdown-{client}', 'value'),
     ],
 )
-def middle_top_graphs(drop_selectie):
+def update_overzicht_button(drop_selectie):
+    if drop_selectie is None:
+        raise PreventUpdate
+
+    return [-1]
+
+
+@app.callback(
+    [
+        Output(f"graph_prog-{client}", 'figure'),
+    ],
+    [
+        Input(f'project-dropdown-{client}', 'value'),
+    ],
+)
+def update_prognose_graph(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
     fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
-    table_info = graph_info_table()
 
-    return [fig_prog, table_info, -1]
+    return [fig_prog]
 
 
-# update click bar charts
 @app.callback(
     [
-        Output("Bar_LB", "figure"),
-        Output("Bar_HB", "figure"),
-        Output("Pie_NA_c", "figure"),
-        Output("aggregate_data", 'data'),
-        Output("aggregate_data2", 'data'),
-        # Output("detail_button", "n_clicks")
+        Output(f'status-counts-laagbouw-{client}', 'figure'),
+        Output(f'status-counts-hoogbouw-{client}', 'figure')
     ],
-    [Input('project-dropdown', 'value'),
-     Input("Bar_LB", 'clickData'),
-     Input("Bar_HB", 'clickData'),
-     ],
-    [State("aggregate_data", 'data'),
-     State("aggregate_data2", 'data'),
-     ]
+    [
+        Input(f'status-count-filter-{client}', 'data'),
+        Input(f'project-dropdown-{client}', 'value')
+    ]
 )
-def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
-    if drop_selectie is None:
-        raise PreventUpdate
+def update_graphs_using_status_clicks(click_filter, project_name):
+    if project_name:
+        status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
+        laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
+                                                       title="Status oplevering per fase (LB)")
+        hoogbouw = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
+                                                       title="Status oplevering per fase (HB & Duplex)")
+        return laagbouw, hoogbouw
+    return {'data': None, 'layout': None}, {'data': None, 'layout': None}
 
-    if (drop_selectie == filter_a) & ((cell_bar_LB is not None) | (cell_bar_HB is not None)):
-        if cell_bar_LB is not None:
-            pt_x = cell_bar_LB['points'][0]['x']
-            if cell_bar_LB['points'][0]['curveNumber'] == 0:
-                pt_cell = 'LB1'
-            if cell_bar_LB['points'][0]['curveNumber'] == 1:
-                pt_cell = 'LB1HP'
-            if cell_bar_LB['points'][0]['curveNumber'] == 2:
-                pt_cell = 'LB0'
-        if cell_bar_HB is not None:
-            pt_x = cell_bar_HB['points'][0]['x']
-            if cell_bar_HB['points'][0]['curveNumber'] == 0:
-                pt_cell = 'HB1'
-            if cell_bar_HB['points'][0]['curveNumber'] == 1:
-                pt_cell = 'HB1HP'
-            if cell_bar_HB['points'][0]['curveNumber'] == 2:
-                pt_cell = 'HB0'
-        mask_all += pt_x + pt_cell
 
-        doc = collection.get_document(collection="Data", client="kpn", graph_name="bar_names")['bar_names']
-        if mask_all not in doc:
-            mask_all = '0'
-    else:
-        mask_all = '0'
-    barLB = clickbar_lb(drop_selectie, mask_all)
-    barHB = clickbar_hb(drop_selectie, mask_all)
-    pieNA = pie_chart(client='kpn', key=drop_selectie)
+@app.callback(
+    [
+        Output(f'status-count-filter-{client}', 'data')
+    ],
+    [
+        Input(f'status-counts-laagbouw-{client}', 'clickData'),
+        Input(f'status-counts-hoogbouw-{client}', 'clickData'),
+        Input(f'overview-reset-{client}', 'n_clicks')
+    ],
+    [
+        State(f'status-count-filter-{client}', "data")
+    ]
+)
+def set_status_click_filter(laagbouw_click, hoogbouw_click, reset_button, click_filter):
+    ctx = dash.callback_context
+    if not click_filter:
+        click_filter = {}
+    if isinstance(click_filter, list):
+        click_filter = click_filter[0]
+    if ctx.triggered:
+        for trigger in ctx.triggered:
+            if trigger['prop_id'] == list(ctx.inputs.keys())[2]:
+                return [None]
 
-    # return [barLB, barHB, pieNA, mask_all, drop_selectie, 0]
-    return [barLB, barHB, pieNA, mask_all, drop_selectie]
+            for point in trigger['value']['points']:
+                category, _, cat_filter = point['customdata'].partition(";")
+                click_filter[category] = cat_filter
+                return [click_filter]
+
+
+@app.callback(
+    [
+        Output(f'redenna_project_{client}', 'figure')
+    ],
+    [
+        Input(f'status-count-filter-{client}', 'data'),
+        Input(f'project-dropdown-{client}', 'value')
+    ]
+)
+def update_redenna_status_clicks(click_filter, project_name):
+    if project_name:
+        redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter, client=client)
+        redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+                                                 title="Opgegeven reden na",
+                                                 colors=[
+                                                     colors['vwt_blue'],
+                                                     colors['yellow'],
+                                                     colors['red'],
+                                                     colors['green']
+                                                 ])
+        return [redenna_pie]
+    return [{'data': None, 'layout': None}]
+
+
+#
+# # update click bar charts
+# @app.callback(
+#     [
+#         Output("Bar_LB", "figure"),
+#         Output("Bar_HB", "figure"),
+#         Output("Pie_NA_c", "figure"),
+#         Output("aggregate_data", 'data'),
+#         Output("aggregate_data2", 'data'),
+#         # Output("detail_button", "n_clicks")
+#     ],
+#     [Input(f'project-dropdown-{client}', 'value'),
+#      Input("Bar_LB", 'clickData'),
+#      Input("Bar_HB", 'clickData'),
+#      ],
+#     [State("aggregate_data", 'data'),
+#      State("aggregate_data2", 'data'),
+#      ]
+# )
+# def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
+#     if drop_selectie is None:
+#         raise PreventUpdate
+#
+#     if (drop_selectie == filter_a) & ((cell_bar_LB is not None) | (cell_bar_HB is not None)):
+#         if cell_bar_LB is not None:
+#             pt_x = cell_bar_LB['points'][0]['x']
+#             if cell_bar_LB['points'][0]['curveNumber'] == 0:
+#                 pt_cell = 'LB1'
+#             if cell_bar_LB['points'][0]['curveNumber'] == 1:
+#                 pt_cell = 'LB1HP'
+#             if cell_bar_LB['points'][0]['curveNumber'] == 2:
+#                 pt_cell = 'LB0'
+#         if cell_bar_HB is not None:
+#             pt_x = cell_bar_HB['points'][0]['x']
+#             if cell_bar_HB['points'][0]['curveNumber'] == 0:
+#                 pt_cell = 'HB1'
+#             if cell_bar_HB['points'][0]['curveNumber'] == 1:
+#                 pt_cell = 'HB1HP'
+#             if cell_bar_HB['points'][0]['curveNumber'] == 2:
+#                 pt_cell = 'HB0'
+#         mask_all += pt_x + pt_cell
+#
+#         doc = collection.get_document(collection="Data", client="kpn", graph_name="bar_names")['bar_names']
+#         if mask_all not in doc:
+#             mask_all = '0'
+#     else:
+#         mask_all = '0'
+#     barLB = clickbar_lb(drop_selectie, mask_all)
+#     barHB = clickbar_hb(drop_selectie, mask_all)
+#     redenna_counts = redenna_by_completed_status(drop_selectie, client=client)
+#     redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+#                                              title="Opgegeven reden na",
+#                                              colors=[
+#                                                  colors['vwt_blue'],
+#                                                  colors['yellow'],
+#                                                  colors['red'],
+#                                                  colors['green']
+#                                              ])
+#
+#     return [barLB, barHB, redenna_pie, mask_all, drop_selectie]
 
 
 # update FTU table for editing
@@ -205,10 +244,10 @@ def FTU_table_editable(ww):
         # Output('info_globaal_container5_text', 'children'),
         # Output('graph_targets_M', 'figure'),
         # Output('graph_targets_W', 'figure'),
-        Output('project_performance', 'figure'),
+        Output('project-performance-kpn', 'figure'),
     ],
     [
-        Input('table_FTU', 'data'),
+        Input('table_FTU_kpn', 'data'),
     ],
 )
 def FTU_update(data):

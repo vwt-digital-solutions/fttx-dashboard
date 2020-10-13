@@ -1,5 +1,6 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
-from Analyse.Record import Record, DocumentListRecord
+from Analyse.Record import Record, DocumentListRecord, DictRecord
+from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
 import logging
@@ -29,6 +30,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_week()
         self._get_voorraadvormend()
         self._jaaroverzicht()
+        self._calculate_project_indicators()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
@@ -42,13 +44,6 @@ class TMobileAnalyse(FttXAnalyse):
                     graph_name=f"{k}_by_week")
                for k, v in counts_by_week.items()]
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
-
-    # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
-    # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
-    # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
-    #                                       client=client) if client == 'kpn' else {}  # temp fix
-    # has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
-    #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
         real, plan = preprocess_for_jaaroverzicht(
@@ -71,6 +66,14 @@ class TMobileAnalyse(FttXAnalyse):
                for k, v in self.intermediate_results.counts_by_month.items()]
         self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
+    def _calculate_project_indicators(self):
+        logger.info("Calculating project indicators")
+        counts_by_project = calculate_projectindicators_tmobile(self.transformed_data.df)
+        self.record_dict.add(key="project_indicators",
+                             collection="Data",
+                             RecordType=DictRecord,
+                             record=counts_by_project)
+
 
 class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):
     def __init__(self, **kwargs):
@@ -78,5 +81,10 @@ class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):
 
 
 class TMobileTestETL(PickleExtract, FttXTestLoad, TMobileETL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class TMobileLocalETL(PickleExtract, TMobileETL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

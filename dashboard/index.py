@@ -1,14 +1,28 @@
-import dash_core_components as dcc
-import dash_html_components as html
+import logging
+import dash
+logging.basicConfig(
+    format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
+    level=logging.INFO)
 
-from layout import default
-from app import app
-from dash.dependencies import Input, Output
-from config_pages import config_pages
-from layout.pages import error
-import importlib
-from callbacks import *  # noqa: F403, F401
+logging.info("Importing Dash components")
+import dash_core_components as dcc  # noqa: E402
+import dash_html_components as html  # noqa: E402
+from dash.dependencies import Input, Output  # noqa: E402
 
+logging.info("Importing App")
+from app import app  # noqa: E402
+
+logging.info("Imporing callbacks")
+from callbacks import *  # noqa: F403, F401, E402
+
+logging.info("Importing the rest")
+from layout import default  # noqa: E402
+from config_pages import config_pages  # noqa: E402
+from layout.pages import error  # noqa: E402
+import importlib  # noqa: E402
+
+
+logging.info("Setting base layout")
 app.layout = html.Div([
     dcc.Location(id='url', refresh=True),
     html.Div(id='page-content')
@@ -16,10 +30,12 @@ app.layout = html.Div([
 
 
 def get_page(page):
+    logging.info(f"Getting page {page}")
     try:
         page_body = importlib.import_module(f"layout.pages.{page}.{page}")
     except ImportError:
         page_body = importlib.import_module(f"layout.pages.{page}")
+    logging.info("Returning page")
     return page_body
 
 
@@ -31,6 +47,10 @@ def get_page(page):
     ]
 )
 def display_page(pathname):
+    ctx = dash.callback_context
+    print(ctx.triggered)
+    client = pathname[1:]
+    logging.info(f"Display page {pathname}")
     page_body = error
     layout = default.get_layout
 
@@ -38,9 +58,16 @@ def display_page(pathname):
         if pathname in config_pages[page]['link']:
             page_body = get_page(page)
             break
+    # client uit URL, toevoegen als kwarg aan layout
+    try:
+        client = pathname[1:]
+        body = page_body.get_body(client)
+    except TypeError:
+        body = page_body.get_body()
 
-    return [layout(pathname=pathname, brand="FttX", children=page_body.get_body())]
+    return [layout(pathname=pathname, brand="FttX", children=body)]
 
 
 if __name__ == "__main__":
+    logging.info("Starting server")
     app.run_server(debug=True)

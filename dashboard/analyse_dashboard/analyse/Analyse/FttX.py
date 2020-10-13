@@ -11,8 +11,8 @@ import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act
-
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
+from pandas.api.types import CategoricalDtype
 logger = logging.getLogger('FttX Analyse')
 
 
@@ -105,13 +105,18 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._add_columns()
+        self._cluster_reden_na()
+        self._add_status_columns()
 
     def _fix_dates(self):
         logger.info("Changing columns to datetime column if there is 'datum' in column name.")
         datums = [col for col in self.transformed_data.df.columns if "datum" in col]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(pd.to_datetime,
                                                                                   infer_datetime_format=True,
-                                                                                  errors="coerce")
+                                                                                  errors="coerce",
+                                                                                  utc=True)
+
+        self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
 
     def _add_columns(self):
         logger.info("Adding columns to dataframe")
@@ -129,6 +134,87 @@ class FttXTransform(Transform):
                 (self.transformed_data.df.opleverstatus != '0') &
                 (self.transformed_data.df.opleverdatum.isna())
         )
+
+    def _cluster_reden_na(self):
+        logger.info("Adding column cluster redenna to dataframe")
+        clus = self.config['clusters_reden_na']
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
+        self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
+
+    def _add_status_columns(self):
+        logger.info("Adding status columns to dataframe")
+        state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
+        self.transformed_data.df['false'] = False
+        has_rules_list = [
+            (
+                    self.transformed_data.df['opleverdatum'].isna() &
+                    self.transformed_data.df['hasdatum'].isna()
+            ),
+            (
+                    self.transformed_data.df['opleverdatum'].isna() &
+                    ~self.transformed_data.df['hasdatum'].isna()
+            ),
+            (
+                    (self.transformed_data.df['opleverstatus'] != '2') &
+                    (~self.transformed_data.df['opleverdatum'].isna())
+            ),
+            self.transformed_data.df['opleverstatus'] == '2'
+        ]
+        has = rules_to_state(has_rules_list, state_list)
+        geschouwd_rules_list = [
+            self.transformed_data.df['toestemming'].isna(),
+            self.transformed_data.df['false'],
+            self.transformed_data.df['false'],
+            ~self.transformed_data.df['toestemming'].isna()
+        ]
+        geschouwd = rules_to_state(geschouwd_rules_list, state_list)
+
+        bis_gereed_rules_list = [
+            (self.transformed_data.df['opleverstatus'] == '0'),
+            self.transformed_data.df['false'],
+            self.transformed_data.df['false'],
+            self.transformed_data.df['opleverstatus'] != '0'
+        ]
+        bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
+
+        laswerkdpgereed_rules_list = [
+            (self.transformed_data.df['laswerkdpgereed'] != '1'),
+            self.transformed_data.df['false'],
+            self.transformed_data.df['false'],
+            self.transformed_data.df['laswerkdpgereed'] == '1'
+        ]
+        laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
+
+        laswerkapgereed_rules_list = [
+            (self.transformed_data.df['laswerkapgereed'] != '1'),
+            self.transformed_data.df['false'],
+            self.transformed_data.df['false'],
+            self.transformed_data.df['laswerkapgereed'] == '1'
+        ]
+        laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
+
+        business_rules_list = [
+            [geschouwd, "schouw_status"],
+            [bis_gereed, "bis_status"],
+            [self.transformed_data.df['soort_bouw'] == 'Laag', "laagbouw"],
+            [laswerkdpgereed, "lasDP_status"],
+            [laswerkapgereed, "lasAP_status"],
+            [has, "HAS_status"],
+
+        ]
+        neccesary_info_list = [
+            [self.transformed_data.df['sleutel'], "sleutel"],
+        ]
+
+        series_list = business_rules_list + neccesary_info_list
+
+        cols, colnames = list(zip(*series_list))
+        status_df = pd.concat(cols, axis=1)
+        status_df.columns = colnames
+        self.transformed_data.df.drop('false', inplace=True, axis=1)
+        self.transformed_data.df = pd.merge(self.transformed_data.df, status_df, on="sleutel", how="left")
 
 
 class FttXAnalyse(FttXBase):
@@ -183,79 +269,10 @@ class FttXAnalyse(FttXBase):
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
 
-        def _calculate_status_df(df):
-            state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
-            df['false'] = False
-            has_rules_list = [
-                (
-                        df['opleverdatum'].isna() &
-                        df['hasdatum'].isna()
-                ),
-                (
-                        df['opleverdatum'].isna() &
-                        ~df['hasdatum'].isna()
-                ),
-                (
-                        (df['opleverstatus'] != '2') &
-                        (~df['opleverdatum'].isna())
-                ),
-                df['opleverstatus'] == '2'
-            ]
-            has = rules_to_state(has_rules_list, state_list)
-            geschouwd_rules_list = [
-                df['toestemming'].isna(),
-                df['false'],
-                df['false'],
-                ~df['toestemming'].isna()
-            ]
-            geschouwd = rules_to_state(geschouwd_rules_list, state_list)
-
-            bis_gereed_rules_list = [
-                (df['opleverstatus'] == '0'),
-                df['false'],
-                df['false'],
-                df['opleverstatus'] != '0'
-            ]
-            bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
-
-            laswerkdpgereed_rules_list = [
-                (df['laswerkdpgereed'] != '1'),
-                df['false'],
-                df['false'],
-                df['laswerkdpgereed'] == '1'
-            ]
-            laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
-
-            laswerkapgereed_rules_list = [
-                (df['laswerkapgereed'] != '1'),
-                df['false'],
-                df['false'],
-                df['laswerkapgereed'] == '1'
-            ]
-            laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
-
-            business_rules_list = [
-                [geschouwd, "geschouwd"],
-                [bis_gereed, "bis_gereed"],
-                [df['soort_bouw'] == 'Laag', "laagbouw"],
-                [laswerkdpgereed, "lasDP"],
-                [laswerkapgereed, "lasAP"],
-                [has, "HAS"],
-
-            ]
-            neccesary_info_list = [
-                [df['sleutel'], "count"],
-                [df['project'], "project"]
-            ]
-
-            series_list = business_rules_list + neccesary_info_list
-
-            cols, colnames = list(zip(*series_list))
-            status_df = pd.concat(cols, axis=1)
-            status_df.columns = colnames
-            return status_df
-
-        status_df = _calculate_status_df(self.transformed_data.df)
+        status_df: pd.DataFrame = self.transformed_data.df[['schouw_status', 'bis_status', 'laagbouw', 'lasDP_status',
+                                                            'lasAP_status', 'HAS_status', 'cluster_redenna', 'sleutel',
+                                                            'project']]
+        status_df = status_df.rename(columns={"sleutel": "count"})
         status_counts_dict = {}
         col_names = list(status_df.columns)
         for project in status_df.project.unique():
@@ -263,6 +280,7 @@ class FttXAnalyse(FttXBase):
             status_counts_dict[project] = project_status.groupby(col_names[:-2]) \
                 .count() \
                 .reset_index() \
+                .dropna() \
                 .to_dict(orient='records')
         self.record_dict.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
 
@@ -285,6 +303,7 @@ class FttXLoad(Load, FttXBase):
         super().__init__(**kwargs)
 
     def load(self):
+        logger.info("Loading documents...")
         self.record_dict.to_firestore(self.client)
 
 

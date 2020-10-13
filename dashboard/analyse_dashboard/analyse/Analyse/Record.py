@@ -48,6 +48,7 @@ class Record:
     def to_firestore(self, graph_name, client):
         document_name = self.document_name(graph_name=graph_name, client=client)
         document = firestore.Client().collection(self.collection).document(document_name)
+        logging.info(f"Set document {document_name}")
         document.set(self._to_document(graph_name, client))
 
     def document_name(self, **kwargs):
@@ -210,9 +211,11 @@ class DictRecord(Record):
     The key for the dict is used to fill the project field in the document."""
 
     def to_firestore(self, graph_name, client):
+        logging.info(f"Creating documents for {graph_name}")
         for k, v in self.record.items():
             document_name = f"{client}_{graph_name}_{k}"
             document = firestore.Client().collection(self.collection).document(document_name)
+            logging.info(f"Set document {document_name}")
             document.set(self._to_document(graph_name=graph_name, client=client, record=v, project=k))
 
     def to_table_part(self, graph_name="", client=""):

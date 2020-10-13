@@ -1,14 +1,9 @@
-from data import api
+from data import api, data
 from urllib import parse
 import logging
 
 
 def get_document(collection, **url_params):
-    # collection_result_key = {
-    #     "Graphs": "figure",
-    #     "Data": "record"
-    # }
-
     url = f"/{collection}?{parse.urlencode(url_params)}"
     result = api.get(url)
     if not result or not len(result):
@@ -16,15 +11,8 @@ def get_document(collection, **url_params):
         return {}
     if len(result) > 1:
         logging.warning(f"Query {url} resulted in {len(result)} results, only the first is returned")
-    return result[0]['record']
+    return result[0].get('record', 'n.v.t.')
 
 
 def get_graph(**kwargs):
-    return get_document(collection="Graphs", **kwargs).get('figure', {
-        'data': [
-            {'x': [1, 2, 3], 'y': [4, 1, 2]},
-        ],
-        'layout': {
-            'title': 'Graph not found'
-        }
-    })
+    return get_document(collection="Graphs", **kwargs).get('figure', data.no_graph())
