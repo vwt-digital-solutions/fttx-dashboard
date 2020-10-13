@@ -122,6 +122,8 @@ for client in config.client_config.keys():
         print("Running week overview")
         return overview_bar_chart.get_fig(has_planning_by('week', client))
 
+    # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
+    # does not work correctly yet.
     @app.callback(
         Output(f'pie_chart_overview_{client}', 'figure'),
         [Input(f'week-overview-{client}', 'clickData'),
@@ -130,6 +132,8 @@ for client in config.client_config.keys():
          ]
     )
     def display_click_data(week_click_data, month_click_data, reset, client=client):
+        if client == 'kpn':
+            return original_pie_chart(client)
         ctx = dash.callback_context
         first_day_of_period = ""
         period = ""
