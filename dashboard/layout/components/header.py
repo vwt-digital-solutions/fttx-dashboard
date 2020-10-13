@@ -33,7 +33,8 @@ def header(header_text=""):
                                 style={"margin-bottom": "0px", "margin-left": "75px"},
                             ),
                             html.P(id='date_update',
-                                   children='Laatste data update: ' + update_date(),
+                                   children='Data binnengekomen op ' + update_date()[1][0:-4].replace('T', ' ') +
+                                            ', data laatst verwerkt op ' + update_date()[0][0:-4].replace('T', ' '),
                                    style={"margin-bottom": "0px", "margin-left": "75px"},
                                    )
                         ],
