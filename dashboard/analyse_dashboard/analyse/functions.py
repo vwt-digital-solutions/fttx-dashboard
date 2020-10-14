@@ -1523,3 +1523,30 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                 grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
 
     return counts_by_project
+
+
+def calculate_on_time_ratio_project(df):
+    on_time_ratio_project = {}
+    for project, project_df in df.groupby(by='project'):
+
+        on_time_ratio_project[project] = calculate_on_time_ratio(project_df)
+
+    return on_time_ratio_project
+
+
+def calculate_on_time_ratio(df):
+    # Maximum days an order is allowed to take in days
+    max_order_time = 56
+    ordered = df[df.ordered & df.opgeleverd]
+    on_time = ordered[ordered.oplevertijd <= max_order_time]
+    on_time_ratio = len(on_time)/len(ordered)
+    return on_time_ratio
+
+
+def calculate_oplevertijd(row):
+    # Do not calculate an oplevertijd if row was not ordered or not opgeleverd
+    if row.ordered and row.opgeleverd:
+        oplevertijd = (row.opleverdatum - row.toestemming_datum).days
+    else:
+        oplevertijd = np.nan
+    return oplevertijd
