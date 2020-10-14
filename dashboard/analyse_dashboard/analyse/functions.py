@@ -1528,7 +1528,7 @@ def calculate_ready_for_has(df, time_delta_days=0):
 
 def calculate_ready_for_has_indicator(project_df):
     count_now = calculate_ready_for_has(project_df)
-    count_prev = calculate_ready_for_has(project_df, 1)
+    count_prev = calculate_ready_for_has(project_df, time_delta_days=7)
     return {'ready_for_has': {"counts": count_now, "counts_prev": count_prev}}
 
 
@@ -1550,18 +1550,18 @@ def calculate_wait_indicators(project_df):
 
 def calculate_projectindicators_tmobile(df: pd.DataFrame):
     markup_dict = {
-        'on_time': {'title': 'Order op tijd',
+        'on_time': {'title': 'Openstaande orders op tijd',
                     'subtitle': '< 8 weken',
                     'font_color': 'green'},
-        'limited_time': {'title': 'Order nog beperkte tijd',
+        'limited_time': {'title': 'Openstaande orders nog beperkte tijd',
                          'subtitle': '> 8 weken < 12 weken',
                          'font_color': 'orange'},
-        'late': {'title': 'Order te laat',
+        'late': {'title': 'Openstaande orders te laat',
                  'subtitle': '> 12 weken',
                  'font_color': 'red'},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
         'ready_for_has': {
-            'title': "Klaar voor HAS",
+            'title': "Werkvoorraad HAS",
         }
     }
 
