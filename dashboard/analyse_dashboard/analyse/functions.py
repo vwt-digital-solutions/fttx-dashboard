@@ -474,7 +474,7 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
     return OverviewResults(df_prog, df_target, df_real, df_plan)
 
 
-def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res):
+def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res, show_planning=True):
     if 'W' in res:
         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
@@ -586,6 +586,10 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
     data_r = dict(count_opleverdatum=real0.to_dict())
     plan0.index = plan0.index.strftime('%Y-%m-%d')
     data_p = dict(count_hasdatum=plan0.to_dict())
+
+    if not show_planning:
+        data_p = dict.fromkeys(data_p, 0)
+
     if 'W' in res:
         record = dict(id='graph_targets_W', figure=fig)
         return record, data_pr, data_t, data_r, data_p
@@ -609,6 +613,28 @@ def preprocess_for_jaaroverzicht(*args):
     # real = slice_for_jaaroverzicht(df_real)
     # plan = slice_for_jaaroverzicht(df_plan)
     # return prog, target, real, plan
+
+
+def get_target(**data):
+    return str(round(sum(data['target'][1:])))
+
+
+def get_planning(**data):
+    n_now = datetime.date.today().month
+    return str(int(sum(data['planning'][n_now:]) - data['realisatie'][n_now]))
+
+
+def get_prognose(**data):
+    n_now = datetime.date.today().month
+    return str(int(sum(data['prognose'][n_now:]) - data['realisatie'][n_now]))
+
+
+def get_realisatie(**data):
+    return str(int(data['realisatie']))
+
+
+def get_HC_HPend(**data):
+    return str(data['HC_HPend'])
 
 
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
