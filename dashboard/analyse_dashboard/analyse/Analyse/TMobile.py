@@ -68,12 +68,14 @@ class TMobileAnalyse(FttXAnalyse):
             self.intermediate_results.counts_by_month['count_hasdatum'],
         )
         on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
+        outlook = self.transformed_data.df['ordered'].sum()
         jaaroverzicht = calculate_jaaroverzicht(
             real,
             plan,
             self.intermediate_results.HAS_werkvoorraad,
             self.intermediate_results.HC_HPend,
-            on_time_ratio
+            on_time_ratio,
+            outlook
         )
         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
