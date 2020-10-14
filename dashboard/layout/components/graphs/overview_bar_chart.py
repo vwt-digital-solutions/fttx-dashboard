@@ -5,7 +5,7 @@ from config import colors_vwt as colors
 
 def get_fig(data):
     x_count = list(range(1, len(data.date) + 1))
-    y_range = [0, 1.2 * data.count_hasdatum.max()]
+    y_range = [0, 2.2 * data.count_opleverdatum.max()]
     date_list = data.date.dt.strftime("%Y-%m-%d")
 
     if data.period.iloc[0] == 'month':
