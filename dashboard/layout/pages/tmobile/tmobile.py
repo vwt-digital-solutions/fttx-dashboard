@@ -12,14 +12,14 @@ client = "tmobile"
 
 
 # APP LAYOUT
-def get_body(client):
+def get_body(client, project=""):
     # importlib.import_module(f"layout.pages.{client}.project_view")
     page = html.Div(
         [
             header("Status projecten T-Mobile in 2020"),
 
             html.Div(
-                overview.get_search_bar(client),
+                overview.get_search_bar(client, project),
                 className="container-display",
                 id="title",
             ),

@@ -10,8 +10,7 @@ colors = config.colors_vwt
 
 
 # APP LAYOUT
-def get_body():
-    client = 'kpn'
+def get_body(client, project=""):
     page = html.Div(
         [
             dcc.Store(id="aggregate_data",
@@ -20,7 +19,7 @@ def get_body():
                       data=None),
             header("Status projecten KPN in 2020"),
             html.Div(
-                overview.get_search_bar(client),
+                overview.get_search_bar(client, project),
                 className="container-display",
                 id="title",
             ),
