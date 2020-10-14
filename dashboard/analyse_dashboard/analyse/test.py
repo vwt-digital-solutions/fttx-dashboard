@@ -6,6 +6,7 @@ import os
 import time
 import config
 from Analyse.KPN import KPNETL, PickleExtract
+from functions import graph_overview
 import logging
 
 logging.basicConfig(format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
@@ -37,14 +38,46 @@ kpn.transform()
 kpn.analyse()
 kpn.load()
 
-
 # %%
+kpn.perform()
+
+kpn._calculate_projectspecs()
+kpn._prognose()
+kpn._targets()
+kpn._overview()
+kpn._calculate_graph_overview()
+kpn.intermediate_results.keys()
+kpn.intermediate_results.y_target_l
+kpn.extracted_data.ftu['date_FTU0']
+kpn.extracted_data.ftu['date_FTU1']
+kpn.record_dict['graph_targets_W']
+kpn.record_dict['analysis'].record
+
+df_prog = kpn.intermediate_results.df_prog
+df_target = kpn.intermediate_results.df_target
+df_real = kpn.intermediate_results.df_real
+df_plan = kpn.intermediate_results.df_plan
+HC_HPend = kpn.intermediate_results.HC_HPend
+HAS_werkvoorraad = kpn.intermediate_results.HAS_werkvoorraad
+res = 'W-MON'
+
+graph_targets_W = graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res)
+
+# kpn.perform()
+# logging.info("KPN Done")
+# firestore.Client().collection('Data').document('xxx').delete()
+# firestore.Client().collection('Data').document('analysis').set(rec)
+# docs = firestore.Client().collection('Data').where('id', '==', 'analysis').get()
+# for doc in docs:
+#     rec = doc.to_dict()
+
+
 class TMobilePickleETL(PickleExtract, TMobileETL):
     pass
 
 
 client_name = "tmobile"
-tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
+tmobile = TMobilePickleETL(client=client_name, config=config.client_config[client_name])
 tmobile.perform()
 logging.info("T-mobile Done")
 logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
@@ -56,15 +89,26 @@ class DFNPickleETL(PickleExtract, DFNETL):
 
 
 client_name = "dfn"
+
 dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
 dfn.extract()
 dfn.transform()
 dfn.analyse()
+project = 'CAIW GOES'
+df = dfn.extracted_data.df
+# t_s = get_start_time(dfn.transformed_data.df)
+x_d = dfn.intermediate_results.timeline
+tot_l = dfn.intermediate_results.total_objects
+date_FTU0 = dfn.extracted_data.ftu['date_FTU0']
+df_real = dfn.intermediate_results.df_real
+df_prog = dfn.intermediate_results.df_prog
+
+
 dfn.load()
 
 # %% test jaaroverzicht
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ''
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-77d2e0bd2465.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 kpn = KPNTestETL(client='kpn', config=config.client_config['kpn'])
 kpn.extract()
@@ -80,7 +124,6 @@ kpn._overview()
 kpn._calculate_graph_overview()
 kpn._jaaroverzicht()
 
-# %%
 client_name = "dfn"
 dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
 dfn.extract()
@@ -90,22 +133,22 @@ dfn.load()
 
 # %% Test jaaroverzciht dfn
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ''
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/nikdegeus/Downloads/vwt-d-gew1-fttx-dashboard-77d2e0bd2465.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 dfn = DFNTestETL(client='dfn', config=config.client_config['dfn'])
-dfn = DFNETL(client='dfn', config=config.client_config['dfn'])
+# dfn = DFNETL(client='dfn', config=config.client_config['dfn'])
 dfn.perform()
 # %%
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = ''
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 kpn = KPNETL(client='kpn', config=config.client_config['kpn'])
 kpn.perform()
 
-# %%
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-785e52bf4521.json'
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-client_name = 'tmobile'
-tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
-tmobile.perform()
 
-# %%
+record = {}
+record['client'] = 'tmobile'
+record['graph_name'] = 'project_dates'
+record['record'] = {}
+record['record']['FTU0'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
+record['record']['FTU1'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
+# firestore.Client().collection('Data').document('tmobile_project_dates').set(record)

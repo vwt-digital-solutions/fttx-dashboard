@@ -193,11 +193,7 @@ def get_start_time(df: pd.DataFrame):
 
 
 def get_timeline(t_s):
-    if min(t_s.values()) < pd.to_datetime('2020-01-01'):
-        x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
-    else:
-        # for now we have to ensure that the x-axis contains data over all 2020 for the overview calculations
-        x_axis = pd.date_range(pd.to_datetime('2019-12-01'), periods=1000 + 1, freq='D')
+    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
     return x_axis
 
 
@@ -462,6 +458,15 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
                           columns=['d'], data=HP['HPendT'])
     y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
     df_plan = df_plan.add(y_plan, fill_value=0)
+
+    if df_real.index[0] > pd.Timestamp('2020-01-01'):
+        filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df_real.index[0], freq='D'),
+                                  columns=['d'],
+                                  data=0)
+        df_prog = pd.concat([filler2020[0:-1], df_prog], axis=0)
+        df_target = pd.concat([filler2020[0:-1], df_target], axis=0)
+        df_real = pd.concat([filler2020[0:-1], df_real], axis=0)
+        df_plan = pd.concat([filler2020[0:-1], df_plan], axis=0)
 
     # plot option
     # import matplotlib.pyplot as plt
