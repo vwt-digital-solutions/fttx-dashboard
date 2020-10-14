@@ -618,6 +618,28 @@ def preprocess_for_jaaroverzicht(*args):
     # return prog, target, real, plan
 
 
+def get_target(**data):
+    return str(round(sum(data['target'][1:])))
+
+
+def get_planning(**data):
+    n_now = datetime.date.today().month
+    return str(int(sum(data['planning'][n_now:]) - data['realisatie'][n_now]))
+
+
+def get_prognose(**data):
+    n_now = datetime.date.today().month
+    return str(int(sum(data['prognose'][n_now:]) - data['realisatie'][n_now]))
+
+
+def get_realisatie(**data):
+    return str(int(data['realisatie']))
+
+
+def get_HC_HPend(**data):
+    return str(data['HC_HPend'])
+
+
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
     n_now = datetime.date.today().month
 
