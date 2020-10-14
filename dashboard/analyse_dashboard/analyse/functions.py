@@ -1524,13 +1524,13 @@ def calculate_wait_indicators(project_df):
 
 def calculate_projectindicators_tmobile(df: pd.DataFrame):
     markup_dict = {
-        'on_time': {'title': 'Order op tijd',
+        'on_time': {'title': 'Openstaande orders op tijd',
                     'subtitle': '< 8 weken',
                     'font_color': 'green'},
-        'limited_time': {'title': 'Order nog beperkte tijd',
+        'limited_time': {'title': 'Openstaande orders nog beperkte tijd',
                          'subtitle': '> 8 weken < 12 weken',
                          'font_color': 'orange'},
-        'late': {'title': 'Order te laat',
+        'late': {'title': 'Openstaande orders te laat',
                  'subtitle': '> 12 weken',
                  'font_color': 'red'},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
