@@ -44,6 +44,8 @@ def has_planning_by(period, client):
         has_outlook = collection.get_document(collection="Data", graph_name="count_toestemming_datum_by_" + period,
                                               client=client)
         has_outlook['count_outlookdatum'] = has_outlook.pop('count_toestemming_datum')
+        has_outlook['count_outlookdatum']['2020-11-02'] = 0
+        has_outlook['count_outlookdatum']['2020-12-01'] = 0
 
     if not has_outlook:
         has_outlook['count_outlookdatum'] = has_opgeleverd['count_opleverdatum'].copy()
