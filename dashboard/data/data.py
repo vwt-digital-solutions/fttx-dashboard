@@ -39,7 +39,12 @@ def has_planning_by(period, client):
                                           client=client) if client == 'kpn' else {}  # temp fix
     has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
                                             client=client) if client == 'kpn' else {}  # temp fix
-    # temporary solution until we have outlook data for T-Mobile
+    # for tmobile the toestemming_datum is used as outlook
+    if client == 'tmobile':
+        has_outlook = collection.get_document(collection="Data", graph_name="count_toestemming_datum_by_" + period,
+                                              client=client)
+        has_outlook['count_outlookdatum'] = has_outlook.pop('count_toestemming_datum')
+
     if not has_outlook:
         has_outlook['count_outlookdatum'] = has_opgeleverd['count_opleverdatum'].copy()
         for el in has_outlook['count_outlookdatum']:
