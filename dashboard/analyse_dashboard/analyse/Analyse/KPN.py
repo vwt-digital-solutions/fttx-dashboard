@@ -240,6 +240,7 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.df_real,
             self.intermediate_results.df_plan,
         )
+
         jaaroverzicht = calculate_jaaroverzicht(
             prog, target, real, plan,
             self.intermediate_results.HAS_werkvoorraad,
