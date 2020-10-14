@@ -1,11 +1,10 @@
 # from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
 # from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 # from analyse_dashboard.analyse.functions import info_table, overview
+
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
-
-from layout.components.indicator import indicator
 
 import pandas as pd
 # import numpy as np
@@ -15,49 +14,33 @@ from app import app
 # update value dropdown given selection in scatter chart
 from data import collection
 
-client = 'kpn'
+client = 'dfn'
 
 
-@app.callback(
-    [
-        Output(f"indicators-{client}", 'children'),
-    ],
-    [
-        Input(f'project-dropdown-{client}', 'value'),
-    ],
-)
-def update_indicators(dropdown_selection):
-    if dropdown_selection is None:
-        raise PreventUpdate
+# @app.callback(
+#     [
+#         Output(f"indicators-{client}", 'children'),
+#     ],
+#     [
+#         Input(f'project-dropdown-{client}', 'value'),
+#     ],
+# )
+# def update_indicators(dropdown_selection):
+#     if dropdown_selection is None:
+#         raise PreventUpdate
 
-    indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
-    indicators = collection.get_document(collection="Data",
-                                         graph_name="project_indicators",
-                                         project=dropdown_selection,
-                                         client=client)
-    indicator_info = [indicator(value=indicators[el]['counts'],
-                                previous_value=indicators[el]['counts_prev'],
-                                title=indicators[el]['title'],
-                                sub_title=indicators[el]['subtitle'],
-                                font_color=indicators[el]['font_color']) for el in indicator_types]
+#     indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
+#     indicators = collection.get_document(collection="Data",
+#                                          graph_name="project_indicators",
+#                                          project=dropdown_selection,
+#                                          client=client)
+#     indicator_info = [indicator(value=indicators[el]['counts'],
+#                                 previous_value=indicators[el]['counts_prev'],
+#                                 title=indicators[el]['title'],
+#                                 sub_title=indicators[el]['subtitle'],
+#                                 font_color=indicators[el]['font_color']) for el in indicator_types]
 
-    return [indicator_info]
-
-
-@app.callback(
-    [
-        Output("overzicht_button", 'n_clicks'),
-    ],
-    [
-        Input(f'project-dropdown-{client}', 'value'),
-    ],
-)
-def update_overzicht_button(drop_selectie):
-    if drop_selectie is None:
-        raise PreventUpdate
-
-    return [-1]
-
+#     return [indicator_info]
 
 @app.callback(
     [
@@ -71,7 +54,7 @@ def update_prognose_graph(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
+    fig_prog = collection.get_graph(client="dfn", graph_name="prognose_graph_dict", project=drop_selectie)
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
 
@@ -102,10 +85,10 @@ def FTU_table_editable(ww):
         # Output('info_globaal_container5_text', 'children'),
         # Output('graph_targets_M', 'figure'),
         # Output('graph_targets_W', 'figure'),
-        Output('project-performance-kpn', 'figure'),
+        Output('project-performance-dfn', 'figure'),
     ],
     [
-        Input('table_FTU_kpn', 'data'),
+        Input('table_FTU_dfn', 'data'),
     ],
 )
 def FTU_update(data):
@@ -172,9 +155,9 @@ def FTU_update(data):
     # out4 = jaaroverzicht['HC_HPend']
     # out5 = HAS_werkvoorraad
 
-    # out6 = collection.get_graph(client="kpn", graph_name='graph_targets_M')
-    # out7 = collection.get_graph(client="kpn", graph_name='graph_targets_W')
-    out8 = collection.get_graph(client="kpn", graph_name='project_performance')
+    # out6 = collection.get_graph(client="dfn", graph_name='graph_targets_M')
+    # out7 = collection.get_graph(client="dfn", graph_name='graph_targets_W')
+    out8 = collection.get_graph(client="dfn", graph_name='project_performance')
 
     # return [out0, out1, out2, out3, out4, out5, out6, out7, out8]
     return [out8]
