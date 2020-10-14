@@ -1502,7 +1502,7 @@ def calculate_ready_for_has(df, time_delta_days=0):
 
 def calculate_ready_for_has_indicator(project_df):
     count_now = calculate_ready_for_has(project_df)
-    count_prev = calculate_ready_for_has(project_df, 1)
+    count_prev = calculate_ready_for_has(project_df, time_delta_days=7)
     return {'ready_for_has': {"counts": count_now, "counts_prev": count_prev}}
 
 
@@ -1535,7 +1535,7 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                  'font_color': 'red'},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
         'ready_for_has': {
-            'title': "Klaar voor HAS",
+            'title': "Werkvoorraad HAS",
         }
     }
 
