@@ -102,7 +102,7 @@ def FTU_table_editable(ww):
         # Output('info_globaal_container5_text', 'children'),
         # Output('graph_targets_M', 'figure'),
         # Output('graph_targets_W', 'figure'),
-        Output('project-performance-kpn', 'figure'),
+        Output(f'project-performance-{client}', 'figure'),
     ],
     [
         Input(f'table_FTU_{client}', 'data'),
@@ -177,7 +177,7 @@ def FTU_update(data):
 
     # out6 = collection.get_graph(client="kpn", graph_name='graph_targets_M')
     # out7 = collection.get_graph(client="kpn", graph_name='graph_targets_W')
-    out8 = collection.get_graph(client="kpn", graph_name='project_performance')
+    out8 = collection.get_graph(client=client, graph_name='project_performance')
 
     # return [out0, out1, out2, out3, out4, out5, out6, out7, out8]
     return [out8]

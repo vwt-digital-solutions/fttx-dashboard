@@ -96,6 +96,7 @@ dfn.transform()
 dfn.analyse()
 project = 'CAIW GOES'
 df = dfn.extracted_data.df
+data_ftu = dfn.extracted_data.ftu
 # t_s = get_start_time(dfn.transformed_data.df)
 x_d = dfn.intermediate_results.timeline
 tot_l = dfn.intermediate_results.total_objects
@@ -146,9 +147,11 @@ kpn.perform()
 
 
 record = {}
-record['client'] = 'tmobile'
+record['client'] = 'dfn'
 record['graph_name'] = 'project_dates'
 record['record'] = {}
-record['record']['FTU0'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
-record['record']['FTU1'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
-# firestore.Client().collection('Data').document('tmobile_project_dates').set(record)
+# record['record']['FTU0'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
+# record['record']['FTU1'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
+record['record']['FTU0'] = data_ftu['date_FTU0']
+record['record']['FTU1'] = data_ftu['date_FTU1']
+# firestore.Client().collection('Data').document('dfn_project_dates').set(record)
