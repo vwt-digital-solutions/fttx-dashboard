@@ -1,13 +1,10 @@
 # from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
 # from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 # from analyse_dashboard.analyse.functions import info_table, overview
-
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
 
-from data.data import redenna_by_completed_status
-from layout.components import redenna_status_pie
 from layout.components.indicator import indicator
 
 import pandas as pd
@@ -16,9 +13,7 @@ import pandas as pd
 from app import app
 
 # update value dropdown given selection in scatter chart
-from data.graph import clickbar_lb, clickbar_hb
 from data import collection
-from config import colors_vwt as colors
 
 client = 'kpn'
 
@@ -82,66 +77,66 @@ def update_prognose_graph(drop_selectie):
 
     return [fig_prog]
 
-
-# update click bar charts
-@app.callback(
-    [
-        Output("Bar_LB", "figure"),
-        Output("Bar_HB", "figure"),
-        Output("Pie_NA_c", "figure"),
-        Output("aggregate_data", 'data'),
-        Output("aggregate_data2", 'data'),
-        # Output("detail_button", "n_clicks")
-    ],
-    [Input(f'project-dropdown-{client}', 'value'),
-     Input("Bar_LB", 'clickData'),
-     Input("Bar_HB", 'clickData'),
-     ],
-    [State("aggregate_data", 'data'),
-     State("aggregate_data2", 'data'),
-     ]
-)
-def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
-    if drop_selectie is None:
-        raise PreventUpdate
-
-    if (drop_selectie == filter_a) & ((cell_bar_LB is not None) | (cell_bar_HB is not None)):
-        if cell_bar_LB is not None:
-            pt_x = cell_bar_LB['points'][0]['x']
-            if cell_bar_LB['points'][0]['curveNumber'] == 0:
-                pt_cell = 'LB1'
-            if cell_bar_LB['points'][0]['curveNumber'] == 1:
-                pt_cell = 'LB1HP'
-            if cell_bar_LB['points'][0]['curveNumber'] == 2:
-                pt_cell = 'LB0'
-        if cell_bar_HB is not None:
-            pt_x = cell_bar_HB['points'][0]['x']
-            if cell_bar_HB['points'][0]['curveNumber'] == 0:
-                pt_cell = 'HB1'
-            if cell_bar_HB['points'][0]['curveNumber'] == 1:
-                pt_cell = 'HB1HP'
-            if cell_bar_HB['points'][0]['curveNumber'] == 2:
-                pt_cell = 'HB0'
-        mask_all += pt_x + pt_cell
-
-        doc = collection.get_document(collection="Data", client="kpn", graph_name="bar_names")['bar_names']
-        if mask_all not in doc:
-            mask_all = '0'
-    else:
-        mask_all = '0'
-    barLB = clickbar_lb(drop_selectie, mask_all)
-    barHB = clickbar_hb(drop_selectie, mask_all)
-    redenna_counts = redenna_by_completed_status(drop_selectie, client=client)
-    redenna_pie = redenna_status_pie.get_fig(redenna_counts,
-                                             title="Opgegeven reden na",
-                                             colors=[
-                                                 colors['vwt_blue'],
-                                                 colors['yellow'],
-                                                 colors['red'],
-                                                 colors['green']
-                                             ])
-
-    return [barLB, barHB, redenna_pie, mask_all, drop_selectie]
+#
+# # update click bar charts
+# @app.callback(
+#     [
+#         Output("Bar_LB", "figure"),
+#         Output("Bar_HB", "figure"),
+#         Output("Pie_NA_c", "figure"),
+#         Output("aggregate_data", 'data'),
+#         Output("aggregate_data2", 'data'),
+#         # Output("detail_button", "n_clicks")
+#     ],
+#     [Input(f'project-dropdown-{client}', 'value'),
+#      Input("Bar_LB", 'clickData'),
+#      Input("Bar_HB", 'clickData'),
+#      ],
+#     [State("aggregate_data", 'data'),
+#      State("aggregate_data2", 'data'),
+#      ]
+# )
+# def click_bars(drop_selectie, cell_bar_LB, cell_bar_HB, mask_all, filter_a):
+#     if drop_selectie is None:
+#         raise PreventUpdate
+#
+#     if (drop_selectie == filter_a) & ((cell_bar_LB is not None) | (cell_bar_HB is not None)):
+#         if cell_bar_LB is not None:
+#             pt_x = cell_bar_LB['points'][0]['x']
+#             if cell_bar_LB['points'][0]['curveNumber'] == 0:
+#                 pt_cell = 'LB1'
+#             if cell_bar_LB['points'][0]['curveNumber'] == 1:
+#                 pt_cell = 'LB1HP'
+#             if cell_bar_LB['points'][0]['curveNumber'] == 2:
+#                 pt_cell = 'LB0'
+#         if cell_bar_HB is not None:
+#             pt_x = cell_bar_HB['points'][0]['x']
+#             if cell_bar_HB['points'][0]['curveNumber'] == 0:
+#                 pt_cell = 'HB1'
+#             if cell_bar_HB['points'][0]['curveNumber'] == 1:
+#                 pt_cell = 'HB1HP'
+#             if cell_bar_HB['points'][0]['curveNumber'] == 2:
+#                 pt_cell = 'HB0'
+#         mask_all += pt_x + pt_cell
+#
+#         doc = collection.get_document(collection="Data", client="kpn", graph_name="bar_names")['bar_names']
+#         if mask_all not in doc:
+#             mask_all = '0'
+#     else:
+#         mask_all = '0'
+#     barLB = clickbar_lb(drop_selectie, mask_all)
+#     barHB = clickbar_hb(drop_selectie, mask_all)
+#     redenna_counts = redenna_by_completed_status(drop_selectie, client=client)
+#     redenna_pie = redenna_status_pie.get_fig(redenna_counts,
+#                                              title="Opgegeven reden na",
+#                                              colors=[
+#                                                  colors['vwt_blue'],
+#                                                  colors['yellow'],
+#                                                  colors['red'],
+#                                                  colors['green']
+#                                              ])
+#
+#     return [barLB, barHB, redenna_pie, mask_all, drop_selectie]
 
 
 # update FTU table for editing

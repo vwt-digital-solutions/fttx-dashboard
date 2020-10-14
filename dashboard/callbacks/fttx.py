@@ -84,20 +84,20 @@ for client in config.client_config.keys():
             dict(id_="info_globaal_container0",
                  title='Outlook',
                  text="HPend afgesproken: ",
-                 value='10000'),
+                 value=jaaroverzicht.get('target', 'n.v.t.')),
             dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-                 value=jaaroverzicht['real']),
+                 value=jaaroverzicht.get('real', 'n.v.t.')),
             dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-                 value=jaaroverzicht['plan']),
+                 value=jaaroverzicht.get('plan', 'n.v.t.')),
             dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
-                 text="HPend voorspeld vanaf nu: ", value='1000'),
+                 text="HPend voorspeld vanaf nu: ", value=jaaroverzicht.get('prog', 'n.v.t'),
+                 className=jaaroverzicht.get("prog_c", 'n.v.t.') + "  column"),
             dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
-                 value=str(collection.get_document(
-                     collection="Data", client=client, graph_name="voorraadvormend").get("all", "n.v.t."))),
+                 value=jaaroverzicht.get('HAS_werkvoorraad', 'n.v.t.')),
             dict(id_="info_globaal_container4", title='Actuele HC / HPend',
-                 value='n.v.t.'),
+                 value=jaaroverzicht.get('HC_HPend', 'n.v.t.')),
             dict(id_="info_globaal_container4", title='Ratio <8 weken',
-                 value='0.66'),
+                 value=jaaroverzicht.get('ratio_op_tijd', 'n.v.t.')),
         ]
         return [
             global_info_list(items=jaaroverzicht_list,
@@ -123,6 +123,8 @@ for client in config.client_config.keys():
         print("Running week overview")
         return overview_bar_chart.get_fig(has_planning_by('week', client))
 
+    # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
+    # does not work correctly yet.
     @app.callback(
         Output(f'pie_chart_overview_{client}', 'figure'),
         [Input(f'week-overview-{client}', 'clickData'),
@@ -131,6 +133,8 @@ for client in config.client_config.keys():
          ]
     )
     def display_click_data(week_click_data, month_click_data, reset, client=client):
+        if client == 'kpn':
+            return original_pie_chart(client)
         ctx = dash.callback_context
         first_day_of_period = ""
         period = ""

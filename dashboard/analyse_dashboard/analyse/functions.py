@@ -1,4 +1,3 @@
-import warnings
 from collections import defaultdict
 from typing import NamedTuple
 
@@ -12,7 +11,6 @@ import datetime
 import hashlib
 import config
 from collections import namedtuple
-from pandas.api.types import CategoricalDtype
 
 colors = config.colors_vwt
 
@@ -1282,17 +1280,9 @@ def cluster_reden_na(label, clusters):
 
 
 def pie_chart_reden_na(df_na, clusters, key):
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        df_na.loc[:, 'cluster_redenna'] = df_na['redenna'].apply(lambda x: cluster_reden_na(x, clusters))
-        df_na.loc[df_na['homes_completed'], ['cluster_redenna']] = 'HC'
-        cluster_types = CategoricalDtype(categories=list(clusters.keys()), ordered=True)
-        df_na['cluster_redenna'] = df_na['cluster_redenna'].astype(cluster_types)
-        df_na = df_na.groupby('cluster_redenna').size().copy()
-        document = 'pie_na_' + key
-        df_na = df_na.to_frame(name='count').reset_index().copy()
-        labels = df_na['cluster_redenna'].tolist()
-        values = df_na['count'].tolist()
+    counts = df_na[['cluster_redenna', 'sleutel']].groupby("cluster_redenna").count().reset_index()
+    labels = counts.cluster_redenna.to_list()
+    values = counts.sleutel.to_list()
 
     data = {
         'labels': labels,
@@ -1307,7 +1297,7 @@ def pie_chart_reden_na(df_na, clusters, key):
                 ]
         }
     }
-
+    document = f"pie_na_{key}"
     return data, document
 
 
