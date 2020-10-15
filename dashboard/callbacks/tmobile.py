@@ -66,13 +66,13 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicator_types = ['on_time', 'limited_time', 'late', 'ready_for_has']
+    indicator_types = ['on_time', 'limited_time', 'late', 'ratio', 'ready_for_has']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,
                                          client=client)
     indicator_info = [indicator(value=indicators[el]['counts'],
-                                previous_value=indicators[el]['counts_prev'],
+                                previous_value=indicators[el].get('counts_prev', None),
                                 title=indicators[el]['title'],
                                 sub_title=indicators[el].get('subtitle', " "),
                                 font_color=indicators[el].get('font_color', 'black'),

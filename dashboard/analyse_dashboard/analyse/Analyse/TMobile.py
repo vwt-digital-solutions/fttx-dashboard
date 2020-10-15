@@ -3,7 +3,7 @@ from Analyse.Record import Record, DocumentListRecord, DictRecord
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
-from functions import calculate_on_time_ratio, calculate_oplevertijd, calculate_on_time_ratio_project
+from functions import calculate_on_time_ratio, calculate_oplevertijd
 import logging
 logger = logging.getLogger('T-mobile Analyse')
 
@@ -46,7 +46,6 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_week()
         self._get_voorraadvormend()
         self._jaaroverzicht()
-        self._calculate_on_time_ratio_project()
         self._calculate_project_indicators()
 
     def _get_voorraadvormend(self):
@@ -86,13 +85,6 @@ class TMobileAnalyse(FttXAnalyse):
                     graph_name=f"{k}_by_month")
                for k, v in self.intermediate_results.counts_by_month.items()]
         self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
-
-    def _calculate_on_time_ratio_project(self):
-        on_time_ratio_project = calculate_on_time_ratio_project(self.transformed_data.df)
-        self.record_dict.add(key='on_time_ratio_project',
-                             collection="Data",
-                             RecordType=DictRecord,
-                             record=on_time_ratio_project)
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")

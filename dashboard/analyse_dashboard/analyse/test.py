@@ -1,5 +1,5 @@
 # %% Initialize
-from Analyse.TMobile import TMobileETL
+from Analyse.TMobile import TMobileETL, TMobileTestETL
 from Analyse.KPN import KPNTestETL
 from Analyse.DFN import DFNTestETL, DFNETL
 import os
@@ -105,7 +105,7 @@ kpn.perform()
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-785e52bf4521.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 client_name = 'tmobile'
-tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
+tmobile = TMobileTestETL(client=client_name, config=config.client_config[client_name])
 tmobile.perform()
 
 # %%
