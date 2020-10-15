@@ -1,103 +1,64 @@
-import dash
+# from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
+# from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
+# from analyse_dashboard.analyse.functions import info_table, overview
 
-from app import app
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
-
-from data import collection
-from layout.components.graphs import pie_chart
-import dash_bootstrap_components as dbc
-from layout.components.figure import figure
-from layout.components.indicator import indicator
-from config import colors_vwt as colors
-
 from google.cloud import firestore
 
-client = "tmobile"
+import pandas as pd
+# import numpy as np
+
+from app import app
+
+# update value dropdown given selection in scatter chart
+from data import collection
+
+client = 'dfn'
 
 
-@app.callback(
-    [
-        Output("modal-sm", "is_open"),
-        Output(f"indicator-modal-{client}", 'figure')
-    ],
-    [
-        Input(f"indicator-late-{client}", "n_clicks"),
-        Input(f"indicator-limited_time-{client}", "n_clicks"),
-        Input(f"indicator-on_time-{client}", "n_clicks"),
-        Input("close-sm", "n_clicks"),
-    ],
-    [
-        State("modal-sm", "is_open"),
-        State(f"indicator-data-{client}", "data")
-    ]
-)
-def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result):
-    changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    print(changed_id)
-    if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
-        key = changed_id.partition("-")[-1].partition("-")[0]
-        print(key)
-        figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
-                                    values=list(result[key]['cluster_redenna'].values()),
-                                    title="Reden na",
-                                    colors=[
-                                        colors['green'],
-                                        colors['yellow'],
-                                        colors['red'],
-                                        colors['vwt_blue'],
-                                    ])
+# @app.callback(
+#     [
+#         Output(f"indicators-{client}", 'children'),
+#     ],
+#     [
+#         Input(f'project-dropdown-{client}', 'value'),
+#     ],
+# )
+# def update_indicators(dropdown_selection):
+#     if dropdown_selection is None:
+#         raise PreventUpdate
 
-        return [not is_open, figure]
+#     indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
+#     indicators = collection.get_document(collection="Data",
+#                                          graph_name="project_indicators",
+#                                          project=dropdown_selection,
+#                                          client=client)
+#     indicator_info = [indicator(value=indicators[el]['counts'],
+#                                 previous_value=indicators[el]['counts_prev'],
+#                                 title=indicators[el]['title'],
+#                                 sub_title=indicators[el]['subtitle'],
+#                                 font_color=indicators[el]['font_color']) for el in indicator_types]
 
-    if close_clicks:
-        return [not is_open, {'data': None, 'layout': None}]
-    return [is_open, {'data': None, 'layout': None}]
-
+#     return [indicator_info]
 
 @app.callback(
     [
-        Output(f"indicators-{client}", "children"),
-        Output(f"indicator-data-{client}", 'data')
+        Output(f"graph_prog-{client}", 'figure'),
     ],
     [
-        Input(f'project-dropdown-{client}', 'value')
-    ]
+        Input(f'project-dropdown-{client}', 'value'),
+    ],
 )
-def update_indicators(dropdown_selection):
-    if dropdown_selection is None:
+def update_prognose_graph(drop_selectie):
+    if drop_selectie is None:
         raise PreventUpdate
 
-    indicator_types = ['on_time', 'limited_time', 'late', 'ready_for_has']
-    indicators = collection.get_document(collection="Data",
-                                         graph_name="project_indicators",
-                                         project=dropdown_selection,
-                                         client=client)
-    indicator_info = [indicator(value=indicators[el]['counts'],
-                                previous_value=indicators[el]['counts_prev'],
-                                title=indicators[el]['title'],
-                                sub_title=indicators[el].get('subtitle', " "),
-                                font_color=indicators[el].get('font_color', 'black'),
-                                id=f"indicator-{el}-{client}") for el in indicator_types]
-    indicator_info = indicator_info + [
-        dbc.Modal(
-            [
-                dbc.ModalBody(
-                    figure(graph_id=f"indicator-modal-{client}",
-                           className="",
-                           figure={'data': None, 'layout': None})
-                ),
-                dbc.ModalFooter(
-                    dbc.Button("Close", id="close-sm", className="ml-auto")
-                ),
-            ],
-            id="modal-sm",
-            size="lg",
-            centered=True,
-        )
-    ]
+    fig_prog = collection.get_graph(client="dfn", graph_name="prognose_graph_dict", project=drop_selectie)
+    for i, item in enumerate(fig_prog['data']):
+        fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
 
-    return [indicator_info, indicators]
+    return [fig_prog]
 
 
 # update FTU table for editing

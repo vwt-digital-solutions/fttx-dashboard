@@ -217,7 +217,8 @@ class DFNAnalyse(FttXAnalyse):
             self.intermediate_results.df_plan,
             self.intermediate_results.HC_HPend,
             self.intermediate_results.HAS_werkvoorraad,
-            res='W-MON')
+            res='W-MON',
+            show_planning=False)
         self.record_dict.add('graph_targets_W', graph_targets_W, Record, 'Graphs')
         self.record_dict.add('count_voorspellingdatum_by_week', data_pr, Record, 'Data')
         self.record_dict.add('count_outlookdatum_by_week', data_t, Record, 'Data')
@@ -231,7 +232,8 @@ class DFNAnalyse(FttXAnalyse):
             self.intermediate_results.df_plan,
             self.intermediate_results.HC_HPend,
             self.intermediate_results.HAS_werkvoorraad,
-            res='M')
+            res='M',
+            show_planning=False)
 
         self.intermediate_results.data_pr = data_pr
         self.intermediate_results.data_t = data_t

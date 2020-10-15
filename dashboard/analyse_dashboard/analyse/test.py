@@ -77,7 +77,7 @@ class TMobilePickleETL(PickleExtract, TMobileETL):
 
 
 client_name = "tmobile"
-tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
+tmobile = TMobilePickleETL(client=client_name, config=config.client_config[client_name])
 tmobile.perform()
 logging.info("T-mobile Done")
 logging.info(f"Analysis done. Took {time.time() - t_start} seconds")
@@ -89,10 +89,22 @@ class DFNPickleETL(PickleExtract, DFNETL):
 
 
 client_name = "dfn"
+
 dfn = DFNPickleETL(client=client_name, config=config.client_config[client_name])
 dfn.extract()
 dfn.transform()
 dfn.analyse()
+project = 'CAIW GOES'
+df = dfn.extracted_data.df
+data_ftu = dfn.extracted_data.ftu
+# t_s = get_start_time(dfn.transformed_data.df)
+x_d = dfn.intermediate_results.timeline
+tot_l = dfn.intermediate_results.total_objects
+date_FTU0 = dfn.extracted_data.ftu['date_FTU0']
+df_real = dfn.intermediate_results.df_real
+df_prog = dfn.intermediate_results.df_prog
+
+
 dfn.load()
 
 # %% test jaaroverzicht
@@ -132,3 +144,14 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/V
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 kpn = KPNETL(client='kpn', config=config.client_config['kpn'])
 kpn.perform()
+
+
+record = {}
+record['client'] = 'dfn'
+record['graph_name'] = 'project_dates'
+record['record'] = {}
+# record['record']['FTU0'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
+# record['record']['FTU1'] = {'Den Haag': ' ', 'Den Haag Cluster B': ' '}
+record['record']['FTU0'] = data_ftu['date_FTU0']
+record['record']['FTU1'] = data_ftu['date_FTU1']
+# firestore.Client().collection('Data').document('dfn_project_dates').set(record)

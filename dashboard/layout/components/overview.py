@@ -84,7 +84,7 @@ def get_search_bar(client, project):
 
 def get_performance(client):
     ftu_data = collection.get_document(collection="Data", graph_name="project_dates", client=client)
-    table = ftu_table(ftu_data)
+    table = ftu_table(ftu_data, client)
     print(f'CLIENT: {client}')
     return [
                 figure(container_id="graph_speed_c",
