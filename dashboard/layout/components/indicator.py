@@ -21,7 +21,6 @@ def indicator(value, previous_value, title="", sub_title="", font_color=None, id
             value=value,
             title={
                 "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"},
-
         )
     )
     return figure(figure=fig, container_id=id)
