@@ -80,46 +80,28 @@ for client in config.client_config.keys():
     )
     def load_project_info(dummy_data, client=client):
         jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client=client)
+        # temp fix for planning DFN since we use dummy data
         if client == 'dfn':
-            jaaroverzicht_list = [
-                dict(id_="info_globaal_container0",
-                     title='Outlook',
-                     text="HPend afgesproken: ",
-                     value=jaaroverzicht.get('target', 'n.v.t.')),
-                dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-                     value=jaaroverzicht.get('real', 'n.v.t.')),
-                dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-                     value=jaaroverzicht.get('n.v.t.', 'n.v.t.')),
-                dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
-                     text="HPend voorspeld vanaf nu: ", value=jaaroverzicht.get('prog', 'n.v.t'),
-                     className=jaaroverzicht.get("prog_c", 'n.v.t.') + "  column"),
-                dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
-                     value=jaaroverzicht.get('HAS_werkvoorraad', 'n.v.t.')),
-                dict(id_="info_globaal_container4", title='Actuele HC / HPend',
-                     value=jaaroverzicht.get('HC_HPend', 'n.v.t.')),
-                dict(id_="info_globaal_container4", title='Ratio <8 weken',
-                     value=jaaroverzicht.get('ratio_op_tijd', 'n.v.t.')),
-            ]
-        else:
-            jaaroverzicht_list = [
-                dict(id_="info_globaal_container0",
-                     title='Outlook',
-                     text="HPend afgesproken: ",
-                     value=jaaroverzicht.get('target', 'n.v.t.')),
-                dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
-                     value=jaaroverzicht.get('real', 'n.v.t.')),
-                dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
-                     value=jaaroverzicht.get('plan', 'n.v.t.')),
-                dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
-                     text="HPend voorspeld vanaf nu: ", value=jaaroverzicht.get('prog', 'n.v.t'),
-                     className=jaaroverzicht.get("prog_c", 'n.v.t.') + "  column"),
-                dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
-                     value=jaaroverzicht.get('HAS_werkvoorraad', 'n.v.t.')),
-                dict(id_="info_globaal_container4", title='Actuele HC / HPend',
-                     value=jaaroverzicht.get('HC_HPend', 'n.v.t.')),
-                dict(id_="info_globaal_container4", title='Ratio <8 weken',
-                     value=jaaroverzicht.get('ratio_op_tijd', 'n.v.t.')),
-            ]
+            jaaroverzicht['plan'] = 'n.v.t.'
+        jaaroverzicht_list = [
+            dict(id_="info_globaal_container0",
+                 title='Outlook',
+                 text="HPend afgesproken: ",
+                 value=jaaroverzicht.get('target', 'n.v.t.')),
+            dict(id_="info_globaal_container1", title='Realisatie (FC)', text="HPend gerealiseerd: ",
+                 value=jaaroverzicht.get('real', 'n.v.t.')),
+            dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
+                 value=jaaroverzicht.get('plan', 'n.v.t.')),
+            dict(id_="info_globaal_container3", title='Voorspelling (VQD)',
+                 text="HPend voorspeld vanaf nu: ", value=jaaroverzicht.get('prog', 'n.v.t'),
+                 className=jaaroverzicht.get("prog_c", 'n.v.t.') + "  column"),
+            dict(id_="info_globaal_container5", title='Werkvoorraad HAS',
+                 value=jaaroverzicht.get('HAS_werkvoorraad', 'n.v.t.')),
+            dict(id_="info_globaal_container4", title='Actuele HC / HPend',
+                 value=jaaroverzicht.get('HC_HPend', 'n.v.t.')),
+            dict(id_="info_globaal_container4", title='Ratio <8 weken',
+                 value=jaaroverzicht.get('ratio_op_tijd', 'n.v.t.')),
+        ]
         return [
             global_info_list(items=jaaroverzicht_list,
                              className="container-display")
