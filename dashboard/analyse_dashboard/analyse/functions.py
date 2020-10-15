@@ -1564,6 +1564,9 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
         'late': {'title': 'Openstaande orders te laat',
                  'subtitle': '> 12 weken',
                  'font_color': 'red'},
+        'ratio': {'title': 'Ratio op tijd gesloten orders',
+                  'subtitle': '<8 weken',
+                  'font_color': 'black'},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
         'ready_for_has': {
             'title': "Werkvoorraad HAS",
@@ -1573,13 +1576,34 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
     counts_by_project = {}
     for project, project_df in df.groupby(by='project'):
         counts_by_project[project] = {}
+
+        counts_by_project[project].update(
+            calculate_ready_for_has_indicator(project_df=project_df)
+        )
         counts_by_project[project].update(
             calculate_wait_indicators(project_df=project_df)
         )
         counts_by_project[project].update(
-            calculate_ready_for_has_indicator(project_df=project_df)
+            {'ratio': {'counts': calculate_on_time_ratio(project_df)}}
         )
-
         for indicator, markup in markup_dict.items():
             counts_by_project[project][indicator].update(markup)
     return counts_by_project
+
+
+def calculate_on_time_ratio(df):
+    # Maximum days an order is allowed to take in days
+    max_order_time = 56
+    ordered = df[df.ordered & df.opgeleverd]
+    on_time = ordered[ordered.oplevertijd <= max_order_time]
+    on_time_ratio = len(on_time)/len(ordered)
+    return on_time_ratio
+
+
+def calculate_oplevertijd(row):
+    # Do not calculate an oplevertijd if row was not ordered or not opgeleverd
+    if row.ordered and row.opgeleverd:
+        oplevertijd = (row.opleverdatum - row.toestemming_datum).days
+    else:
+        oplevertijd = np.nan
+    return oplevertijd

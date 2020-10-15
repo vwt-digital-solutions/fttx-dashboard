@@ -4,7 +4,7 @@ from layout.components.figure import figure
 from config import colors_vwt as colors
 
 
-def indicator(value, previous_value, title="", sub_title="", font_color=None, id=""):
+def indicator(value, previous_value=None, title="", sub_title="", font_color=None, id=""):
     fig = go.Figure(
         layout={
             "height": 200,
@@ -14,15 +14,20 @@ def indicator(value, previous_value, title="", sub_title="", font_color=None, id
             'paper_bgcolor': colors['paper_bgcolor'],
         }
     )
-    fig.add_trace(
-        go.Indicator(
-            delta={'reference': previous_value,
-                   'increasing.color': 'red',
-                   'decreasing.color': 'green'},
-            mode="number+delta",
-            value=value,
-            title={
+    indicator_args = dict(
+        value=value,
+        title={
                 "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"},
-        )
+        mode='number'
+    )
+
+    if previous_value is not None:
+        indicator_args['delta'] = {'reference': previous_value,
+                                   'increasing.color': 'red',
+                                   'decreasing.color': 'green'}
+        indicator_args['mode'] += '+delta'
+
+    fig.add_trace(
+        go.Indicator(**indicator_args)
     )
     return figure(figure=fig, container_id=id)
