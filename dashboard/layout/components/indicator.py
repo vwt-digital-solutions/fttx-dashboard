@@ -1,6 +1,7 @@
 import plotly.graph_objects as go
 
 from layout.components.figure import figure
+from config import colors_vwt as colors
 
 
 def indicator(value, previous_value=None, title="", sub_title="", font_color=None, id=""):
@@ -9,6 +10,8 @@ def indicator(value, previous_value=None, title="", sub_title="", font_color=Non
             "height": 200,
             "font": {'color': font_color},
             "margin": dict(l=10, r=10, t=60, b=10),
+            'plot_bgcolor': colors['plot_bgcolor'],
+            'paper_bgcolor': colors['paper_bgcolor'],
         }
     )
     indicator_args = dict(
@@ -19,7 +22,9 @@ def indicator(value, previous_value=None, title="", sub_title="", font_color=Non
     )
 
     if previous_value is not None:
-        indicator_args['delta'] = {'reference': previous_value}
+        indicator_args['delta'] = {'reference': previous_value,
+                                   'increasing.color': 'red',
+                                   'decreasing.color': 'green'}
         indicator_args['mode'] += '+delta'
 
     fig.add_trace(

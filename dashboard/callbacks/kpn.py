@@ -88,7 +88,7 @@ def update_prognose_graph(drop_selectie):
     ],
 )
 def FTU_table_editable(ww):
-    return [ww == 'Wout']
+    return [ww == 'FttX']
 
 
 # update firestore given edit FTU table
@@ -102,22 +102,25 @@ def FTU_table_editable(ww):
         # Output('info_globaal_container5_text', 'children'),
         # Output('graph_targets_M', 'figure'),
         # Output('graph_targets_W', 'figure'),
-        Output('project-performance-kpn', 'figure'),
+        Output(f'project-performance-{client}', 'figure'),
     ],
     [
-        Input('table_FTU_kpn', 'data'),
+        Input(f'table_FTU_{client}', 'data'),
     ],
 )
 def FTU_update(data):
-    record = dict(id='analysis')
+
+    record = dict(graph_name='project_dates', client=client)
     FTU0 = {}
     FTU1 = {}
     for el in data:
-        FTU0[el['Project']] = el['FTU0']
-        FTU1[el['Project']] = el['FTU1']
-    record['FTU0'] = FTU0
-    record['FTU1'] = FTU1
-    firestore.Client().collection('Data').document(record['id']).set(record)
+        FTU0[el['Project']] = el['Eerste HAS aansluiting (FTU0)']
+        FTU1[el['Project']] = el['Laatste HAS aansluiting (FTU1)']
+    record['record'] = {}
+    record['record']['FTU0'] = FTU0
+    record['record']['FTU1'] = FTU1
+    print(record)
+    firestore.Client().collection('Data').document(f'{client}_project_dates').set(record)
 
     # # to update overview graphs:
     # doc = firestore.Client().collection('Data').document('analysis2').get().to_dict()
@@ -174,7 +177,7 @@ def FTU_update(data):
 
     # out6 = collection.get_graph(client="kpn", graph_name='graph_targets_M')
     # out7 = collection.get_graph(client="kpn", graph_name='graph_targets_W')
-    out8 = collection.get_graph(client="kpn", graph_name='project_performance')
+    out8 = collection.get_graph(client=client, graph_name='project_performance')
 
     # return [out0, out1, out2, out3, out4, out5, out6, out7, out8]
     return [out8]

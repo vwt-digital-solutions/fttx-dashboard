@@ -80,6 +80,9 @@ for client in config.client_config.keys():
     )
     def load_project_info(dummy_data, client=client):
         jaaroverzicht = collection.get_document(collection="Data", graph_name="jaaroverzicht", client=client)
+        # temp fix for planning DFN since we use dummy data
+        if client == 'dfn':
+            jaaroverzicht['plan'] = 'n.v.t.'
         jaaroverzicht_list = [
             dict(id_="info_globaal_container0",
                  title='Outlook',
