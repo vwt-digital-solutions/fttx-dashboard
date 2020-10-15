@@ -13,6 +13,10 @@ config_pages = OrderedDict(
         ('kpn', {
             'name': 'KPN',
             'link': ['/kpn', '/kpn/'],
+        }),
+        ('dfn', {
+            'name': 'DFN',
+            'link': ['/dfn', '/dfn/'],
         })
     ]
 )

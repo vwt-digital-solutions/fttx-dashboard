@@ -1,11 +1,10 @@
 # from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
 # from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 # from analyse_dashboard.analyse.functions import info_table, overview
+
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
-
-from layout.components.indicator import indicator
 
 import pandas as pd
 # import numpy as np
@@ -15,49 +14,33 @@ from app import app
 # update value dropdown given selection in scatter chart
 from data import collection
 
-client = 'kpn'
+client = 'dfn'
 
 
-@app.callback(
-    [
-        Output(f"indicators-{client}", 'children'),
-    ],
-    [
-        Input(f'project-dropdown-{client}', 'value'),
-    ],
-)
-def update_indicators(dropdown_selection):
-    if dropdown_selection is None:
-        raise PreventUpdate
+# @app.callback(
+#     [
+#         Output(f"indicators-{client}", 'children'),
+#     ],
+#     [
+#         Input(f'project-dropdown-{client}', 'value'),
+#     ],
+# )
+# def update_indicators(dropdown_selection):
+#     if dropdown_selection is None:
+#         raise PreventUpdate
 
-    indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
-    indicators = collection.get_document(collection="Data",
-                                         graph_name="project_indicators",
-                                         project=dropdown_selection,
-                                         client=client)
-    indicator_info = [indicator(value=indicators[el]['counts'],
-                                previous_value=indicators[el]['counts_prev'],
-                                title=indicators[el]['title'],
-                                sub_title=indicators[el]['subtitle'],
-                                font_color=indicators[el]['font_color']) for el in indicator_types]
+#     indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
+#     indicators = collection.get_document(collection="Data",
+#                                          graph_name="project_indicators",
+#                                          project=dropdown_selection,
+#                                          client=client)
+#     indicator_info = [indicator(value=indicators[el]['counts'],
+#                                 previous_value=indicators[el]['counts_prev'],
+#                                 title=indicators[el]['title'],
+#                                 sub_title=indicators[el]['subtitle'],
+#                                 font_color=indicators[el]['font_color']) for el in indicator_types]
 
-    return [indicator_info]
-
-
-@app.callback(
-    [
-        Output("overzicht_button", 'n_clicks'),
-    ],
-    [
-        Input(f'project-dropdown-{client}', 'value'),
-    ],
-)
-def update_overzicht_button(drop_selectie):
-    if drop_selectie is None:
-        raise PreventUpdate
-
-    return [-1]
-
+#     return [indicator_info]
 
 @app.callback(
     [
@@ -71,7 +54,7 @@ def update_prognose_graph(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_prog = collection.get_graph(client="kpn", graph_name="prognose_graph_dict", project=drop_selectie)
+    fig_prog = collection.get_graph(client="dfn", graph_name="prognose_graph_dict", project=drop_selectie)
     for i, item in enumerate(fig_prog['data']):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
 
