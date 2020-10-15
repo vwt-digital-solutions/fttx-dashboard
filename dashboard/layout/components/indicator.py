@@ -16,7 +16,9 @@ def indicator(value, previous_value, title="", sub_title="", font_color=None, id
     )
     fig.add_trace(
         go.Indicator(
-            delta={'reference': previous_value},
+            delta={'reference': previous_value,
+                   'increasing.color': 'red',
+                   'decreasing.color': 'green'},
             mode="number+delta",
             value=value,
             title={
