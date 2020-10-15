@@ -11,6 +11,17 @@ from flask_dance.contrib.azure import azure
 import logging
 
 
+def get(path):
+    url = config.api_url + path
+    if 'FIRESTORE_EMULATOR_HOST' in os.environ:
+        return local_api(url)
+    else:
+        logging.info(f"Requesting {path}")
+        headers = {'Authorization': 'Bearer ' + azure.access_token}
+        response = requests.get(url, headers=headers)
+        return response.json().get('results')
+
+
 def make_problem_json(title, status):
     return make_response(jsonify({'title': title, 'status': status}), status)
 
@@ -70,17 +81,3 @@ def local_api(url):
     logging.info(f'Returning {size} record(s)!')
 
     return results
-
-
-def get(path):
-    url = config.api_url + path
-    if 'GAE_INSTANCE' in os.environ:
-        logging.info(f"Requesting {path}")
-        headers = {'Authorization': 'Bearer ' + azure.access_token}
-        response = requests.get(url, headers=headers)
-
-        return response.json().get('results')
-    elif 'GOOGLE_APPLICATION_CREDENTIALS' in os.environ:
-        return local_api(url)
-    else:
-        logging.warning("No environment detected")
