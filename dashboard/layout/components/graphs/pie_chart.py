@@ -16,6 +16,8 @@ def get_html(labels, values, title="", colors=None):
     )
 
     fig.update_layout(
-        title_text=title
+        title_text=title,
+        plot_bgcolor=colors['plot_bgcolor'],
+        paper_bgcolor=colors['paper_bgcolor'],
     )
     return fig

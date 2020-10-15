@@ -10,8 +10,8 @@ def indicator(value, previous_value, title="", sub_title="", font_color=None, id
             "height": 200,
             "font": {'color': font_color},
             "margin": dict(l=10, r=10, t=60, b=10),
+            'plot_bgcolor': colors['plot_bgcolor'],
             'paper_bgcolor': colors['paper_bgcolor'],
-            'plot_bgcolor': colors['paper_bgcolor']
         }
     )
     fig.add_trace(
