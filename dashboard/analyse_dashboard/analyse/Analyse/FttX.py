@@ -128,7 +128,7 @@ class FttXTransform(Transform):
         self.transformed_data.df['homes_completed'] = (self.transformed_data.df.opleverstatus == '2') & (
             self.transformed_data.df.hpend)
         self.transformed_data.df['homes_completed_total'] = (self.transformed_data.df.opleverstatus == '2')
-        self.transformed_data.df['bis_gereed'] = self.transformed_data.df.opleverstatus != '0'
+        self.transformed_data.df['bis_gereed'] = self.bis_opgeleverd(self.transformed_data.df)
         self.transformed_data.df['in_has_werkvoorraad'] = (
                 (~self.transformed_data.df.toestemming.isna()) &
                 (self.transformed_data.df.opleverstatus != '0') &
@@ -139,7 +139,7 @@ class FttXTransform(Transform):
         logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
         self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
-        self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        self.transformed_data.df.loc[self.has_opgeleverd(self.transformed_data.df), ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
 
@@ -148,50 +148,41 @@ class FttXTransform(Transform):
         state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
         self.transformed_data.df['false'] = False
         has_rules_list = [
-            (
-                    self.transformed_data.df['opleverdatum'].isna() &
-                    self.transformed_data.df['hasdatum'].isna()
-            ),
-            (
-                    self.transformed_data.df['opleverdatum'].isna() &
-                    ~self.transformed_data.df['hasdatum'].isna()
-            ),
-            (
-                    (self.transformed_data.df['opleverstatus'] != '2') &
-                    (~self.transformed_data.df['opleverdatum'].isna())
-            ),
-            self.transformed_data.df['opleverstatus'] == '2'
+            self.has_niet_opgeleverd(self.transformed_data.df),
+            self.has_ingeplanned(self.transformed_data.df),
+            self.has_opgeleverd_zonder_hc(self.transformed_data.df),
+            self.has_opgeleverd(self.transformed_data.df)
         ]
         has = rules_to_state(has_rules_list, state_list)
         geschouwd_rules_list = [
-            self.transformed_data.df['toestemming'].isna(),
+            ~self.toestemming_bekend(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            ~self.transformed_data.df['toestemming'].isna()
+            self.toestemming_bekend(self.transformed_data.df)
         ]
         geschouwd = rules_to_state(geschouwd_rules_list, state_list)
 
         bis_gereed_rules_list = [
-            (self.transformed_data.df['opleverstatus'] == '0'),
+            self.bis_niet_opgeleverd(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            self.transformed_data.df['opleverstatus'] != '0'
+            self.bis_opgeleverd(self.transformed_data.df)
         ]
         bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
 
         laswerkdpgereed_rules_list = [
-            (self.transformed_data.df['laswerkdpgereed'] != '1'),
+            self.laswerk_dp_gereed(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            self.transformed_data.df['laswerkdpgereed'] == '1'
+            self.laswerk_dp_niet_gereed(self.transformed_data.df)
         ]
         laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
 
         laswerkapgereed_rules_list = [
-            (self.transformed_data.df['laswerkapgereed'] != '1'),
+            self.laswerk_ap_gereed(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            self.transformed_data.df['laswerkapgereed'] == '1'
+            self.laswerk_ap_niet_gereed(self.transformed_data.df)
         ]
         laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
 
@@ -215,6 +206,48 @@ class FttXTransform(Transform):
         status_df.columns = colnames
         self.transformed_data.df.drop('false', inplace=True, axis=1)
         self.transformed_data.df = pd.merge(self.transformed_data.df, status_df, on="sleutel", how="left")
+
+    def toestemming_bekend(self, df):
+        return ~df['toestemming'].isna()
+
+    def laswerk_ap_niet_gereed(self, df):
+        return df['laswerkapgereed'] == '1'
+
+    def laswerk_ap_gereed(self, df):
+        return df['laswerkapgereed'] != '1'
+
+    def laswerk_dp_niet_gereed(self, df):
+        return df['laswerkdpgereed'] == '1'
+
+    def laswerk_dp_gereed(self, df):
+        return df['laswerkdpgereed'] != '1'
+
+    def bis_opgeleverd(self, df):
+        return df['opleverstatus'] != '0'
+
+    def bis_niet_opgeleverd(self, df):
+        return df['opleverstatus'] == '0'
+
+    def has_opgeleverd(self, df):
+        return df['opleverstatus'] == '2'
+
+    def has_opgeleverd_zonder_hc(self, df):
+        return (
+                (df['opleverstatus'] != '2') &
+                (~df['opleverdatum'].isna())
+        )
+
+    def has_ingeplanned(self, df):
+        return (
+                df['opleverdatum'].isna() &
+                ~df['hasdatum'].isna()
+        )
+
+    def has_niet_opgeleverd(self, df):
+        return (
+                df['opleverdatum'].isna() &
+                df['hasdatum'].isna()
+        )
 
 
 class FttXAnalyse(FttXBase):
