@@ -9,6 +9,8 @@ import time
 import json
 import datetime
 import hashlib
+
+import business_rules as br
 import config
 from collections import namedtuple
 
@@ -212,14 +214,11 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
 # bis_gereed is a boolean column indicating whther the BIS for an object has been finished
 def add_relevant_columns(df: pd.DataFrame, year):
     # TODO add to tranform part of the ETL
-    if not year:
-        year = str(pd.Timestamp.now().year)
-    start_year = pd.to_datetime(year + '-01-01')
-    end_year = pd.to_datetime(year + '-12-31')
-    df['hpend'] = df.opleverdatum.apply(lambda x: (x >= start_year) and (x <= end_year))
-    df['homes_completed'] = (df.opleverstatus == '2') & (df.hpend)
-    df['homes_completed_total'] = (df.opleverstatus == '2')
-    df['bis_gereed'] = df.opleverstatus != '0'
+    df['hpend'] = br.hpend_year(df, year)
+    # TODO fix names
+    df['homes_completed'] = br.has_opgeleverd(df) & (df.hpend)
+    df['homes_completed_total'] = br.has_opgeleverd(df)
+    df['bis_gereed'] = br.bis_opgeleverd(df)
     return df
 
 
@@ -262,7 +261,7 @@ def get_HPend(df: pd.DataFrame):
 # - The BIS (basic infrastructure) is in place
 def get_has_ready(df: pd.DataFrame):
     tmp_df = df.copy()
-    tmp_df['has_ready'] = ~df.toestemming.isna() & df.bis_gereed
+    tmp_df['has_ready'] = br.has_werkvoorraad(tmp_df)
     result = tmp_df[['project', 'has_ready']] \
         .groupby(by="project") \
         .sum() \
@@ -281,7 +280,7 @@ def get_hc_hpend_ratio_total(hc, hpend):
 # Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
 def get_hc_hpend_ratio(df: pd.DataFrame):
     temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
-    temp_df['has_opleverdatum'] = ~df.opleverdatum.isna()
+    temp_df['has_opleverdatum'] = br.opgeleverd(temp_df)
     sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(
         by="project").sum().reset_index()
     sum_df['ratio'] = sum_df.apply(
@@ -365,7 +364,7 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     t_shift = {}
     y_prog_l = {}
     for project, project_df in df.groupby(by="project"):  # to calculate prognoses for projects in FC
-        d_real = project_df[~project_df['opleverdatum'].isna()]
+        d_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
         if not d_real.empty:
             d_real = d_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
             d_real.index = pd.to_datetime(d_real.index, format='%Y-%m-%d')
@@ -783,6 +782,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
     return record_dict
 
 
+# todo remove
 def masks_phases(pkey, df_l):
     def calculate_bar(bar_m, mask):
         bar = {}
@@ -1111,11 +1111,8 @@ def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_pro
 
 def calculate_y_voorraad_act(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
-    return df[
-        (~df.toestemming.isna()) &
-        (df.opleverstatus != '0') &
-        (df.opleverdatum.isna())
-        ].groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
+    return df[br.has_werkvoorraad(df)] \
+        .groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
 
 
 def empty_collection(subset):
@@ -1470,16 +1467,8 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     :return:
     """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    toestemming_df = df[
-        (
-                df.opleverdatum.isna() |
-                (
-                        df.opleverdatum >= time_point
-                )
-        ) &
-        (
-            ~df.toestemming.isna()
-        )][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+    mask = br.opgeleverd(df, time_point) & br.toestemming_bekend(df)
+    toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
 
     toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
     toestemming_df['bins'] = pd.cut(toestemming_df.waiting_time,
@@ -1505,29 +1494,7 @@ def wait_bin_cluster_redenna(toestemming_df):
 def calculate_ready_for_has(df, time_delta_days=0):
     schouw_df = df[['schouwdatum', 'opleverdatum', 'toestemming', 'toestemming_datum', 'opleverstatus']]
 
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    ready_for_has_df = schouw_df[
-        (
-            (
-                    ~schouw_df.schouwdatum.isna() &
-                    (
-                            schouw_df.schouwdatum <= time_point
-                    )
-            )
-        ) &
-        (
-                schouw_df.opleverdatum.isna() |
-                (
-                        schouw_df.opleverdatum >= time_point
-                )
-        ) &
-        (
-            ~schouw_df.toestemming_datum.isna()
-        ) &
-        (
-                schouw_df.opleverstatus != '0'
-        )
-        ]
+    ready_for_has_df = schouw_df[br.has_werkvoorraad(schouw_df, time_delta_days)]
     return len(ready_for_has_df)
 
 
@@ -1596,7 +1563,7 @@ def calculate_on_time_ratio(df):
     max_order_time = 56
     ordered = df[df.ordered & df.opgeleverd]
     on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = len(on_time)/len(ordered)
+    on_time_ratio = len(on_time) / len(ordered)
     return on_time_ratio
 
 
