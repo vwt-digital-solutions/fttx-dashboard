@@ -8,6 +8,6 @@ export.sh
 deploy.sh
 *.ipynb_checkpoints*
 *.ipynb
-test.py
+*tests.py
 *.pickle
 *.pkl
