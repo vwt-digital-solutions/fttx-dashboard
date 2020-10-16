@@ -1,6 +1,5 @@
 from functools import reduce
 import pandas as pd
-import numpy as np
 
 try:
     from functions import pie_chart_reden_na, get_pie_layout
@@ -186,21 +185,3 @@ def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on
                          target=str(outlook))
 
     return jaaroverzicht
-
-
-def calculate_on_time_ratio(df):
-    # Maximum days an order is allowed to take in days
-    max_order_time = 56
-    ordered = df[df.ordered & df.opgeleverd]
-    on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = len(on_time)/len(ordered)
-    return on_time_ratio
-
-
-def calculate_oplevertijd(row):
-    # Do not calculate an oplevertijd if row was not ordered or not opgeleverd
-    if row.ordered and row.opgeleverd:
-        oplevertijd = (row.opleverdatum - row.toestemming_datum).days
-    else:
-        oplevertijd = np.nan
-    return oplevertijd
