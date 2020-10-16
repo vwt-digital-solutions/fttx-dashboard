@@ -34,12 +34,10 @@ def analyse(request):
             get().to_dict().get('date'))
 
         if ((datetime.now() - latest_consume) > timedelta(minutes=5)) and (latest_analysis < latest_consume):
-            publish_project_data(request, 'kpn')
             analyseKPN('kpn')
             analyseTmobile('tmobile')
+            publish_project_data(request, 'dfn')
             set_date_update()
-            # analyseDFN('dfn')
-            # publish_project_data(request, 'dfn')
             return 'OK', 200
         else:
             logging.info('Analyse skipped, already up to date')
