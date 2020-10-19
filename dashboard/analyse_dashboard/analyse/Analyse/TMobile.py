@@ -1,5 +1,6 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
 from Analyse.Record import Record, DocumentListRecord, DictRecord
+import business_rules as br
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
@@ -21,11 +22,11 @@ class TMobileTransform(FttXTransform):
 
     def _georderd(self):
         # Iedere woning met een toestemmingsdatum is geordered door T-mobile.
-        self.transformed_data.df['ordered'] = ~self.transformed_data.df.toestemming_datum.isna()
+        self.transformed_data.df['ordered'] = br.ordered(self.transformed_data.df.toestemming_datum)
 
     def _opgeleverd(self):
         # Iedere woning met een opleverdatum is opgeleverd.
-        self.transformed_data.df['opgeleverd'] = ~self.transformed_data.df.opleverdatum.isna()
+        self.transformed_data.df['opgeleverd'] = br.opgeleverd(self.transformed_data.df)
 
     def _calculate_oplevertijd(self):
         # Oplevertijd is het verschil tussen de toestemmingsdatum en opleverdatum, in dagen.

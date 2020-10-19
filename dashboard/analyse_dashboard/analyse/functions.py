@@ -114,7 +114,7 @@ def get_hc_hpend_ratio_total(hc, hpend):
 # Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
 def get_hc_hpend_ratio(df: pd.DataFrame):
     temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
-    temp_df['has_opleverdatum'] = br.opgeleverd(temp_df)
+    temp_df['has_opleverdatum'] = br.opgeleverd(df)
     sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(
         by="project").sum().reset_index()
     sum_df['ratio'] = sum_df.apply(
@@ -1017,7 +1017,7 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     :return:
     """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    mask = br.opgeleverd(df, time_point) & br.toestemming_bekend(df)
+    mask = br.opgeleverd(df, time_delta_days) & br.toestemming_bekend(df)
     toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
 
     toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
