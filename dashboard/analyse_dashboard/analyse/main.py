@@ -1,5 +1,4 @@
 import config
-from google.cloud import pubsub
 from Analyse.KPN import KPNETL
 from Analyse.TMobile import TMobileETL
 from Analyse.DFN import DFNETL
@@ -11,8 +10,6 @@ import pandas as pd
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
-publisher = pubsub.PublisherClient()
 
 db = firestore_v1.Client()
 
