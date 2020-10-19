@@ -445,28 +445,6 @@ def preprocess_for_jaaroverzicht(*args):
     # return prog, target, real, plan
 
 
-def get_target(**data):
-    return str(round(sum(data['target'][1:])))
-
-
-def get_planning(**data):
-    n_now = datetime.date.today().month
-    return str(int(sum(data['planning'][n_now:]) - data['realisatie'][n_now]))
-
-
-def get_prognose(**data):
-    n_now = datetime.date.today().month
-    return str(int(sum(data['prognose'][n_now:]) - data['realisatie'][n_now]))
-
-
-def get_realisatie(**data):
-    return str(int(data['realisatie']))
-
-
-def get_HC_HPend(**data):
-    return str(data['HC_HPend'])
-
-
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
     n_now = datetime.date.today().month
 
@@ -486,83 +464,6 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
     return jaaroverzicht
-
-
-def meters(d_sheets, tot_l, x_d, y_target_l):
-    teams_BIS_all = []
-    m_BIS_all = []
-    teams_HAS_all = []
-    m_HAS_all = []
-    w_BIS_all = []
-    w_HAS_all = []
-    y_BIS = {}
-    y_schouw = {}
-    y_HASm = {}
-    y_HAS = {}
-    y_target = {}
-
-    for key in d_sheets:
-        m_BIST = d_sheets[key].iloc[10, 1]
-        if np.isnan(m_BIST):
-            m_BIST = tot_l[key] * 7  # based on average
-        m_BIS = d_sheets[key].iloc[10, 2:].fillna(0)  # data from week 1 2020
-        teams_BIS = d_sheets[key].iloc[5, 2:].fillna(0)
-        w_BIS = d_sheets[key].iloc[12, 2:].fillna(0)
-        teams_BIS_all += teams_BIS.to_list()
-        m_BIS_all += m_BIS.to_list()
-        w_BIS_all += w_BIS.to_list()
-
-        m_HAST = d_sheets[key].iloc[11, 1]
-        if np.isnan(m_HAST):
-            m_HAST = tot_l[key] * 3  # based on average
-        m_HAS = d_sheets[key].iloc[11, 2:].fillna(0)
-        teams_HAS = d_sheets[key].iloc[7, 2:].fillna(0)
-        w_HP = d_sheets[key].iloc[28, 2:].fillna(0)
-        w_2 = d_sheets[key].iloc[24, 2:].fillna(0)
-        # w_33 = d_sheets[key].iloc[27, 2:].fillna(0)
-        # w_35 = d_sheets[key].iloc[26, 2:].fillna(0)
-        # w_31 = d_sheets[key].iloc[25, 2:].fillna(0)
-        # w_11 = d_sheets[key].iloc[23, 2:].fillna(0)
-        # w_1 = d_sheets[key].iloc[22, 2:].fillna(0)
-        # w_5 = d_sheets[key].iloc[21, 2:].fillna(0)
-        teams_HAS_all += teams_HAS.to_list()
-        m_HAS_all += m_HAS.to_list()
-        w_HAS_all += (w_HP + w_2).to_list()
-
-        w_SLB = d_sheets[key].iloc[32, 2:].fillna(0)
-        w_SHB = d_sheets[key].iloc[36, 2:].fillna(0)
-
-        if key in y_target_l:
-            y_target_p = pd.DataFrame(index=x_d, columns=['y_target'], data=y_target_l[key])
-        else:
-            y_target_p = pd.DataFrame(index=x_d, columns=['y_target'], data=0)
-        x_target = y_target_p['2019-12-30':'2020-12-21'].resample(
-            'W-MON', closed='right', loffset='-1W-MON').mean().index.strftime('%Y-%m-%d').to_list()
-        y_target[key] = y_target_p['2019-12-30':'2020-12-21'].resample(
-            'W-MON', closed='right', loffset='-1W-MON').mean()['y_target'].to_list()
-
-        y_BIS[key] = (m_BIS.cumsum() / m_BIST * 100).to_list() + [0] * (len(y_target[key]) - len(m_BIS))
-        y_HASm[key] = (m_HAS.cumsum() / m_HAST * 100).to_list() + [0] * (len(y_target[key]) - len(m_HAS))
-        y_HAS[key] = ((w_HP + w_2).cumsum() / tot_l[key] * 100).to_list() + [0] * (len(y_target[key]) - len(w_HP))
-        y_schouw[key] = ((w_SLB + w_SHB).cumsum() / tot_l[key] * 100).to_list() + [0] * (
-                len(y_target[key]) - len(w_SLB))
-
-    m_gegraven = [el1 + el2 for el1, el2 in zip(m_BIS_all, m_HAS_all)]
-    rc_BIS, _ = np.polyfit(teams_BIS_all, m_gegraven, 1)  # aantal meters BIS per team per week
-    rc_HAS, _ = np.polyfit(teams_HAS_all, w_HAS_all, 1)
-    w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-    advies = {}
-    for key in y_target:
-        BIS_advies = round(
-            (y_target[key][w_now] - y_BIS[key][w_now]) / 100 * tot_l[key] * 7 / rc_BIS)  # gem 7m BIS per woning
-        if BIS_advies <= 0:
-            BIS_advies = 'On target!'
-        HAS_advies = round((y_target[key][w_now] - y_HAS[key][w_now]) / 100 * tot_l[key] / rc_HAS)
-        if HAS_advies <= 0:
-            HAS_advies = 'On target!'
-        advies[key] = 'Advies:<br>' + 'BIS teams: ' + str(BIS_advies) + '<br>HAS teams: ' + str(HAS_advies)
-
-    return x_target, y_target, y_BIS, y_HASm, y_HAS, y_schouw, advies
 
 
 def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
@@ -789,24 +690,6 @@ def calculate_weeknerr(project, n_err):
                 id=None)
 
 
-def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
-    rc1_mean = sum(rc1.values()) / len(rc1.values())
-    rc2_mean = sum(rc2.values()) / len(rc2.values())
-    for key in date_FTU0:
-        if key not in d_real_l:  # the case of no realisation date
-            t_shift[key] = x_prog[x_d == date_FTU0[key]][0]
-            b1_mean = -(rc1_mean * (t_shift[key] + 14))  # to include delay of two week
-            y_prog1 = b1_mean + rc1_mean * x_prog
-            b2_mean = cutoff - (rc2_mean * x_prog[y_prog1 >= cutoff][0])
-            y_prog2 = b2_mean + rc2_mean * x_prog
-            y_prog_l[key] = y_prog1.copy()
-            y_prog_l[key][y_prog1 >= cutoff] = y_prog2[y_prog1 >= cutoff]
-            y_prog_l[key][y_prog_l[key] > 100] = 100
-            y_prog_l[key][y_prog_l[key] < 0] = 0
-
-    return y_prog_l, t_shift
-
-
 def calculate_y_voorraad_act(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
     return df[
@@ -834,35 +717,6 @@ def add_token_mapbox(token):
     record = dict(id='token_mapbox',
                   token=token)
     firestore.Client().collection('Graphs').document(record['id']).set(record)
-
-
-def from_rd(x: int, y: int) -> tuple:
-    x0 = 155000
-    y0 = 463000
-    phi0 = 52.15517440
-    lam0 = 5.38720621
-
-    # Coefficients or the conversion from RD to WGS84
-    Kp = [0, 2, 0, 2, 0, 2, 1, 4, 2, 4, 1]
-    Kq = [1, 0, 2, 1, 3, 2, 0, 0, 3, 1, 1]
-    Kpq = [3235.65389, -32.58297, -0.24750, -0.84978, -0.06550, -0.01709,
-           -0.00738, 0.00530, -0.00039, 0.00033, -0.00012]
-
-    Lp = [1, 1, 1, 3, 1, 3, 0, 3, 1, 0, 2, 5]
-    Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
-    Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607,
-           0.01199, -0.00256, 0.00128, 0.00022, -0.00022, 0.00026]
-
-    """
-    Converts RD coordinates into WGS84 coordinates
-    """
-    dx = 1E-5 * (x - x0)
-    dy = 1E-5 * (y - y0)
-    latitude = phi0 + sum([v * dx ** Kp[i] * dy ** Kq[i]
-                           for i, v in enumerate(Kpq)]) / 3600
-    longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
-                            for i, v in enumerate(Lpq)]) / 3600
-    return latitude, longitude
 
 
 def set_date_update():

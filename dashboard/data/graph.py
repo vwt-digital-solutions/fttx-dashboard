@@ -1,4 +1,3 @@
-from analyse_dashboard.analyse.functions import from_rd
 from data import api, local
 import pandas as pd
 import plotly.graph_objs as go
@@ -285,3 +284,32 @@ def geomap_data_table(drop_selectie, mask_all):
     )
     fig['table'] = df_table
     return fig
+
+
+def from_rd(x: int, y: int) -> tuple:
+    x0 = 155000
+    y0 = 463000
+    phi0 = 52.15517440
+    lam0 = 5.38720621
+
+    # Coefficients or the conversion from RD to WGS84
+    Kp = [0, 2, 0, 2, 0, 2, 1, 4, 2, 4, 1]
+    Kq = [1, 0, 2, 1, 3, 2, 0, 0, 3, 1, 1]
+    Kpq = [3235.65389, -32.58297, -0.24750, -0.84978, -0.06550, -0.01709,
+           -0.00738, 0.00530, -0.00039, 0.00033, -0.00012]
+
+    Lp = [1, 1, 1, 3, 1, 3, 0, 3, 1, 0, 2, 5]
+    Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
+    Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607,
+           0.01199, -0.00256, 0.00128, 0.00022, -0.00022, 0.00026]
+
+    """
+    Converts RD coordinates into WGS84 coordinates
+    """
+    dx = 1E-5 * (x - x0)
+    dy = 1E-5 * (y - y0)
+    latitude = phi0 + sum([v * dx ** Kp[i] * dy ** Kq[i]
+                           for i, v in enumerate(Kpq)]) / 3600
+    longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
+                            for i, v in enumerate(Lpq)]) / 3600
+    return latitude, longitude
