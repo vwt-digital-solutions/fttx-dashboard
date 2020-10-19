@@ -3,128 +3,13 @@ from typing import NamedTuple
 
 import pandas as pd
 import numpy as np
-from google.cloud import firestore, storage
-import os
+from google.cloud import firestore
 import time
-import json
 import datetime
-import hashlib
 import config
 from collections import namedtuple
 
 colors = config.colors_vwt
-
-
-def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
-    fn_l = os.listdir(path_data + '../jsonFC/')
-    client = storage.Client()
-    bucket = client.get_bucket('vwt-d-gew1-it-fiberconnect-int-preprocess-stg')
-    blobs = bucket.list_blobs()
-    for blob in blobs:
-        if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-            blob.download_to_filename(path_data + '../jsonFC/' + blob.name.split('/')[-1])
-    fn_l = os.listdir(path_data + '../jsonFC/')
-
-    df_l = {}
-    for fn in fn_l:
-        df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
-        df = df.replace('', np.nan).fillna(np.nan)
-        if df['title'].iloc[0][0:-13] != 'Bergen op Zoom Noord\xa0  wijk 01\xa0+ Halsteren':
-            df['title'] = key = df['title'].iloc[0][0:-13]
-        else:
-            df['title'] = key = 'Bergen op Zoom Noord  wijk 01 + Halsteren'
-        # df = df[~df.sleutel.isna()]  # generate this as error output?
-        df.rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
-                           'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
-                           'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
-                           'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
-                           'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
-                           'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                           'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
-                           'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
-                           'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
-                           'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
-                           'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
-                           'SchouwDatum': 'schouwdatum', 'Plan Status': 'plan_status'}, inplace=True)
-        if flag == 0:
-            df = df[col]
-        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] = \
-            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
-        df.loc[~df['hasdatum'].isna(), ('hasdatum')] = \
-            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
-        if (key in subset) and (key not in df_l.keys()):
-            df_l[key] = df
-        if (key in subset) and (key in df_l.keys()):
-            df_l[key] = df_l[key].append(df, ignore_index=True)
-            df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
-
-        if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
-            os.remove(path_data + '../jsonFC/' + fn)
-
-    # hash sleutel code
-    if flag == 0:
-        for key in df_l:
-            df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
-
-    for key in subset:
-        if key not in df_l:
-            df_l[key] = pd.DataFrame(columns=col)
-
-    return df_l
-
-
-def extract_data_planning(path_data):
-    # if 'gs://' in path_data:
-    #     xls = pd.ExcelFile(path_data)
-    # else:
-    xls = pd.ExcelFile(path_data)
-    df = pd.read_excel(xls, 'FTTX ').fillna(0)
-    return df
-
-
-# TODO: Transform this function to use more elegant pandas ETL-style process
-def transform_data_planning(df):
-    HP = dict(HPendT=[0] * 52)
-    for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
-        if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
-            HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
-            HP['HPendT'] = [sum(x) for x in zip(HP['HPendT'], HP[df.loc[el, ('Unnamed: 0')]])]
-            if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Oude Stad':
-                HP['Bergen op Zoom oude stad'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
-                HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
-                HP['Bergen op Zoom Noord Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
-                HP['Den Haag Bezuidenhout'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
-                HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
-                HP['Den Haag Vredelust Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == '':
-                HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
-                HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    return HP
-
-
-def get_data_planning(path_data, subset_KPN_2020):
-    df = extract_data_planning(path_data)
-    HP = transform_data_planning(df)
-    return HP
-
-
-def get_data_targets(path_data):
-    doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
-    if doc is not None:
-        date_FTU0 = doc['FTU0']
-        date_FTU1 = doc['FTU1']
-        dates = date_FTU0, date_FTU1
-    else:
-        print("Could not retrieve FTU0 and FTU1 from firestore, setting from original file")
-        dates = get_data_targets_init(path_data)
-    return dates
 
 
 # Function to use only when data_targets in database need to be reset.
@@ -141,43 +26,6 @@ def get_data_targets_init(path_data, map_key):
                 date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
-
-
-# Legacy
-def get_data_meters(path_data):
-    map_key = {
-        'Data Oosterhout': 'Nijmegen Oosterhout',
-        'Data Bottendaal': 'Nijmegen Bottendaal',
-        'Data Oude stad': 'Bergen op Zoom oude stad',
-        # 'Data Gouda Centrum': ' ',  # niet in FC?
-        'Data Klarendal': 'Arnhem Klarendal',
-        'Data Malburgen': 'Arnhem Malburgen',
-        'Data Spijkerbuurt': 'Arnhem Spijkerbuurt',
-        'Data Bergen op Zoom': 'Bergen op Zoom Oost',
-        'Data Brielle': 'Brielle',
-        'Data Morgenstond': 'Den Haag Morgenstond west',
-        'Data Breda Brabantpark': 'Breda Brabantpark',
-        'Data Gulden Bodem': 'Arnhem Gulden Bodem Schaarsbergen',
-        'Data Biezen Wolfskuil': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-        'Data Spijkenisse': 'KPN Spijkernisse'
-    }
-    fn_teams = path_data + 'Weekrapportage FttX projecten - Week 22-2020.xlsx'
-    xls = pd.ExcelFile(fn_teams)
-    d_sheets_o = pd.read_excel(xls, None)
-    d_sheets = {}
-    for key_o in d_sheets_o:
-        if key_o in map_key:
-            d_sheets[map_key[key_o]] = d_sheets_o[key_o]
-
-    return d_sheets
-
-
-def get_data(subset, col, gpath_i, path_data, flag):
-    if gpath_i is None:
-        df_l = get_data_projects(subset, col)
-    else:
-        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag)
-    return df_l
 
 
 def get_start_time(df: pd.DataFrame):
@@ -204,23 +52,6 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
     # total_objects['Den Haag Bezuidenhout'] = 9488  # not yet in FC, total from excel bouwstromen
     # total_objects['Den Haag Vredelust Bouwlust'] = 11918  # not yet in FC, total from excel bouwstromen
     return total_objects
-
-
-# Function that adds columns to the source data, to be used in project specs
-# hpend is a boolean column indicating whether an object has been delivered
-# homes_completed is a boolean column indicating a home has been completed
-# bis_gereed is a boolean column indicating whther the BIS for an object has been finished
-def add_relevant_columns(df: pd.DataFrame, year):
-    # TODO add to tranform part of the ETL
-    if not year:
-        year = str(pd.Timestamp.now().year)
-    start_year = pd.to_datetime(year + '-01-01')
-    end_year = pd.to_datetime(year + '-12-31')
-    df['hpend'] = df.opleverdatum.apply(lambda x: (x >= start_year) and (x <= end_year))
-    df['homes_completed'] = (df.opleverstatus == '2') & (df.hpend)
-    df['homes_completed_total'] = (df.opleverstatus == '2')
-    df['bis_gereed'] = df.opleverstatus != '0'
-    return df
 
 
 # Calculates the amount of homes completed per project in a dictionary
@@ -294,12 +125,6 @@ def get_hc_hpend_ratio(df: pd.DataFrame):
 def get_has_werkvoorraad(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
     return calculate_ready_for_has(df)
-
-
-# Function to add relevant data to the source data_frames
-def preprocess_data(df, year):
-    df = add_relevant_columns(df, year)
-    return df
 
 
 class ProjectSpecs(NamedTuple):
@@ -783,129 +608,6 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
     return record_dict
 
 
-def masks_phases(pkey, df_l):
-    def calculate_bar(bar_m, mask):
-        bar = {}
-        for key in bar_m:
-            len_b = (bar_m[key] & mask).value_counts()
-            if True in len_b:
-                bar[key[0:-5]] = str(len_b[True])
-            else:
-                bar[key[0:-5]] = str(0)
-        return bar
-
-    df = df_l[pkey]
-    bar_m = {'SchouwenLB0-mask': (df['toestemming'].isna()) &
-                                 (df['soort_bouw'] == 'Laag'), 'SchouwenLB1-mask': (~df['toestemming'].isna()) &
-                                                                                   (df['soort_bouw'] == 'Laag'),
-             'SchouwenHB0-mask': (df['toestemming'].isna()) &
-                                 (df['soort_bouw'] != 'Laag'), 'SchouwenHB1-mask': (~df['toestemming'].isna()) &
-                                                                                   (df['soort_bouw'] != 'Laag'),
-             'BISLB0-mask': (df['opleverstatus'] == '0') &
-                            (df['soort_bouw'] == 'Laag'), 'BISLB1-mask': (df['opleverstatus'] != '0') &
-                                                                         (df['soort_bouw'] == 'Laag'),
-             'BISHB0-mask': (df['opleverstatus'] == '0') &
-                            (df['soort_bouw'] != 'Laag'), 'BISHB1-mask': (df['opleverstatus'] != '0') &
-                                                                         (df['soort_bouw'] != 'Laag'),
-             'Montage-lasDPLB0-mask': (df['laswerkdpgereed'] == '0') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasDPLB1-mask': (df['laswerkdpgereed'] == '1') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasDPHB0-mask': (df['laswerkdpgereed'] == '0') &
-                                      (df['soort_bouw'] != 'Laag'),
-             'Montage-lasDPHB1-mask': (df['laswerkdpgereed'] == '1') &
-                                      (df['soort_bouw'] != 'Laag'),
-             'Montage-lasAPLB0-mask': (df['laswerkapgereed'] == '0') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasAPLB1-mask': (df['laswerkapgereed'] == '1') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasAPHB0-mask': (df['laswerkapgereed'] == '0') &
-                                      (df['soort_bouw'] != 'Laag'),
-             'Montage-lasAPHB1-mask': (df['laswerkapgereed'] == '1') &
-                                      (df['soort_bouw'] != 'Laag'), 'HASLB0-mask': (df['opleverdatum'].isna()) &
-                                                                                   (df['soort_bouw'] == 'Laag'),
-             'HASLB1-mask': (df['opleverstatus'] == '2') &
-                            (df['soort_bouw'] == 'Laag'), 'HASLB1HP-mask': (df['opleverstatus'] != '2') &
-                                                                           (~df['opleverdatum'].isna()) &
-                                                                           (df['soort_bouw'] == 'Laag'),
-             'HASHB0-mask': (df['opleverdatum'].isna()) &
-                            (df['soort_bouw'] != 'Laag'), 'HASHB1-mask': (df['opleverstatus'] == '2') &
-                                                                         (df['soort_bouw'] != 'Laag'),
-             'HASHB1HP-mask': (df['opleverstatus'] != '2') &
-                              (~df['opleverdatum'].isna()) &
-                              (df['soort_bouw'] != 'Laag')}
-
-    document_list = []
-    mask_level0 = True
-    bar = calculate_bar(bar_m, mask=mask_level0)
-    bar_names = ['0']
-    record = dict(bar=bar)
-    document = dict(record=record,
-                    filter="0",
-                    graph_name="status_bar_chart",
-                    project=pkey)
-    document_list.append(document)
-
-    for key2 in bar_m:
-        mask_level1 = bar_m[key2]
-        bar = calculate_bar(bar_m, mask=mask_level0 & mask_level1)
-        bar_names += ['0' + key2[0:-5]]
-        record = dict(bar=bar, mask=json.dumps(df[mask_level0 & mask_level1].sleutel.to_list()))
-        document = dict(record=record,
-                        filter="0" + key2[0:-5],
-                        graph_name="status_bar_chart",
-                        project=pkey)
-        document_list.append(document)
-
-        for key3 in bar_m:
-            mask_level2 = bar_m[key3]
-            bar = calculate_bar(bar_m, mask=mask_level0 & mask_level1 & mask_level2)
-            bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-            record = dict(bar=bar,
-                          mask=json.dumps(df[mask_level0 & mask_level1 & mask_level2].sleutel.to_list()))
-            document = dict(record=record,
-                            filter="0" + key2[0:-5] + key3[0:-5],
-                            graph_name="status_bar_chart",
-                            project=pkey)
-            document_list.append(document)
-    return bar_names, document_list
-
-
-# def set_bar_names(bar_m):
-#     bar_names = ['0']
-#     for key2 in bar_m:
-#         bar_names += ['0' + key2[0:-5]]
-#     for key2 in bar_m:
-#         for key3 in bar_m:
-#             bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-#     record = dict(id='bar_names', bar_names=bar_names)
-#     firestore.Client().collection('Data').document(record['id']).set(record)
-
-
-def get_data_projects(subset, col):
-    t = time.time()
-    df_l = {}
-    for key in subset:
-        docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
-        records = []
-        for doc in docs:
-            records += [doc.to_dict()]
-        if records != []:
-            df_l[key] = pd.DataFrame(records)[col].fillna(np.nan)
-        else:
-            df_l[key] = pd.DataFrame(columns=col).fillna(np.nan)
-        # to correct for datetime value at HUB
-        df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
-            [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
-        df_l[key].loc[~df_l[key]['hasdatum'].isna(), ('hasdatum')] = \
-            [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
-
-        print(key)
-        print('Time: ' + str((time.time() - t) / 60) + ' minutes')
-
-    return df_l
-
-
 def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
     n_now = int((pd.Timestamp.now() - x_d[0]).days)
     x = []
@@ -1028,10 +730,6 @@ def get_intersect(a1, a2, b1, b2):
     if z == 0:  # lines are parallel
         return (float('inf'), float('inf'))
     return (x / z, y / z)
-
-
-def firstday_week1_2020():
-    return pd.to_datetime('2019-12-30')
 
 
 def days_in_2019(timeline):
@@ -1353,10 +1051,6 @@ def individual_reden_na(df: pd.DataFrame, clusters):
     return record_dict
 
 
-def to_firestore(collection, document, record):
-    firestore.Client().collection(collection).document(document).set(record)
-
-
 def get_pie_layout():
     layout = {
         #   'clickmode': 'event+select',
@@ -1596,7 +1290,7 @@ def calculate_on_time_ratio(df):
     max_order_time = 56
     ordered = df[df.ordered & df.opgeleverd]
     on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = len(on_time)/len(ordered)
+    on_time_ratio = len(on_time) / len(ordered)
     return on_time_ratio
 
 
