@@ -4,7 +4,6 @@ import dash_core_components as dcc
 import config
 from data.data import no_graph
 from layout.components.figure import figure
-
 colors = config.colors_vwt
 
 

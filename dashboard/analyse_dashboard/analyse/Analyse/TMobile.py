@@ -3,6 +3,7 @@ from Analyse.Record import Record, DocumentListRecord, DictRecord
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
+from functions import calculate_on_time_ratio, calculate_oplevertijd
 import logging
 logger = logging.getLogger('T-mobile Analyse')
 
@@ -14,6 +15,21 @@ class TMobileTransform(FttXTransform):
     def transform(self, **kwargs):
         super().transform(**kwargs)
         self._HAS_add_weeknumber()
+        self._georderd()
+        self._opgeleverd()
+        self._calculate_oplevertijd()
+
+    def _georderd(self):
+        # Iedere woning met een toestemmingsdatum is geordered door T-mobile.
+        self.transformed_data.df['ordered'] = ~self.transformed_data.df.toestemming_datum.isna()
+
+    def _opgeleverd(self):
+        # Iedere woning met een opleverdatum is opgeleverd.
+        self.transformed_data.df['opgeleverd'] = ~self.transformed_data.df.opleverdatum.isna()
+
+    def _calculate_oplevertijd(self):
+        # Oplevertijd is het verschil tussen de toestemmingsdatum en opleverdatum, in dagen.
+        self.transformed_data.df['oplevertijd'] = self.transformed_data.df.apply(lambda x: calculate_oplevertijd(x), axis='columns')
 
     def _HAS_add_weeknumber(self):
         self.transformed_data.df['has_week'] = add_weeknumber(self.transformed_data.df['hasdatum'])
@@ -50,11 +66,15 @@ class TMobileAnalyse(FttXAnalyse):
             self.intermediate_results.counts_by_month['count_opleverdatum'],
             self.intermediate_results.counts_by_month['count_hasdatum'],
         )
+        on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
+        outlook = self.transformed_data.df['ordered'].sum()
         jaaroverzicht = calculate_jaaroverzicht(
             real,
             plan,
             self.intermediate_results.HAS_werkvoorraad,
-            self.intermediate_results.HC_HPend
+            self.intermediate_results.HC_HPend,
+            on_time_ratio,
+            outlook
         )
         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 

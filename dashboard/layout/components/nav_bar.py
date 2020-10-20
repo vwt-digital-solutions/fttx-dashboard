@@ -1,16 +1,14 @@
 from config_pages import config_pages
 import dash_bootstrap_components as dbc
 import config
+from utils import get_client_name
 
 colors = config.colors_vwt
 
 
-def nav_bar(huidige_pagina, brand):
+def nav_bar(client, brand):
 
-    for page in config_pages:
-        if huidige_pagina in config_pages[page]['link']:
-            huidige_pagina = config_pages[page]['name']
-            break
+    huidige_pagina = get_client_name(client)
 
     dropdown_items = []
     for page in config_pages:
