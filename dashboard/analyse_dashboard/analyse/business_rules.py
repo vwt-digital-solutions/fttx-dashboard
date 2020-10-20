@@ -1,14 +1,27 @@
 import pandas as pd
 
 
-def is_date_set(series, time_delta_days=0):
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+def is_date_set(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
+    """
+    To determine if a date is set.
+
+    This function determines if a dates is set at a particular date. By default it checks if it is set for today or
+    earlier. A date must be known (not isna), and it must be before or on the checked date (today minus time_delta_days)
+    :param series:
+    :param time_delta_days:
+    :return:
+    """
+    time_point: pd.Timestamp = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
     return (
             ~series.isna() &  # date must be known
             (
                     series <= time_point  # the date must be before or on the day of the delta.
             )
     )
+
+
+def geschouwed(df, time_delta_days=0):
+    return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
 
 
 def ordered(df, time_delta_days=0):
@@ -43,11 +56,11 @@ def bis_niet_opgeleverd(df):
     return df['opleverstatus'] == '0'
 
 
-def has_opgeleverd(df):
+def hc_opgeleverd(df):
     return df['opleverstatus'] == '2'
 
 
-def has_opgeleverd_zonder_hc(df):
+def hp_opgeleverd(df):
     return (
             (df['opleverstatus'] != '2') &
             (~df['opleverdatum'].isna())
@@ -64,6 +77,7 @@ def has_ingeplanned(df):
 def has_niet_opgeleverd(df):
     return (
             df['opleverdatum'].isna() &
+            # TODO is the hasdatum not the planned date? If so, 'has' can be 'niet opgeleverd' but still be planned.
             df['hasdatum'].isna()
     )
 

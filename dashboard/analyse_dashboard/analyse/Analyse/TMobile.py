@@ -22,7 +22,7 @@ class TMobileTransform(FttXTransform):
 
     def _georderd(self):
         # Iedere woning met een toestemmingsdatum is geordered door T-mobile.
-        self.transformed_data.df['ordered'] = br.ordered(self.transformed_data.df.toestemming_datum)
+        self.transformed_data.df['ordered'] = br.ordered(self.transformed_data.df)
 
     def _opgeleverd(self):
         # Iedere woning met een opleverdatum is opgeleverd.

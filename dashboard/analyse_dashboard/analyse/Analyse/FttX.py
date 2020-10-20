@@ -123,9 +123,9 @@ class FttXTransform(Transform):
         logger.info("Adding columns to dataframe")
 
         self.transformed_data.df['hpend'] = br.hpend_year(self.transformed_data.df, self.year)
-        self.transformed_data.df['homes_completed'] = br.has_opgeleverd(self.transformed_data.df) & (
+        self.transformed_data.df['homes_completed'] = br.hc_opgeleverd(self.transformed_data.df) & (
             self.transformed_data.df.hpend)
-        self.transformed_data.df['homes_completed_total'] = br.has_opgeleverd(self.transformed_data.df)
+        self.transformed_data.df['homes_completed_total'] = br.hc_opgeleverd(self.transformed_data.df)
         self.transformed_data.df['bis_gereed'] = br.bis_opgeleverd(self.transformed_data.df)
         self.transformed_data.df['in_has_werkvoorraad'] = br.has_werkvoorraad(self.transformed_data.df)
 
@@ -133,7 +133,7 @@ class FttXTransform(Transform):
         logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
         self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
-        self.transformed_data.df.loc[br.has_opgeleverd(self.transformed_data.df), ['cluster_redenna']] = 'HC'
+        self.transformed_data.df.loc[br.hc_opgeleverd(self.transformed_data.df), ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
 
@@ -144,8 +144,8 @@ class FttXTransform(Transform):
         has_rules_list = [
             br.has_niet_opgeleverd(self.transformed_data.df),
             br.has_ingeplanned(self.transformed_data.df),
-            br.has_opgeleverd_zonder_hc(self.transformed_data.df),
-            br.has_opgeleverd(self.transformed_data.df)
+            br.hp_opgeleverd(self.transformed_data.df),
+            br.hc_opgeleverd(self.transformed_data.df)
         ]
         has = rules_to_state(has_rules_list, state_list)
         geschouwd_rules_list = [
