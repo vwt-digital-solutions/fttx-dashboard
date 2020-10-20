@@ -128,7 +128,11 @@ dfn = DFNTestETL(client='dfn', config=config.client_config['dfn'])
 # dfn = DFNETL(client='dfn', config=config.client_config['dfn'])
 dfn.perform()
 # %%
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-6860966c0d9d.json'
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["GOOGLE_CLOUD_PROJECT"] = "vwt-d-gew1-fttx-dashboard"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-785e52bf4521.json'
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 kpn = KPNETL(client='kpn', config=config.client_config['kpn'])
 kpn.perform()
+
+# %%
