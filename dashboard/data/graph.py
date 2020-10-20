@@ -140,8 +140,12 @@ def clickbar_hb(drop_selectie, mask_all):
 
 
 def update_date():
-    date_an = api.get('/Graphs?id=update_date')[0]['date']
-    date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
+    try:
+        date_an = api.get('/Graphs?id=update_date')[0]['date']
+        date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
+    except IndexError:
+        date_an = "Unknown"
+        date_con = "Unknown"
     return [date_an, date_con]
 
 
