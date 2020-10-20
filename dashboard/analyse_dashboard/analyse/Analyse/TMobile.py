@@ -2,8 +2,8 @@ from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, Ftt
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
-from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht, calculate_oplevertijd
-from functions_tmobile import calculate_on_time_ratio
+from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
+from functions import calculate_on_time_ratio, calculate_oplevertijd
 import logging
 logger = logging.getLogger('T-mobile Analyse')
 

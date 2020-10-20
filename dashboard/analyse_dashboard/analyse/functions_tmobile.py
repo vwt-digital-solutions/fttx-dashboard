@@ -1,81 +1,10 @@
 from functools import reduce
 import pandas as pd
-import numpy as np
-
-try:
-    from functions import pie_chart_reden_na, get_pie_layout
-except ImportError:
-    from analyse.functions import pie_chart_reden_na, get_pie_layout
-
-
-# Small change to functions for KPN to work with dataframe instead of dict
-# Should be generalised in later stage
-def overview_reden_na_df(df, clusters):
-    data, document = pie_chart_reden_na(df, clusters, 'overview')
-    layout = get_pie_layout()
-    fig = {
-        'data': data,
-        'layout': layout
-    }
-    record = dict(id=document, figure=fig)
-    return record
-
-
-# Small change to functions for KPN to work with dataframe instead of dict
-# Should be generalised in later stage
-def individual_reden_na_df(project_data, clusters):
-    record_dict = {}
-    for project in project_data.project.unique():
-        df_proj = project_data[project_data.project == project].copy()
-        data, document = pie_chart_reden_na(df_proj, clusters, project)
-        layout = get_pie_layout()
-        fig = {
-            'data': data,
-            'layout': layout
-        }
-        record = dict(id=document, figure=fig)
-        record_dict[document] = record
-    return record_dict
-
-
-def column_to_datetime(input_column):
-    input_column = pd.to_datetime(input_column, errors='coerce', infer_datetime_format=True)
-    return input_column
 
 
 def add_weeknumber(input_column):
     input_column = input_column.dt.strftime('%V')
     return input_column
-
-
-# def has_maand_bar_chart(df):
-#     has_maand = df.loc[(df.hasdatum.dt.year >= 2020) & (df.hasdatum.notnull()), :]['hasdatum'].dt.month.to_list()
-#     has_maand.sort()
-#     has_maand = [str(x) for x in has_maand]
-#     has_maand_dict = dict()
-#     for i in has_maand:
-#         has_maand_dict[i] = has_maand_dict.get(i, 0) + 1
-#
-#     return has_maand_dict
-#
-#
-# def has_week_bar_chart(df):
-#     this_week = int(df.datetime.today().strftime('%V'))
-#     five_weeks_ago = this_week - 5
-#     this_week = str(this_week)
-#     five_weeks_ago = str(five_weeks_ago)
-#
-#     has_week = df.loc[(df.hasdatum.dt.year >= 2020) & (df.hasdatum.notnull()), :]['hasdatum_week'].to_list()
-#     has_week.sort()
-#
-#     has_week = [i for i in has_week if (i > five_weeks_ago) & (i <= this_week)]
-#     has_week = [str(x) for x in has_week]
-#
-#     has_week_dict = dict()
-#     for i in has_week:
-#         has_week_dict[i] = has_week_dict.get(i, 0) + 1
-#
-#     return has_week_dict
 
 
 def calculate_voorraadvormend(df):
@@ -94,38 +23,9 @@ def calculate_voorraadvormend(df):
     totals.project = "all"
     totals.name = 'totals'
 
-    voorraad_project_counts = voorraad_project_counts.append(totals).set_index("project").to_dict()['voorraad_count'].copy()
+    voorraad_project_counts = voorraad_project_counts.append(totals).set_index("project").to_dict()[
+        'voorraad_count'].copy()
     return voorraad_project_counts
-
-# Doesnt look like it is used
-# def calculate_planning_has_by_week(df):
-#     count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='W-MON')]).count()
-#     count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
-#
-#     count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='W-MON')]).count()
-#     count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
-#
-#     merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
-#     merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
-#     merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
-#     record = merged_df.set_index("date").to_dict()
-#
-#     return record
-#
-#
-# def calculate_planning_has_by_month(df):
-#     count_plan = df[['project', 'plandatum']].groupby(by=[pd.Grouper(key='plandatum', freq='M')]).count()
-#     count_plan = count_plan.rename(columns={"project": "count_plan"}).reset_index()
-#
-#     count_has = df[['project', 'hasdatum']].groupby(by=[pd.Grouper(key='hasdatum', freq='M')]).count()
-#     count_has = count_has.rename(columns={"project": "count_has"}).reset_index()
-#
-#     merged_df = pd.merge(left=count_plan, right=count_has, left_on="plandatum", right_on="hasdatum", how="outer")
-#     merged_df['date'] = merged_df.hasdatum.combine_first(merged_df.plandatum).dt.strftime("%Y-%m-%d")
-#     merged_df.drop(['plandatum', 'hasdatum'], axis=1, inplace=True)
-#     record = merged_df.set_index("date").to_dict()
-#
-#     return record
 
 
 def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
@@ -173,7 +73,6 @@ def preprocess_for_jaaroverzicht(*args):
 
 
 def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on_time_ratio, outlook):
-
     realisatie_sum = round(sum(realisatie))
     planning_sum = sum(planning)
     planning_result = planning_sum - realisatie_sum
@@ -186,21 +85,3 @@ def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on
                          target=str(outlook))
 
     return jaaroverzicht
-
-
-def calculate_on_time_ratio(df):
-    # Maximum days an order is allowed to take in days
-    max_order_time = 56
-    ordered = df[df.ordered & df.opgeleverd]
-    on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = len(on_time)/len(ordered)
-    return on_time_ratio
-
-
-def calculate_oplevertijd(row):
-    # Do not calculate an oplevertijd if row was not ordered or not opgeleverd
-    if row.ordered and row.opgeleverd:
-        oplevertijd = (row.opleverdatum - row.toestemming_datum).days
-    else:
-        oplevertijd = np.nan
-    return oplevertijd

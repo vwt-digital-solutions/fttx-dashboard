@@ -37,7 +37,7 @@ def get_fig(df: pd.DataFrame, title="") -> go.Figure:
                           title=title,
                           yaxis_title="Aantal woningen",
                           height=500,
+                          plot_bgcolor=colors['plot_bgcolor'],
                           paper_bgcolor=colors['paper_bgcolor'],
-                          plot_bgcolor=colors['paper_bgcolor']
                           )
         return fig

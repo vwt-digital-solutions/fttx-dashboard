@@ -58,8 +58,8 @@ def get_fig(redenna_counts, title="", colors=None):
         title_text=title,
         height=500,
         margin=dict(l=50, r=0, t=100, b=0),
+        plot_bgcolor=config.colors_vwt['plot_bgcolor'],
         paper_bgcolor=config.colors_vwt['paper_bgcolor'],
-        plot_bgcolor=config.colors_vwt['paper_bgcolor']
     )
 
     return fig
