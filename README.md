@@ -34,7 +34,7 @@ Since we are running on localhost and use oauth2, you will have to disable https
 
 ## Run with a local firestore
 
-1. Install firebase
+1. Install firebase (for windows, installation via npm is needed)
 https://firebase.google.com/docs/cli/#install-cli-mac-linux
 
 2. Install emulator
@@ -51,7 +51,7 @@ https://firebase.google.com/docs/firestore/security/test-rules-emulator#install_
 
 5. Run `local_analysis.py`. This will create a pickle file with data from the firestore on the GCP.
 
-6. Set the environment variables
+6. Set the environment variables (for windows, set these variables both in VS code and the anaconda environment)
     ```shell script
     export GOOGLE_CLOUD_PROJECT=vwt-d-gew1-fttx-dashboard
     export FIRESTORE_EMULATOR_HOST=localhost:8080
