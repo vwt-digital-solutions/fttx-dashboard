@@ -1,4 +1,6 @@
 import os
+from flask import send_file
+from io import BytesIO
 import utils
 import dash
 import flask
@@ -39,7 +41,6 @@ app.title = "FttX operationeel"
 
 # Azure AD authentication
 if config.authentication:
-
     session_secret = utils.get_secret(
         config.authentication['gcp_project'],
         config.authentication['secret_name'])
@@ -57,3 +58,25 @@ if config.authentication:
         config.authentication['required_scopes']
     )
     logging.info("Authorization is set up")
+
+
+@app.server.route('/dash/urlToDownload')
+def download_csv():
+    import pandas as pd
+
+    data1 = [
+        [1, 2, 3],
+        [4, 5, 6]
+    ]
+    df = pd.DataFrame(data1, columns=['col1', 'col2', 'col3'])
+
+    output = BytesIO()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    df.to_excel(writer)
+    writer.save()
+    output.seek(0)
+
+    return send_file(output,
+                     mimetype='application/vnd.ms-excel',
+                     attachment_filename='downloadFile.xlsx',
+                     as_attachment=True)
