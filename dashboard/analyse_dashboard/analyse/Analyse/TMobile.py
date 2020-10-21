@@ -64,7 +64,7 @@ class TMobileAnalyse(FttXAnalyse):
     def _jaaroverzicht(self):
         # Function should not be ran on first pass, as it is called in super constructor.
         # Required variables will not be accessible during call of super constructor.
-        if 'counts_by_month' in self.self.intermediate_results:
+        if 'counts_by_month' in self.intermediate_results:
             real, plan = preprocess_for_jaaroverzicht(
                 self.intermediate_results.counts_by_month['count_opleverdatum'],
                 self.intermediate_results.counts_by_month['count_hasdatum'],

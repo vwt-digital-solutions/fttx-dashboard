@@ -253,18 +253,19 @@ class DFNAnalyse(FttXAnalyse):
     #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
-        prog, target, real, plan = preprocess_for_jaaroverzicht(
-            self.intermediate_results.df_prog,
-            self.intermediate_results.df_target,
-            self.intermediate_results.df_real,
-            self.intermediate_results.df_plan,
-        )
-        jaaroverzicht = calculate_jaaroverzicht(
-            prog, target, real, plan,
-            self.intermediate_results.HAS_werkvoorraad,
-            self.intermediate_results.HC_HPend
-        )
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+        if 'df_prog' in self.intermediate_results:
+            prog, target, real, plan = preprocess_for_jaaroverzicht(
+                self.intermediate_results.df_prog,
+                self.intermediate_results.df_target,
+                self.intermediate_results.df_real,
+                self.intermediate_results.df_plan,
+            )
+            jaaroverzicht = calculate_jaaroverzicht(
+                prog, target, real, plan,
+                self.intermediate_results.HAS_werkvoorraad,
+                self.intermediate_results.HC_HPend
+            )
+            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_project_dates(self):
         project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
