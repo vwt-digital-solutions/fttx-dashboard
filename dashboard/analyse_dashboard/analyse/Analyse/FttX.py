@@ -1,3 +1,4 @@
+import os
 import time
 from google.cloud import firestore
 
@@ -13,6 +14,7 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
 from pandas.api.types import CategoricalDtype
+
 logger = logging.getLogger('FttX Analyse')
 
 
@@ -138,7 +140,8 @@ class FttXTransform(Transform):
     def _cluster_reden_na(self):
         logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
-        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(
+            lambda x: cluster_reden_na(x, clus))
         self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
@@ -306,6 +309,9 @@ class FttXLoad(Load, FttXBase):
         logger.info("Loading documents...")
         self.record_dict.to_firestore(self.client)
 
+    def load_enriched(self):
+        pass
+
 
 class FttXTestLoad(FttXLoad):
     def __init__(self, **kwargs):
@@ -360,3 +366,16 @@ class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):
         </table>"""
 
         return table
+
+
+class FttXLocalETL(PickleExtract, FttXETL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def load(self):
+        if 'FIRESTORE_EMULATOR_HOST' in os.environ:
+            logger.info("Loading into emulated firestore")
+            super().load()
+        else:
+            logger.warning(
+                "Attempting to load with a local ETL process but no emulator is configured. Loading aborted.")

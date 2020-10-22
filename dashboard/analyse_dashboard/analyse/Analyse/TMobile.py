@@ -1,4 +1,4 @@
-from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
+from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
@@ -105,6 +105,6 @@ class TMobileTestETL(PickleExtract, FttXTestLoad, TMobileETL):
         super().__init__(**kwargs)
 
 
-class TMobileLocalETL(PickleExtract, TMobileETL):
+class TMobileLocalETL(FttXLocalETL, TMobileETL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
