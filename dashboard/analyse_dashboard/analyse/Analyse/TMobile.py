@@ -63,21 +63,24 @@ class TMobileAnalyse(FttXAnalyse):
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
     def _jaaroverzicht(self):
-        real, plan = preprocess_for_jaaroverzicht(
-            self.intermediate_results.counts_by_month['count_opleverdatum'],
-            self.intermediate_results.counts_by_month['count_hasdatum'],
-        )
-        on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
-        outlook = self.transformed_data.df['ordered'].sum()
-        jaaroverzicht = calculate_jaaroverzicht(
-            real,
-            plan,
-            self.intermediate_results.HAS_werkvoorraad,
-            self.intermediate_results.HC_HPend,
-            on_time_ratio,
-            outlook
-        )
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+        # Function should not be ran on first pass, as it is called in super constructor.
+        # Required variables will not be accessible during call of super constructor.
+        if 'counts_by_month' in self.intermediate_results:
+            real, plan = preprocess_for_jaaroverzicht(
+                self.intermediate_results.counts_by_month['count_opleverdatum'],
+                self.intermediate_results.counts_by_month['count_hasdatum'],
+            )
+            on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
+            outlook = self.transformed_data.df['ordered'].sum()
+            jaaroverzicht = calculate_jaaroverzicht(
+                real,
+                plan,
+                self.intermediate_results.HAS_werkvoorraad,
+                self.intermediate_results.HC_HPend,
+                on_time_ratio,
+                outlook
+            )
+            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
