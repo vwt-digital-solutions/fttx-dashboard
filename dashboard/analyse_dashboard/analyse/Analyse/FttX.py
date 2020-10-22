@@ -233,6 +233,7 @@ class FttXAnalyse(FttXBase):
         self._set_filters()
         self._calculate_status_counts_per_project()
         self._calculate_redenna_per_period()
+        self._jaaroverzicht()
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
@@ -265,6 +266,11 @@ class FttXAnalyse(FttXBase):
 
     def _set_filters(self):
         self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
+
+    def _jaaroverzicht(self):
+        # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
+        jaaroverzicht = {}
+        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
