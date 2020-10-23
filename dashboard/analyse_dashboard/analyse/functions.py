@@ -1017,7 +1017,7 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     :return:
     """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    mask = br.opgeleverd(df, time_delta_days) & br.toestemming_bekend(df)
+    mask = ~br.opgeleverd(df, time_delta_days) & br.toestemming_bekend(df)
     toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
 
     toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
