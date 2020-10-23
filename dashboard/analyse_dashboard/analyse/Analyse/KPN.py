@@ -234,19 +234,22 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
 
     def _jaaroverzicht(self):
-        prog, target, real, plan = preprocess_for_jaaroverzicht(
-            self.intermediate_results.df_prog,
-            self.intermediate_results.df_target,
-            self.intermediate_results.df_real,
-            self.intermediate_results.df_plan,
-        )
+        # Function should not be ran on first pass, as it is called in super constructor.
+        # Required variables will not be accessible during call of super constructor.
+        if 'df_prog' in self.intermediate_results:
+            prog, target, real, plan = preprocess_for_jaaroverzicht(
+                self.intermediate_results.df_prog,
+                self.intermediate_results.df_target,
+                self.intermediate_results.df_real,
+                self.intermediate_results.df_plan,
+            )
 
-        jaaroverzicht = calculate_jaaroverzicht(
-            prog, target, real, plan,
-            self.intermediate_results.HAS_werkvoorraad,
-            self.intermediate_results.HC_HPend
-        )
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+            jaaroverzicht = calculate_jaaroverzicht(
+                prog, target, real, plan,
+                self.intermediate_results.HAS_werkvoorraad,
+                self.intermediate_results.HC_HPend
+            )
+            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")
