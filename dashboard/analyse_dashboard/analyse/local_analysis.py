@@ -1,3 +1,4 @@
+# %%
 from Analyse.FttX import PickleExtract
 from Analyse.TMobile import TMobileETL, TMobileTestETL
 from Analyse.KPN import KPNTestETL, KPNETL
@@ -44,3 +45,5 @@ else:
     client_name = "dfn"
     dfn = DFNTestETL(client=client_name, config=config.client_config[client_name])
     dfn.perform()
+
+# %%
