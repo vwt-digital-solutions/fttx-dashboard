@@ -11,6 +11,7 @@ import pickle  # nosec
 import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
+import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
 from pandas.api.types import CategoricalDtype
@@ -122,27 +123,19 @@ class FttXTransform(Transform):
 
     def _add_columns(self):
         logger.info("Adding columns to dataframe")
-        start_year = pd.to_datetime(self.year + '-01-01')
-        end_year = pd.to_datetime(self.year + '-12-31')
 
-        self.transformed_data.df['hpend'] = self.transformed_data.df.opleverdatum.apply(
-            lambda x: (x >= start_year) and (x <= end_year))
-        self.transformed_data.df['homes_completed'] = (self.transformed_data.df.opleverstatus == '2') & (
+        self.transformed_data.df['hpend'] = br.hpend_year(self.transformed_data.df, self.year)
+        self.transformed_data.df['homes_completed'] = br.hc_opgeleverd(self.transformed_data.df) & (
             self.transformed_data.df.hpend)
-        self.transformed_data.df['homes_completed_total'] = (self.transformed_data.df.opleverstatus == '2')
-        self.transformed_data.df['bis_gereed'] = self.transformed_data.df.opleverstatus != '0'
-        self.transformed_data.df['in_has_werkvoorraad'] = (
-                (~self.transformed_data.df.toestemming.isna()) &
-                (self.transformed_data.df.opleverstatus != '0') &
-                (self.transformed_data.df.opleverdatum.isna())
-        )
+        self.transformed_data.df['homes_completed_total'] = br.hc_opgeleverd(self.transformed_data.df)
+        self.transformed_data.df['bis_gereed'] = br.bis_opgeleverd(self.transformed_data.df)
+        self.transformed_data.df['in_has_werkvoorraad'] = br.has_werkvoorraad(self.transformed_data.df)
 
     def _cluster_reden_na(self):
         logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
-        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(
-            lambda x: cluster_reden_na(x, clus))
-        self.transformed_data.df.loc[self.transformed_data.df['opleverstatus'] == '2', ['cluster_redenna']] = 'HC'
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[br.hc_opgeleverd(self.transformed_data.df), ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
 
@@ -151,50 +144,41 @@ class FttXTransform(Transform):
         state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
         self.transformed_data.df['false'] = False
         has_rules_list = [
-            (
-                    self.transformed_data.df['opleverdatum'].isna() &
-                    self.transformed_data.df['hasdatum'].isna()
-            ),
-            (
-                    self.transformed_data.df['opleverdatum'].isna() &
-                    ~self.transformed_data.df['hasdatum'].isna()
-            ),
-            (
-                    (self.transformed_data.df['opleverstatus'] != '2') &
-                    (~self.transformed_data.df['opleverdatum'].isna())
-            ),
-            self.transformed_data.df['opleverstatus'] == '2'
+            br.has_niet_opgeleverd(self.transformed_data.df),
+            br.has_ingeplanned(self.transformed_data.df),
+            br.hp_opgeleverd(self.transformed_data.df),
+            br.hc_opgeleverd(self.transformed_data.df)
         ]
         has = rules_to_state(has_rules_list, state_list)
         geschouwd_rules_list = [
-            self.transformed_data.df['toestemming'].isna(),
+            ~ br.toestemming_bekend(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            ~self.transformed_data.df['toestemming'].isna()
+            br.toestemming_bekend(self.transformed_data.df)
         ]
         geschouwd = rules_to_state(geschouwd_rules_list, state_list)
 
         bis_gereed_rules_list = [
-            (self.transformed_data.df['opleverstatus'] == '0'),
+            br.bis_niet_opgeleverd(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            self.transformed_data.df['opleverstatus'] != '0'
+            br.bis_opgeleverd(self.transformed_data.df)
         ]
         bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
 
         laswerkdpgereed_rules_list = [
-            (self.transformed_data.df['laswerkdpgereed'] != '1'),
+            br.laswerk_dp_niet_gereed(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            self.transformed_data.df['laswerkdpgereed'] == '1'
+            br.laswerk_dp_gereed(self.transformed_data.df)
         ]
         laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
 
         laswerkapgereed_rules_list = [
-            (self.transformed_data.df['laswerkapgereed'] != '1'),
+            br.laswerk_ap_niet_gereed(self.transformed_data.df),
             self.transformed_data.df['false'],
             self.transformed_data.df['false'],
-            self.transformed_data.df['laswerkapgereed'] == '1'
+            br.laswerk_ap_gereed(self.transformed_data.df)
         ]
         laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
 
@@ -236,6 +220,7 @@ class FttXAnalyse(FttXBase):
         self._set_filters()
         self._calculate_status_counts_per_project()
         self._calculate_redenna_per_period()
+        self._jaaroverzicht()
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
@@ -268,6 +253,11 @@ class FttXAnalyse(FttXBase):
 
     def _set_filters(self):
         self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
+
+    def _jaaroverzicht(self):
+        # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
+        jaaroverzicht = {}
+        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
