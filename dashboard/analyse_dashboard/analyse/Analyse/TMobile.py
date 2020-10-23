@@ -1,7 +1,7 @@
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 import business_rules as br
-from functions import calculate_projectindicators_tmobile
+from functions import calculate_projectindicators_tmobile, wait_bins
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
 from functions import calculate_on_time_ratio, calculate_oplevertijd
@@ -19,6 +19,7 @@ class TMobileTransform(FttXTransform):
         self._georderd()
         self._opgeleverd()
         self._calculate_oplevertijd()
+        self._waiting_category()
 
     def _georderd(self):
         # Iedere woning met een toestemmingsdatum is geordered door T-mobile.
@@ -34,6 +35,12 @@ class TMobileTransform(FttXTransform):
 
     def _HAS_add_weeknumber(self):
         self.transformed_data.df['has_week'] = add_weeknumber(self.transformed_data.df['hasdatum'])
+
+    def _waiting_category(self):
+        toestemming_df = wait_bins(self.transformed_data.df)
+        toestemming_df_prev = wait_bins(self.transformed_data.df, time_delta_days=7)
+        self.transformed_data.df['wait_category'] = toestemming_df.bins
+        self.transformed_data.df['wait_category_minus_delta'] = toestemming_df_prev.bins
 
 
 class TMobileAnalyse(FttXAnalyse):
