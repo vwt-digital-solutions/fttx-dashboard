@@ -141,11 +141,14 @@ def clickbar_hb(drop_selectie, mask_all):
 
 def update_date():
     try:
-        date_an = api.get('/Graphs?id=update_date')[0]['date']
-        date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
+        date_an = api.get('/Graphs?id=update_date')[0]['date'][0:-4].replace('T', ' ')
     except IndexError:
-        date_an = "Unknown"
-        date_con = "Unknown"
+        date_an = "[niet beschikbaar]"
+
+    try:
+        date_con = api.get('/Graphs?id=update_date_consume')[0]['date'][0:-4].replace('T', ' ')
+    except IndexError:
+        date_con = "[niet beschikbaar]"
     return [date_an, date_con]
 
 
