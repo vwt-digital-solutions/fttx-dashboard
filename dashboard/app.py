@@ -1,16 +1,19 @@
-import os
-from flask import send_file
-from io import BytesIO
-import utils
-import dash
-import flask
-import config
-import dash_bootstrap_components as dbc
-
-from authentication.azure_auth import AzureOAuth
-from flask_sslify import SSLify
-from flask_cors import CORS
 import logging
+import os
+from io import BytesIO
+
+import dash
+import dash_bootstrap_components as dbc
+import flask
+import pandas as pd
+from flask import send_file
+from flask_cors import CORS
+from flask_sslify import SSLify
+
+import config
+import utils
+from authentication.azure_auth import AzureOAuth
+from data import api
 
 logging.info("creating flask server")
 server = flask.Flask(__name__)
@@ -60,19 +63,19 @@ if config.authentication:
     logging.info("Authorization is set up")
 
 
-@app.server.route('/dash/urlToDownload')
+@app.server.route('/dash/order_wait_download')
 def download_csv():
-    import pandas as pd
+    value = flask.request.args.get('value')
+    logging.info(f"Collecting data for {value}.")
 
-    data1 = [
-        [1, 2, 3],
-        [4, 5, 6]
-    ]
-    df = pd.DataFrame(data1, columns=['col1', 'col2', 'col3'])
+    request_result = api.get("/Houses/?record.homes_completed_total:false")
+
+    result = pd.DataFrame(
+        x['record'] for x in request_result)
 
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    df.to_excel(writer)
+    result.to_excel(writer)
     writer.save()
     output.seek(0)
 

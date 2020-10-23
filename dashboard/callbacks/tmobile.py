@@ -1,17 +1,16 @@
 import dash
-
-from app import app
+import dash_bootstrap_components as dbc
+import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-
-from data import collection
-from layout.components.graphs import pie_chart
-import dash_bootstrap_components as dbc
-from layout.components.figure import figure
-from layout.components.indicator import indicator
-from config import colors_vwt as colors
-
 from google.cloud import firestore
+
+from app import app
+from config import colors_vwt as colors
+from data import collection
+from layout.components.figure import figure
+from layout.components.graphs import pie_chart
+from layout.components.indicator import indicator
 
 client = "tmobile"
 
@@ -19,7 +18,8 @@ client = "tmobile"
 @app.callback(
     [
         Output("modal-sm", "is_open"),
-        Output(f"indicator-modal-{client}", 'figure')
+        Output(f"indicator-modal-{client}", 'figure'),
+        Output(f"indicator-download-{client}", 'href')
     ],
     [
         Input(f"indicator-late-{client}", "n_clicks"),
@@ -48,11 +48,11 @@ def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clic
                                         colors['vwt_blue'],
                                     ])
 
-        return [not is_open, figure]
+        return [not is_open, figure, '/dash/order_wait_download?value={}'.format(key)]
 
     if close_clicks:
-        return [not is_open, {'data': None, 'layout': None}]
-    return [is_open, {'data': None, 'layout': None}]
+        return [not is_open, {'data': None, 'layout': None}, ""]
+    return [is_open, {'data': None, 'layout': None}, ""]
 
 
 @app.callback(
@@ -89,7 +89,13 @@ def update_indicators(dropdown_selection):
                            figure={'data': None, 'layout': None})
                 ),
                 dbc.ModalFooter(
-                    dbc.Button("Close", id="close-sm", className="ml-auto")
+                    children=[
+                        html.A(
+                            dbc.Button("Download", id="download-indicator", className="ml-auto"),
+                            id=f"indicator-download-{client}",
+                            href="/dash/urlToDownload"),
+                        dbc.Button("Close", id="close-sm", className="ml-auto"),
+                    ]
                 ),
             ],
             id="modal-sm",
@@ -132,7 +138,6 @@ def FTU_table_editable(ww):
     ],
 )
 def FTU_update(data):
-
     record = dict(graph_name='project_dates', client=client)
     FTU0 = {}
     FTU1 = {}
