@@ -29,15 +29,14 @@ client = "tmobile"
     ],
     [
         State("modal-sm", "is_open"),
-        State(f"indicator-data-{client}", "data")
+        State(f"indicator-data-{client}", "data"),
+        State(f'project-dropdown-{client}', 'value')
     ]
 )
-def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result):
+def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result, project):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    print(changed_id)
     if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
         key = changed_id.partition("-")[-1].partition("-")[0]
-        print(key)
         figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
                                     values=list(result[key]['cluster_redenna'].values()),
                                     title="Reden na",
@@ -48,7 +47,7 @@ def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clic
                                         colors['vwt_blue'],
                                     ])
 
-        return [not is_open, figure, '/dash/order_wait_download?value={}'.format(key)]
+        return [not is_open, figure, f'/dash/order_wait_download?wait_category={key}&project={project}']
 
     if close_clicks:
         return [not is_open, {'data': None, 'layout': None}, ""]

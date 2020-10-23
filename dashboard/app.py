@@ -65,17 +65,58 @@ if config.authentication:
 
 @app.server.route('/dash/order_wait_download')
 def download_csv():
-    value = flask.request.args.get('value')
-    logging.info(f"Collecting data for {value}.")
+    wait_category = flask.request.args.get('wait_category')
+    project = flask.request.args.get('project')
+    logging.info(f"Collecting data for {wait_category}.")
 
-    request_result = api.get("/Houses/?record.homes_completed_total:false")
+    request_result = api.get(f"/Houses/?record.wait_category={wait_category}&record.project={project}")
 
     result = pd.DataFrame(
         x['record'] for x in request_result)
 
+    relevant_columns = ['HAS_status',
+                        'aannemer',
+                        'adres',
+                        'bis_status',
+                        'cluster_redenna',
+                        'hasdatum',
+                        'hpend',
+                        'huisext',
+                        'huisnummer',
+                        'in_has_werkvoorraad',
+                        'laagbouw',
+                        'lasAP_status',
+                        'lasDP_status',
+                        'opgeleverd',
+                        'opleverdatum',
+                        'opleverstatus',
+                        'oplevertijd',
+                        'ordered',
+                        'plaats',
+                        'postcode',
+                        'project',
+                        'projectleider',
+                        'redenna',
+                        'schouw_status',
+                        'schouwakkoord',
+                        'schouwdatum',
+                        'sleutel',
+                        'sleuteloverdracht',
+                        'soort_bouw',
+                        'sor_aanwezig',
+                        'status_civiel',
+                        'status_civiel_datum',
+                        'team',
+                        'toelichting_status',
+                        'toestemming',
+                        'toestemming_datum',
+                        'voorkeur',
+                        'wait_category',
+                        ]
+
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    result.to_excel(writer)
+    result[relevant_columns].to_excel(writer)
     writer.save()
     output.seek(0)
 
