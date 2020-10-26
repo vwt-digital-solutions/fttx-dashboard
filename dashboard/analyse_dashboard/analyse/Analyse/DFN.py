@@ -1,7 +1,7 @@
 from google.cloud import firestore
 
 from Analyse.Data import Data
-from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
+from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
@@ -27,7 +27,9 @@ class DFNExtract(FttXExtract):
 
     def _extract_ftu(self):
         logger.info("Extracting FTU")
-        doc = next(firestore.Client().collection('Data').where('id', '==', 'analysis').where('client', '==', 'dfn').stream(), None)
+        doc = next(
+            firestore.Client().collection('Data').where('id', '==', 'analysis').where('client', '==', 'dfn').stream(),
+            None)
         if doc is not None:
             if doc['FTU0']:
                 date_FTU0 = doc['FTU0']
@@ -245,6 +247,7 @@ class DFNAnalyse(FttXAnalyse):
         self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
         self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
         self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
+
     # has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period, client=client)
     # has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
     # has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
@@ -253,18 +256,19 @@ class DFNAnalyse(FttXAnalyse):
     #                                         client=client) if client == 'kpn' else {}  # temp fix
 
     def _jaaroverzicht(self):
-        prog, target, real, plan = preprocess_for_jaaroverzicht(
-            self.intermediate_results.df_prog,
-            self.intermediate_results.df_target,
-            self.intermediate_results.df_real,
-            self.intermediate_results.df_plan,
-        )
-        jaaroverzicht = calculate_jaaroverzicht(
-            prog, target, real, plan,
-            self.intermediate_results.HAS_werkvoorraad,
-            self.intermediate_results.HC_HPend
-        )
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+        if 'df_prog' in self.intermediate_results:
+            prog, target, real, plan = preprocess_for_jaaroverzicht(
+                self.intermediate_results.df_prog,
+                self.intermediate_results.df_target,
+                self.intermediate_results.df_real,
+                self.intermediate_results.df_plan,
+            )
+            jaaroverzicht = calculate_jaaroverzicht(
+                prog, target, real, plan,
+                self.intermediate_results.HAS_werkvoorraad,
+                self.intermediate_results.HC_HPend
+            )
+            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_project_dates(self):
         project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
@@ -314,4 +318,8 @@ class DFNETL(FttXETL, DFNExtract, DFNTransform, DFNAnalyse):
 
 
 class DFNTestETL(PickleExtract, FttXTestLoad, DFNETL):
+    pass
+
+
+class DFNLocalETL(FttXLocalETL, DFNETL):
     pass

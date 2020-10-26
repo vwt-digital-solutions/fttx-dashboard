@@ -1,5 +1,6 @@
-from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
+from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import Record, DocumentListRecord, DictRecord
+import business_rules as br
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
@@ -21,11 +22,11 @@ class TMobileTransform(FttXTransform):
 
     def _georderd(self):
         # Iedere woning met een toestemmingsdatum is geordered door T-mobile.
-        self.transformed_data.df['ordered'] = ~self.transformed_data.df.toestemming_datum.isna()
+        self.transformed_data.df['ordered'] = br.ordered(self.transformed_data.df)
 
     def _opgeleverd(self):
         # Iedere woning met een opleverdatum is opgeleverd.
-        self.transformed_data.df['opgeleverd'] = ~self.transformed_data.df.opleverdatum.isna()
+        self.transformed_data.df['opgeleverd'] = br.opgeleverd(self.transformed_data.df)
 
     def _calculate_oplevertijd(self):
         # Oplevertijd is het verschil tussen de toestemmingsdatum en opleverdatum, in dagen.
@@ -62,21 +63,24 @@ class TMobileAnalyse(FttXAnalyse):
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
     def _jaaroverzicht(self):
-        real, plan = preprocess_for_jaaroverzicht(
-            self.intermediate_results.counts_by_month['count_opleverdatum'],
-            self.intermediate_results.counts_by_month['count_hasdatum'],
-        )
-        on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
-        outlook = self.transformed_data.df['ordered'].sum()
-        jaaroverzicht = calculate_jaaroverzicht(
-            real,
-            plan,
-            self.intermediate_results.HAS_werkvoorraad,
-            self.intermediate_results.HC_HPend,
-            on_time_ratio,
-            outlook
-        )
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+        # Function should not be ran on first pass, as it is called in super constructor.
+        # Required variables will not be accessible during call of super constructor.
+        if 'counts_by_month' in self.intermediate_results:
+            real, plan = preprocess_for_jaaroverzicht(
+                self.intermediate_results.counts_by_month['count_opleverdatum'],
+                self.intermediate_results.counts_by_month['count_hasdatum'],
+            )
+            on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
+            outlook = self.transformed_data.df['ordered'].sum()
+            jaaroverzicht = calculate_jaaroverzicht(
+                real,
+                plan,
+                self.intermediate_results.HAS_werkvoorraad,
+                self.intermediate_results.HC_HPend,
+                on_time_ratio,
+                outlook
+            )
+            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
@@ -105,6 +109,6 @@ class TMobileTestETL(PickleExtract, FttXTestLoad, TMobileETL):
         super().__init__(**kwargs)
 
 
-class TMobileLocalETL(PickleExtract, TMobileETL):
+class TMobileLocalETL(FttXLocalETL, TMobileETL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
