@@ -1,4 +1,8 @@
 import logging
+
+from layout.components import modal
+from upload import component as upload_component
+
 logging.basicConfig(
     format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
     level=logging.INFO)
@@ -22,7 +26,11 @@ import importlib  # noqa: E402
 logging.info("Setting base layout")
 app.layout = html.Div([
     dcc.Location(id='url', refresh=True),
-    html.Div(id='page-content')
+    html.Div(id='page-content'),
+    modal.create_modal(modal_body=upload_component.get_html(),
+                       modal_id="upload_modal",
+                       input_id="upload_button",
+                       modal_title="Upload")
 ])
 
 
