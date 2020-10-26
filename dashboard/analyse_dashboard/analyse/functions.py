@@ -182,6 +182,53 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
     return TargetResults(y_target_l, t_diff)
 
 
+def get_cumsum_of_col(df: pd.DataFrame, column):
+    # Can we make it generic by passing column, or does df need to be filtered beforehand?
+    filtered_df = df[~df[column].isna()]
+
+    # Maybe we can move the rename of this column to preprocessing?
+    agg_df = filtered_df.groupby([column]).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+    cumulative_df = agg_df.cumsum()
+
+    return cumulative_df
+
+
+def get_real_df(df: pd.DataFrame, t_s, tot_l):
+    d_real_l = {}
+    for project, project_df in df.groupby(by="project"):
+
+        project_df_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
+        project_df_real_counts = project_df_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+        project_df_real_counts.index = pd.to_datetime(project_df_real_counts.index, format='%Y-%m-%d')
+        project_df_real_counts = project_df_real_counts.sort_index()
+
+        project_df_realised_counts_to_present = project_df_real_counts[project_df_real_counts.index < pd.Timestamp.now()]
+        project_df_realised_counts_to_present_percentage = project_df_realised_counts_to_present.cumsum() / tot_l[project] * 100
+
+        # first date in counts dataframe
+        min_date = project_df_realised_counts_to_present_percentage.index.min()
+
+        # What does this date represent? Should this be in business rules?
+        min_shift = min(t_s.values())
+
+        # Amount of days this specific projects starts after the start of the 'earliest' project?
+        t_shift = get_t_shift(min_date, min_shift)
+
+        # Dirty fix, still necessary?
+        # only necessary for DH
+        project_df_realised_counts_to_present_percentage[project_df_realised_counts_to_present_percentage.Aantal > 100] = 100
+
+        d_real = 'dummy'
+        # I think I'd prefer messing with the index completely separately.
+        d_real.index = (d_real.index - d_real.index[0]).days + t_shift[project]
+        d_real_l[project] = d_real
+    return d_real_l
+
+
+def get_t_shift(min_date, min_shift):
+    return (min_date - min_shift).days
+
+
 def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     x_prog = np.array(list(range(0, len(x_d))))
     cutoff = 85
