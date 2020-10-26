@@ -1,7 +1,7 @@
 from google.cloud import firestore
 
 from Analyse.Data import Data
-from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad
+from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
@@ -338,4 +338,8 @@ class KPNETL(FttXETL, KPNExtract, KPNTransform, KPNAnalyse):
 
 
 class KPNTestETL(PickleExtract, FttXTestLoad, KPNETL):
+    pass
+
+
+class KPNLocalETL(FttXLocalETL, KPNETL):
     pass
