@@ -12,3 +12,4 @@ deploy.sh
 *tests.py
 *.pickle
 *.pkl
+test.py
