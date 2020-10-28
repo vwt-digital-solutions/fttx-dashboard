@@ -1,7 +1,6 @@
 import config
-from Analyse.KPN import KPNETL
+from Analyse.KPNDFN import KPNETL, DFNETL
 from Analyse.TMobile import TMobileETL
-from Analyse.DFN import DFNETL
 from functions import set_date_update
 from datetime import datetime, timedelta
 from google.cloud import firestore_v1
