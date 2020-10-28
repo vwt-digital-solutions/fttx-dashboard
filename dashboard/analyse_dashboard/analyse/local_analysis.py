@@ -31,3 +31,5 @@ else:
     client_name = "dfn"
     dfn = DFNTestETL(client=client_name, config=config.client_config[client_name])
     dfn.perform()
+
+# %%
