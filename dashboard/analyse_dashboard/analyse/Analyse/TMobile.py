@@ -1,4 +1,4 @@
-from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad
+from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 import business_rules as br
 from functions import calculate_projectindicators_tmobile
@@ -109,6 +109,6 @@ class TMobileTestETL(PickleExtract, FttXTestLoad, TMobileETL):
         super().__init__(**kwargs)
 
 
-class TMobileLocalETL(PickleExtract, TMobileETL):
+class TMobileLocalETL(FttXLocalETL, TMobileETL):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
