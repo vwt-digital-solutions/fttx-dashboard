@@ -1,11 +1,11 @@
 import logging
 
-from layout.components import modal
-from upload import component as upload_component
-
 logging.basicConfig(
     format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
     level=logging.INFO)
+
+from layout.components import modal  # noqa: E402
+from upload import component as upload_component  # noqa: E402
 
 logging.info("Importing Dash components")
 import dash_core_components as dcc  # noqa: E402
@@ -17,11 +17,11 @@ from app import app  # noqa: E402
 
 logging.info("Imporing callbacks")
 from callbacks import *  # noqa: F403, F401, E402
+from upload import callbacks  # noqa: F403, F401, E402
 
 logging.info("Importing the rest")
 from layout import default  # noqa: E402
 import importlib  # noqa: E402
-
 
 logging.info("Setting base layout")
 app.layout = html.Div([
