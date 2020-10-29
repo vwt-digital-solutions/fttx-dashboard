@@ -84,7 +84,7 @@ def get_update_dates(client):
     check = ((db.collection('Graphs').document('update_date_consume').get().exists) and
              (db.collection('Graphs').document(f'update_date_{client}').get().exists))
     if not check:
-        return False
+        return True
     latest_consume = str_to_datetime(
         db.collection('Graphs').
         document('update_date_consume').
