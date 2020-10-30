@@ -775,8 +775,9 @@ def add_token_mapbox(token):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-def set_date_update():
-    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
+def set_date_update(client=None):
+    id_ = f'update_date_{client}' if client else 'update_date'
+    record = dict(id=id_, date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 

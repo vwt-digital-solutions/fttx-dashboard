@@ -15,12 +15,13 @@ import logging
 logger = logging.getLogger('KPN Analyse')
 
 
-class KPNExtract(FttXExtract):
+class KPNDFNExtract(FttXExtract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.planning_location = kwargs['config'].get("planning_location")
         self.target_location = kwargs['config'].get("target_location")
         self.map_key = kwargs['config'].get('map_key')
+        self.client_name = kwargs['config'].get('name')
 
     def extract(self):
         self._extract_ftu()
@@ -28,8 +29,10 @@ class KPNExtract(FttXExtract):
         super().extract()
 
     def _extract_ftu(self):
-        logger.info("Extracting FTU")
-        doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
+        logger.info(f"Extracting FTU {self.client_name}")
+        doc = next(
+            firestore.Client().collection('Data').where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
+            .stream(), None).get('record')
         if doc is not None:
             if doc['FTU0']:
                 date_FTU0 = doc['FTU0']
@@ -55,7 +58,7 @@ class KPNExtract(FttXExtract):
             raise ValueError("No planning_location is configured to extract the planning.")
 
 
-class KPNTransform(FttXTransform):
+class KPNDFNTransform(FttXTransform):
 
     def transform(self):
         super().transform()
@@ -332,7 +335,26 @@ class KPNAnalyse(FttXAnalyse):
         self.record_dict.add("analysis3", doc3, Record, "Data")
 
 
-class KPNETL(FttXETL, KPNExtract, KPNTransform, KPNAnalyse):
+class DFNAnalyse(KPNAnalyse):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def analyse(self):
+        super().analyse()
+        logger.info("Analysing using the KPN protocol")
+        self._error_check_FCBC()
+        self._prognose()
+        self._targets()
+        self._performance_matrix()
+        self._prognose_graph()
+        self._overview()
+        self._calculate_graph_overview()
+        self._jaaroverzicht()
+        self._analysis_documents()
+        self._set_filters()
+
+
+class KPNETL(FttXETL, KPNDFNExtract, KPNDFNTransform, KPNAnalyse):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -342,4 +364,17 @@ class KPNTestETL(PickleExtract, FttXTestLoad, KPNETL):
 
 
 class KPNLocalETL(FttXLocalETL, KPNETL):
+    pass
+
+
+class DFNETL(FttXETL, KPNDFNExtract, KPNDFNTransform, DFNAnalyse):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class DFNTestETL(PickleExtract, FttXTestLoad, DFNETL):
+    pass
+
+
+class DFNLocalETL(FttXLocalETL, DFNETL):
     pass

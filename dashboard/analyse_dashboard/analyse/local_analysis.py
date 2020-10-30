@@ -3,8 +3,8 @@ import logging
 import os
 
 import config
-from Analyse.DFN import DFNTestETL, DFNLocalETL
-from Analyse.KPN import KPNTestETL, KPNLocalETL
+from Analyse.KPNDFN import DFNTestETL, DFNLocalETL
+from Analyse.KPNDFN import KPNTestETL, KPNLocalETL
 from Analyse.TMobile import TMobileTestETL, TMobileLocalETL
 
 logging.basicConfig(
