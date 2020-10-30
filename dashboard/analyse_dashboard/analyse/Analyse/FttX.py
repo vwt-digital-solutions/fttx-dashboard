@@ -1,3 +1,4 @@
+import os
 import time
 from google.cloud import firestore
 
@@ -14,6 +15,7 @@ import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
 from pandas.api.types import CategoricalDtype
+
 logger = logging.getLogger('FttX Analyse')
 
 
@@ -297,6 +299,9 @@ class FttXLoad(Load, FttXBase):
         logger.info("Loading documents...")
         self.record_dict.to_firestore(self.client)
 
+    def load_enriched(self):
+        pass
+
 
 class FttXTestLoad(FttXLoad):
     def __init__(self, **kwargs):
@@ -351,3 +356,16 @@ class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):
         </table>"""
 
         return table
+
+
+class FttXLocalETL(PickleExtract, FttXETL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def load(self):
+        if 'FIRESTORE_EMULATOR_HOST' in os.environ:
+            logger.info("Loading into emulated firestore")
+            super().load()
+        else:
+            logger.warning(
+                "Attempting to load with a local ETL process but no emulator is configured. Loading aborted.")

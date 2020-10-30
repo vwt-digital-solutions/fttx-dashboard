@@ -262,46 +262,56 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     return PrognoseResult(rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff)
 
 
-def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
-    df_prog = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_prog_l:
-        y_prog = y_prog_l[key] / 100 * tot_l[key]
-        df_prog += pd.DataFrame(index=x_d, columns=['d'], data=y_prog).diff().fillna(0)
+def fill_2020(df):
+    filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df.index[0], freq='D'),
+                              columns=['d'],
+                              data=0)
+    df = pd.concat([filler2020[0:-1], df], axis=0)
+    return df
 
-    df_target = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_target_l:
-        y_target = y_target_l[key] / 100 * tot_l[key]
-        df_target += pd.DataFrame(index=x_d, columns=['d'], data=y_target).diff().fillna(0)
 
-    df_real = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in d_real_l:
-        y_real = (d_real_l[key] / 100 * tot_l[key]).diff().fillna((d_real_l[key] / 100 * tot_l[key]).iloc[0])
+def percentage_to_amount(percentage, total):
+    return percentage / 100 * total
+
+
+def transform_to_amounts(percentage_dict, total_dict, days_index):
+    df = pd.DataFrame(index=days_index, columns=['d'], data=0)
+    for key in percentage_dict:
+        amounts = percentage_to_amount(percentage_dict[key], total_dict[key])
+        df += pd.DataFrame(index=days_index, columns=['d'], data=amounts).diff().fillna(0)
+    if df.index[0] > pd.Timestamp('2020-01-01'):
+        df = fill_2020(df)
+    return df
+
+
+def transform_df_real(percentage_dict, total_dict, days_index):
+    df = pd.DataFrame(index=days_index, columns=['d'], data=0)
+    for key in percentage_dict:
+        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna((percentage_dict[key] / 100 * total_dict[key]).iloc[0])
         y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = x_d[y_real.index]
-        df_real = df_real.add(y_real, fill_value=0)
+        y_real.index = days_index[y_real.index]
+        df = df.add(y_real, fill_value=0)
+    if df.index[0] > pd.Timestamp('2020-01-01'):
+        df = fill_2020(df)
+    return df
 
-    df_plan = pd.DataFrame(index=x_d, columns=['d'], data=0)
+
+def transform_df_plan(x_d, HP):
+    df = pd.DataFrame(index=x_d, columns=['d'], data=0)
     y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
                           columns=['d'], data=HP['HPendT'])
     y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-    df_plan = df_plan.add(y_plan, fill_value=0)
+    df = df.add(y_plan, fill_value=0)
+    if df.index[0] > pd.Timestamp('2020-01-01'):
+        df = fill_2020(df)
+    return df
 
-    if df_real.index[0] > pd.Timestamp('2020-01-01'):
-        filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df_real.index[0], freq='D'),
-                                  columns=['d'],
-                                  data=0)
-        df_prog = pd.concat([filler2020[0:-1], df_prog], axis=0)
-        df_target = pd.concat([filler2020[0:-1], df_target], axis=0)
-        df_real = pd.concat([filler2020[0:-1], df_real], axis=0)
-        df_plan = pd.concat([filler2020[0:-1], df_plan], axis=0)
 
-    # plot option
-    # import matplotlib.pyplot as plt
-    # test = df_real.resample('M', closed='left', loffset=None).sum()['d']
-    # fig, ax = plt.subplots(figsize=(14,8))
-    # ax.bar(x=test.index[0:15].strftime('%Y-%m'), height=test[0:15], width=0.5)
-    # plt.savefig('Graphs/jaaroverzicht_2019_2020.png')
-
+def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
+    df_prog = transform_to_amounts(y_prog_l, tot_l, x_d)
+    df_target = transform_to_amounts(y_target_l, tot_l, x_d)
+    df_real = transform_df_real(d_real_l, tot_l, x_d)
+    df_plan = transform_df_plan(x_d, HP)
     OverviewResults = namedtuple("OverviewResults", ['df_prog', 'df_target', 'df_real', 'df_plan'])
     return OverviewResults(df_prog, df_target, df_real, df_plan)
 
@@ -718,8 +728,9 @@ def add_token_mapbox(token):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-def set_date_update():
-    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
+def set_date_update(client=None):
+    id_ = f'update_date_{client}' if client else 'update_date'
+    record = dict(id=id_, date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
