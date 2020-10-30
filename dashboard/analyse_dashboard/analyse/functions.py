@@ -1181,3 +1181,9 @@ def calculate_oplevertijd(row):
     else:
         oplevertijd = np.nan
     return oplevertijd
+
+
+def linear_regression(data):
+    fit_range = data.day_count.to_list()
+    slope, intersect = np.polyfit(fit_range, data, 1)
+    return slope[0], intersect[0]
