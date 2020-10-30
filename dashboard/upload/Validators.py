@@ -2,6 +2,7 @@ import base64
 import io
 import logging
 
+import json
 import pandas as pd
 
 logger = logging.getLogger("Validator")
@@ -14,8 +15,8 @@ class ValidationError(Exception):
 class Validator:
 
     def __init__(self, file_content, file_name, modified_date, **kwargs):
-        self.content_type, content_string = file_content.split(',')
-        self.file_content = base64.b64decode(content_string)
+        self.maybe_content_type, self.content_string = file_content.split(',')
+        self.file_content = base64.b64decode(self.content_string)
         self.file_name = file_name
         self.modified_date = modified_date
         logger.info(f"Got unexpected named arguments: {kwargs}")
@@ -24,10 +25,30 @@ class Validator:
         return True
 
 
+class JSONValidator(Validator):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.content_type = "application/json"
+        self.parsed_file = None
+
+    def validate(self):
+        _, _, extension = self.file_name.rpartition(".")
+        if "json" not in extension:
+            raise ValidationError(
+                f"File does not have the right extension. Expected .json but received: {extension}")
+        try:
+            json.loads(self.file_content)
+        except json.decoder.JSONDecodeError as e:
+            raise ValidationError(e)
+        return super().validate()
+
+
 class XLSValidator(Validator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.parsed_file = None
+        self.file_to_send = None
+        self.content_type = "application/vnd.ms-excel"
 
     def validate(self):
         _, _, extension = self.file_name.rpartition(".")
@@ -62,5 +83,4 @@ class XLSColumnValidator(XLSValidator):
                 if missing:
                     error_message += f"\nMissing in file: {missing}"
                 raise ValidationError(error_message)
-
             return True
