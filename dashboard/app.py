@@ -1,6 +1,7 @@
 import logging
 import os
 from io import BytesIO
+from datetime import datetime
 
 import dash
 import dash_bootstrap_components as dbc
@@ -74,53 +75,28 @@ def download_csv():
     result = pd.DataFrame(
         x['record'] for x in request_result)
 
-    relevant_columns = ['HAS_status',
-                        'aannemer',
-                        'adres',
-                        'bis_status',
-                        'cluster_redenna',
-                        'hasdatum',
-                        'hpend',
-                        'huisext',
-                        'huisnummer',
-                        'in_has_werkvoorraad',
-                        'laagbouw',
-                        'lasAP_status',
-                        'lasDP_status',
-                        'opgeleverd',
-                        'opleverdatum',
-                        'opleverstatus',
-                        'oplevertijd',
-                        'ordered',
-                        'plaats',
-                        'postcode',
-                        'project',
-                        'projectleider',
-                        'redenna',
-                        'schouw_status',
-                        'schouwakkoord',
-                        'schouwdatum',
-                        'sleutel',
-                        'sleuteloverdracht',
-                        'soort_bouw',
-                        'sor_aanwezig',
-                        'status_civiel',
-                        'status_civiel_datum',
-                        'team',
-                        'toelichting_status',
-                        'toestemming',
-                        'toestemming_datum',
-                        'voorkeur',
-                        'wait_category',
-                        ]
+    relevant_columns = [
+        'adres',
+        'postcode',
+        'huisnummer',
+        'soort_bouw',
+        'toestemming_datum',
+        'opleverstatus',
+        'schouw_status',
+        'hasdatum',
+        'cluster_redenna',
+        'redenna',
+        'toelichting_status',
+        'voorkeur'
+    ]
 
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    result[relevant_columns].to_excel(writer)
+    result[relevant_columns].to_excel(writer, index=False)
     writer.save()
     output.seek(0)
-
+    now = datetime.now().strftime('%Y%m%d')
     return send_file(output,
                      mimetype='application/vnd.ms-excel',
-                     attachment_filename='downloadFile.xlsx',
+                     attachment_filename=f'{now}_{project}_{wait_category}.xlsx',
                      as_attachment=True)
