@@ -21,6 +21,7 @@ class KPNDFNExtract(FttXExtract):
         self.planning_location = kwargs['config'].get("planning_location")
         self.target_location = kwargs['config'].get("target_location")
         self.map_key = kwargs['config'].get('map_key')
+        self.client_name = kwargs['config'].get('name')
 
     def extract(self):
         self._extract_ftu()
@@ -28,8 +29,10 @@ class KPNDFNExtract(FttXExtract):
         super().extract()
 
     def _extract_ftu(self):
-        logger.info("Extracting FTU")
-        doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
+        logger.info(f"Extracting FTU {self.client_name}")
+        doc = next(
+            firestore.Client().collection('Data').where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
+            .stream(), None).get('record')
         if doc is not None:
             if doc['FTU0']:
                 date_FTU0 = doc['FTU0']

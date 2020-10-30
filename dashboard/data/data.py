@@ -32,13 +32,16 @@ def no_graph(title="", text="No Data"):
 
 
 def has_planning_by(period, client):
+
     has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
                                              client=client)
-    has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period, client=client)
+    has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period,
+                                           client=client)
     has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
                                           client=client) if client == 'kpn' else {}  # temp fix
     has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
                                             client=client) if client == 'kpn' else {}  # temp fix
+
     # for tmobile the toestemming_datum is used as outlook
     if client == 'tmobile':
         has_outlook = collection.get_document(collection="Data", graph_name="count_toestemming_datum_by_" + period,
@@ -59,6 +62,12 @@ def has_planning_by(period, client):
         has_voorspeld['count_voorspellingdatum'] = has_opgeleverd['count_opleverdatum'].copy()
         for el in has_voorspeld['count_voorspellingdatum'].keys():
             has_voorspeld['count_voorspellingdatum'][el] = 0
+
+    # temporary solution until we also have planning data for DFN
+    if client == 'dfn':
+        has_planning['count_hasdatum'] = has_planning['count_hasdatum'].copy()
+        for el in has_planning['count_hasdatum'].keys():
+            has_planning['count_hasdatum'][el] = 0
 
     df = pd.DataFrame({**has_planning, **has_opgeleverd, **has_outlook,
                        **has_voorspeld}).reset_index().fillna(0).rename(columns={"index": "date"})
