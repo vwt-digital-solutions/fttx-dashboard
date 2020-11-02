@@ -4,11 +4,10 @@ import pandas as pd
 
 
 class Timeseries_collection():
-    def __init__(self, df, column, cutoff, ftu_dates):
+    def __init__(self, df, column, cutoff):
         self.df = df
         self.column = column
         self.cutoff = cutoff
-        self.ftu_dates = ftu_dates
         self.set_timeseries_collection()
 
     def set_timeseries_collection(self):
@@ -17,9 +16,8 @@ class Timeseries_collection():
             self.timeseries_collection[project] = Timeseries(project_df,
                                                              self.column,
                                                              project,
-                                                             self.cutoff,
-                                                             self.ftu_dates['date_FTU0'][project],
-                                                             self.ftu_dates['date_FTU1'][project])
+                                                             self.cutoff
+                                                             )
 
     def set_min_date(self):
         # Does this yield intended result?
@@ -91,8 +89,6 @@ class Timeseries():
         self.calculate_cumsum()
         self.calculate_cumsum_percentage()
         self.get_realised_date_range()
-        self.ftu_0 = ftu_0
-        self.ftu_1 = ftu_1
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
@@ -161,16 +157,27 @@ class Timeseries():
 
     def prognoses(self, slope_fast, intersect_fast, slope_slow, intersect_slow):
         if self.do_calculate_cumsum_lines_fast():
-            slope_fast, intersect_fast = linear_regression(self.realised_cumsum_fast)
-        if self.do_calculate_cumsum_lines_slow():
-            slope_slow, intersect_slow = linear_regression(self.realised_cumsum_slow)
+            slope_fast_calc, intersect_fast_calc = linear_regression(self.realised_cumsum_fast)
+            self.slope_fast = slope_fast_calc
+            self.intersect_fast = intersect_fast_calc
+        else:
+            self.slope_fast = slope_fast
+            self.intersect_fast = intersect_fast
 
-        self.prognoses_fast = slope_fast * self.get_range() + intersect_fast
+        if self.do_calculate_cumsum_lines_slow():
+            slope_slow_calc, intersect_slow_calc = linear_regression(self.realised_cumsum_slow)
+            self.slope_slow = slope_slow_calc
+            self.intersect_slow = intersect_slow_calc
+        else:
+            self.slope_slow = slope_slow
+            self.intersect_slow = intersect_slow
+
+        self.prognoses_fast = self.slope_fast * self.get_range() + self.intersect_fast
 
         index_cutoff = sum(self.prognoses_fast < self.cutoff)
-        intersect_slow = self.get_intersect_slow(self.prognoses_fast, slope_slow, index_cutoff)
+        self.intersect_slow = self.get_intersect_slow(self.prognoses_fast, slope_slow, index_cutoff)
 
-        self.prognoses_slow = slope_slow * self.get_range() + intersect_slow
+        self.prognoses_slow = self.slope_slow * self.get_range() + self.intersect_slow
         self.prognose = np.append(self.prognoses_fast[:index_cutoff], self.prognoses_slow[index_cutoff:])
         self.round_edge_values()
 

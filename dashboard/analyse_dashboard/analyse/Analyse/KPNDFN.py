@@ -9,6 +9,7 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
     calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
 import pandas as pd
+from Timeseries import Timeseries_collection
 
 import logging
 
@@ -126,6 +127,11 @@ class KPNAnalyse(FttXAnalyse):
         timeline = get_timeline(start_time)
         self.intermediate_results.timeline = timeline
 
+        opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
+                                                        column='opleverdatum',
+                                                        cutoff=85)
+
+        opleverdatum_timeseries.get_prognoses
         total_objects = get_total_objects(self.transformed_data.df)
         self.intermediate_results.total_objects = total_objects
 
