@@ -35,5 +35,7 @@ def get_html():
         ),
         html.Div(id='output-data-upload'),
         dbc.Button("Verzenden", id="upload-submit", className="ml-auto"),
-        html.Div(id='submit-result'),
+        dcc.Loading(
+            html.Div(id='submit-result'),
+        )
     ])

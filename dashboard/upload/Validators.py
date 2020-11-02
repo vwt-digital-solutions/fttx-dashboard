@@ -2,8 +2,8 @@ import base64
 import io
 import logging
 
-import json
 import pandas as pd
+from xlrd import XLRDError
 
 logger = logging.getLogger("Validator")
 
@@ -25,24 +25,6 @@ class Validator:
         return True
 
 
-class JSONValidator(Validator):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.content_type = "application/json"
-        self.parsed_file = None
-
-    def validate(self):
-        _, _, extension = self.file_name.rpartition(".")
-        if "json" not in extension:
-            raise ValidationError(
-                f"File does not have the right extension. Expected .json but received: {extension}")
-        try:
-            json.loads(self.file_content)
-        except json.decoder.JSONDecodeError as e:
-            raise ValidationError(e)
-        return super().validate()
-
-
 class XLSValidator(Validator):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,16 +36,20 @@ class XLSValidator(Validator):
         _, _, extension = self.file_name.rpartition(".")
         if "xls" not in extension:
             raise ValidationError(
-                f"File does not have the right extension. Expected .xls or .xlsx but received: {extension}")
-
+                f"Dit bestand heeft niet de juiste bestandsextensie. XLS of XLSX was verwacht, maar {extension} was "
+                "aangetroffen."
+            )
         try:
 
             self.parsed_file = pd.read_excel(io.BytesIO(self.file_content))
             return super().validate()
         except ValidationError as e:
             raise e
-        except Exception:
-            raise ValidationError("File can not be parsed as xls")
+        except XLRDError:
+            raise ValidationError("Bestand kan niet worden ingelezen. Het is mogelijk geen geldig excel bestand.")
+        except Exception as e:
+            logger.warning(f"An unexpected exception occured during reading of an excel file: {e}")
+            raise ValidationError("Er is een probleem opgetreden bij het inlezen van het bestand.")
 
 
 class XLSColumnValidator(XLSValidator):
@@ -77,10 +63,10 @@ class XLSColumnValidator(XLSValidator):
             if set(self.parsed_file.columns) != set(self.columns):
                 unexpected = set(self.parsed_file.columns) - set(self.columns)
                 missing = set(self.columns) - set(self.parsed_file.columns)
-                error_message = "Mismatch in columns."
+                error_message = "De kolommen in het bestand zijn niet juist."
                 if unexpected:
-                    error_message += f"\nUnexpected in file: {unexpected}"
+                    error_message += f"\nOnverwacht aangetroffen in het bestand: {unexpected}"
                 if missing:
-                    error_message += f"\nMissing in file: {missing}"
+                    error_message += f"\nNiet aangetroffen in het bestand: {missing}"
                 raise ValidationError(error_message)
             return True
