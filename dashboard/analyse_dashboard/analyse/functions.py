@@ -1124,10 +1124,7 @@ def calculate_on_time_ratio(df):
     max_order_time = 56
     ordered = df[df.ordered & df.opgeleverd]
     on_time = ordered[ordered.oplevertijd <= max_order_time]
-    if len(ordered) != 0:
-        on_time_ratio = len(on_time) / len(ordered)
-    else:
-        on_time_ratio = 0
+    on_time_ratio = len(on_time) / len(ordered)
     return on_time_ratio
 
 
