@@ -15,9 +15,11 @@ import config
 import utils
 from authentication.azure_auth import AzureOAuth
 from data import api
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 logging.info("creating flask server")
 server = flask.Flask(__name__)
+server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
 
 logging.info("Setting CORS")
 if 'GAE_INSTANCE' in os.environ:
