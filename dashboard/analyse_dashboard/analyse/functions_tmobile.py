@@ -72,7 +72,7 @@ def preprocess_for_jaaroverzicht(*args):
     return [slice_for_jaaroverzicht(arg) for arg in args]
 
 
-def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on_time_ratio, outlook):
+def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on_time_ratio, outlook, bis_gereed):
     realisatie_sum = round(sum(realisatie))
     planning_sum = sum(planning)
     planning_result = planning_sum - realisatie_sum
@@ -81,6 +81,7 @@ def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on
                          plan=str(planning_result),
                          HAS_werkvoorraad=str(HAS_werkvoorraad),
                          ratio_op_tijd="{:.2f}".format(on_time_ratio),
+                         bis_gereed=str(bis_gereed),
                          prog_c='pretty_container',
                          target=str(outlook))
 

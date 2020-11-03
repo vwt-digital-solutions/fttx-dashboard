@@ -7,7 +7,8 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
     get_project_dates, \
     analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
-    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
+    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr, \
+    calculate_bis_gereed
 import pandas as pd
 
 import logging
@@ -247,10 +248,12 @@ class KPNAnalyse(FttXAnalyse):
                 self.intermediate_results.df_plan,
             )
 
+            bis_gereed = calculate_bis_gereed(self.transformed_data.df)
             jaaroverzicht = calculate_jaaroverzicht(
                 prog, target, real, plan,
                 self.intermediate_results.HAS_werkvoorraad,
-                self.intermediate_results.HC_HPend
+                self.intermediate_results.HC_HPend,
+                bis_gereed
             )
             self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 

@@ -372,7 +372,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
-                 name='Outlook',
+                 name='Outlook (KPN)',
                  type='bar',
                  marker=dict(color=colors['lightgray']),
                  width=width,
@@ -457,7 +457,7 @@ def preprocess_for_jaaroverzicht(*args):
     # return prog, target, real, plan
 
 
-def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
+def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
     n_now = datetime.date.today().month
 
     target_sum = str(round(sum(target[1:])))
@@ -472,6 +472,7 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
                          prog=str(int(prognose_sum)),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
+                         bis_gereed=str(bis_gereed),
                          prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -491,7 +492,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook:'},
+                'title': {'text': 'Voortgang project vs outlook KPN:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -514,7 +515,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook',
+                'name': 'Outlook (KPN)',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -582,7 +583,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op Target', 'range': [x_min, x_max],
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
                              'zeroline': False},
                    'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
                              'zeroline': False},
@@ -598,13 +599,13 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                                         text='Verhoog HAS capaciteit',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verruim afspraak klant',
+                                        text='Verruim afspraak KPN',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
                                         text='Verlaag HAS capcaciteit',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verscherp afspraak klant',
+                                        text='Verscherp afspraak KPN',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
@@ -1038,9 +1039,15 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     return toestemming_df
 
 
+def count_toestemming(toestemming_df):
+    toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
+    counts = toestemming_df.counts.value_counts()
+    return counts
+
+
 def wait_bin_cluster_redenna(toestemming_df):
-    wait_bin_cluster_redenna_df = toestemming_df[['wait_category', 'cluster_redenna', 'toestemming']].groupby(
-        by=['wait_category', 'cluster_redenna']).count()
+    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
+        by=['bins', 'cluster_redenna']).count()
     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
     return wait_bin_cluster_redenna_df
@@ -1060,17 +1067,16 @@ def calculate_ready_for_has_indicator(project_df):
 
 
 def calculate_wait_indicators(project_df):
-    counts = project_df.wait_category.value_counts().rename(columns={"wait_category": "counts"})
-    counts_prev = project_df.wait_category_minus_delta.value_counts()\
-        .rename(columns={"wait_category_minus_delta": "counts"})
+    toestemming_df = wait_bins(project_df)
+    toestemming_df_prev = wait_bins(project_df, time_delta_days=7)
 
-    counts_df = pd.DataFrame(counts, columns=['counts']).join(
-        pd.DataFrame(counts_prev, columns=['counts']),
-        rsuffix="_prev"
-    )
+    counts = count_toestemming(toestemming_df)
+    counts_prev = count_toestemming(toestemming_df_prev)
+
+    counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
     result_dict = counts_df.to_dict(orient='index')
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(project_df)
-    for index, grouped_df in wait_bin_cluster_redenna_df.groupby('wait_category'):
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
+    for index, grouped_df in wait_bin_cluster_redenna_df.groupby('bins'):
         result_dict[index]['cluster_redenna'] = \
             grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
     return result_dict
@@ -1080,16 +1086,13 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
     markup_dict = {
         'on_time': {'title': 'Openstaande orders op tijd',
                     'subtitle': '< 8 weken',
-                    'font_color': 'green',
-                    'invert_delta': True},
+                    'font_color': 'green'},
         'limited_time': {'title': 'Openstaande orders nog beperkte tijd',
                          'subtitle': '> 8 weken < 12 weken',
-                         'font_color': 'orange',
-                         'invert_delta': True},
+                         'font_color': 'orange'},
         'late': {'title': 'Openstaande orders te laat',
                  'subtitle': '> 12 weken',
-                 'font_color': 'red',
-                 'invert_delta': True},
+                 'font_color': 'red'},
         'ratio': {'title': 'Ratio op tijd gesloten orders',
                   'subtitle': '<8 weken',
                   'font_color': 'black'},
@@ -1136,3 +1139,7 @@ def calculate_oplevertijd(row):
     else:
         oplevertijd = np.nan
     return oplevertijd
+
+
+def calculate_bis_gereed(df):
+    return sum(br.bis_opgeleverd(df))
