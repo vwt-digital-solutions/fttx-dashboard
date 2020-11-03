@@ -287,7 +287,8 @@ def transform_to_amounts(percentage_dict, total_dict, days_index):
 def transform_df_real(percentage_dict, total_dict, days_index):
     df = pd.DataFrame(index=days_index, columns=['d'], data=0)
     for key in percentage_dict:
-        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna((percentage_dict[key] / 100 * total_dict[key]).iloc[0])
+        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna(
+            (percentage_dict[key] / 100 * total_dict[key]).iloc[0])
         y_real = y_real.rename(columns={'Aantal': 'd'})
         y_real.index = days_index[y_real.index]
         df = df.add(y_real, fill_value=0)
@@ -657,30 +658,70 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
-    return dict(counts=target, counts_prev=None, title='Target week ' + str(pd.Timestamp.now().week),
-                subtitle='', font_color='green', id=None)
+    return target
 
 
-def calculate_weekrealisatie(project, d_real_l, total_objects, timeline,
-                             delay):  # berekent voor de week t/m de huidige dag
-    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
-    if project in d_real_l:
-        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7][
-            'Aantal'].max()
-        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7][
-            'Aantal'].max()
-        # value_atstartweek_min1W = d_real_l[project][
-        #   d_real_l[project].index <= index_firstdaythisweek - 1 - 7 + delay * 7]['Aantal'].max()
-        # value_atendweek_min1W = d_real_l[project][
-        #   d_real_l[project].index <= index_firstdaythisweek + 7 - 7 + delay * 7]['Aantal'].max()
-        realisatie = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
-        # realisatie_min1W = int(round((value_atendweek_min1W - value_atstartweek_min1W) / 100 * total_objects[project]))
-    else:
-        realisatie = 0
-        # realisatie_min1W = 0
-    return dict(counts=realisatie, counts_prev=None,
-                title='Realisatie week ' + str(pd.Timestamp.now().week + delay), subtitle='', font_color='green',
+def create_bullet_chart_realisatie(value,
+                                   prev_value,
+                                   max_value,
+                                   yellow_border,
+                                   threshold,
+                                   title=""):
+    return dict(counts=value,
+                counts_prev=prev_value,
+                title=title,
+                subtitle='',
+                font_color='green',
+                gauge={
+                    'shape': "bullet",
+                    'axis': {'range': [None, max_value]},
+                    'threshold': {
+                        'line': {'color': "red", 'width': 2},
+                        'thickness': 0.75,
+                        'value': threshold},
+                    'steps': [
+                        {'range': [0, yellow_border], 'color': "yellow"},
+                        {'range': [yellow_border, max_value], 'color': "lightgreen"}]},
                 id=None)
+
+
+def calculate_lastweekrealisatie(
+        project_df,
+        weektarget
+):
+    weekday = datetime.datetime.now().weekday()
+    realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
+    realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
+
+    realisatie = int(realisatie_end_week - realisatie_beginning_week)
+
+    max_value = int(max(int(weektarget * 1.1), realisatie))
+    return create_bullet_chart_realisatie(value=realisatie,
+                                          prev_value=None,
+                                          max_value=max_value,
+                                          yellow_border=int(weektarget * 0.9),
+                                          threshold=weektarget,
+                                          title='Realisatie week ' + str(
+                                              int(datetime.datetime.now().strftime("%V")) - 1))
+
+
+def calculate_weekrealisatie(project_df,
+                             weektarget, delta=0):
+    weekday = datetime.datetime.now().weekday()
+    realisatie_today = br.opgeleverd(project_df, 0 + delta).sum()
+    realisatie_yesterday = br.opgeleverd(project_df, 1 + delta).sum()
+    realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
+
+    realisatie_this_week = int(realisatie_today - realisatie_beginning_week)
+    realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
+
+    max_value = int(max(int(weektarget * 1.1), realisatie_this_week))
+    return create_bullet_chart_realisatie(value=realisatie_this_week,
+                                          prev_value=realisatie_this_week_yesterday,
+                                          max_value=max_value,
+                                          yellow_border=int(weektarget * 0.9),
+                                          threshold=weektarget,
+                                          title='Realisatie week ' + datetime.datetime.now().strftime("%V"))
 
 
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
@@ -693,8 +734,26 @@ def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
 
 
 def calculate_weekHCHPend(project, HC_HPend_l):
-    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='',
-                font_color='green', id=None)
+    return dict(title='HC / HPend',
+                subtitle='',
+                counts=round(HC_HPend_l[project]) / 100,
+                counts_prev=None,
+                font_color='green',
+                gauge={
+                    'axis': {'range': [None, 1], 'tickwidth': 1, 'tickcolor': "green"},
+                    'bar': {'color': "darkgreen"},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "gray",
+                    'steps': [
+                        {'range': [0, .6], 'color': 'yellow'},
+                        {'range': [.6, 1], 'color': 'lightgreen'}],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': .8}
+                },
+                id=None)
 
 
 def calculate_weeknerr(project, n_err):
