@@ -6,6 +6,8 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
 
+from layout.components.indicator import indicator
+
 import pandas as pd
 # import numpy as np
 
@@ -17,30 +19,31 @@ from data import collection
 client = 'dfn'
 
 
-# @app.callback(
-#     [
-#         Output(f"indicators-{client}", 'children'),
-#     ],
-#     [
-#         Input(f'project-dropdown-{client}', 'value'),
-#     ],
-# )
-# def update_indicators(dropdown_selection):
-#     if dropdown_selection is None:
-#         raise PreventUpdate
+@app.callback(
+    [
+        Output(f"indicators-{client}", 'children'),
+    ],
+    [
+        Input(f'project-dropdown-{client}', 'value'),
+    ],
+)
+def update_indicators(dropdown_selection):
+    if dropdown_selection is None:
+        raise PreventUpdate
 
-#     indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
-#     indicators = collection.get_document(collection="Data",
-#                                          graph_name="project_indicators",
-#                                          project=dropdown_selection,
-#                                          client=client)
-#     indicator_info = [indicator(value=indicators[el]['counts'],
-#                                 previous_value=indicators[el]['counts_prev'],
-#                                 title=indicators[el]['title'],
-#                                 sub_title=indicators[el]['subtitle'],
-#                                 font_color=indicators[el]['font_color']) for el in indicator_types]
+    indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend']
+    indicators = collection.get_document(collection="Data",
+                                         graph_name="project_indicators",
+                                         project=dropdown_selection,
+                                         client=client)
+    indicator_info = [indicator(value=indicators[el]['counts'],
+                                previous_value=indicators[el]['counts_prev'],
+                                title=indicators[el]['title'],
+                                sub_title=indicators[el]['subtitle'],
+                                font_color=indicators[el]['font_color']) for el in indicator_types]
 
-#     return [indicator_info]
+    return [indicator_info]
+
 
 @app.callback(
     [

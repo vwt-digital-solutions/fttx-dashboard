@@ -662,12 +662,16 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
 
 
 def calculate_weekrealisatie(project, d_real_l, total_objects, timeline,
-                             delay):  # berekent voor de week t/m de huidige dag
+                             client, delay):  # berekent voor de week t/m de huidige dag
     index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
     if project in d_real_l:
-        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7][
+        if client == 'dfn':
+            dfn_gap = timeline[0].dayofyear
+        else:
+            dfn_gap = 0
+        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7 - dfn_gap][
             'Aantal'].max()
-        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7][
+        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7 - dfn_gap][
             'Aantal'].max()
         # value_atstartweek_min1W = d_real_l[project][
         #   d_real_l[project].index <= index_firstdaythisweek - 1 - 7 + delay * 7]['Aantal'].max()
@@ -684,9 +688,9 @@ def calculate_weekrealisatie(project, d_real_l, total_objects, timeline,
 
 
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
-                        timeline):  # berekent voor de week t/m de huidige dag
+                        timeline, client):  # berekent voor de week t/m de huidige dag
     target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
-    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay=0)
+    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, client, delay=0)
     delta = record['counts'] - target
     # delta_min1W = record['counts_prev'] - target
     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
