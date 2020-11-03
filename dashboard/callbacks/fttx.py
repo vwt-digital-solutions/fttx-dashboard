@@ -202,7 +202,9 @@ for client in config.client_config.keys():
     @app.callback(
         [
             Output(f'status-counts-laagbouw-{client}', 'figure'),
-            Output(f'status-counts-hoogbouw-{client}', 'figure')
+            Output(f'status-counts-hoogbouw-{client}', 'figure'),
+            Output(f'status-counts-laagbouw-{client}-container', 'style'),
+            Output(f'status-counts-hoogbouw-{client}-container', 'style'),
         ],
         [
             Input(f'status-count-filter-{client}', 'data'),
@@ -214,10 +216,12 @@ for client in config.client_config.keys():
             status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
             laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                            title="Status oplevering per fase (LB)")
+            laagbouw_style = {'display': 'block'} if laagbouw else {'display': 'none'}
             hoogbouw = completed_status_counts_bar.get_fig(status_counts.hoogbouw,
                                                            title="Status oplevering per fase (HB & Duplex)")
-            return laagbouw, hoogbouw
-        return {'data': None, 'layout': None}, {'data': None, 'layout': None}
+            hoogbouw_style = {'display': 'block'} if hoogbouw else {'display': 'none'}
+            return laagbouw, hoogbouw, laagbouw_style, hoogbouw_style
+        return {'data': None, 'layout': None}, {'data': None, 'layout': None}, {'display': 'block'}, {'display': 'block'}
 
     @app.callback(
         [
