@@ -258,6 +258,7 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Calculating project indicators")
         projects = self.transformed_data.df.project.unique().to_list()
         record = {}
+        client = self.client_name
         for project in projects:
             project_indicators = {}
             project_indicators['weektarget'] = calculate_weektarget(
@@ -270,19 +271,22 @@ class KPNAnalyse(FttXAnalyse):
                 self.intermediate_results.d_real_l,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline,
-                delay=0)  # in weeks
+                delay=0,
+                client=client)  # in weeks
             project_indicators['vorigeweekrealisatie'] = calculate_weekrealisatie(
                 project,
                 self.intermediate_results.d_real_l,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline,
-                delay=-1)  # in weeks
+                delay=-1,
+                client=client)  # in weeks
             project_indicators['weekdelta'] = calculate_weekdelta(
                 project,
                 self.intermediate_results.y_target_l,
                 self.intermediate_results.d_real_l,
                 self.intermediate_results.total_objects,
-                self.intermediate_results.timeline)
+                self.intermediate_results.timeline,
+                client=client)
             project_indicators['weekHCHPend'] = calculate_weekHCHPend(
                 project,
                 self.intermediate_results.HC_HPend_l)
