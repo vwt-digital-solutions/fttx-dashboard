@@ -372,7 +372,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
-                 name='Outlook (KPN)',
+                 name='Outlook',
                  type='bar',
                  marker=dict(color=colors['lightgray']),
                  width=width,
@@ -491,7 +491,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook KPN:'},
+                'title': {'text': 'Voortgang project vs outlook:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -514,7 +514,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook (KPN)',
+                'name': 'Outlook',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -582,7 +582,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op Target', 'range': [x_min, x_max],
                              'zeroline': False},
                    'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
                              'zeroline': False},
@@ -598,13 +598,13 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                                         text='Verhoog HAS capaciteit',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verruim afspraak KPN',
+                                        text='Verruim afspraak klant',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
                                         text='Verlaag HAS capcaciteit',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verscherp afspraak KPN',
+                                        text='Verscherp afspraak klant',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
