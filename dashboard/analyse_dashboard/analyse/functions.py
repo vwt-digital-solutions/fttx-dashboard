@@ -662,9 +662,11 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
 
 
 def calculate_weekrealisatie(project, d_real_l, total_objects, timeline,
-                             delay):  # berekent voor de week t/m de huidige dag
+                             delay, client):  # berekent voor de week t/m de huidige dag
     index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
     if project in d_real_l:
+        if client == 'dfn':
+            d_real_l[project].index = d_real_l[project].index + timeline[0].dayofyear
         value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7][
             'Aantal'].max()
         value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7][
