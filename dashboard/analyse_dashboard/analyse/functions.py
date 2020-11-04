@@ -666,15 +666,16 @@ def create_bullet_chart_realisatie(value,
                                    max_value,
                                    yellow_border,
                                    threshold,
-                                   title=""):
+                                   title="",
+                                   subtitle=""):
     return dict(counts=value,
                 counts_prev=prev_value,
                 title=title,
-                subtitle='',
+                subtitle=subtitle,
                 font_color='green',
                 gauge={
                     'shape': "bullet",
-                    'axis': {'range': [None, max_value]},
+                    'axis': {'range': [0, max_value]},
                     'threshold': {
                         'line': {'color': "red", 'width': 2},
                         'thickness': 0.75,
@@ -695,14 +696,14 @@ def calculate_lastweekrealisatie(
 
     realisatie = int(realisatie_end_week - realisatie_beginning_week)
 
-    max_value = int(max(int(weektarget * 1.1), realisatie))
+    max_value = int(max(weektarget, realisatie, 1) * 1.1)
     return create_bullet_chart_realisatie(value=realisatie,
                                           prev_value=None,
                                           max_value=max_value,
                                           yellow_border=int(weektarget * 0.9),
-                                          threshold=weektarget,
-                                          title='Realisatie week ' + str(
-                                              int(datetime.datetime.now().strftime("%V")) - 1))
+                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                          title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+                                          subtitle=f"Target: {weektarget}")
 
 
 def calculate_weekrealisatie(project_df,
@@ -715,13 +716,14 @@ def calculate_weekrealisatie(project_df,
     realisatie_this_week = int(realisatie_today - realisatie_beginning_week)
     realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
 
-    max_value = int(max(int(weektarget * 1.1), realisatie_this_week))
+    max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
     return create_bullet_chart_realisatie(value=realisatie_this_week,
                                           prev_value=realisatie_this_week_yesterday,
                                           max_value=max_value,
                                           yellow_border=int(weektarget * 0.9),
-                                          threshold=weektarget,
-                                          title='Realisatie week ' + datetime.datetime.now().strftime("%V"))
+                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                          title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
+                                          subtitle=f"Target:{weektarget}")
 
 
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
@@ -751,7 +753,7 @@ def calculate_weekHCHPend(project, HC_HPend_l):
                     'threshold': {
                         'line': {'color': "red", 'width': 4},
                         'thickness': 0.75,
-                        'value': .8}
+                        'value': .9}
                 },
                 id=None)
 
