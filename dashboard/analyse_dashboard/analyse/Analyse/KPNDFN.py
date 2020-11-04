@@ -7,8 +7,8 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
     get_project_dates, \
     analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
-    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr, \
-    calculate_bis_gereed
+    calculate_weekrealisatie, calculate_weekHCHPend, calculate_weeknerr, \
+    calculate_lastweekrealisatie, calculate_bis_gereed
 import pandas as pd
 
 import logging
@@ -32,7 +32,8 @@ class KPNDFNExtract(FttXExtract):
     def _extract_ftu(self):
         logger.info(f"Extracting FTU {self.client_name}")
         doc = next(
-            firestore.Client().collection('Data').where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
+            firestore.Client().collection('Data')
+            .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
             .stream(), None).get('record')
         if doc is not None:
             if doc['FTU0']:
@@ -261,35 +262,21 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Calculating project indicators")
         projects = self.transformed_data.df.project.unique().to_list()
         record = {}
-        client = self.client_name
         for project in projects:
             project_indicators = {}
-            project_indicators['weektarget'] = calculate_weektarget(
+            weektarget = calculate_weektarget(
                 project,
                 self.intermediate_results.y_target_l,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline)
+            project_df = self.transformed_data.df[self.transformed_data.df.project == project]
             project_indicators['weekrealisatie'] = calculate_weekrealisatie(
-                project,
-                self.intermediate_results.d_real_l,
-                self.intermediate_results.total_objects,
-                self.intermediate_results.timeline,
-                delay=0,
-                client=client)  # in weeks
-            project_indicators['vorigeweekrealisatie'] = calculate_weekrealisatie(
-                project,
-                self.intermediate_results.d_real_l,
-                self.intermediate_results.total_objects,
-                self.intermediate_results.timeline,
-                delay=-1,
-                client=client)  # in weeks
-            project_indicators['weekdelta'] = calculate_weekdelta(
-                project,
-                self.intermediate_results.y_target_l,
-                self.intermediate_results.d_real_l,
-                self.intermediate_results.total_objects,
-                self.intermediate_results.timeline,
-                client=client)
+                project_df,
+                weektarget)
+            project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(
+                project_df,
+                weektarget
+            )
             project_indicators['weekHCHPend'] = calculate_weekHCHPend(
                 project,
                 self.intermediate_results.HC_HPend_l)
