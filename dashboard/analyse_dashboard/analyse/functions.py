@@ -1146,4 +1146,6 @@ def calculate_oplevertijd(row):
 
 
 def calculate_bis_gereed(df):
-    return sum(br.bis_opgeleverd(df))
+    df_copy = df.copy()
+    df_copy = df_copy.loc[df_copy.opleverdatum >= pd.Timestamp('2020-01-01')]
+    return sum(br.bis_opgeleverd(df_copy))
