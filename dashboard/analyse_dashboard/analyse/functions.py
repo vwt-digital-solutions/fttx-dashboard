@@ -1188,3 +1188,12 @@ def linear_regression(data):
     fit_range = data.day_count.to_list()
     slope, intersect = np.polyfit(fit_range, data, 1)
     return slope[0], intersect[0]
+
+
+def multi_index_to_dict(df):
+    project_dict = {}
+    for project in df.columns.get_level_values(0).unique():
+        idx = pd.IndexSlice
+        data = df.loc[idx[:], idx[project, :]][project]
+        project_dict[project] = data
+    return project_dict
