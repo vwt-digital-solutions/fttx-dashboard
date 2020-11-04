@@ -55,7 +55,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_voorraadvormend()
         self._jaaroverzicht()
         self._calculate_project_indicators()
-        self._endriched_data()
+        # self._endriched_data()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
