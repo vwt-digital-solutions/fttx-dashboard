@@ -182,26 +182,17 @@ class DocumentListRecord(Record):
 
         db = firestore.Client()
         batch = db.batch()
-
-        n_records = len(self.record)
-        logging.info(f"Creating {n_records} documents for {graph_name}")
         for i, document in enumerate(self.record):
             if client and "client" not in document:
                 document['client'] = client
-            document_name = self.document_name(document=document,
-                                               client=client,
-                                               graph_name=graph_name)
-            if n_records <= 20:
-                logging.info(f"Set document {document_name}")
-            fs_document = db.collection(self.collection).document(document_name)
+            fs_document = db.collection(self.collection).document(self.document_name(document=document,
+                                                                                     client=client,
+                                                                                     graph_name=graph_name))
             batch.set(fs_document, document)
-            if not i % 500:
+            if not i % 100:
                 batch.commit()
                 batch = db.batch()
-                logging.info(f"Progress: {i}/{n_records}")
-
         batch.commit()
-        logging.info(f"Progress: {i}/{n_records}")
 
     def to_table_part(self, graph_name="", client=""):
         table_part = ""
