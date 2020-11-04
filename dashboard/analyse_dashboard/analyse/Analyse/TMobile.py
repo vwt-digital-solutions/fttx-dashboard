@@ -135,7 +135,7 @@ class TMobileAnalyse(FttXAnalyse):
         if deleted >= batch_size:
             return self._delete_collection(collection_name=collection_name, batch_size=500, count=count)
         else:
-            logging.info(f'Removing {coll_ref} completed')
+            logging.info(f'Removing {collection_name} completed')
 
 
 class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):
