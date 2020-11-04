@@ -373,7 +373,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
-                 name='Outlook (KPN)',
+                 name='Outlook',
                  type='bar',
                  marker=dict(color=colors['lightgray']),
                  width=width,
@@ -458,7 +458,7 @@ def preprocess_for_jaaroverzicht(*args):
     # return prog, target, real, plan
 
 
-def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
+def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
     n_now = datetime.date.today().month
 
     target_sum = str(round(sum(target[1:])))
@@ -473,6 +473,7 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
                          prog=str(int(prognose_sum)),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
+                         bis_gereed=str(bis_gereed),
                          prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -492,7 +493,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook KPN:'},
+                'title': {'text': 'Voortgang project vs outlook:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -515,7 +516,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook (KPN)',
+                'name': 'Outlook',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -583,7 +584,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op Target', 'range': [x_min, x_max],
                              'zeroline': False},
                    'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
                              'zeroline': False},
@@ -599,13 +600,13 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                                         text='Verhoog HAS capaciteit',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verruim afspraak KPN',
+                                        text='Verruim klantafspraak',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
                                         text='Verlaag HAS capcaciteit',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verscherp afspraak KPN',
+                                        text='Verscherp klantafspraak',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
@@ -727,9 +728,9 @@ def calculate_weekrealisatie(project_df,
 
 
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
-                        timeline):  # berekent voor de week t/m de huidige dag
+                        timeline, client):  # berekent voor de week t/m de huidige dag
     target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
-    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay=0)
+    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, client, delay=0)
     delta = record['counts'] - target
     # delta_min1W = record['counts_prev'] - target
     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
@@ -1185,7 +1186,10 @@ def calculate_on_time_ratio(df):
     max_order_time = 56
     ordered = df[df.ordered & df.opgeleverd]
     on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = (len(on_time) / len(ordered)) if len(ordered) else 0
+    try:
+        on_time_ratio = len(on_time) / len(ordered)
+    except ZeroDivisionError:
+        on_time_ratio = 0
     return on_time_ratio
 
 
@@ -1196,3 +1200,9 @@ def calculate_oplevertijd(row):
     else:
         oplevertijd = np.nan
     return oplevertijd
+
+
+def calculate_bis_gereed(df):
+    df_copy = df.copy()
+    df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
+    return sum(br.bis_opgeleverd(df_copy))

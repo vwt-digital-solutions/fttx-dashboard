@@ -4,7 +4,7 @@ import business_rules as br
 from functions import calculate_projectindicators_tmobile
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
 from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
-from functions import calculate_on_time_ratio, calculate_oplevertijd
+from functions import calculate_on_time_ratio, calculate_oplevertijd, calculate_bis_gereed
 import logging
 logger = logging.getLogger('T-mobile Analyse')
 
@@ -48,6 +48,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_voorraadvormend()
         self._jaaroverzicht()
         self._calculate_project_indicators()
+        # self._endriched_data()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
@@ -72,13 +73,15 @@ class TMobileAnalyse(FttXAnalyse):
             )
             on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
             outlook = self.transformed_data.df['ordered'].sum()
+            bis_gereed = calculate_bis_gereed(self.transformed_data.df)
             jaaroverzicht = calculate_jaaroverzicht(
                 real,
                 plan,
                 self.intermediate_results.HAS_werkvoorraad,
                 self.intermediate_results.HC_HPend,
                 on_time_ratio,
-                outlook
+                outlook,
+                bis_gereed
             )
             self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
