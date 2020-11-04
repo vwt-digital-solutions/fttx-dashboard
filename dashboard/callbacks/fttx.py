@@ -90,7 +90,7 @@ for client in config.client_config.keys():
                  value=jaaroverzicht.get('target', 'n.v.t.')),
             dict(id_="info_globaal_container1", title='Realisatie (HPend)', text="HPend gerealiseerd: ",
                  value=jaaroverzicht.get('real', 'n.v.t.')),
-            dict(id_="info_globaal_container1", title='Realisatie (BIS)', text="HPend gerealiseerd: ",
+            dict(id_="info_globaal_container1", title='Realisatie (BIS)', text="BIS gerealiseerd: ",
                  value=jaaroverzicht.get('bis_gereed', 'n.v.t.')),
             dict(id_="info_globaal_container2", title='Planning (VWT)', text="HPend gepland vanaf nu: ",
                  value=jaaroverzicht.get('plan', 'n.v.t.')),
