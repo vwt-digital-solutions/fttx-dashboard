@@ -94,7 +94,11 @@ def download_csv():
 
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    result[relevant_columns].to_excel(writer, index=False)
+    if result.empty:
+        result = pd.DataFrame(columns=relevant_columns)
+        result.to_excel(writer, index=False)
+    else:
+        result[relevant_columns].to_excel(writer, index=False)
     writer.save()
     output.seek(0)
     now = datetime.now().strftime('%Y%m%d')

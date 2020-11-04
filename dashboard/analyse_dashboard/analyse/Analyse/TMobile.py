@@ -1,3 +1,4 @@
+from google.cloud import firestore
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 import business_rules as br
@@ -55,7 +56,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_voorraadvormend()
         self._jaaroverzicht()
         self._calculate_project_indicators()
-        # self._endriched_data()
+        self._endriched_data()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
@@ -107,11 +108,34 @@ class TMobileAnalyse(FttXAnalyse):
                              record=counts_by_project)
 
     def _endriched_data(self):
+        self._delete_collection(u'Houses')
         df_copy = self.transformed_data.df.copy()
+        df_copy = df_copy[df_copy['wait_category'].notna()]
         datums = [col for col in df_copy.columns if "datum" in col]
         df_copy.loc[:, datums] = df_copy[datums].apply(lambda x: x.dt.strftime("%Y-%m-%d"))
         doc_list = [{'record': x, 'sleutel': x['sleutel']} for x in df_copy.to_dict(orient='rows')]
         self.record_dict.add('enriched_data', doc_list, DocumentListRecord, 'Houses', document_key=['sleutel'])
+
+    def _delete_collection(self, collection_name, batch_size=500, count=0):
+        deleted = 0
+        db = firestore.Client()
+        batch = db.batch()
+        coll_ref = db.collection(collection_name)
+        docs = coll_ref.limit(batch_size).stream()
+        for doc in docs:
+            if doc.exists:
+                batch.delete(doc.reference)
+                deleted = deleted + 1
+            else:
+                logging.info(f'{collection_name} does not exists')
+                return
+        batch.commit()
+        logging.info(f'Removing {collection_name}: {count} documents deleted')
+        count += batch_size
+        if deleted >= batch_size:
+            return self._delete_collection(collection_name=collection_name, batch_size=500, count=count)
+        else:
+            logging.info(f'Removing {coll_ref} completed')
 
 
 class TMobileETL(FttXETL, TMobileTransform, TMobileAnalyse):
