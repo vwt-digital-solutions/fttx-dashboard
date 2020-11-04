@@ -9,7 +9,7 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
     calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
 import pandas as pd
-from Timeseries import Timeseries_collection
+from Analyse.Timeseries import Timeseries_collection
 
 import logging
 
@@ -100,6 +100,7 @@ class KPNAnalyse(FttXAnalyse):
         super().analyse()
         logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
+        self._make_timeseries()
         self._prognose()
         self._targets()
         self._performance_matrix()
@@ -120,6 +121,15 @@ class KPNAnalyse(FttXAnalyse):
 
         self.intermediate_results.n_err = n_err
 
+    def _make_timeseries(self):
+        logger.info(f"Generating timeseries for all projects for {self.client_name}")
+        opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
+                                                        column='opleverdatum',
+                                                        cutoff=85,
+                                                        ftu_dates=self.extracted_data.ftu)
+
+        self.timeseries_dict = opleverdatum_timeseries.get_timeseries_frame()
+
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
 
@@ -127,11 +137,6 @@ class KPNAnalyse(FttXAnalyse):
         timeline = get_timeline(start_time)
         self.intermediate_results.timeline = timeline
 
-        opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
-                                                        column='opleverdatum',
-                                                        cutoff=85)
-
-        opleverdatum_timeseries.get_prognoses
         total_objects = get_total_objects(self.transformed_data.df)
         self.intermediate_results.total_objects = total_objects
 

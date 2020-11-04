@@ -4,11 +4,14 @@ import pandas as pd
 
 
 class Timeseries_collection():
-    def __init__(self, df, column, cutoff):
+    def __init__(self, df, column, cutoff, ftu_dates):
         self.df = df
         self.column = column
         self.cutoff = cutoff
+        self.ftu_dates = ftu_dates
         self.set_timeseries_collection()
+        self.prognoses_set = False
+        self._prognoses()
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -16,7 +19,9 @@ class Timeseries_collection():
             self.timeseries_collection[project] = Timeseries(project_df,
                                                              self.column,
                                                              project,
-                                                             self.cutoff
+                                                             self.cutoff,
+                                                             self.ftu_dates['date_FTU0'][project],
+                                                             self.ftu_dates['date_FTU1'][project]
                                                              )
 
     def set_min_date(self):
@@ -69,13 +74,11 @@ class Timeseries_collection():
                                  self.avg_intersect_slow)
         self.prognoses_set = True
 
-    def get_prognoses(self):
-        # Probably need to be able to retrieve the prognoses of a timeseries in a dict to write to firestore.
-        if not self.prognoses_set:
-            self.prognoses()
-
-        prognose_dict = {project: timeseries.prognose for project, timeseries in self.timeseries_collection.items()}
-        return prognose_dict
+    def get_timeseries_frame(self):
+        timeseries_dict = {}
+        for project, timeseries in self.timeseries_collection.items():
+            timeseries_dict[project] = timeseries.get_timeseries_frame()
+        return timeseries_dict
 
 
 class Timeseries():
@@ -85,10 +88,13 @@ class Timeseries():
         # Should projectname be attr of class?
         self.project = project
         self.cutoff = cutoff
+        self.ftu_0 = np.datetime64(ftu_0)
+        self.ftu_1 = np.datetime64(ftu_1)
         self.serialize()
         self.calculate_cumsum()
         self.calculate_cumsum_percentage()
         self.get_realised_date_range()
+        self.set_target_line()
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
@@ -113,6 +119,7 @@ class Timeseries():
                 start_date_realised = real_dates.min()
                 end_date_realised = real_dates.max()
                 self.realised_date_range = pd.date_range(start=start_date_realised, end=end_date_realised)
+                self.set_realised_data()
         except ValueError:
             raise ValueError(f"start and end can not be 0: {start_date_realised} - {end_date_realised}")
 
@@ -131,9 +138,10 @@ class Timeseries():
         return do_calculate
 
     def set_index(self):
-        self.timeseries = pd.DataFrame(index=pd.date_range(start='01-01-2019',
-                                                           end='31-12-2021',
-                                                           freq='D'),
+        self.prognoses_date_range = pd.date_range(start='01-01-2019',
+                                                  end='31-12-2021',
+                                                  freq='D')
+        self.timeseries = pd.DataFrame(index=self.prognoses_date_range,
                                        columns=['Aantal'],
                                        data=self.timeseries
                                        ).fillna(0)
@@ -179,11 +187,13 @@ class Timeseries():
 
         self.prognoses_slow = self.slope_slow * self.get_range() + self.intersect_slow
         self.prognose = np.append(self.prognoses_fast[:index_cutoff], self.prognoses_slow[index_cutoff:])
-        self.round_edge_values()
+        self.prognose = self.round_edge_values(self.prognose)
+        self.set_prognoses_frame()
 
-    def round_edge_values(self):
-        self.prognose[self.prognose > 100] = 100
-        self.prognose[self.prognose < 0] = 0
+    def round_edge_values(self, line):
+        line[line > 100] = 100
+        line[line < 0] = 0
+        return line
 
     def get_intersect_slow(self, prognoses_fast, slope_slow, index_cutoff):
         if index_cutoff == len(prognoses_fast):
@@ -191,3 +201,40 @@ class Timeseries():
         origin_slow = slope_slow * self.get_range()
         intersect_slow = prognoses_fast[index_cutoff] - origin_slow[index_cutoff]
         return intersect_slow
+
+    def set_realised_data(self):
+        self.realised_frame = pd.DataFrame(index=self.realised_date_range)
+        self.realised_frame['cumsum_percentage'] = self.cumsum_percentage.loc[self.realised_date_range].Aantal
+        self.realised_frame['cumsum'] = self.cumsum_series.loc[self.realised_date_range].Aantal
+
+    def set_target_line(self):
+        offset = np.timedelta64(14, 'D')
+        date_range = np.arange(self.ftu_0 + offset, self.ftu_1 - offset)
+        self.target_frame = pd.DataFrame(index=date_range)
+        x_range = np.array(range(0, len(date_range)))
+        self.target_per_day = 100 / (len(date_range) - 28)
+        self.target_frame['y_target'] = self.target_per_day * x_range
+
+    def set_prognoses_frame(self):
+        self.prognoses_frame = pd.DataFrame(index=self.prognoses_date_range)
+        self.prognoses_frame['prognose'] = self.prognose
+
+    def get_prognoses_frame(self):
+        return self.prognoses_frame
+
+    def get_realised_frame(self):
+        try:
+            realised_frame = self.realised_frame
+        except AttributeError:
+            realised_frame = pd.DataFrame()
+        return realised_frame
+
+    def get_target_frame(self):
+        return self.target_frame
+
+    def get_timeseries_frame(self):
+        prognose = self.get_prognoses_frame()
+        target = self.get_target_frame()
+        realised = self.get_realised_frame()
+        self.complete_frame = pd.concat([prognose, target, realised]).resample('D').sum()
+        return self.complete_frame
