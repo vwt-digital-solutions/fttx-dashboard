@@ -128,7 +128,7 @@ class KPNAnalyse(FttXAnalyse):
                                                         cutoff=85,
                                                         ftu_dates=self.extracted_data.ftu)
 
-        self.timeseries_dict = opleverdatum_timeseries.get_timeseries_frame()
+        self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")

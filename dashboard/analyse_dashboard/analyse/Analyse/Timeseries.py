@@ -78,7 +78,15 @@ class Timeseries_collection():
         timeseries_dict = {}
         for project, timeseries in self.timeseries_collection.items():
             timeseries_dict[project] = timeseries.get_timeseries_frame()
-        return timeseries_dict
+        complete_frame = pd.concat(timeseries_dict, axis=1)
+
+        # We'll calculate the totals over the projects here as well.
+        idx = pd.IndexSlice
+        for col in complete_frame.columns.get_level_values(1).unique():
+            if 'amount' in col:
+                complete_frame['Totaal', col] = complete_frame.loc[idx[:], idx[:, col]].sum(axis=1)
+
+        return complete_frame
 
 
 class Timeseries():
@@ -202,10 +210,13 @@ class Timeseries():
         intersect_slow = prognoses_fast[index_cutoff] - origin_slow[index_cutoff]
         return intersect_slow
 
+    def percentage_to_amount(self, percentages):
+        return len(self.df) * (percentages / 100)
+
     def set_realised_data(self):
         self.realised_frame = pd.DataFrame(index=self.realised_date_range)
         self.realised_frame['cumsum_percentage'] = self.cumsum_percentage.loc[self.realised_date_range].Aantal
-        self.realised_frame['cumsum'] = self.cumsum_series.loc[self.realised_date_range].Aantal
+        self.realised_frame['cumsum_amount'] = self.cumsum_series.loc[self.realised_date_range].Aantal
 
     def set_target_line(self):
         offset = np.timedelta64(14, 'D')
@@ -213,11 +224,13 @@ class Timeseries():
         self.target_frame = pd.DataFrame(index=date_range)
         x_range = np.array(range(0, len(date_range)))
         self.target_per_day = 100 / (len(date_range) - 28)
-        self.target_frame['y_target'] = self.target_per_day * x_range
+        self.target_frame['y_target_percentage'] = self.target_per_day * x_range
+        self.target_frame['y_target_amount'] = self.percentage_to_amount(self.target_frame['y_target_percentage'])
 
     def set_prognoses_frame(self):
         self.prognoses_frame = pd.DataFrame(index=self.prognoses_date_range)
-        self.prognoses_frame['prognose'] = self.prognose
+        self.prognoses_frame['prognose_percentage'] = self.prognose
+        self.prognoses_frame['prognose_amount'] = self.percentage_to_amount(self.prognoses_frame['prognose_percentage'])
 
     def get_prognoses_frame(self):
         return self.prognoses_frame
