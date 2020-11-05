@@ -9,7 +9,7 @@ colors = config.colors_vwt
 
 
 # APP LAYOUT
-def get_body():
+def get_body(client="", project=''):
     page = html.Div(
         [
             header("Hoofdpagina FttX"),

@@ -1,9 +1,7 @@
-from analyse_dashboard.analyse.functions import from_rd
-from data import api, local
+from data import api
 import pandas as pd
 import plotly.graph_objs as go
 from elements import table_styles
-import json
 import dash_table
 from data import collection
 import config
@@ -142,8 +140,15 @@ def clickbar_hb(drop_selectie, mask_all):
 
 
 def update_date():
-    date_an = api.get('/Graphs?id=update_date')[0]['date']
-    date_con = api.get('/Graphs?id=update_date_consume')[0]['date']
+    try:
+        date_an = api.get('/Graphs?id=update_date')[0]['date'][0:-4].replace('T', ' ')
+    except IndexError:
+        date_an = "[niet beschikbaar]"
+
+    try:
+        date_con = api.get('/Graphs?id=update_date_consume')[0]['date'][0:-4].replace('T', ' ')
+    except IndexError:
+        date_con = "[niet beschikbaar]"
     return [date_an, date_con]
 
 
@@ -192,96 +197,4 @@ def get_dummy_table():
         }],
         editable=False,
     )
-    return fig
-
-
-def geomap_data_table(drop_selectie, mask_all):
-    if mask_all == '0':
-        records = api.get('/Projects?project=' + drop_selectie)
-        df = pd.DataFrame(records)
-    else:
-        mask = json.loads(api.get('/Graphs?id=' + drop_selectie + '_bar_filters_' + mask_all)[0]['mask'])
-        dataframe = []
-        for m in mask:
-            dataframe += api.get('/Projects?sleutel=' + m)
-        df = pd.DataFrame(dataframe)
-
-    if not df[~df['x_locatie_rol'].isna()].empty:
-
-        df['clr'] = 50
-        df.loc[df['opleverdatum'].isna(), ('clr')] = 0
-        df['clr-DP'] = 0
-        df.loc[df['opleverstatus'] != 0, ('clr-DP')] = 50  # 25 == geel
-        df['x_locatie_rol'] = df['x_locatie_rol'].str.replace(',', '.').astype(float)
-        df['y_locatie_rol'] = df['y_locatie_rol'].str.replace(',', '.').astype(float)
-        df['x_locatie_dp'] = df['x_locatie_dp'].str.replace(',', '.').astype(float)
-        df['y_locatie_dp'] = df['y_locatie_dp'].str.replace(',', '.').astype(float)
-        df['Lat'], df['Long'] = from_rd(df['x_locatie_rol'], df['y_locatie_rol'])
-        df['Lat_DP'], df['Long_DP'] = from_rd(df['x_locatie_dp'], df['y_locatie_dp'])
-        df['Size'] = 7
-        df['Size_DP'] = 14
-
-        # this is a default public token obtained from a free account on https://account.mapbox.com/
-        # and can there be refreshed at any moment
-        mapbox_at = api.get('/Graphs?id=token_mapbox')[0]['token']
-        normalized_size = df['Size_DP'].to_list() + df['Size'].to_list()
-        map_data = [
-            go.Scattermapbox(
-                lat=df['Lat_DP'].to_list() + df['Lat'].to_list(),
-                lon=df['Long_DP'].to_list() + df['Long'].to_list(),
-                mode='markers',
-                marker=dict(
-                    cmax=50,
-                    cmin=0,
-                    color=df['clr-DP'].to_list() + df['clr'].to_list(),
-                    colorscale=[colors['green'], colors['yellow'], colors['red']],
-                    reversescale=True,
-                    size=normalized_size * 7,
-                    plot_bgcolor=colors['plot_bgcolor'],
-                    paper_bgcolor=colors['paper_bgcolor']
-                ),
-                text=df['clr'],
-                hoverinfo='text'
-            )
-        ]
-        map_layout = dict(
-            autosize=True,
-            automargin=True,
-            margin={'l': 30, 'r': 30, 'b': 30, 't': 120},
-            height=500,
-            hovermode="closest",
-            plot_bgcolor="#F9F9F9",
-            paper_bgcolor="#F9F9F9",
-            legend=dict(font=dict(size=10), orientation="h"),
-            title="Status oplevering per woning (kleine marker) & DP"
-                  "(grote marker)<br>[groen = opgeleverd, rood = niet opgeleverd]",
-            mapbox=dict(
-                accesstoken=mapbox_at,
-                style="light",
-                center=dict(lon=df['Long'].mean(), lat=df['Lat'].mean()),
-                zoom=13,
-            ),
-        )
-
-        fig = dict(geo={'data': map_data, 'layout': map_layout})
-    else:
-        fig = dict(geo={'data': None, 'layout': dict()})
-
-    df['uitleg redenna'] = df['redenna'].map(local.reden_mapping)
-    df = df[['sleutel', 'opleverdatum', 'hasdatum', 'opleverstatus', 'uitleg redenna']].sort_values(by='hasdatum')
-    df_table = dash_table.DataTable(
-        columns=[{"name": i, "id": i} for i in df.columns],
-        data=df.to_dict("rows"),
-        filter_action="native",
-        sort_action="native",
-        style_table={'overflowX': 'auto'},
-        style_header=table_styles['header'],
-        style_cell=table_styles['cell']['action'],
-        style_filter=table_styles['filter'],
-        css=[{
-            'selector': 'table',
-            'rule': 'width: 100%;'
-        }],
-    )
-    fig['table'] = df_table
     return fig

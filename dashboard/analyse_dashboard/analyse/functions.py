@@ -3,128 +3,15 @@ from typing import NamedTuple
 
 import pandas as pd
 import numpy as np
-from google.cloud import firestore, storage
-import os
+from google.cloud import firestore
 import time
-import json
 import datetime
-import hashlib
+
+import business_rules as br
 import config
 from collections import namedtuple
 
 colors = config.colors_vwt
-
-
-def get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag):
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gpath_i
-    fn_l = os.listdir(path_data + '../jsonFC/')
-    client = storage.Client()
-    bucket = client.get_bucket('vwt-d-gew1-it-fiberconnect-int-preprocess-stg')
-    blobs = bucket.list_blobs()
-    for blob in blobs:
-        if pd.Timestamp.now().strftime('%Y%m%d') in blob.name:
-            blob.download_to_filename(path_data + '../jsonFC/' + blob.name.split('/')[-1])
-    fn_l = os.listdir(path_data + '../jsonFC/')
-
-    df_l = {}
-    for fn in fn_l:
-        df = pd.DataFrame(pd.read_json(path_data + '../jsonFC/' + fn, orient='records')['data'].to_list())
-        df = df.replace('', np.nan).fillna(np.nan)
-        if df['title'].iloc[0][0:-13] != 'Bergen op Zoom Noord\xa0  wijk 01\xa0+ Halsteren':
-            df['title'] = key = df['title'].iloc[0][0:-13]
-        else:
-            df['title'] = key = 'Bergen op Zoom Noord  wijk 01 + Halsteren'
-        # df = df[~df.sleutel.isna()]  # generate this as error output?
-        df.rename(columns={'Sleutel': 'sleutel', 'Soort_bouw': 'soort_bouw',
-                           'LaswerkAPGereed': 'laswerkapgereed', 'LaswerkDPGereed': 'laswerkdpgereed',
-                           'Opleverdatum': 'opleverdatum', 'Opleverstatus': 'opleverstatus',
-                           'RedenNA': 'redenna', 'X locatie Rol': 'x_locatie_rol',
-                           'Y locatie Rol': 'y_locatie_rol', 'X locatie DP': 'x_locatie_dp',
-                           'Y locatie DP': 'y_locatie_dp', 'Toestemming': 'toestemming',
-                           'HASdatum': 'hasdatum', 'title': 'project', 'KabelID': 'kabelid',
-                           'Postcode': 'postcode', 'Huisnummer': 'huisnummer', 'Adres': 'adres',
-                           'Plandatum': 'plandatum', 'FTU_type': 'ftu_type', 'Toelichting status': 'toelichting_status',
-                           'Kast': 'kast', 'Kastrij': 'kastrij', 'ODF': 'odf', 'ODFpos': 'odfpos',
-                           'CATVpos': 'catvpos', 'CATV': 'catv', 'Areapop': 'areapop', 'ProjectCode': 'projectcode',
-                           'SchouwDatum': 'schouwdatum', 'Plan Status': 'plan_status'}, inplace=True)
-        if flag == 0:
-            df = df[col]
-        df.loc[~df['opleverdatum'].isna(), ('opleverdatum')] = \
-            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['opleverdatum'].isna()]['opleverdatum']]
-        df.loc[~df['hasdatum'].isna(), ('hasdatum')] = \
-            [el[6:10] + '-' + el[3:5] + '-' + el[0:2] for el in df[~df['hasdatum'].isna()]['hasdatum']]
-        if (key in subset) and (key not in df_l.keys()):
-            df_l[key] = df
-        if (key in subset) and (key in df_l.keys()):
-            df_l[key] = df_l[key].append(df, ignore_index=True)
-            df_l[key] = df_l[key].drop_duplicates(keep='first')  # generate this as error output?
-
-        if key not in ['Brielle', 'Helvoirt POP Volbouw']:  # zitten in ingest folder 20200622
-            os.remove(path_data + '../jsonFC/' + fn)
-
-    # hash sleutel code
-    if flag == 0:
-        for key in df_l:
-            df_l[key].sleutel = [hashlib.sha256(el.encode()).hexdigest() for el in df_l[key].sleutel]
-
-    for key in subset:
-        if key not in df_l:
-            df_l[key] = pd.DataFrame(columns=col)
-
-    return df_l
-
-
-def extract_data_planning(path_data):
-    # if 'gs://' in path_data:
-    #     xls = pd.ExcelFile(path_data)
-    # else:
-    xls = pd.ExcelFile(path_data)
-    df = pd.read_excel(xls, 'FTTX ').fillna(0)
-    return df
-
-
-# TODO: Transform this function to use more elegant pandas ETL-style process
-def transform_data_planning(df):
-    HP = dict(HPendT=[0] * 52)
-    for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
-        if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
-            HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
-            HP['HPendT'] = [sum(x) for x in zip(HP['HPendT'], HP[df.loc[el, ('Unnamed: 0')]])]
-            if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Oude Stad':
-                HP['Bergen op Zoom oude stad'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
-                HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
-                HP['Bergen op Zoom Noord Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
-                HP['Den Haag Bezuidenhout'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
-                HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
-                HP['Den Haag Vredelust Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == '':
-                HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-            if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
-                HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    return HP
-
-
-def get_data_planning(path_data, subset_KPN_2020):
-    df = extract_data_planning(path_data)
-    HP = transform_data_planning(df)
-    return HP
-
-
-def get_data_targets(path_data):
-    doc = firestore.Client().collection('Data').document('analysis').get().to_dict()
-    if doc is not None:
-        date_FTU0 = doc['FTU0']
-        date_FTU1 = doc['FTU1']
-        dates = date_FTU0, date_FTU1
-    else:
-        print("Could not retrieve FTU0 and FTU1 from firestore, setting from original file")
-        dates = get_data_targets_init(path_data)
-    return dates
 
 
 # Function to use only when data_targets in database need to be reset.
@@ -141,43 +28,6 @@ def get_data_targets_init(path_data, map_key):
                 date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
 
     return date_FTU0, date_FTU1
-
-
-# Legacy
-def get_data_meters(path_data):
-    map_key = {
-        'Data Oosterhout': 'Nijmegen Oosterhout',
-        'Data Bottendaal': 'Nijmegen Bottendaal',
-        'Data Oude stad': 'Bergen op Zoom oude stad',
-        # 'Data Gouda Centrum': ' ',  # niet in FC?
-        'Data Klarendal': 'Arnhem Klarendal',
-        'Data Malburgen': 'Arnhem Malburgen',
-        'Data Spijkerbuurt': 'Arnhem Spijkerbuurt',
-        'Data Bergen op Zoom': 'Bergen op Zoom Oost',
-        'Data Brielle': 'Brielle',
-        'Data Morgenstond': 'Den Haag Morgenstond west',
-        'Data Breda Brabantpark': 'Breda Brabantpark',
-        'Data Gulden Bodem': 'Arnhem Gulden Bodem Schaarsbergen',
-        'Data Biezen Wolfskuil': 'Nijmegen Biezen-Wolfskuil-Hatert ',
-        'Data Spijkenisse': 'KPN Spijkernisse'
-    }
-    fn_teams = path_data + 'Weekrapportage FttX projecten - Week 22-2020.xlsx'
-    xls = pd.ExcelFile(fn_teams)
-    d_sheets_o = pd.read_excel(xls, None)
-    d_sheets = {}
-    for key_o in d_sheets_o:
-        if key_o in map_key:
-            d_sheets[map_key[key_o]] = d_sheets_o[key_o]
-
-    return d_sheets
-
-
-def get_data(subset, col, gpath_i, path_data, flag):
-    if gpath_i is None:
-        df_l = get_data_projects(subset, col)
-    else:
-        df_l = get_data_from_ingestbucket(gpath_i, col, path_data, subset, flag)
-    return df_l
 
 
 def get_start_time(df: pd.DataFrame):
@@ -204,23 +54,6 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
     # total_objects['Den Haag Bezuidenhout'] = 9488  # not yet in FC, total from excel bouwstromen
     # total_objects['Den Haag Vredelust Bouwlust'] = 11918  # not yet in FC, total from excel bouwstromen
     return total_objects
-
-
-# Function that adds columns to the source data, to be used in project specs
-# hpend is a boolean column indicating whether an object has been delivered
-# homes_completed is a boolean column indicating a home has been completed
-# bis_gereed is a boolean column indicating whther the BIS for an object has been finished
-def add_relevant_columns(df: pd.DataFrame, year):
-    # TODO add to tranform part of the ETL
-    if not year:
-        year = str(pd.Timestamp.now().year)
-    start_year = pd.to_datetime(year + '-01-01')
-    end_year = pd.to_datetime(year + '-12-31')
-    df['hpend'] = df.opleverdatum.apply(lambda x: (x >= start_year) and (x <= end_year))
-    df['homes_completed'] = (df.opleverstatus == '2') & (df.hpend)
-    df['homes_completed_total'] = (df.opleverstatus == '2')
-    df['bis_gereed'] = df.opleverstatus != '0'
-    return df
 
 
 # Calculates the amount of homes completed per project in a dictionary
@@ -262,7 +95,7 @@ def get_HPend(df: pd.DataFrame):
 # - The BIS (basic infrastructure) is in place
 def get_has_ready(df: pd.DataFrame):
     tmp_df = df.copy()
-    tmp_df['has_ready'] = ~df.toestemming.isna() & df.bis_gereed
+    tmp_df['has_ready'] = br.has_werkvoorraad(tmp_df)
     result = tmp_df[['project', 'has_ready']] \
         .groupby(by="project") \
         .sum() \
@@ -281,7 +114,7 @@ def get_hc_hpend_ratio_total(hc, hpend):
 # Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
 def get_hc_hpend_ratio(df: pd.DataFrame):
     temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
-    temp_df['has_opleverdatum'] = ~df.opleverdatum.isna()
+    temp_df['has_opleverdatum'] = br.opgeleverd(df)
     sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(
         by="project").sum().reset_index()
     sum_df['ratio'] = sum_df.apply(
@@ -294,12 +127,6 @@ def get_hc_hpend_ratio(df: pd.DataFrame):
 def get_has_werkvoorraad(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
     return calculate_ready_for_has(df)
-
-
-# Function to add relevant data to the source data_frames
-def preprocess_data(df, year):
-    df = add_relevant_columns(df, year)
-    return df
 
 
 class ProjectSpecs(NamedTuple):
@@ -365,7 +192,7 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     t_shift = {}
     y_prog_l = {}
     for project, project_df in df.groupby(by="project"):  # to calculate prognoses for projects in FC
-        d_real = project_df[~project_df['opleverdatum'].isna()]
+        d_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
         if not d_real.empty:
             d_real = d_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
             d_real.index = pd.to_datetime(d_real.index, format='%Y-%m-%d')
@@ -435,46 +262,57 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     return PrognoseResult(rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff)
 
 
-def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
-    df_prog = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_prog_l:
-        y_prog = y_prog_l[key] / 100 * tot_l[key]
-        df_prog += pd.DataFrame(index=x_d, columns=['d'], data=y_prog).diff().fillna(0)
+def fill_2020(df):
+    filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df.index[0], freq='D'),
+                              columns=['d'],
+                              data=0)
+    df = pd.concat([filler2020[0:-1], df], axis=0)
+    return df
 
-    df_target = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in y_target_l:
-        y_target = y_target_l[key] / 100 * tot_l[key]
-        df_target += pd.DataFrame(index=x_d, columns=['d'], data=y_target).diff().fillna(0)
 
-    df_real = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    for key in d_real_l:
-        y_real = (d_real_l[key] / 100 * tot_l[key]).diff().fillna((d_real_l[key] / 100 * tot_l[key]).iloc[0])
+def percentage_to_amount(percentage, total):
+    return percentage / 100 * total
+
+
+def transform_to_amounts(percentage_dict, total_dict, days_index):
+    df = pd.DataFrame(index=days_index, columns=['d'], data=0)
+    for key in percentage_dict:
+        amounts = percentage_to_amount(percentage_dict[key], total_dict[key])
+        df += pd.DataFrame(index=days_index, columns=['d'], data=amounts).diff().fillna(0)
+    if df.index[0] > pd.Timestamp('2020-01-01'):
+        df = fill_2020(df)
+    return df
+
+
+def transform_df_real(percentage_dict, total_dict, days_index):
+    df = pd.DataFrame(index=days_index, columns=['d'], data=0)
+    for key in percentage_dict:
+        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna(
+            (percentage_dict[key] / 100 * total_dict[key]).iloc[0])
         y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = x_d[y_real.index]
-        df_real = df_real.add(y_real, fill_value=0)
+        y_real.index = days_index[y_real.index]
+        df = df.add(y_real, fill_value=0)
+    if df.index[0] > pd.Timestamp('2020-01-01'):
+        df = fill_2020(df)
+    return df
 
-    df_plan = pd.DataFrame(index=x_d, columns=['d'], data=0)
+
+def transform_df_plan(x_d, HP):
+    df = pd.DataFrame(index=x_d, columns=['d'], data=0)
     y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
                           columns=['d'], data=HP['HPendT'])
     y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-    df_plan = df_plan.add(y_plan, fill_value=0)
+    df = df.add(y_plan, fill_value=0)
+    if df.index[0] > pd.Timestamp('2020-01-01'):
+        df = fill_2020(df)
+    return df
 
-    if df_real.index[0] > pd.Timestamp('2020-01-01'):
-        filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df_real.index[0], freq='D'),
-                                  columns=['d'],
-                                  data=0)
-        df_prog = pd.concat([filler2020[0:-1], df_prog], axis=0)
-        df_target = pd.concat([filler2020[0:-1], df_target], axis=0)
-        df_real = pd.concat([filler2020[0:-1], df_real], axis=0)
-        df_plan = pd.concat([filler2020[0:-1], df_plan], axis=0)
 
-    # plot option
-    # import matplotlib.pyplot as plt
-    # test = df_real.resample('M', closed='left', loffset=None).sum()['d']
-    # fig, ax = plt.subplots(figsize=(14,8))
-    # ax.bar(x=test.index[0:15].strftime('%Y-%m'), height=test[0:15], width=0.5)
-    # plt.savefig('Graphs/jaaroverzicht_2019_2020.png')
-
+def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
+    df_prog = transform_to_amounts(y_prog_l, tot_l, x_d)
+    df_target = transform_to_amounts(y_target_l, tot_l, x_d)
+    df_real = transform_df_real(d_real_l, tot_l, x_d)
+    df_plan = transform_df_plan(x_d, HP)
     OverviewResults = namedtuple("OverviewResults", ['df_prog', 'df_target', 'df_real', 'df_plan'])
     return OverviewResults(df_prog, df_target, df_real, df_plan)
 
@@ -535,7 +373,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
-                 name='Outlook (KPN)',
+                 name='Outlook',
                  type='bar',
                  marker=dict(color=colors['lightgray']),
                  width=width,
@@ -620,29 +458,7 @@ def preprocess_for_jaaroverzicht(*args):
     # return prog, target, real, plan
 
 
-def get_target(**data):
-    return str(round(sum(data['target'][1:])))
-
-
-def get_planning(**data):
-    n_now = datetime.date.today().month
-    return str(int(sum(data['planning'][n_now:]) - data['realisatie'][n_now]))
-
-
-def get_prognose(**data):
-    n_now = datetime.date.today().month
-    return str(int(sum(data['prognose'][n_now:]) - data['realisatie'][n_now]))
-
-
-def get_realisatie(**data):
-    return str(int(data['realisatie']))
-
-
-def get_HC_HPend(**data):
-    return str(data['HC_HPend'])
-
-
-def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
+def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
     n_now = datetime.date.today().month
 
     target_sum = str(round(sum(target[1:])))
@@ -657,87 +473,11 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
                          prog=str(int(prognose_sum)),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
+                         bis_gereed=str(bis_gereed),
                          prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
     return jaaroverzicht
-
-
-def meters(d_sheets, tot_l, x_d, y_target_l):
-    teams_BIS_all = []
-    m_BIS_all = []
-    teams_HAS_all = []
-    m_HAS_all = []
-    w_BIS_all = []
-    w_HAS_all = []
-    y_BIS = {}
-    y_schouw = {}
-    y_HASm = {}
-    y_HAS = {}
-    y_target = {}
-
-    for key in d_sheets:
-        m_BIST = d_sheets[key].iloc[10, 1]
-        if np.isnan(m_BIST):
-            m_BIST = tot_l[key] * 7  # based on average
-        m_BIS = d_sheets[key].iloc[10, 2:].fillna(0)  # data from week 1 2020
-        teams_BIS = d_sheets[key].iloc[5, 2:].fillna(0)
-        w_BIS = d_sheets[key].iloc[12, 2:].fillna(0)
-        teams_BIS_all += teams_BIS.to_list()
-        m_BIS_all += m_BIS.to_list()
-        w_BIS_all += w_BIS.to_list()
-
-        m_HAST = d_sheets[key].iloc[11, 1]
-        if np.isnan(m_HAST):
-            m_HAST = tot_l[key] * 3  # based on average
-        m_HAS = d_sheets[key].iloc[11, 2:].fillna(0)
-        teams_HAS = d_sheets[key].iloc[7, 2:].fillna(0)
-        w_HP = d_sheets[key].iloc[28, 2:].fillna(0)
-        w_2 = d_sheets[key].iloc[24, 2:].fillna(0)
-        # w_33 = d_sheets[key].iloc[27, 2:].fillna(0)
-        # w_35 = d_sheets[key].iloc[26, 2:].fillna(0)
-        # w_31 = d_sheets[key].iloc[25, 2:].fillna(0)
-        # w_11 = d_sheets[key].iloc[23, 2:].fillna(0)
-        # w_1 = d_sheets[key].iloc[22, 2:].fillna(0)
-        # w_5 = d_sheets[key].iloc[21, 2:].fillna(0)
-        teams_HAS_all += teams_HAS.to_list()
-        m_HAS_all += m_HAS.to_list()
-        w_HAS_all += (w_HP + w_2).to_list()
-
-        w_SLB = d_sheets[key].iloc[32, 2:].fillna(0)
-        w_SHB = d_sheets[key].iloc[36, 2:].fillna(0)
-
-        if key in y_target_l:
-            y_target_p = pd.DataFrame(index=x_d, columns=['y_target'], data=y_target_l[key])
-        else:
-            y_target_p = pd.DataFrame(index=x_d, columns=['y_target'], data=0)
-        x_target = y_target_p['2019-12-30':'2020-12-21'].resample(
-            'W-MON', closed='right', loffset='-1W-MON').mean().index.strftime('%Y-%m-%d').to_list()
-        y_target[key] = y_target_p['2019-12-30':'2020-12-21'].resample(
-            'W-MON', closed='right', loffset='-1W-MON').mean()['y_target'].to_list()
-
-        y_BIS[key] = (m_BIS.cumsum() / m_BIST * 100).to_list() + [0] * (len(y_target[key]) - len(m_BIS))
-        y_HASm[key] = (m_HAS.cumsum() / m_HAST * 100).to_list() + [0] * (len(y_target[key]) - len(m_HAS))
-        y_HAS[key] = ((w_HP + w_2).cumsum() / tot_l[key] * 100).to_list() + [0] * (len(y_target[key]) - len(w_HP))
-        y_schouw[key] = ((w_SLB + w_SHB).cumsum() / tot_l[key] * 100).to_list() + [0] * (
-                len(y_target[key]) - len(w_SLB))
-
-    m_gegraven = [el1 + el2 for el1, el2 in zip(m_BIS_all, m_HAS_all)]
-    rc_BIS, _ = np.polyfit(teams_BIS_all, m_gegraven, 1)  # aantal meters BIS per team per week
-    rc_HAS, _ = np.polyfit(teams_HAS_all, w_HAS_all, 1)
-    w_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-    advies = {}
-    for key in y_target:
-        BIS_advies = round(
-            (y_target[key][w_now] - y_BIS[key][w_now]) / 100 * tot_l[key] * 7 / rc_BIS)  # gem 7m BIS per woning
-        if BIS_advies <= 0:
-            BIS_advies = 'On target!'
-        HAS_advies = round((y_target[key][w_now] - y_HAS[key][w_now]) / 100 * tot_l[key] / rc_HAS)
-        if HAS_advies <= 0:
-            HAS_advies = 'On target!'
-        advies[key] = 'Advies:<br>' + 'BIS teams: ' + str(BIS_advies) + '<br>HAS teams: ' + str(HAS_advies)
-
-    return x_target, y_target, y_BIS, y_HASm, y_HAS, y_schouw, advies
 
 
 def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
@@ -753,7 +493,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook KPN:'},
+                'title': {'text': 'Voortgang project vs outlook:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -776,134 +516,11 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook (KPN)',
+                'name': 'Outlook',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
     return record_dict
-
-
-def masks_phases(pkey, df_l):
-    def calculate_bar(bar_m, mask):
-        bar = {}
-        for key in bar_m:
-            len_b = (bar_m[key] & mask).value_counts()
-            if True in len_b:
-                bar[key[0:-5]] = str(len_b[True])
-            else:
-                bar[key[0:-5]] = str(0)
-        return bar
-
-    df = df_l[pkey]
-    bar_m = {'SchouwenLB0-mask': (df['toestemming'].isna()) &
-                                 (df['soort_bouw'] == 'Laag'), 'SchouwenLB1-mask': (~df['toestemming'].isna()) &
-                                                                                   (df['soort_bouw'] == 'Laag'),
-             'SchouwenHB0-mask': (df['toestemming'].isna()) &
-                                 (df['soort_bouw'] != 'Laag'), 'SchouwenHB1-mask': (~df['toestemming'].isna()) &
-                                                                                   (df['soort_bouw'] != 'Laag'),
-             'BISLB0-mask': (df['opleverstatus'] == '0') &
-                            (df['soort_bouw'] == 'Laag'), 'BISLB1-mask': (df['opleverstatus'] != '0') &
-                                                                         (df['soort_bouw'] == 'Laag'),
-             'BISHB0-mask': (df['opleverstatus'] == '0') &
-                            (df['soort_bouw'] != 'Laag'), 'BISHB1-mask': (df['opleverstatus'] != '0') &
-                                                                         (df['soort_bouw'] != 'Laag'),
-             'Montage-lasDPLB0-mask': (df['laswerkdpgereed'] == '0') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasDPLB1-mask': (df['laswerkdpgereed'] == '1') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasDPHB0-mask': (df['laswerkdpgereed'] == '0') &
-                                      (df['soort_bouw'] != 'Laag'),
-             'Montage-lasDPHB1-mask': (df['laswerkdpgereed'] == '1') &
-                                      (df['soort_bouw'] != 'Laag'),
-             'Montage-lasAPLB0-mask': (df['laswerkapgereed'] == '0') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasAPLB1-mask': (df['laswerkapgereed'] == '1') &
-                                      (df['soort_bouw'] == 'Laag'),
-             'Montage-lasAPHB0-mask': (df['laswerkapgereed'] == '0') &
-                                      (df['soort_bouw'] != 'Laag'),
-             'Montage-lasAPHB1-mask': (df['laswerkapgereed'] == '1') &
-                                      (df['soort_bouw'] != 'Laag'), 'HASLB0-mask': (df['opleverdatum'].isna()) &
-                                                                                   (df['soort_bouw'] == 'Laag'),
-             'HASLB1-mask': (df['opleverstatus'] == '2') &
-                            (df['soort_bouw'] == 'Laag'), 'HASLB1HP-mask': (df['opleverstatus'] != '2') &
-                                                                           (~df['opleverdatum'].isna()) &
-                                                                           (df['soort_bouw'] == 'Laag'),
-             'HASHB0-mask': (df['opleverdatum'].isna()) &
-                            (df['soort_bouw'] != 'Laag'), 'HASHB1-mask': (df['opleverstatus'] == '2') &
-                                                                         (df['soort_bouw'] != 'Laag'),
-             'HASHB1HP-mask': (df['opleverstatus'] != '2') &
-                              (~df['opleverdatum'].isna()) &
-                              (df['soort_bouw'] != 'Laag')}
-
-    document_list = []
-    mask_level0 = True
-    bar = calculate_bar(bar_m, mask=mask_level0)
-    bar_names = ['0']
-    record = dict(bar=bar)
-    document = dict(record=record,
-                    filter="0",
-                    graph_name="status_bar_chart",
-                    project=pkey)
-    document_list.append(document)
-
-    for key2 in bar_m:
-        mask_level1 = bar_m[key2]
-        bar = calculate_bar(bar_m, mask=mask_level0 & mask_level1)
-        bar_names += ['0' + key2[0:-5]]
-        record = dict(bar=bar, mask=json.dumps(df[mask_level0 & mask_level1].sleutel.to_list()))
-        document = dict(record=record,
-                        filter="0" + key2[0:-5],
-                        graph_name="status_bar_chart",
-                        project=pkey)
-        document_list.append(document)
-
-        for key3 in bar_m:
-            mask_level2 = bar_m[key3]
-            bar = calculate_bar(bar_m, mask=mask_level0 & mask_level1 & mask_level2)
-            bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-            record = dict(bar=bar,
-                          mask=json.dumps(df[mask_level0 & mask_level1 & mask_level2].sleutel.to_list()))
-            document = dict(record=record,
-                            filter="0" + key2[0:-5] + key3[0:-5],
-                            graph_name="status_bar_chart",
-                            project=pkey)
-            document_list.append(document)
-    return bar_names, document_list
-
-
-# def set_bar_names(bar_m):
-#     bar_names = ['0']
-#     for key2 in bar_m:
-#         bar_names += ['0' + key2[0:-5]]
-#     for key2 in bar_m:
-#         for key3 in bar_m:
-#             bar_names += ['0' + key2[0:-5] + key3[0:-5]]
-#     record = dict(id='bar_names', bar_names=bar_names)
-#     firestore.Client().collection('Data').document(record['id']).set(record)
-
-
-def get_data_projects(subset, col):
-    t = time.time()
-    df_l = {}
-    for key in subset:
-        docs = firestore.Client().collection('Projects').where('project', '==', key).stream()
-        records = []
-        for doc in docs:
-            records += [doc.to_dict()]
-        if records != []:
-            df_l[key] = pd.DataFrame(records)[col].fillna(np.nan)
-        else:
-            df_l[key] = pd.DataFrame(columns=col).fillna(np.nan)
-        # to correct for datetime value at HUB
-        df_l[key].loc[~df_l[key]['opleverdatum'].isna(), ('opleverdatum')] = \
-            [el[0:10] for el in df_l[key][~df_l[key]['opleverdatum'].isna()]['opleverdatum']]
-        df_l[key].loc[~df_l[key]['hasdatum'].isna(), ('hasdatum')] = \
-            [el[0:10] for el in df_l[key][~df_l[key]['hasdatum'].isna()]['hasdatum']]
-
-        print(key)
-        print('Time: ' + str((time.time() - t) / 60) + ' minutes')
-
-    return df_l
 
 
 def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
@@ -967,7 +584,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op Target', 'range': [x_min, x_max],
                              'zeroline': False},
                    'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
                              'zeroline': False},
@@ -983,13 +600,13 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                                         text='Verhoog HAS capaciteit',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verruim afspraak KPN',
+                                        text='Verruim klantafspraak',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
                                         text='Verlaag HAS capcaciteit',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verscherp afspraak KPN',
+                                        text='Verscherp klantafspraak',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
@@ -1030,10 +647,6 @@ def get_intersect(a1, a2, b1, b2):
     return (x / z, y / z)
 
 
-def firstday_week1_2020():
-    return pd.to_datetime('2019-12-30')
-
-
 def days_in_2019(timeline):
     return len(timeline[timeline < pd.to_datetime('2020-01-01')])
 
@@ -1046,44 +659,104 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
-    return dict(counts=target, counts_prev=None, title='Target week ' + str(pd.Timestamp.now().week),
-                subtitle='', font_color='green', id=None)
+    return target
 
 
-def calculate_weekrealisatie(project, d_real_l, total_objects, timeline,
-                             delay):  # berekent voor de week t/m de huidige dag
-    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
-    if project in d_real_l:
-        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7][
-            'Aantal'].max()
-        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7][
-            'Aantal'].max()
-        # value_atstartweek_min1W = d_real_l[project][
-        #   d_real_l[project].index <= index_firstdaythisweek - 1 - 7 + delay * 7]['Aantal'].max()
-        # value_atendweek_min1W = d_real_l[project][
-        #   d_real_l[project].index <= index_firstdaythisweek + 7 - 7 + delay * 7]['Aantal'].max()
-        realisatie = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
-        # realisatie_min1W = int(round((value_atendweek_min1W - value_atstartweek_min1W) / 100 * total_objects[project]))
-    else:
-        realisatie = 0
-        # realisatie_min1W = 0
-    return dict(counts=realisatie, counts_prev=None,
-                title='Realisatie week ' + str(pd.Timestamp.now().week + delay), subtitle='', font_color='green',
+def create_bullet_chart_realisatie(value,
+                                   prev_value,
+                                   max_value,
+                                   yellow_border,
+                                   threshold,
+                                   title="",
+                                   subtitle=""):
+    return dict(counts=value,
+                counts_prev=prev_value,
+                title=title,
+                subtitle=subtitle,
+                font_color='green',
+                gauge={
+                    'shape': "bullet",
+                    'axis': {'range': [0, max_value]},
+                    'threshold': {
+                        'line': {'color': "red", 'width': 2},
+                        'thickness': 0.75,
+                        'value': threshold},
+                    'steps': [
+                        {'range': [0, yellow_border], 'color': "yellow"},
+                        {'range': [yellow_border, max_value], 'color': "lightgreen"}]},
                 id=None)
 
 
+def calculate_lastweekrealisatie(
+        project_df,
+        weektarget
+):
+    weekday = datetime.datetime.now().weekday()
+    realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
+    realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
+
+    realisatie = int(realisatie_end_week - realisatie_beginning_week)
+
+    max_value = int(max(weektarget, realisatie, 1) * 1.1)
+    return create_bullet_chart_realisatie(value=realisatie,
+                                          prev_value=None,
+                                          max_value=max_value,
+                                          yellow_border=int(weektarget * 0.9),
+                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                          title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+                                          subtitle=f"Target: {weektarget}")
+
+
+def calculate_weekrealisatie(project_df,
+                             weektarget, delta=0):
+    weekday = datetime.datetime.now().weekday()
+    realisatie_today = br.opgeleverd(project_df, 0 + delta).sum()
+    realisatie_yesterday = br.opgeleverd(project_df, 1 + delta).sum()
+    realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
+
+    realisatie_this_week = int(realisatie_today - realisatie_beginning_week)
+    realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
+
+    max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
+    return create_bullet_chart_realisatie(value=realisatie_this_week,
+                                          prev_value=realisatie_this_week_yesterday,
+                                          max_value=max_value,
+                                          yellow_border=int(weektarget * 0.9),
+                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                          title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
+                                          subtitle=f"Target:{weektarget}")
+
+
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
-                        timeline):  # berekent voor de week t/m de huidige dag
+                        timeline, client):  # berekent voor de week t/m de huidige dag
     target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
-    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay=0)
+    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, client, delay=0)
     delta = record['counts'] - target
     # delta_min1W = record['counts_prev'] - target
     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
 
 
 def calculate_weekHCHPend(project, HC_HPend_l):
-    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='',
-                font_color='green', id=None)
+    return dict(title='HC / HPend',
+                subtitle='',
+                counts=round(HC_HPend_l[project]) / 100,
+                counts_prev=None,
+                font_color='green',
+                gauge={
+                    'axis': {'range': [None, 1], 'tickwidth': 1, 'tickcolor': "green"},
+                    'bar': {'color': "darkgreen"},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "gray",
+                    'steps': [
+                        {'range': [0, .6], 'color': 'yellow'},
+                        {'range': [.6, 1], 'color': 'lightgreen'}],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': .9}
+                },
+                id=None)
 
 
 def calculate_weeknerr(project, n_err):
@@ -1091,31 +764,10 @@ def calculate_weeknerr(project, n_err):
                 id=None)
 
 
-def update_y_prog_l(date_FTU0, d_real_l, t_shift, rc1, rc2, y_prog_l, x_d, x_prog, cutoff):
-    rc1_mean = sum(rc1.values()) / len(rc1.values())
-    rc2_mean = sum(rc2.values()) / len(rc2.values())
-    for key in date_FTU0:
-        if key not in d_real_l:  # the case of no realisation date
-            t_shift[key] = x_prog[x_d == date_FTU0[key]][0]
-            b1_mean = -(rc1_mean * (t_shift[key] + 14))  # to include delay of two week
-            y_prog1 = b1_mean + rc1_mean * x_prog
-            b2_mean = cutoff - (rc2_mean * x_prog[y_prog1 >= cutoff][0])
-            y_prog2 = b2_mean + rc2_mean * x_prog
-            y_prog_l[key] = y_prog1.copy()
-            y_prog_l[key][y_prog1 >= cutoff] = y_prog2[y_prog1 >= cutoff]
-            y_prog_l[key][y_prog_l[key] > 100] = 100
-            y_prog_l[key][y_prog_l[key] < 0] = 0
-
-    return y_prog_l, t_shift
-
-
 def calculate_y_voorraad_act(df: pd.DataFrame):
     # todo add in_has_werkvoorraad column in etl and use that column
-    return df[
-        (~df.toestemming.isna()) &
-        (df.opleverstatus != '0') &
-        (df.opleverdatum.isna())
-        ].groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
+    return df[br.has_werkvoorraad(df)] \
+        .groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
 
 
 def empty_collection(subset):
@@ -1138,37 +790,9 @@ def add_token_mapbox(token):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-def from_rd(x: int, y: int) -> tuple:
-    x0 = 155000
-    y0 = 463000
-    phi0 = 52.15517440
-    lam0 = 5.38720621
-
-    # Coefficients or the conversion from RD to WGS84
-    Kp = [0, 2, 0, 2, 0, 2, 1, 4, 2, 4, 1]
-    Kq = [1, 0, 2, 1, 3, 2, 0, 0, 3, 1, 1]
-    Kpq = [3235.65389, -32.58297, -0.24750, -0.84978, -0.06550, -0.01709,
-           -0.00738, 0.00530, -0.00039, 0.00033, -0.00012]
-
-    Lp = [1, 1, 1, 3, 1, 3, 0, 3, 1, 0, 2, 5]
-    Lq = [0, 1, 2, 0, 3, 1, 1, 2, 4, 2, 0, 0]
-    Lpq = [5260.52916, 105.94684, 2.45656, -0.81885, 0.05594, -0.05607,
-           0.01199, -0.00256, 0.00128, 0.00022, -0.00022, 0.00026]
-
-    """
-    Converts RD coordinates into WGS84 coordinates
-    """
-    dx = 1E-5 * (x - x0)
-    dy = 1E-5 * (y - y0)
-    latitude = phi0 + sum([v * dx ** Kp[i] * dy ** Kq[i]
-                           for i, v in enumerate(Kpq)]) / 3600
-    longitude = lam0 + sum([v * dx ** Lp[i] * dy ** Lq[i]
-                            for i, v in enumerate(Lpq)]) / 3600
-    return latitude, longitude
-
-
-def set_date_update():
-    record = dict(id='update_date', date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
+def set_date_update(client=None):
+    id_ = f'update_date_{client}' if client else 'update_date'
+    record = dict(id=id_, date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
@@ -1353,10 +977,6 @@ def individual_reden_na(df: pd.DataFrame, clusters):
     return record_dict
 
 
-def to_firestore(collection, document, record):
-    firestore.Client().collection(collection).document(document).set(record)
-
-
 def get_pie_layout():
     layout = {
         #   'clickmode': 'event+select',
@@ -1470,16 +1090,8 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     :return:
     """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    toestemming_df = df[
-        (
-                df.opleverdatum.isna() |
-                (
-                        df.opleverdatum >= time_point
-                )
-        ) &
-        (
-            ~df.toestemming.isna()
-        )][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+    mask = ~br.opgeleverd(df, time_delta_days) & br.toestemming_bekend(df)
+    toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
 
     toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
     toestemming_df['bins'] = pd.cut(toestemming_df.waiting_time,
@@ -1505,29 +1117,7 @@ def wait_bin_cluster_redenna(toestemming_df):
 def calculate_ready_for_has(df, time_delta_days=0):
     schouw_df = df[['schouwdatum', 'opleverdatum', 'toestemming', 'toestemming_datum', 'opleverstatus']]
 
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    ready_for_has_df = schouw_df[
-        (
-            (
-                    ~schouw_df.schouwdatum.isna() &
-                    (
-                            schouw_df.schouwdatum <= time_point
-                    )
-            )
-        ) &
-        (
-                schouw_df.opleverdatum.isna() |
-                (
-                        schouw_df.opleverdatum >= time_point
-                )
-        ) &
-        (
-            ~schouw_df.toestemming_datum.isna()
-        ) &
-        (
-                schouw_df.opleverstatus != '0'
-        )
-        ]
+    ready_for_has_df = schouw_df[br.has_werkvoorraad(schouw_df, time_delta_days)]
     return len(ready_for_has_df)
 
 
@@ -1596,7 +1186,10 @@ def calculate_on_time_ratio(df):
     max_order_time = 56
     ordered = df[df.ordered & df.opgeleverd]
     on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = len(on_time)/len(ordered)
+    try:
+        on_time_ratio = len(on_time) / len(ordered)
+    except ZeroDivisionError:
+        on_time_ratio = 0
     return on_time_ratio
 
 
@@ -1607,3 +1200,9 @@ def calculate_oplevertijd(row):
     else:
         oplevertijd = np.nan
     return oplevertijd
+
+
+def calculate_bis_gereed(df):
+    df_copy = df.copy()
+    df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
+    return sum(br.bis_opgeleverd(df_copy))

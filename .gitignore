@@ -1,4 +1,5 @@
 export0.bat
+local_firestore.bat
 __pycache__
 .vscode
 config.py
@@ -8,6 +9,7 @@ export.sh
 deploy.sh
 *.ipynb_checkpoints*
 *.ipynb
-test.py
+*tests.py
 *.pickle
 *.pkl
+test.py

@@ -10,11 +10,11 @@ colors = config.colors_vwt
 
 def get_html(client):
     return [
+        dcc.Store(id="aggregate_data",
+                  data=None),
+        dcc.Store(id="aggregate_data2",
+                  data=None),
         dcc.Store(id=f"status-count-filter-{client}"),
-        html.Div(
-            id=f'indicators-{client}',
-            className="container-display",
-        ),
         html.Div(
             id=f'indicators-{client}',
             className="container-display",

@@ -1,17 +1,15 @@
 import dash
-
-from app import app
+import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-
-from data import collection
-from layout.components.graphs import pie_chart
-import dash_bootstrap_components as dbc
-from layout.components.figure import figure
-from layout.components.indicator import indicator
-from config import colors_vwt as colors
-
 from google.cloud import firestore
+
+from app import app
+from config import colors_vwt as colors
+from data import collection
+from layout.components.figure import figure
+from layout.components.graphs import pie_chart
+from layout.components.indicator import indicator
 
 client = "tmobile"
 
@@ -19,7 +17,8 @@ client = "tmobile"
 @app.callback(
     [
         Output("modal-sm", "is_open"),
-        Output(f"indicator-modal-{client}", 'figure')
+        Output(f"indicator-modal-{client}", 'figure'),
+        Output(f"indicator-download-{client}", 'href')
     ],
     [
         Input(f"indicator-late-{client}", "n_clicks"),
@@ -29,15 +28,14 @@ client = "tmobile"
     ],
     [
         State("modal-sm", "is_open"),
-        State(f"indicator-data-{client}", "data")
+        State(f"indicator-data-{client}", "data"),
+        State(f'project-dropdown-{client}', 'value')
     ]
 )
-def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result):
+def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result, project):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    print(changed_id)
     if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
         key = changed_id.partition("-")[-1].partition("-")[0]
-        print(key)
         figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
                                     values=list(result[key]['cluster_redenna'].values()),
                                     title="Reden na",
@@ -48,11 +46,11 @@ def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clic
                                         colors['vwt_blue'],
                                     ])
 
-        return [not is_open, figure]
+        return [not is_open, figure, f'/dash/order_wait_download?wait_category={key}&project={project}']
 
     if close_clicks:
-        return [not is_open, {'data': None, 'layout': None}]
-    return [is_open, {'data': None, 'layout': None}]
+        return [not is_open, {'data': None, 'layout': None}, ""]
+    return [is_open, {'data': None, 'layout': None}, ""]
 
 
 @app.callback(
@@ -78,6 +76,7 @@ def update_indicators(dropdown_selection):
                                 title=indicators[el]['title'],
                                 sub_title=indicators[el].get('subtitle', " "),
                                 font_color=indicators[el].get('font_color', 'black'),
+                                invert_delta=indicators[el].get("invert_delta", False),
                                 id=f"indicator-{el}-{client}") for el in indicator_types]
     indicator_info = indicator_info + [
         dbc.Modal(
@@ -88,7 +87,13 @@ def update_indicators(dropdown_selection):
                            figure={'data': None, 'layout': None})
                 ),
                 dbc.ModalFooter(
-                    dbc.Button("Close", id="close-sm", className="ml-auto")
+                    children=[
+                        # html.A(
+                        #     dbc.Button("Download", id="download-indicator", className="ml-auto"),
+                        #     id=f"indicator-download-{client}",
+                        #     href="/dash/urlToDownload"),
+                        dbc.Button("Close", id="close-sm", className="ml-auto"),
+                    ]
                 ),
             ],
             id="modal-sm",
@@ -131,7 +136,6 @@ def FTU_table_editable(ww):
     ],
 )
 def FTU_update(data):
-
     record = dict(graph_name='project_dates', client=client)
     FTU0 = {}
     FTU1 = {}

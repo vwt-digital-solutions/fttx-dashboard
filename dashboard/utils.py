@@ -1,6 +1,8 @@
 from google.cloud import secretmanager_v1
 import logging
 
+from config_pages import config_pages
+
 
 def get_secret(project_id, secret_id):
     """
@@ -18,3 +20,8 @@ def get_secret(project_id, secret_id):
     payload = response.payload.data.decode('utf-8')
     logging.info("Returning secret")
     return payload
+
+
+def get_client_name(client):
+    huidige_pagina = config_pages.get(client, {}).get('name', client)
+    return huidige_pagina
