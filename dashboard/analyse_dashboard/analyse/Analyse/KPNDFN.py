@@ -7,7 +7,7 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     prognose, targets, performance_matrix, prognose_graph, overview, graph_overview, \
     get_project_dates, \
     analyse_documents, calculate_jaaroverzicht, preprocess_for_jaaroverzicht, calculate_weektarget, \
-    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr
+    calculate_weekrealisatie, calculate_weekdelta, calculate_weekHCHPend, calculate_weeknerr, multi_index_to_dict
 import pandas as pd
 from Analyse.Timeseries import Timeseries_collection
 
@@ -122,6 +122,7 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.n_err = n_err
 
     def _make_timeseries(self):
+        idx = pd.IndexSlice
         logger.info(f"Generating timeseries for all projects for {self.client_name}")
         opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
                                                         column='opleverdatum',
@@ -129,6 +130,9 @@ class KPNAnalyse(FttXAnalyse):
                                                         ftu_dates=self.extracted_data.ftu)
 
         self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
+        self.intermediate_results.d_real_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'cumsum_percentage']])
+        self.intermediate_results.y_target_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'y_target_percentage']])
+        self.intermediate_results.y_prog_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'prognose_percentage']])
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
@@ -148,9 +152,9 @@ class KPNAnalyse(FttXAnalyse):
 
         self.intermediate_results.rc1 = results.rc1
         self.intermediate_results.rc2 = results.rc2
-        self.intermediate_results.d_real_l = results.d_real_l
+        self.intermediate_results.d_real_l_old = results.d_real_l
         self.intermediate_results.x_prog = results.x_prog
-        self.intermediate_results.y_prog_l = results.y_prog_l
+        self.intermediate_results.y_prog_l_old = results.y_prog_l
         self.intermediate_results.t_shift = results.t_shift
         self.intermediate_results.cutoff = results.cutoff
 
@@ -174,7 +178,7 @@ class KPNAnalyse(FttXAnalyse):
                                      self.extracted_data.ftu['date_FTU1'],
                                      self.intermediate_results.rc1,
                                      self.intermediate_results.d_real_l)
-        self.intermediate_results.y_target_l = y_target_l
+        self.intermediate_results.y_target_l_old = y_target_l
         self.intermediate_results.t_diff = t_diff
         self.record_dict.add('y_target_l', y_target_l, ListRecord, 'Data')
 
@@ -182,8 +186,8 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Calculating performance matrix for KPN")
         graph = performance_matrix(
             self.intermediate_results.timeline,
-            self.intermediate_results.y_target_l,
-            self.intermediate_results.d_real_l,
+            self.intermediate_results.y_target_l_old,
+            self.intermediate_results.d_real_l_old,
             self.intermediate_results.total_objects,
             self.intermediate_results.t_diff,
             self.intermediate_results.y_voorraad_act
@@ -273,25 +277,25 @@ class KPNAnalyse(FttXAnalyse):
             project_indicators = {}
             project_indicators['weektarget'] = calculate_weektarget(
                 project,
-                self.intermediate_results.y_target_l,
+                self.intermediate_results.y_target_l_old,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline)
             project_indicators['weekrealisatie'] = calculate_weekrealisatie(
                 project,
-                self.intermediate_results.d_real_l,
+                self.intermediate_results.d_real_l_old,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline,
                 delay=0)  # in weeks
             project_indicators['vorigeweekrealisatie'] = calculate_weekrealisatie(
                 project,
-                self.intermediate_results.d_real_l,
+                self.intermediate_results.d_real_l_old,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline,
                 delay=-1)  # in weeks
             project_indicators['weekdelta'] = calculate_weekdelta(
                 project,
-                self.intermediate_results.y_target_l,
-                self.intermediate_results.d_real_l,
+                self.intermediate_results.y_target_l_old,
+                self.intermediate_results.d_real_l_old,
                 self.intermediate_results.total_objects,
                 self.intermediate_results.timeline)
             project_indicators['weekHCHPend'] = calculate_weekHCHPend(
@@ -317,17 +321,17 @@ class KPNAnalyse(FttXAnalyse):
 
     def _analysis_documents(self):
         doc2, doc3 = analyse_documents(
-            y_target_l=self.intermediate_results.y_target_l,
+            y_target_l=self.intermediate_results.y_target_l_old,
             rc1=self.intermediate_results.rc1,
             x_prog=self.intermediate_results.x_prog,
             x_d=self.intermediate_results.timeline,
-            d_real_l=self.intermediate_results.d_real_l,
+            d_real_l=self.intermediate_results.d_real_l_old,
             df_prog=self.intermediate_results.df_prog,
             df_target=self.intermediate_results.df_target,
             df_real=self.intermediate_results.df_real,
             df_plan=self.intermediate_results.df_plan,
             HC_HPend=self.intermediate_results.HC_HPend,
-            y_prog_l=self.intermediate_results.y_prog_l,
+            y_prog_l=self.intermediate_results.y_prog_l_old,
             tot_l=self.intermediate_results.total_objects,
             HP=self.transformed_data.planning,
             t_shift=self.intermediate_results.t_shift,

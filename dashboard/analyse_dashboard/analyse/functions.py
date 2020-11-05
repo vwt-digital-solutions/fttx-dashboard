@@ -336,7 +336,7 @@ def transform_df_real(percentage_dict, total_dict, days_index):
     for key in percentage_dict:
         y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna((percentage_dict[key] / 100 * total_dict[key]).iloc[0])
         y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = days_index[y_real.index]
+        y_real.index = y_real.index
         df = df.add(y_real, fill_value=0)
     if df.index[0] > pd.Timestamp('2020-01-01'):
         df = fill_2020(df)
@@ -529,8 +529,8 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
     record_dict = {}
     for key in y_prog_l:
         fig = {'data': [{
-            'x': list(x_d.strftime('%Y-%m-%d')),
-            'y': list(y_prog_l[key]),
+            'x': list(y_prog_l[key].index.strftime('%Y-%m-%d')),
+            'y': list(y_prog_l[key]['prognose_percentage']),
             'mode': 'lines',
             'line': dict(color=colors['yellow']),
             'name': 'Voorspelling (VQD)',
@@ -548,8 +548,9 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
         }
         if key in d_real_l:
             fig['data'] = fig['data'] + [{
-                'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
-                'y': d_real_l[key]['Aantal'].to_list(),
+                # 'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
+                'x': list(d_real_l[key].index.strftime("%Y-%m-%d")),
+                'y': d_real_l[key]['cumsum_percentage'].to_list(),
                 'mode': 'markers',
                 'line': dict(color=colors['green']),
                 'name': 'Realisatie (FC)',
@@ -557,8 +558,8 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
 
         if key in y_target_l:
             fig['data'] = fig['data'] + [{
-                'x': list(x_d.strftime('%Y-%m-%d')),
-                'y': list(y_target_l[key]),
+                'x': list(y_target_l[key].index.strftime('%Y-%m-%d')),
+                'y': list(y_target_l[key]['y_target_percentage']),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
                 'name': 'Outlook (KPN)',
