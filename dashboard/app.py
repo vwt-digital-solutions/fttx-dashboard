@@ -17,6 +17,8 @@ from authentication.azure_auth import AzureOAuth
 from data import api
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from toggles import ReleaseToggles
+
 logging.info("creating flask server")
 server = flask.Flask(__name__)
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
@@ -39,6 +41,9 @@ app = dash.Dash(
 logging.info("Setting serve locally to false")
 app.css.config.serve_locally = False
 app.scripts.config.serve_locally = False
+
+logging.info("Setting toggles")
+toggles = ReleaseToggles('toggles.yaml')
 
 logging.info("supressing call back exceptions")
 app.config.suppress_callback_exceptions = True
