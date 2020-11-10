@@ -13,3 +13,4 @@ deploy.sh
 *.pickle
 *.pkl
 test.py
+*.log
