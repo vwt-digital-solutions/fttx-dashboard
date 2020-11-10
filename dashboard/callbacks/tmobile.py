@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
 
-from app import app
+from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
 from layout.components.figure import figure
@@ -92,7 +92,7 @@ def update_indicators(dropdown_selection):
                         html.A(
                             dbc.Button("Download", id="download-indicator", className="ml-auto"),
                             id=f"indicator-download-{client}",
-                            href="/dash/urlToDownload"),
+                            href="/dash/urlToDownload") if toggles.download_indicators else None,
                         dbc.Button("Close", id="close-sm", className="ml-auto"),
                     ]
                 ),

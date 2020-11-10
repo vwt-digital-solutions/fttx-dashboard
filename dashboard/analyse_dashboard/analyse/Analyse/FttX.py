@@ -16,7 +16,11 @@ from functions import calculate_projectspecs, overview_reden_na, individual_rede
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
 from pandas.api.types import CategoricalDtype
 
+from toggles import ReleaseToggles
+
 logger = logging.getLogger('FttX Analyse')
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 class FttXBase(ETLBase):
@@ -134,7 +138,8 @@ class FttXTransform(Transform):
     def _cluster_reden_na(self):
         logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
-        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(
+            lambda x: cluster_reden_na(x, clus))
         self.transformed_data.df.loc[br.hc_opgeleverd(self.transformed_data.df), ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)

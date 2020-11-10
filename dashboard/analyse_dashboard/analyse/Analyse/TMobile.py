@@ -1,5 +1,5 @@
 from google.cloud import firestore
-from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
+from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL, toggles
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 import business_rules as br
 from functions import calculate_projectindicators_tmobile
@@ -57,7 +57,8 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_voorraadvormend()
         self._jaaroverzicht()
         self._calculate_project_indicators()
-        self._endriched_data()
+        if toggles.download_indicators:
+            self._endriched_data()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
