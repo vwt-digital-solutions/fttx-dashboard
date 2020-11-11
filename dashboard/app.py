@@ -77,7 +77,7 @@ def download_csv():
     project = flask.request.args.get('project')
     logging.info(f"Collecting data for {wait_category}.")
 
-    request_result = api.get(f"/Houses/?record.wait_category={wait_category}&record.project={project}")
+    request_result = api.get(f"/Houses?record.wait_category={wait_category}&record.project={project}")
 
     result = pd.DataFrame(
         x['record'] for x in request_result)
