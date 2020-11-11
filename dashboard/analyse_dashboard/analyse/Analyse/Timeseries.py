@@ -41,14 +41,14 @@ class Timeseries_collection():
             if timeseries.calculate_cumsum_lines:
                 timeseries.calculate_cumsum_for_prognoses()
             if timeseries.do_calculate_cumsum_lines_fast():
-                slope, intersect = linear_regression(timeseries.realised_cumsum_fast)
+                slope, _ = linear_regression(timeseries.realised_cumsum_fast)
                 total_slope_fast += slope
-                total_intersect_fast += intersect
+                # total_intersect_fast += intersect
                 counter_fast += 1
             if timeseries.do_calculate_cumsum_lines_slow():
-                linear_regression(timeseries.realised_cumsum_slow)
+                slope, _ = linear_regression(timeseries.realised_cumsum_slow)
                 total_slope_slow += slope
-                total_intersect_slow += intersect
+                # total_intersect_slow += intersect
                 counter_slow += 1
 
         if counter_fast > 0:
@@ -122,7 +122,9 @@ class Timeseries():
             real_dates = self.df[~self.df[self.column].isna()][self.column]
             if len(real_dates) < 2:
                 self.calculate_cumsum_lines = False
+                self.start_date = self.ftu_0
             else:
+                self.start_date = real_dates.min()
                 self.calculate_cumsum_lines = True
                 start_date_realised = real_dates.min()
                 end_date_realised = real_dates.max()
@@ -173,25 +175,27 @@ class Timeseries():
 
     def prognoses(self, slope_fast, intersect_fast, slope_slow, intersect_slow):
         if self.do_calculate_cumsum_lines_fast():
-            slope_fast_calc, intersect_fast_calc = linear_regression(self.realised_cumsum_fast)
+            slope_fast_calc, _ = linear_regression(self.realised_cumsum_fast)
             self.slope_fast = slope_fast_calc
-            self.intersect_fast = intersect_fast_calc
+            # self.intersect_fast = intersect_fast_calc
         else:
             self.slope_fast = slope_fast
-            self.intersect_fast = intersect_fast
+            # self.intersect_fast = intersect_fast
 
         if self.do_calculate_cumsum_lines_slow():
-            slope_slow_calc, intersect_slow_calc = linear_regression(self.realised_cumsum_slow)
+            slope_slow_calc, _ = linear_regression(self.realised_cumsum_slow)
             self.slope_slow = slope_slow_calc
-            self.intersect_slow = intersect_slow_calc
+            # self.intersect_slow = intersect_slow_calc
         else:
             self.slope_slow = slope_slow
-            self.intersect_slow = intersect_slow
+            # self.intersect_slow = intersect_slow
+
+        self.intersect_fast = - len(self.prognoses_date_range[self.prognoses_date_range < self.start_date]) * self.slope_fast
 
         self.prognoses_fast = self.slope_fast * self.get_range() + self.intersect_fast
 
         index_cutoff = sum(self.prognoses_fast < self.cutoff)
-        self.intersect_slow = self.get_intersect_slow(self.prognoses_fast, slope_slow, index_cutoff)
+        self.intersect_slow = self.get_intersect_slow(self.prognoses_fast, self.slope_slow, index_cutoff)
 
         self.prognoses_slow = self.slope_slow * self.get_range() + self.intersect_slow
         self.prognose = np.append(self.prognoses_fast[:index_cutoff], self.prognoses_slow[index_cutoff:])
@@ -249,5 +253,6 @@ class Timeseries():
         prognose = self.get_prognoses_frame()
         target = self.get_target_frame()
         realised = self.get_realised_frame()
-        self.complete_frame = pd.concat([prognose, target, realised]).resample('D').sum()
+        self.complete_frame = pd.merge(prognose, target, how='left', left_index=True, right_index=True)
+        self.complete_frame = pd.merge(self.complete_frame, realised, how='left', left_index=True, right_index=True)
         return self.complete_frame

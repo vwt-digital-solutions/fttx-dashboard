@@ -160,11 +160,11 @@ class KPNAnalyse(FttXAnalyse):
 
         self.record_dict.add('rc1', results.rc1, ListRecord, 'Data')
         self.record_dict.add('rc2', results.rc2, ListRecord, 'Data')
-        d_real_l_r = {k: v["Aantal"] for k, v in results.d_real_l.items()}
+        d_real_l_r = {k: v["Aantal"] for k, v in self.intermediate_results.d_real_l_old.items()}
         self.record_dict.add('d_real_l_r', d_real_l_r, ListRecord, 'Data')
-        d_real_l_ri = {k: v.index for k, v in results.d_real_l.items()}
+        d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l_old.items()}
         self.record_dict.add('d_real_l_ri', d_real_l_ri, ListRecord, 'Data')
-        self.record_dict.add('y_prog_l', results.y_prog_l, ListRecord, 'Data')
+        self.record_dict.add('y_prog_l', self.intermediate_results.y_prog_l_old, ListRecord, 'Data')
         self.record_dict.add('x_prog', results.x_prog, IntRecord, 'Data')
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
@@ -177,10 +177,10 @@ class KPNAnalyse(FttXAnalyse):
                                      self.extracted_data.ftu['date_FTU0'],
                                      self.extracted_data.ftu['date_FTU1'],
                                      self.intermediate_results.rc1,
-                                     self.intermediate_results.d_real_l)
+                                     self.intermediate_results.d_real_l_old)
         self.intermediate_results.y_target_l_old = y_target_l
         self.intermediate_results.t_diff = t_diff
-        self.record_dict.add('y_target_l', y_target_l, ListRecord, 'Data')
+        self.record_dict.add('y_target_l', self.intermediate_results.y_target_l_old, ListRecord, 'Data')
 
     def _performance_matrix(self):
         logger.info("Calculating performance matrix for KPN")
@@ -205,11 +205,11 @@ class KPNAnalyse(FttXAnalyse):
 
     def _overview(self):
         result = overview(self.intermediate_results.timeline,
-                          self.intermediate_results.y_prog_l,
+                          self.intermediate_results.y_prog_l_old,
                           self.intermediate_results.total_objects,
-                          self.intermediate_results.d_real_l,
+                          self.intermediate_results.d_real_l_old,
                           self.transformed_data.planning,
-                          self.intermediate_results.y_target_l)
+                          self.intermediate_results.y_target_l_old)
         self.intermediate_results.df_prog = result.df_prog
         self.intermediate_results.df_target = result.df_target
         self.intermediate_results.df_real = result.df_real
@@ -311,11 +311,11 @@ class KPNAnalyse(FttXAnalyse):
     def _calculate_project_dates(self):
         project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
                                           self.transformed_data.ftu['date_FTU1'],
-                                          self.intermediate_results.y_target_l,
+                                          self.intermediate_results.y_target_l_old,
                                           self.intermediate_results.x_prog,
                                           self.intermediate_results.timeline,
                                           self.intermediate_results.rc1,
-                                          self.intermediate_results.d_real_l
+                                          self.intermediate_results.d_real_l_old
                                           )
         self.record_dict.add("project_dates", project_dates, Record, "Data")
 

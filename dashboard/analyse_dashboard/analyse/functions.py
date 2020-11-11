@@ -336,7 +336,7 @@ def transform_df_real(percentage_dict, total_dict, days_index):
     for key in percentage_dict:
         y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna((percentage_dict[key] / 100 * total_dict[key]).iloc[0])
         y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = y_real.index
+        y_real.index = days_index[y_real.index]
         df = df.add(y_real, fill_value=0)
     if df.index[0] > pd.Timestamp('2020-01-01'):
         df = fill_2020(df)

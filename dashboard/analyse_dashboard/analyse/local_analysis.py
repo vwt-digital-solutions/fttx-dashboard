@@ -11,7 +11,10 @@ logging.basicConfig(
     format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
     level=logging.INFO
 )
-
+os.environ["FIRESTORE_EMULATOR_HOST"] = "localhost:8080"
+os.environ["GOOGLE_CLOUD_PROJECT"] = "vwt-d-gew1-fttx-dashboard"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = '/Users/caspervanhouten/Clients/VWT/keys/vwt-d-gew1-fttx-dashboard-1c424f7fbff5.json'
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 if 'FIRESTORE_EMULATOR_HOST' in os.environ:
     logging.info('writing to local firestore')
