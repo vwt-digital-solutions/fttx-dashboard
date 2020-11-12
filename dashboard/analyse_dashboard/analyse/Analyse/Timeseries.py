@@ -54,12 +54,13 @@ class Timeseries_collection():
         if counter_fast > 0:
             self.avg_slope_fast = total_slope_fast / counter_fast
             self.avg_intersect_fast = total_intersect_fast / counter_fast
-            print(f'avgs fast: {self.avg_intersect_fast:.2f}+{self.avg_slope_fast:.2f}*x')
 
         if counter_slow > 0:
             self.avg_slope_slow = total_slope_slow / counter_slow
             self.avg_intersect_slow = total_intersect_slow / counter_slow
-            print(f'avgs slow: {self.avg_intersect_slow:.2f}+{self.avg_slope_slow:.2f}*x')
+        else:
+            self.avg_slope_slow = self.avg_slope_fast
+            self.avg_intersect_slow = self.avg_intersect_fast
 
     def _prognoses(self):
         # FIrst we need to calculate avgs over the collection,
@@ -69,9 +70,8 @@ class Timeseries_collection():
         # On second go-round, we can do the prognoses for all
         for project, timeseries in self.timeseries_collection.items():
             timeseries.prognoses(self.avg_slope_fast,
-                                 self.avg_intersect_fast,
                                  self.avg_slope_slow,
-                                 self.avg_intersect_slow)
+                                 )
         self.prognoses_set = True
 
     def get_timeseries_frame(self):
@@ -173,22 +173,18 @@ class Timeseries():
     def get_range(self):
         return np.array(list(range(0, len(self.timeseries))))
 
-    def prognoses(self, slope_fast, intersect_fast, slope_slow, intersect_slow):
+    def prognoses(self, slope_fast, slope_slow):
         if self.do_calculate_cumsum_lines_fast():
             slope_fast_calc, _ = linear_regression(self.realised_cumsum_fast)
             self.slope_fast = slope_fast_calc
-            # self.intersect_fast = intersect_fast_calc
         else:
             self.slope_fast = slope_fast
-            # self.intersect_fast = intersect_fast
 
         if self.do_calculate_cumsum_lines_slow():
             slope_slow_calc, _ = linear_regression(self.realised_cumsum_slow)
             self.slope_slow = slope_slow_calc
-            # self.intersect_slow = intersect_slow_calc
         else:
             self.slope_slow = slope_slow
-            # self.intersect_slow = intersect_slow
 
         self.intersect_fast = - len(self.prognoses_date_range[self.prognoses_date_range < self.start_date]) * self.slope_fast
 

@@ -334,7 +334,8 @@ def transform_to_amounts(percentage_dict, total_dict, days_index):
 def transform_df_real(percentage_dict, total_dict, days_index):
     df = pd.DataFrame(index=days_index, columns=['d'], data=0)
     for key in percentage_dict:
-        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna((percentage_dict[key] / 100 * total_dict[key]).iloc[0])
+        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna(
+            (percentage_dict[key] / 100 * total_dict[key]).iloc[0])
         y_real = y_real.rename(columns={'Aantal': 'd'})
         y_real.index = days_index[y_real.index]
         df = df.add(y_real, fill_value=0)
@@ -419,7 +420,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
-                 name='Outlook (KPN)',
+                 name='Outlook',
                  type='bar',
                  marker=dict(color=colors['lightgray']),
                  width=width,
@@ -504,7 +505,7 @@ def preprocess_for_jaaroverzicht(*args):
     # return prog, target, real, plan
 
 
-def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend):
+def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
     n_now = datetime.date.today().month
 
     target_sum = str(round(sum(target[1:])))
@@ -519,6 +520,7 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
                          prog=str(int(prognose_sum)),
                          HC_HPend=str(HC_HPend),
                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
+                         bis_gereed=str(bis_gereed),
                          prog_c='pretty_container')
     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
         jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -538,7 +540,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook KPN:'},
+                'title': {'text': 'Voortgang project vs outlook:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -562,7 +564,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]['y_target_percentage']),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook (KPN)',
+                'name': 'Outlook',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -630,7 +632,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op KPNTarget', 'range': [x_min, x_max],
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op Target', 'range': [x_min, x_max],
                              'zeroline': False},
                    'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
                              'zeroline': False},
@@ -646,13 +648,13 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
                                         text='Verhoog HAS capaciteit',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verruim afspraak KPN',
+                                        text='Verruim klantafspraak',
                                         alignment='left', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
                                         text='Verlaag HAS capcaciteit',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verscherp afspraak KPN',
+                                        text='Verscherp klantafspraak',
                                         alignment='right', showarrow=True, arrowhead=2)] +
                                   [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
                                         text='Verlaag schouw of BIS capaciteit', alignment='left',
@@ -705,44 +707,104 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
-    return dict(counts=target, counts_prev=None, title='Target week ' + str(pd.Timestamp.now().week),
-                subtitle='', font_color='green', id=None)
+    return target
 
 
-def calculate_weekrealisatie(project, d_real_l, total_objects, timeline,
-                             delay):  # berekent voor de week t/m de huidige dag
-    index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
-    if project in d_real_l:
-        value_atstartweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek - 1 + delay * 7][
-            'Aantal'].max()
-        value_atendweek = d_real_l[project][d_real_l[project].index <= index_firstdaythisweek + 7 + delay * 7][
-            'Aantal'].max()
-        # value_atstartweek_min1W = d_real_l[project][
-        #   d_real_l[project].index <= index_firstdaythisweek - 1 - 7 + delay * 7]['Aantal'].max()
-        # value_atendweek_min1W = d_real_l[project][
-        #   d_real_l[project].index <= index_firstdaythisweek + 7 - 7 + delay * 7]['Aantal'].max()
-        realisatie = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
-        # realisatie_min1W = int(round((value_atendweek_min1W - value_atstartweek_min1W) / 100 * total_objects[project]))
-    else:
-        realisatie = 0
-        # realisatie_min1W = 0
-    return dict(counts=realisatie, counts_prev=None,
-                title='Realisatie week ' + str(pd.Timestamp.now().week + delay), subtitle='', font_color='green',
+def create_bullet_chart_realisatie(value,
+                                   prev_value,
+                                   max_value,
+                                   yellow_border,
+                                   threshold,
+                                   title="",
+                                   subtitle=""):
+    return dict(counts=value,
+                counts_prev=prev_value,
+                title=title,
+                subtitle=subtitle,
+                font_color='green',
+                gauge={
+                    'shape': "bullet",
+                    'axis': {'range': [0, max_value]},
+                    'threshold': {
+                        'line': {'color': "red", 'width': 2},
+                        'thickness': 0.75,
+                        'value': threshold},
+                    'steps': [
+                        {'range': [0, yellow_border], 'color': "yellow"},
+                        {'range': [yellow_border, max_value], 'color': "lightgreen"}]},
                 id=None)
 
 
+def calculate_lastweekrealisatie(
+        project_df,
+        weektarget
+):
+    weekday = datetime.datetime.now().weekday()
+    realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
+    realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
+
+    realisatie = int(realisatie_end_week - realisatie_beginning_week)
+
+    max_value = int(max(weektarget, realisatie, 1) * 1.1)
+    return create_bullet_chart_realisatie(value=realisatie,
+                                          prev_value=None,
+                                          max_value=max_value,
+                                          yellow_border=int(weektarget * 0.9),
+                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                          title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+                                          subtitle=f"Target: {weektarget}")
+
+
+def calculate_weekrealisatie(project_df,
+                             weektarget, delta=0):
+    weekday = datetime.datetime.now().weekday()
+    realisatie_today = br.opgeleverd(project_df, 0 + delta).sum()
+    realisatie_yesterday = br.opgeleverd(project_df, 1 + delta).sum()
+    realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
+
+    realisatie_this_week = int(realisatie_today - realisatie_beginning_week)
+    realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
+
+    max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
+    return create_bullet_chart_realisatie(value=realisatie_this_week,
+                                          prev_value=realisatie_this_week_yesterday,
+                                          max_value=max_value,
+                                          yellow_border=int(weektarget * 0.9),
+                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                          title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
+                                          subtitle=f"Target:{weektarget}")
+
+
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
-                        timeline):  # berekent voor de week t/m de huidige dag
+                        timeline, client):  # berekent voor de week t/m de huidige dag
     target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
-    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, delay=0)
+    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, client, delay=0)
     delta = record['counts'] - target
     # delta_min1W = record['counts_prev'] - target
     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
 
 
 def calculate_weekHCHPend(project, HC_HPend_l):
-    return dict(counts=round(HC_HPend_l[project]) / 100, counts_prev=None, title='HC / HPend', subtitle='',
-                font_color='green', id=None)
+    return dict(title='HC / HPend',
+                subtitle='',
+                counts=round(HC_HPend_l[project]) / 100,
+                counts_prev=None,
+                font_color='green',
+                gauge={
+                    'axis': {'range': [None, 1], 'tickwidth': 1, 'tickcolor': "green"},
+                    'bar': {'color': "darkgreen"},
+                    'bgcolor': "white",
+                    'borderwidth': 2,
+                    'bordercolor': "gray",
+                    'steps': [
+                        {'range': [0, .6], 'color': 'yellow'},
+                        {'range': [.6, 1], 'color': 'lightgreen'}],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': .9}
+                },
+                id=None)
 
 
 def calculate_weeknerr(project, n_err):
@@ -1172,7 +1234,10 @@ def calculate_on_time_ratio(df):
     max_order_time = 56
     ordered = df[df.ordered & df.opgeleverd]
     on_time = ordered[ordered.oplevertijd <= max_order_time]
-    on_time_ratio = len(on_time) / len(ordered)
+    try:
+        on_time_ratio = len(on_time) / len(ordered)
+    except ZeroDivisionError:
+        on_time_ratio = 0
     return on_time_ratio
 
 
@@ -1198,3 +1263,9 @@ def multi_index_to_dict(df):
         data = df.loc[idx[:], idx[project, :]][project]
         project_dict[project] = data
     return project_dict
+
+
+def calculate_bis_gereed(df):
+    df_copy = df.copy()
+    df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
+    return sum(br.bis_opgeleverd(df_copy))
