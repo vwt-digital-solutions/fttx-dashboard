@@ -7,3 +7,4 @@ gobits==0.0.6
 google-cloud-pubsub==0.42.1
 plotly==4.9.0
 pyyaml==5.3.1
+featuretoggles==1.0.1
