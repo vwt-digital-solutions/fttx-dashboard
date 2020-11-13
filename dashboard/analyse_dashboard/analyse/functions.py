@@ -1106,9 +1106,9 @@ def count_toestemming(toestemming_df):
     return counts
 
 
-def wait_bin_cluster_redenna(toestemming_df):
-    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
-        by=['bins', 'cluster_redenna']).count()
+def wait_bin_cluster_redenna(df):
+    wait_bin_cluster_redenna_df = df[['wait_category', 'cluster_redenna', 'toestemming']].groupby(
+        by=['wait_category', 'cluster_redenna']).count()
     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
     return wait_bin_cluster_redenna_df
@@ -1128,16 +1128,14 @@ def calculate_ready_for_has_indicator(project_df):
 
 
 def calculate_wait_indicators(project_df):
-    toestemming_df = wait_bins(project_df)
-    toestemming_df_prev = wait_bins(project_df, time_delta_days=7)
-
-    counts = count_toestemming(toestemming_df)
-    counts_prev = count_toestemming(toestemming_df_prev)
+    counts = project_df.wait_category.value_counts()
+    counts_prev = project_df.wait_category_minus_delta.value_counts()
 
     counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
+    counts_df.rename(columns={"wait_category": "counts", "wait_category_minus_delta": "counts_prev"}, inplace=True)
     result_dict = counts_df.to_dict(orient='index')
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
-    for index, grouped_df in wait_bin_cluster_redenna_df.groupby('bins'):
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(project_df)
+    for index, grouped_df in wait_bin_cluster_redenna_df.groupby('wait_category'):
         result_dict[index]['cluster_redenna'] = \
             grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
     return result_dict
