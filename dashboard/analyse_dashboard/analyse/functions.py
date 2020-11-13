@@ -1154,7 +1154,8 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                  'font_color': 'red'},
         'ratio': {'title': 'Ratio op tijd gesloten orders',
                   'subtitle': '<8 weken',
-                  'font_color': 'black'},
+                  'font_color': 'black',
+                  'percentage': True},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
         'ready_for_has': {
             'title': "Werkvoorraad HAS",

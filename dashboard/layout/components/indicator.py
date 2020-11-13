@@ -4,7 +4,8 @@ from layout.components.figure import figure
 from config import colors_vwt as colors
 
 
-def indicator(value, previous_value=None, title="", sub_title="", font_color=None, id="", invert_delta=False, **kwargs):
+def indicator(value, previous_value=None, title="", sub_title="", font_color=None, id="", invert_delta=False,
+              percentage=False, **kwargs):
     fig = go.Figure(
         layout={
             "height": 200,
@@ -16,13 +17,14 @@ def indicator(value, previous_value=None, title="", sub_title="", font_color=Non
     )
     indicator_args = dict(
         value=value,
+        number=dict(valueformat=".2%") if percentage else dict(valueformat=':'),
         title={
                 "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"},
         mode='number'
     )
 
     if previous_value is not None:
-        indicator_args['delta'] = {'reference': previous_value}
+        indicator_args['delta'] = {'reference': previous_value, "valueformat": ':'}
         if invert_delta:
             indicator_args['delta'].update({
                 'increasing.color': 'red',
