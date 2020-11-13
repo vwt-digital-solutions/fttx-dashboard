@@ -112,6 +112,7 @@ class TMobileAnalyse(FttXAnalyse):
                              record=counts_by_project)
 
     def _endriched_data(self):
+        logger.info("Storing data to Houses")
         self._delete_collection(u'Houses')
         df_copy = self.transformed_data.df.copy()
         df_copy = df_copy[df_copy['wait_category'].notna()]
@@ -121,6 +122,7 @@ class TMobileAnalyse(FttXAnalyse):
         self.record_dict.add('enriched_data', doc_list, DocumentListRecord, 'Houses', document_key=['sleutel'])
 
     def _delete_collection(self, collection_name, batch_size=500, count=0):
+        logger.info("Deleting collection Houses")
         deleted = 0
         db = firestore.Client()
         batch = db.batch()
