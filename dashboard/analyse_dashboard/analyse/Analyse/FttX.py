@@ -16,11 +16,7 @@ from functions import calculate_projectspecs, overview_reden_na, individual_rede
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
 from pandas.api.types import CategoricalDtype
 
-from toggles import ReleaseToggles
-
 logger = logging.getLogger('FttX Analyse')
-
-toggles = ReleaseToggles('toggles.yaml')
 
 
 class FttXBase(ETLBase):

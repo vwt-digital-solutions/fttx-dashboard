@@ -1,5 +1,5 @@
 from google.cloud import firestore
-from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL, toggles
+from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 import business_rules as br
 from functions import calculate_projectindicators_tmobile
@@ -8,7 +8,9 @@ from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
 from functions import calculate_on_time_ratio, calculate_oplevertijd, calculate_bis_gereed
 from functions import wait_bins
 import logging
-logger = logging.getLogger('T-mobile Analyse')
+from toggles import toggles
+
+logger = logging.getLogger('FttX Analyse')
 
 
 class TMobileTransform(FttXTransform):

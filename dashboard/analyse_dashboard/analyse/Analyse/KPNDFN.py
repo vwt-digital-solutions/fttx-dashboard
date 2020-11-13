@@ -12,6 +12,7 @@ import pandas as pd
 from Analyse.Timeseries import Timeseries_collection
 
 import logging
+from toggles import toggles
 
 logger = logging.getLogger('KPN Analyse')
 
@@ -154,8 +155,12 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.rc1 = results.rc1
         self.intermediate_results.rc2 = results.rc2
         self.intermediate_results.d_real_l_old = results.d_real_l
+        if not toggles.timeseries:
+            self.intermediate_results.d_real_l = results.d_real_l
         self.intermediate_results.x_prog = results.x_prog
         self.intermediate_results.y_prog_l_old = results.y_prog_l
+        if not toggles.timeseries:
+            self.intermediate_results.y_prog_l = results.y_prog_l
         self.intermediate_results.t_shift = results.t_shift
         self.intermediate_results.cutoff = results.cutoff
 
@@ -180,6 +185,8 @@ class KPNAnalyse(FttXAnalyse):
                                      self.intermediate_results.rc1,
                                      self.intermediate_results.d_real_l_old)
         self.intermediate_results.y_target_l_old = y_target_l
+        if not toggles.timeseries:
+            self.intermediate_results.y_target_l = y_target_l
         self.intermediate_results.t_diff = t_diff
         self.record_dict.add('y_target_l', self.intermediate_results.y_target_l_old, ListRecord, 'Data')
 

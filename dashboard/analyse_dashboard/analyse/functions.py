@@ -11,6 +11,8 @@ import business_rules as br
 import config
 from collections import namedtuple
 
+from toggles import toggles
+
 colors = config.colors_vwt
 
 
@@ -527,7 +529,50 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     return jaaroverzicht
 
 
-def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
+    record_dict = {}
+    for key in y_prog_l:
+        fig = {'data': [{
+            'x': list(x_d.strftime('%Y-%m-%d')),
+            'y': list(y_prog_l[key]),
+            'mode': 'lines',
+            'line': dict(color=colors['yellow']),
+            'name': 'Voorspelling (VQD)',
+        }],
+            'layout': {
+                'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
+                'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
+                'title': {'text': 'Voortgang project vs outlook:'},
+                'showlegend': True,
+                'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
+                'height': 350,
+                'plot_bgcolor': colors['plot_bgcolor'],
+                'paper_bgcolor': colors['paper_bgcolor'],
+            },
+        }
+        if key in d_real_l:
+            fig['data'] = fig['data'] + [{
+                'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
+                'y': d_real_l[key]['Aantal'].to_list(),
+                'mode': 'markers',
+                'line': dict(color=colors['green']),
+                'name': 'Realisatie (FC)',
+            }]
+
+        if key in y_target_l:
+            fig['data'] = fig['data'] + [{
+                'x': list(x_d.strftime('%Y-%m-%d')),
+                'y': list(y_target_l[key]),
+                'mode': 'lines',
+                'line': dict(color=colors['lightgray']),
+                'name': 'Outlook',
+            }]
+        record = dict(id='project_' + key, figure=fig)
+        record_dict[key] = record
+    return record_dict
+
+
+def prognose_graph_new(y_prog_l, d_real_l, y_target_l):
     record_dict = {}
     for key in y_prog_l:
         fig = {'data': [{
@@ -569,6 +614,14 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
     return record_dict
+
+
+def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+    if not toggles.timeseries:
+        result_dict = prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l)
+    else:
+        result_dict = prognose_graph_new(y_prog_l, d_real_l, y_target_l)
+    return result_dict
 
 
 def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
