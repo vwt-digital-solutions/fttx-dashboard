@@ -2,12 +2,14 @@ from Analyse.ETL import Extract, ETL, Transform
 
 import pandas as pd
 
-from config import path_to_bis_excel
-
 
 class BISExtract(Extract):
 
     def __init__(self, **kwargs):
+        if not hasattr(self, 'excel_path'):
+            self.excel_path = kwargs.get('excel_path')
+        if not self.excel_path:
+            raise ValueError('No excel_path provided in init')
         super().__init__(**kwargs)
 
     def extract(self):
@@ -15,7 +17,6 @@ class BISExtract(Extract):
         Extract all data from BIS Excel
         '''
         print("Extracting data from Excel")
-        self.excel_path = path_to_bis_excel
         df = pd.read_excel(self.excel_path, sheet_name='Productie', skiprows=list(range(0, 12)))
 
         self.extracted_data.df = df
