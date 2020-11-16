@@ -38,12 +38,12 @@ def client_tabbed_view(view1, view2, name1="Tab 1", name2="Tab 2"):
 def client_project_view(client):
     try:
         operational_view = importlib.import_module(f"layout.pages.{client}.project_operational_view").get_html(client)
-    except ImportError:
+    except (ImportError, AttributeError):
         operational_view = None
 
     try:
         financial_view = importlib.import_module(f"layout.pages.{client}.project_financial_view").get_html(client)
-    except ImportError:
+    except (ImportError, AttributeError):
         financial_view = None
 
     if operational_view and financial_view:
