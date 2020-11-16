@@ -6,7 +6,11 @@ from datetime import datetime
 
 from google.cloud import firestore_v1
 
+from toggles import ReleaseToggles
+
 db = firestore_v1.Client()
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 def handler(request):
