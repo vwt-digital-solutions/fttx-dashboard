@@ -1,6 +1,3 @@
-# from analyse_dashboard.analyse.functions import graph_overview, update_y_prog_l, targets
-# from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
-# from analyse_dashboard.analyse.functions import info_table, overview
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
@@ -8,7 +5,6 @@ from google.cloud import firestore
 from layout.components.indicator import indicator
 
 import pandas as pd
-# import numpy as np
 
 from app import app
 
@@ -30,16 +26,17 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicator_types = ['weektarget', 'weekrealisatie', 'vorigeweekrealisatie', 'weekHCHPend', 'weeknerr']
+    indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'weekHCHPend', 'weeknerr']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,
                                          client=client)
     indicator_info = [indicator(value=indicators[el]['counts'],
-                                previous_value=indicators[el]['counts_prev'],
+                                previous_value=indicators[el].get('counts_prev'),
                                 title=indicators[el]['title'],
                                 sub_title=indicators[el]['subtitle'],
-                                font_color=indicators[el]['font_color']) for el in indicator_types]
+                                font_color=indicators[el]['font_color'],
+                                gauge=indicators[el].get("gauge")) for el in indicator_types]
 
     return [indicator_info]
 

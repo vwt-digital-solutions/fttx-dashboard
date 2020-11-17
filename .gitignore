@@ -3,6 +3,7 @@ local_firestore.bat
 __pycache__
 .vscode
 config.py
+toggles.yaml
 env_vars.bat
 export.sh
 *__pycache__*
@@ -12,3 +13,6 @@ deploy.sh
 *tests.py
 *.pickle
 *.pkl
+test.py
+*.log
+*.log

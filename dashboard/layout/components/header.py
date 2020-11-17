@@ -6,6 +6,10 @@ from app import app
 
 
 def header(header_text=""):
+    date_updated = update_date()[1]
+    date_processed = update_date()[0]
+    data_update_text = f"Data binnengekomen op {date_updated}, data laatst verwerkt op {date_processed}"
+
     return html.Div(
         [
             html.Div(
@@ -33,8 +37,7 @@ def header(header_text=""):
                                 style={"margin-bottom": "0px", "margin-left": "75px"},
                             ),
                             html.P(id='date_update',
-                                   children='Data binnengekomen op ' + update_date()[1][0:-4].replace('T', ' ') +
-                                            ', data laatst verwerkt op ' + update_date()[0][0:-4].replace('T', ' '),
+                                   children=data_update_text,
                                    style={"margin-bottom": "0px", "margin-left": "75px"},
                                    )
                         ],

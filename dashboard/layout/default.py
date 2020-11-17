@@ -8,6 +8,7 @@ from layout.components.header import header
 from layout.components.nav_bar import nav_bar
 from layout.pages import error, main_page
 from utils import get_client_name
+import dash_bootstrap_components as dbc
 
 
 def get_page(page):
@@ -22,8 +23,41 @@ def get_page(page):
     return page_body
 
 
+def client_tabbed_view(view1, view2, name1="Tab 1", name2="Tab 2"):
+    tabs = dbc.Tabs(
+        [
+            dbc.Tab(view1, label=name1),
+            dbc.Tab(view2, label=name2)
+        ],
+        className=" mt-5 mb-3"
+    )
+
+    return tabs
+
+
+def client_project_view(client):
+    try:
+        operational_view = importlib.import_module(f"layout.pages.{client}.project_operational_view").get_html(client)
+    except (ImportError, AttributeError):
+        operational_view = None
+
+    try:
+        financial_view = importlib.import_module(f"layout.pages.{client}.project_financial_view").get_html(client)
+    except (ImportError, AttributeError):
+        financial_view = None
+
+    if operational_view and financial_view:
+        return client_tabbed_view(operational_view, financial_view, name1="Operationeel", name2="Financieel")
+    elif operational_view:
+        return operational_view
+    elif financial_view:
+        return financial_view
+
+    old_view = importlib.import_module(f"layout.pages.{client}.project_view").get_html(client)
+    return old_view
+
+
 def client_page_body(client, project):
-    project_view = importlib.import_module(f"layout.pages.{client}.project_view")
     body = [
         header(f"Status projecten {get_client_name(client)} in 2020"),
         html.Div(
@@ -38,7 +72,7 @@ def client_page_body(client, project):
         html.Div(
             style={'display': 'none'},
             id=f"{client}-project-view",
-            children=project_view.get_html(client),
+            children=client_project_view(client),
         )
     ]
     return body

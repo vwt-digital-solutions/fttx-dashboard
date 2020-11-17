@@ -20,10 +20,6 @@ def get_html(client):
             className="container-display",
         ),
         html.Div(
-            id=f'indicators-{client}',
-            className="container-display",
-        ),
-        html.Div(
             [
                 html.Div(
                     [dcc.Graph(id=f"graph_prog-{client}")],
