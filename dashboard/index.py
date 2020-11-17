@@ -17,7 +17,8 @@ from app import app  # noqa: E402
 
 logging.info("Imporing callbacks")
 from callbacks import *  # noqa: F403, F401, E402
-from upload import callbacks  # noqa: F403, F401, E402
+if app.toggles.upload:
+    from upload import callbacks  # noqa: F403, F401, E402
 
 logging.info("Importing the rest")
 from layout import default  # noqa: E402
