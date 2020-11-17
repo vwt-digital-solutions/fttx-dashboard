@@ -32,7 +32,7 @@ def handler(request):
         else:
             records = data[topic_config.get('subject')]
             collection_name = topic_config.get('firestore_collection')
-            primary_key = topic_config.get(primary_key) if hasattr(topic_config, 'PRIMARY_KEYS') else None
+            primary_key = topic_config.get('primary_key') if 'primary_key' in topic_config else None
             update_date_document_name = topic_config.get('update_date_document')
             logging.info(f'Read message from subscription {subscription}')
 
