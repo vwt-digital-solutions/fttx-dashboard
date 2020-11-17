@@ -1,4 +1,4 @@
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import pandas as pd
 import config
@@ -30,9 +30,12 @@ for client in config.client_config.keys():
         ],
         [
             Input(f'financial-data-{client}', 'data')
+        ],
+        [
+            State(f'project-dropdown-{client}', 'value')
         ]
     )
-    def budget_barchart(data):
+    def budget_barchart(data, project, client=client):
         if data:
             budget_df = pd.DataFrame(data.get("budget"))
             categorie_df = budget_df[['categorie', 'kostenbedrag']].groupby("categorie").sum().reset_index()
@@ -41,6 +44,18 @@ for client in config.client_config.keys():
                 "categorie").sum().reset_index()
             actuals_df = pd.DataFrame(data.get("actuals_aggregated"))
             actuals_df = actuals_df[['categorie', 'kostenbedrag']].groupby("categorie").sum().reset_index()
+
+            progress = collection.get_document("Data", client=client, project=project, data_set="progress")
+            n_houses = float(progress.get("totaal"))
+            progress_percent = {
+                k if k != "hpend" else "has": float(v) / n_houses
+                for k, v in progress.items()
+                if k in ['schouwen', 'montage', 'civiel', 'hpend']
+            }
+            assumed_expenses_df = (expected_actuals_df.set_index("categorie").kostenbedrag * pd.Series(
+                progress_percent)).dropna().to_frame().reset_index()
+
+            assumed_expenses_df.columns = ['categorie', 'kostenbedrag']
             fig = go.Figure(
                 [
                     go.Bar(
@@ -60,6 +75,12 @@ for client in config.client_config.keys():
                         x=actuals_df.categorie,
                         y=actuals_df.kostenbedrag,
                         marker_color=config.colors_vwt['green']
+                    ),
+                    go.Bar(
+                        name="Productie",
+                        x=assumed_expenses_df.categorie,
+                        y=assumed_expenses_df.kostenbedrag,
+                        marker_color=config.colors_vwt['lightgreen']
                     )
                 ]
             )
