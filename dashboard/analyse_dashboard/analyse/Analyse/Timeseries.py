@@ -11,7 +11,7 @@ class Timeseries_collection():
         self.ftu_dates = ftu_dates
         self.set_timeseries_collection()
         self.prognoses_set = False
-        self._prognoses()
+        self._splitwise_extrapolation()
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -62,16 +62,16 @@ class Timeseries_collection():
             self.avg_slope_slow = self.avg_slope_fast
             self.avg_intersect_slow = self.avg_intersect_fast
 
-    def _prognoses(self):
+    def _splitwise_extrapolation(self):
         # FIrst we need to calculate avgs over the collection,
         # as we'll need it when a timeseries has insufficient data to calculate its own
         self._calculate_avgs()
 
         # On second go-round, we can do the prognoses for all
         for project, timeseries in self.timeseries_collection.items():
-            timeseries.prognoses(self.avg_slope_fast,
-                                 self.avg_slope_slow,
-                                 )
+            timeseries.splitwise_extrapolation(self.avg_slope_fast,
+                                               self.avg_slope_slow,
+                                               )
         self.prognoses_set = True
 
     def get_timeseries_frame(self):
@@ -148,10 +148,10 @@ class Timeseries():
         return do_calculate
 
     def set_index(self):
-        self.prognoses_date_range = pd.date_range(start='01-01-2019',
-                                                  end='31-12-2021',
-                                                  freq='D')
-        self.timeseries = pd.DataFrame(index=self.prognoses_date_range,
+        self.timeseries_date_range = pd.date_range(start='01-01-2019',
+                                                   end='31-12-2021',
+                                                   freq='D')
+        self.timeseries = pd.DataFrame(index=self.timeseries_date_range,
                                        columns=['Aantal'],
                                        data=self.timeseries
                                        ).fillna(0)
@@ -173,7 +173,7 @@ class Timeseries():
     def get_range(self):
         return np.array(list(range(0, len(self.timeseries))))
 
-    def prognoses(self, slope_fast, slope_slow):
+    def splitwise_extrapolation(self, slope_fast, slope_slow):
         if self.do_calculate_cumsum_lines_fast():
             slope_fast_calc, _ = linear_regression(self.realised_cumsum_fast)
             self.slope_fast = slope_fast_calc
@@ -186,24 +186,27 @@ class Timeseries():
         else:
             self.slope_slow = slope_slow
 
-        self.intersect_fast = - len(self.prognoses_date_range[self.prognoses_date_range < self.start_date]) * self.slope_fast
-
-        self.prognoses_fast = self.slope_fast * self.get_range() + self.intersect_fast
-
-        index_cutoff = sum(self.prognoses_fast < self.cutoff)
-        self.intersect_slow = self.get_intersect_slow(self.prognoses_fast, self.slope_slow, index_cutoff)
-
-        self.prognoses_slow = self.slope_slow * self.get_range() + self.intersect_slow
-        self.prognose = np.append(self.prognoses_fast[:index_cutoff], self.prognoses_slow[index_cutoff:])
-        self.prognose = self.round_edge_values(self.prognose)
+        self.make_linear_line(rc=self.slope_fast, start_date=self.start_date)
+        self.add_second_line()
+        self.prognose = self.round_edge_values(self.line)
         self.set_prognoses_frame()
+
+    def make_linear_line(self, rc, start_date, delta=0):
+        self.intersect = - (len(self.timeseries_date_range[self.timeseries_date_range < start_date]) + delta) * rc
+        self.line = rc * self.get_range() + self.intersect
+
+    def add_second_line(self):
+        index_cutoff = sum(self.line < self.cutoff)
+        self.intersect_2 = self.get_intersect_2(self.line, self.slope_slow, index_cutoff)
+        self.line_2 = self.slope_slow * self.get_range() + self.intersect_2
+        self.line = np.append(self.line[:index_cutoff], self.line_2[index_cutoff:])
 
     def round_edge_values(self, line):
         line[line > 100] = 100
         line[line < 0] = 0
         return line
 
-    def get_intersect_slow(self, prognoses_fast, slope_slow, index_cutoff):
+    def get_intersect_2(self, prognoses_fast, slope_slow, index_cutoff):
         if index_cutoff == len(prognoses_fast):
             index_cutoff = index_cutoff - 1
         origin_slow = slope_slow * self.get_range()
@@ -220,15 +223,17 @@ class Timeseries():
 
     def set_target_line(self):
         offset = np.timedelta64(14, 'D')
-        date_range = np.arange(self.ftu_0 + offset, self.ftu_1 - offset)
-        self.target_frame = pd.DataFrame(index=date_range)
-        x_range = np.array(range(0, len(date_range)))
-        self.target_per_day = 100 / (len(date_range) - 28)
-        self.target_frame['y_target_percentage'] = self.target_per_day * x_range
+        start_date = self.ftu_0 + offset
+        rc = 100 / (len(np.arange(self.ftu_0 + offset, self.ftu_1 - offset)))
+        self.make_linear_line(rc, start_date)
+        self.target = self.round_edge_values(self.line)
+
+        self.target_frame = pd.DataFrame(index=self.timeseries_date_range)
+        self.target_frame['y_target_percentage'] = self.target
         self.target_frame['y_target_amount'] = self.percentage_to_amount(self.target_frame['y_target_percentage'])
 
     def set_prognoses_frame(self):
-        self.prognoses_frame = pd.DataFrame(index=self.prognoses_date_range)
+        self.prognoses_frame = pd.DataFrame(index=self.timeseries_date_range)
         self.prognoses_frame['prognose_percentage'] = self.prognose
         self.prognoses_frame['prognose_amount'] = self.percentage_to_amount(self.prognoses_frame['prognose_percentage'])
 
