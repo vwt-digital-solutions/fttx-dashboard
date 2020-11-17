@@ -13,11 +13,11 @@ import dash_html_components as html  # noqa: E402
 from dash.dependencies import Input, Output  # noqa: E402
 
 logging.info("Importing App")
-from app import app  # noqa: E402
+from app import app, toggles  # noqa: E402
 
 logging.info("Imporing callbacks")
 from callbacks import *  # noqa: F403, F401, E402
-if app.toggles.upload:
+if toggles.upload:
     from upload import callbacks  # noqa: F403, F401, E402
 
 logging.info("Importing the rest")
