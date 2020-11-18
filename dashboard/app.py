@@ -17,6 +17,8 @@ from authentication.azure_auth import AzureOAuth
 from data import api
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+from toggles import ReleaseToggles
+
 logging.info("creating flask server")
 server = flask.Flask(__name__)
 server.wsgi_app = ProxyFix(server.wsgi_app, x_for=1, x_host=1)
@@ -39,6 +41,9 @@ app = dash.Dash(
 logging.info("Setting serve locally to false")
 app.css.config.serve_locally = False
 app.scripts.config.serve_locally = False
+
+logging.info("Setting toggles")
+toggles = ReleaseToggles('toggles.yaml')
 
 logging.info("supressing call back exceptions")
 app.config.suppress_callback_exceptions = True
@@ -72,7 +77,7 @@ def download_csv():
     project = flask.request.args.get('project')
     logging.info(f"Collecting data for {wait_category}.")
 
-    request_result = api.get(f"/Houses/?record.wait_category={wait_category}&record.project={project}")
+    request_result = api.get(f"/Houses?record.wait_category={wait_category}&record.project={project}")
 
     result = pd.DataFrame(
         x['record'] for x in request_result)
@@ -94,7 +99,11 @@ def download_csv():
 
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    result[relevant_columns].to_excel(writer, index=False)
+    if result.empty:
+        result = pd.DataFrame(columns=relevant_columns)
+        result.to_excel(writer, index=False)
+    else:
+        result[relevant_columns].to_excel(writer, index=False)
     writer.save()
     output.seek(0)
     now = datetime.now().strftime('%Y%m%d')

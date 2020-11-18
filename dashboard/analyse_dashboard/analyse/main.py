@@ -8,9 +8,13 @@ import pandas as pd
 
 import logging
 
+from toggles import ReleaseToggles
+
 logging.basicConfig(level=logging.INFO)
 
 db = firestore_v1.Client()
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 def analyse_kpn(request):

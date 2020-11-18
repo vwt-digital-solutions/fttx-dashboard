@@ -10,7 +10,7 @@ import pickle  # nosec
 
 import logging
 
-from Analyse.Record import RecordDict, Record, DictRecord, ListRecord
+from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
@@ -134,7 +134,8 @@ class FttXTransform(Transform):
     def _cluster_reden_na(self):
         logger.info("Adding column cluster redenna to dataframe")
         clus = self.config['clusters_reden_na']
-        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(lambda x: cluster_reden_na(x, clus))
+        self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(
+            lambda x: cluster_reden_na(x, clus))
         self.transformed_data.df.loc[br.hc_opgeleverd(self.transformed_data.df), ['cluster_redenna']] = 'HC'
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
@@ -221,6 +222,40 @@ class FttXAnalyse(FttXBase):
         self._calculate_status_counts_per_project()
         self._calculate_redenna_per_period()
         self._jaaroverzicht()
+        self._progress_per_phase()
+
+    def _progress_per_phase(self):
+        logger.info("Calculating project progress per phase")
+
+        progress_df = pd.concat(
+            [
+                self.transformed_data.df.project,
+                ~self.transformed_data.df.sleutel.isna(),
+                br.bis_opgeleverd(self.transformed_data.df),
+                br.laswerk_dp_gereed(self.transformed_data.df) & br.laswerk_ap_gereed(self.transformed_data.df),
+                br.geschouwed(self.transformed_data.df),
+                br.hc_opgeleverd(self.transformed_data.df),
+                br.hp_opgeleverd(self.transformed_data.df),
+                br.opgeleverd(self.transformed_data.df)
+            ],
+            axis=1
+        )
+        progress_df.columns = [
+            'project',
+            'totaal',
+            'civiel',
+            'montage',
+            'schouwen',
+            'hc',
+            'hp',
+            'hpend'
+        ]
+        documents = [dict(project=project, client=self.client, data_set="progress", record=values) for project, values
+                     in
+                     progress_df.groupby('project').sum().to_dict(orient="index").items()]
+
+        self.record_dict.add("Progress", documents, DocumentListRecord, "Data",
+                             document_key=["client", "project", 'data_set'])
 
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")

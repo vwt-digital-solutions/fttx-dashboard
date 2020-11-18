@@ -1,10 +1,11 @@
 import dash
 import dash_bootstrap_components as dbc
+import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
 
-from app import app
+from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
 from layout.components.figure import figure
@@ -77,6 +78,7 @@ def update_indicators(dropdown_selection):
                                 sub_title=indicators[el].get('subtitle', " "),
                                 font_color=indicators[el].get('font_color', 'black'),
                                 invert_delta=indicators[el].get("invert_delta", False),
+                                percentage=indicators[el].get("percentage"),
                                 id=f"indicator-{el}-{client}") for el in indicator_types]
     indicator_info = indicator_info + [
         dbc.Modal(
@@ -88,10 +90,10 @@ def update_indicators(dropdown_selection):
                 ),
                 dbc.ModalFooter(
                     children=[
-                        # html.A(
-                        #     dbc.Button("Download", id="download-indicator", className="ml-auto"),
-                        #     id=f"indicator-download-{client}",
-                        #     href="/dash/urlToDownload"),
+                        html.A(
+                            dbc.Button("Download", id="download-indicator", className="ml-auto"),
+                            id=f"indicator-download-{client}",
+                            href="/dash/urlToDownload") if toggles.download_indicators else None,
                         dbc.Button("Close", id="close-sm", className="ml-auto"),
                     ]
                 ),

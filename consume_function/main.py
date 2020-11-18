@@ -6,7 +6,11 @@ from datetime import datetime
 
 from google.cloud import firestore_v1
 
+from toggles import ReleaseToggles
+
 db = firestore_v1.Client()
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 def handler(request):
@@ -16,14 +20,28 @@ def handler(request):
         bytes = base64.b64decode(envelope['message']['data'])
         data = json.loads(bytes)
         subscription = envelope['subscription'].split('/')[-1]
-        records = data['it-fiber-connect-new-construction']
-        collection_name = config.FIRESTORE_COLLECTION
-        primary_key = config.PRIMARY_KEYS if hasattr(config, 'PRIMARY_KEYS') else None
-        logging.info(f'Read message from subscription {subscription}')
+        topic_config = config.topic_config.get(subscription)
+        if not toggles.consume_meters:
+            records = data['it-fiber-connect-new-construction']
+            collection_name = config.FIRESTORE_COLLECTION
+            primary_key = config.PRIMARY_KEYS if hasattr(config, 'PRIMARY_KEYS') else None
+            logging.info(f'Read message from subscription {subscription}')
+            records, logs = prepare_records(records)
+            write_records_to_fs(records, collection_name, primary_key)
+            write_records_to_fs(logs, 'transitionlog')
+        else:
+            records = data[topic_config.get('subject')]
+            collection_name = topic_config.get('firestore_collection')
+            primary_key = topic_config.get('primary_key') if 'primary_key' in topic_config else None
+            update_date_document_name = topic_config.get('update_date_document')
+            logging.info(f'Read message from subscription {subscription}')
 
-        records, logs = prepare_records(records)
-        write_records_to_fs(records, collection_name, primary_key)
-        write_records_to_fs(logs, 'transitionlog')
+            if topic_config.get('name') == 'fiberconnect':
+                records, logs = prepare_records(records)
+                write_records_to_fs(records, collection_name, update_date_document_name, primary_key)
+                write_records_to_fs(logs, 'transitionlog', update_date_document_name)
+            elif topic_config.get('name') == 'asbuilt-meters':
+                write_records_to_fs(records, collection_name, update_date_document_name, primary_key)
 
     except Exception as e:
         logging.error(f'Extracting of data failed: {e}')
@@ -32,7 +50,7 @@ def handler(request):
     return 'OK', 200
 
 
-def write_records_to_fs(records, collection_name, primary_key=None):
+def write_records_to_fs(records, collection_name, update_date_document_name=None, primary_key=None):
 
     batch = db.batch()
 
@@ -42,8 +60,12 @@ def write_records_to_fs(records, collection_name, primary_key=None):
             batch.commit()
             logging.info(f'Write {i} message(s) to the firestore')
     batch.commit()
-    db.collection('Graphs').document('update_date_consume').set(dict(
-        id='update_date_consume', date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
+    if not toggles.consume_meters:
+        db.collection('Graphs').document('update_date_consume').set(dict(
+            id='update_date_consume', date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
+    else:
+        db.collection('Graphs').document(update_date_document_name).set(dict(
+            id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
     logging.info(f'Writing message to {collection_name} finished')
 
 

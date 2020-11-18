@@ -11,6 +11,8 @@ import business_rules as br
 import config
 from collections import namedtuple
 
+from toggles import toggles
+
 colors = config.colors_vwt
 
 
@@ -180,6 +182,53 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
 
     TargetResults = namedtuple("TargetResults", ['y_target_l', 't_diff'])
     return TargetResults(y_target_l, t_diff)
+
+
+def get_cumsum_of_col(df: pd.DataFrame, column):
+    # Can we make it generic by passing column, or does df need to be filtered beforehand?
+    filtered_df = df[~df[column].isna()]
+
+    # Maybe we can move the rename of this column to preprocessing?
+    agg_df = filtered_df.groupby([column]).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+    cumulative_df = agg_df.cumsum()
+
+    return cumulative_df
+
+
+def get_real_df(df: pd.DataFrame, t_s, tot_l):
+    d_real_l = {}
+    for project, project_df in df.groupby(by="project"):
+
+        project_df_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
+        project_df_real_counts = project_df_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+        project_df_real_counts.index = pd.to_datetime(project_df_real_counts.index, format='%Y-%m-%d')
+        project_df_real_counts = project_df_real_counts.sort_index()
+
+        project_df_realised_counts_to_present = project_df_real_counts[project_df_real_counts.index < pd.Timestamp.now()]
+        project_df_realised_counts_to_present_percentage = project_df_realised_counts_to_present.cumsum() / tot_l[project] * 100
+
+        # first date in counts dataframe
+        min_date = project_df_realised_counts_to_present_percentage.index.min()
+
+        # What does this date represent? Should this be in business rules?
+        min_shift = min(t_s.values())
+
+        # Amount of days this specific projects starts after the start of the 'earliest' project?
+        t_shift = get_t_shift(min_date, min_shift)
+
+        # Dirty fix, still necessary?
+        # only necessary for DH
+        project_df_realised_counts_to_present_percentage[project_df_realised_counts_to_present_percentage.Aantal > 100] = 100
+
+        d_real = 'dummy'
+        # I think I'd prefer messing with the index completely separately.
+        d_real.index = (d_real.index - d_real.index[0]).days + t_shift[project]
+        d_real_l[project] = d_real
+    return d_real_l
+
+
+def get_t_shift(min_date, min_shift):
+    return (min_date - min_shift).days
 
 
 def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
@@ -480,7 +529,7 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     return jaaroverzicht
 
 
-def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
     record_dict = {}
     for key in y_prog_l:
         fig = {'data': [{
@@ -521,6 +570,58 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
     return record_dict
+
+
+def prognose_graph_new(y_prog_l, d_real_l, y_target_l):
+    record_dict = {}
+    for key in y_prog_l:
+        fig = {'data': [{
+            'x': list(y_prog_l[key].index.strftime('%Y-%m-%d')),
+            'y': list(y_prog_l[key]['extrapolation_percentage']),
+            'mode': 'lines',
+            'line': dict(color=colors['yellow']),
+            'name': 'Voorspelling (VQD)',
+        }],
+            'layout': {
+                'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
+                'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
+                'title': {'text': 'Voortgang project vs outlook:'},
+                'showlegend': True,
+                'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
+                'height': 350,
+                'plot_bgcolor': colors['plot_bgcolor'],
+                'paper_bgcolor': colors['paper_bgcolor'],
+            },
+        }
+        if key in d_real_l:
+            fig['data'] = fig['data'] + [{
+                # 'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
+                'x': list(d_real_l[key].index.strftime("%Y-%m-%d")),
+                'y': d_real_l[key]['cumsum_percentage'].to_list(),
+                'mode': 'markers',
+                'line': dict(color=colors['green']),
+                'name': 'Realisatie (FC)',
+            }]
+
+        if key in y_target_l:
+            fig['data'] = fig['data'] + [{
+                'x': list(y_target_l[key].index.strftime('%Y-%m-%d')),
+                'y': list(y_target_l[key]['y_target_percentage']),
+                'mode': 'lines',
+                'line': dict(color=colors['lightgray']),
+                'name': 'Outlook',
+            }]
+        record = dict(id='project_' + key, figure=fig)
+        record_dict[key] = record
+    return record_dict
+
+
+def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+    if not toggles.timeseries:
+        result_dict = prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l)
+    else:
+        result_dict = prognose_graph_new(y_prog_l, d_real_l, y_target_l)
+    return result_dict
 
 
 def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
@@ -1106,9 +1207,9 @@ def count_toestemming(toestemming_df):
     return counts
 
 
-def wait_bin_cluster_redenna(toestemming_df):
-    wait_bin_cluster_redenna_df = toestemming_df[['bins', 'cluster_redenna', 'toestemming']].groupby(
-        by=['bins', 'cluster_redenna']).count()
+def wait_bin_cluster_redenna(df):
+    wait_bin_cluster_redenna_df = df[['wait_category', 'cluster_redenna', 'toestemming']].groupby(
+        by=['wait_category', 'cluster_redenna']).count()
     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
     return wait_bin_cluster_redenna_df
@@ -1128,16 +1229,14 @@ def calculate_ready_for_has_indicator(project_df):
 
 
 def calculate_wait_indicators(project_df):
-    toestemming_df = wait_bins(project_df)
-    toestemming_df_prev = wait_bins(project_df, time_delta_days=7)
-
-    counts = count_toestemming(toestemming_df)
-    counts_prev = count_toestemming(toestemming_df_prev)
+    counts = project_df.wait_category.value_counts()
+    counts_prev = project_df.wait_category_minus_delta.value_counts()
 
     counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
+    counts_df.rename(columns={"wait_category": "counts", "wait_category_minus_delta": "counts_prev"}, inplace=True)
     result_dict = counts_df.to_dict(orient='index')
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(toestemming_df)
-    for index, grouped_df in wait_bin_cluster_redenna_df.groupby('bins'):
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(project_df)
+    for index, grouped_df in wait_bin_cluster_redenna_df.groupby('wait_category'):
         result_dict[index]['cluster_redenna'] = \
             grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
     return result_dict
@@ -1156,7 +1255,8 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
                  'font_color': 'red'},
         'ratio': {'title': 'Ratio op tijd gesloten orders',
                   'subtitle': '<8 weken',
-                  'font_color': 'black'},
+                  'font_color': 'black',
+                  'percentage': True},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
         'ready_for_has': {
             'title': "Werkvoorraad HAS",
@@ -1200,6 +1300,21 @@ def calculate_oplevertijd(row):
     else:
         oplevertijd = np.nan
     return oplevertijd
+
+
+def linear_regression(data):
+    fit_range = data.day_count.to_list()
+    slope, intersect = np.polyfit(fit_range, data, 1)
+    return slope[0], intersect[0]
+
+
+def multi_index_to_dict(df):
+    project_dict = {}
+    for project in df.columns.get_level_values(0).unique():
+        idx = pd.IndexSlice
+        data = df.loc[idx[:], idx[project, :]][project]
+        project_dict[project] = data
+    return project_dict
 
 
 def calculate_bis_gereed(df):

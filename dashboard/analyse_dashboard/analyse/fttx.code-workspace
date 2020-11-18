@@ -8,6 +8,6 @@
 		}
 	],
 	"settings": {
-		"python.pythonPath": "/Users/caspervanhouten/anaconda3/envs/ftx-analyse-3/bin/python"
+		"python.pythonPath": "/Users/caspervanhouten/anaconda3/envs/fttx-analyse-3.8/bin/python"
 	}
 }
