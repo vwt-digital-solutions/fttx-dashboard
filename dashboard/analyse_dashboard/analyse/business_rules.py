@@ -1,5 +1,28 @@
 import pandas as pd
 
+opleverstatussen = [
+    "0",
+    "1",
+    "2",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "13",
+    "14",
+    "30",
+    "31",
+    "33",
+    "34",
+    "35",
+    "50",
+    "90",
+    "91"
+]
+
 
 def is_date_set(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
     """
