@@ -577,7 +577,7 @@ def prognose_graph_new(y_prog_l, d_real_l, y_target_l):
     for key in y_prog_l:
         fig = {'data': [{
             'x': list(y_prog_l[key].index.strftime('%Y-%m-%d')),
-            'y': list(y_prog_l[key]['prognose_percentage']),
+            'y': list(y_prog_l[key]['extrapolation_percentage']),
             'mode': 'lines',
             'line': dict(color=colors['yellow']),
             'name': 'Voorspelling (VQD)',
