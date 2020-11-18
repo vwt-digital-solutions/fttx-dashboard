@@ -6,6 +6,7 @@ class ReleaseToggles(TogglesList):
     timeseries: bool
     financial_view: bool
     consume_meters: bool
+    upload: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')

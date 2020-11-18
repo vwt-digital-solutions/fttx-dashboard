@@ -1,3 +1,4 @@
+from app import toggles
 from config_pages import config_pages
 import dash_bootstrap_components as dbc
 import config
@@ -33,7 +34,12 @@ def nav_bar(client, brand):
             children=dropdown_items,
             style={'font-size': '1.5rem',
                    'color': colors['vwt_blue']}
-        )
+        ),
+        dbc.Col(
+            dbc.Button("Upload", color="warning", className="ml-2", id="upload_button"),
+            width="auto",
+        ) if toggles.upload else None,
+
     ]
 
     return dbc.NavbarSimple(
