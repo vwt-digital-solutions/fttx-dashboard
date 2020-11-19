@@ -122,7 +122,12 @@ class Timeseries():
         self.calculate_cumsum_percentage()
         self.get_realised_date_range()
         self.get_extrapolation_date_range()
+        self.set_realised_phase()
+        self.calculate_cumsum_for_extrapolation()
+        self.set_target_frame()
         self.set_target_phase(self.bis_slope, self.fase_delta)
+        self.set_extrapolation_phase()
+        self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
