@@ -110,6 +110,12 @@ class FttXTransform(Transform):
         self._add_columns()
         self._cluster_reden_na()
         self._add_status_columns()
+        self._set_totals()
+
+    def _set_totals(self):
+        self.transformed_data.totals = {}
+        for project in self.transformed_data.df.project.unique():
+            self.transformed_data.totals[project] = len(self.transformed_data.df[self.transformed_data.df['project'] == project])
 
     def _fix_dates(self):
         logger.info("Changing columns to datetime column if there is 'datum' in column name.")

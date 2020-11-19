@@ -32,6 +32,8 @@ class BISTransform(Transform):
         print("Transforming the data to create workable pd DataFrame")
         self._rename_columns()
         self._expand_dates()
+        self._set_projects()
+        self._set_totals()
 
     def _rename_columns(self):
         df_renamed = pd.DataFrame()
@@ -45,7 +47,17 @@ class BISTransform(Transform):
                                 '# Tuinploegen': 'aantal_tuin_ploegen',
                                 '# HAS ploegen': 'aantal_has_ploegen',
                                 'Bijzonderheden': 'bijzonderheden'})
+
         self.transformed_data.df = df_renamed
+
+    # TODO generalise to actually retrieve project from Excel
+    def _set_projects(self):
+        self.transformed_data.df['project'] = 'KPN Spijkernisse'
+
+    def _set_totals(self):
+        self.transformed_data.totals = {}
+        self.transformed_data.totals['BIS geul'] = {'KPN Spijkernisse': 70166}
+        self.transformed_data.totals['tuinboringen'] = {'KPN Spijkernisse': 31826}
 
     def _expand_dates(self):
         print('Expanding dates to create date-based index')

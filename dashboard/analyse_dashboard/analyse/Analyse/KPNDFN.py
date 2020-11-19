@@ -128,6 +128,8 @@ class KPNAnalyse(FttXAnalyse):
         logger.info(f"Generating timeseries for all projects for {self.client_name}")
         opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
                                                         column='opleverdatum',
+                                                        agg_column='sleutel',
+                                                        totals=self.transformed_data.totals,
                                                         cutoff=85,
                                                         ftu_dates=self.extracted_data.ftu)
 
