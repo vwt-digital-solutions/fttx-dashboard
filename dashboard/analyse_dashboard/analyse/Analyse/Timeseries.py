@@ -104,18 +104,19 @@ class Timeseries():
         self.df = df
         self.column = column
         self.agg_column = agg_column
+        self.agg_column_func = agg_column_func
+        self.total = total
         # Should projectname be attr of class?
         self.project = project
         self.cutoff = cutoff
-        self.total = total
         self.ftu_0 = np.datetime64(ftu_0)
         self.ftu_1 = np.datetime64(ftu_1)
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
+        self.intersect_geulen = intersect_geulen
         self.fase_delta = fase_delta
         self.bis_slope = bis_slope
-        self.agg_column_func = agg_column_func
         self.serialize()
         self.calculate_cumsum()
         self.calculate_cumsum_percentage()
@@ -144,6 +145,7 @@ class Timeseries():
         self.cumsum_percentage['day_count'] = self.timeseries.day_count
 
     def get_realised_date_range(self):
+        self.real_dates = self.df[~self.df[self.column].isna()][self.column]
         if not self.real_dates.empty:
             start_date_realised = self.real_dates.min()
             end_date_realised = self.real_dates.max()
