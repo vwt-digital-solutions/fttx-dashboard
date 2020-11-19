@@ -129,8 +129,6 @@ class Timeseries():
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
 
-        # We might not be able to set time shift at init time, or we might not need it at all
-
     def serialize(self):
         self.timeseries = self.df.groupby([self.column]).agg({self.agg_column: self.agg_column_func}) \
                                 .rename(columns={self.agg_column: 'Aantal'})
