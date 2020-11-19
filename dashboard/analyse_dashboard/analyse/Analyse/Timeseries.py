@@ -4,11 +4,14 @@ import pandas as pd
 
 
 class Timeseries_collection():
-    def __init__(self, df, column, cutoff, ftu_dates):
+    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func):
         self.df = df
         self.column = column
+        self.agg_column = agg_column
+        self.totals = totals
         self.cutoff = cutoff
         self.ftu_dates = ftu_dates
+        self.agg_column_func = agg_column_func
         self.set_timeseries_collection()
         self.extrapolation_set = False
         self._set_extrapolation()
@@ -18,7 +21,9 @@ class Timeseries_collection():
         for project, project_df in self.df.groupby(by="project"):
             self.timeseries_collection[project] = Timeseries(project_df,
                                                              self.column,
+                                                             self.agg_column,
                                                              project,
+                                                             self.totals[project],
                                                              self.cutoff,
                                                              self.ftu_dates['date_FTU0'][project],
                                                              self.ftu_dates['date_FTU1'][project],
@@ -93,25 +98,22 @@ class Timeseries_collection():
 
 
 class Timeseries():
-    def __init__(self, df, column, project, cutoff, ftu_0, ftu_1, civil_startdate,
+    def __init__(self, df, column, agg_column, agg_column_functie, total, project, cutoff, ftu_0, ftu_1, civil_startdate,
                  fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
         self.df = df
         self.column = column
+        self.agg_column = agg_column
         # Should projectname be attr of class?
         self.project = project
         self.cutoff = cutoff
+        self.total = total
         self.ftu_0 = np.datetime64(ftu_0)
         self.ftu_1 = np.datetime64(ftu_1)
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
-        self.intersect_geulen = intersect_geulen
         self.fase_delta = fase_delta
         self.bis_slope = bis_slope
-        self.serialize()
-        self.calculate_cumsum()
-        self.calculate_cumsum_percentage()
-        self.get_realised_date_range()
         self.get_extrapolation_date_range()
         self.set_realised_phase()
         self.calculate_cumsum_for_extrapolation()
@@ -121,7 +123,8 @@ class Timeseries():
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
 
     def serialize(self):
-        self.timeseries = self.df.groupby([self.column]).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+        self.timeseries = self.df.groupby([self.column]).agg({self.agg_column: self.agg_column_func}) \
+                                .rename(columns={self.agg_column: 'Aantal'})
         self.set_index()
 
     def calculate_cumsum(self):
@@ -129,11 +132,10 @@ class Timeseries():
         self.cumsum_series['day_count'] = self.timeseries.day_count
 
     def calculate_cumsum_percentage(self):
-        self.cumsum_percentage = (self.cumsum_series['Aantal'] / len(self.df) * 100).to_frame()
+        self.cumsum_percentage = (self.cumsum_series['Aantal'] / self.total * 100).to_frame()
         self.cumsum_percentage['day_count'] = self.timeseries.day_count
 
     def get_realised_date_range(self):
-        self.real_dates = self.df[~self.df[self.column].isna()][self.column]
         if not self.real_dates.empty:
             start_date_realised = self.real_dates.min()
             end_date_realised = self.real_dates.max()
@@ -151,7 +153,6 @@ class Timeseries():
             self.extrapolation_date_range = pd.date_range(start=start_date_realised, end=end_date_realised)
 
     def do_calculate_extrapolation_fast(self):
-        do_calculate = False
         if self.calculate_extrapolation:
             if self.extrapolation_fast:
                 do_calculate = True
