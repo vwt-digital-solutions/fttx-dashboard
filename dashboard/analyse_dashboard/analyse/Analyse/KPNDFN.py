@@ -136,7 +136,7 @@ class KPNAnalyse(FttXAnalyse):
         self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
         self.intermediate_results.d_real_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'cumsum_percentage']])
         self.intermediate_results.y_target_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'y_target_percentage']])
-        self.intermediate_results.y_prog_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'prognose_percentage']])
+        self.intermediate_results.y_prog_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'extrapolation_percentage']])
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")

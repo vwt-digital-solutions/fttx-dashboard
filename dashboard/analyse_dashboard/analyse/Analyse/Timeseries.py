@@ -12,8 +12,8 @@ class Timeseries_collection():
         self.cutoff = cutoff
         self.ftu_dates = ftu_dates
         self.set_timeseries_collection()
-        self.prognoses_set = False
-        self._prognoses()
+        self.extrapolation_set = False
+        self._set_extrapolation()
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -43,7 +43,7 @@ class Timeseries_collection():
         counter_slow = 0
         for project, timeseries in self.timeseries_collection.items():
             if timeseries.calculate_cumsum_lines:
-                timeseries.calculate_cumsum_for_prognoses()
+                timeseries.calculate_cumsum_for_extrapolation()
             if timeseries.do_calculate_cumsum_lines_fast():
                 slope, _ = linear_regression(timeseries.realised_cumsum_fast)
                 total_slope_fast += slope
@@ -66,17 +66,17 @@ class Timeseries_collection():
             self.avg_slope_slow = self.avg_slope_fast
             self.avg_intersect_slow = self.avg_intersect_fast
 
-    def _prognoses(self):
+    def _set_extrapolation(self):
         # FIrst we need to calculate avgs over the collection,
         # as we'll need it when a timeseries has insufficient data to calculate its own
         self._calculate_avgs()
 
-        # On second go-round, we can do the prognoses for all
+        # On second go-round, we can do the extrapolation for all
         for project, timeseries in self.timeseries_collection.items():
-            timeseries.prognoses(self.avg_slope_fast,
-                                 self.avg_slope_slow,
-                                 )
-        self.prognoses_set = True
+            timeseries.set_extrapolation(self.avg_slope_fast,
+                                         self.avg_slope_slow,
+                                         )
+        self.extrapolation_set = True
 
     def get_timeseries_frame(self):
         timeseries_dict = {}
@@ -143,44 +143,44 @@ class Timeseries():
     def do_calculate_cumsum_lines_fast(self):
         do_calculate = False
         if self.calculate_cumsum_lines:
-            if self.prognoses_fast:
+            if self.extrapolation_fast:
                 do_calculate = True
         return do_calculate
 
     def do_calculate_cumsum_lines_slow(self):
         do_calculate = False
         if self.calculate_cumsum_lines:
-            if self.prognoses_slow:
+            if self.extrapolation_slow:
                 do_calculate = True
         return do_calculate
 
     def set_index(self):
-        self.prognoses_date_range = pd.date_range(start='01-01-2019',
-                                                  end='31-12-2021',
-                                                  freq='D')
-        self.timeseries = pd.DataFrame(index=self.prognoses_date_range,
+        self.timeseries_date_range = pd.date_range(start='01-01-2019',
+                                                   end='31-12-2021',
+                                                   freq='D')
+        self.timeseries = pd.DataFrame(index=self.timeseries_date_range,
                                        columns=['Aantal'],
                                        data=self.timeseries
                                        ).fillna(0)
         self.timeseries['day_count'] = range(0, len(self.timeseries))
 
-    def clean_timeseries_for_prognoses(self):
+    def clean_timeseries_for_extrapolation(self):
         # Remove houses with unrealistic future delivery dates, set them to 0
         self.timeseries.loc[self.timeseries.index > pd.Timestamp.now(), 'Aantal'] = 0
 
-    def calculate_cumsum_for_prognoses(self):
+    def calculate_cumsum_for_extrapolation(self):
         if self.timeseries['Aantal'].sum() == 0:
-            raise ValueError("No prognoses can be done")
+            raise ValueError("No extrapolation can be done")
         self.realised_cumsum_percentage = self.cumsum_percentage.loc[self.realised_date_range]
         self.realised_cumsum_fast = self.realised_cumsum_percentage[self.realised_cumsum_percentage.Aantal < self.cutoff]
         self.realised_cumsum_slow = self.realised_cumsum_percentage[self.realised_cumsum_percentage.Aantal >= self.cutoff]
-        self.prognoses_fast = len(self.realised_cumsum_fast) > 1
-        self.prognoses_slow = len(self.realised_cumsum_slow) > 1
+        self.extrapolation_fast = len(self.realised_cumsum_fast) > 1
+        self.extrapolation_slow = len(self.realised_cumsum_slow) > 1
 
     def get_range(self):
         return np.array(list(range(0, len(self.timeseries))))
 
-    def prognoses(self, slope_fast, slope_slow):
+    def slopes_splitwise_linear_regression(self, slope_fast, slope_slow):
         if self.do_calculate_cumsum_lines_fast():
             slope_fast_calc, _ = linear_regression(self.realised_cumsum_fast)
             self.slope_fast = slope_fast_calc
@@ -193,28 +193,40 @@ class Timeseries():
         else:
             self.slope_slow = slope_slow
 
-        self.intersect_fast = - len(self.prognoses_date_range[self.prognoses_date_range < self.start_date]) * self.slope_fast
+    def set_extrapolation(self, slope_fast, slope_slow):
+        self.slopes_splitwise_linear_regression(slope_fast, slope_slow)
+        line = self.make_linear_line(slope=self.slope_fast, start_date=self.start_date)
+        line = self.add_second_line(line)
+        self.extrapolation = self.round_edge_values(line)
+        self.set_extrapolation_frame()
 
-        self.prognoses_fast = self.slope_fast * self.get_range() + self.intersect_fast
+    def slope_linear_regression(self):
+        if self.do_calculate_cumsum_lines_fast():
+            slope, _ = linear_regression(self.realised_cumsum_fast)
+        return slope
 
-        index_cutoff = sum(self.prognoses_fast < self.cutoff)
-        self.intersect_slow = self.get_intersect_slow(self.prognoses_fast, self.slope_slow, index_cutoff)
+    def make_linear_line(self, slope, start_date, delta=0):
+        self.intersect = - (len(self.timeseries_date_range[self.timeseries_date_range < start_date]) + delta) * slope
+        line = slope * self.get_range() + self.intersect
+        return line
 
-        self.prognoses_slow = self.slope_slow * self.get_range() + self.intersect_slow
-        self.prognose = np.append(self.prognoses_fast[:index_cutoff], self.prognoses_slow[index_cutoff:])
-        self.prognose = self.round_edge_values(self.prognose)
-        self.set_prognoses_frame()
+    def add_second_line(self, line):
+        index_cutoff = sum(line < self.cutoff)
+        self.intersect_2 = self.get_intersect_2(line, self.slope_slow, index_cutoff)
+        self.line_2 = self.slope_slow * self.get_range() + self.intersect_2
+        line = np.append(line[:index_cutoff], self.line_2[index_cutoff:])
+        return line
 
     def round_edge_values(self, line):
         line[line > 100] = 100
         line[line < 0] = 0
         return line
 
-    def get_intersect_slow(self, prognoses_fast, slope_slow, index_cutoff):
-        if index_cutoff == len(prognoses_fast):
+    def get_intersect_2(self, extrapolation_fast, slope_slow, index_cutoff):
+        if index_cutoff == len(extrapolation_fast):
             index_cutoff = index_cutoff - 1
         origin_slow = slope_slow * self.get_range()
-        intersect_slow = prognoses_fast[index_cutoff] - origin_slow[index_cutoff]
+        intersect_slow = extrapolation_fast[index_cutoff] - origin_slow[index_cutoff]
         return intersect_slow
 
     def percentage_to_amount(self, percentages):
@@ -227,20 +239,22 @@ class Timeseries():
 
     def set_target_line(self):
         offset = np.timedelta64(14, 'D')
-        date_range = np.arange(self.ftu_0 + offset, self.ftu_1 - offset)
-        self.target_frame = pd.DataFrame(index=date_range)
-        x_range = np.array(range(0, len(date_range)))
-        self.target_per_day = 100 / (len(date_range) - 28)
-        self.target_frame['y_target_percentage'] = self.target_per_day * x_range
+        start_date = self.ftu_0 + offset
+        slope = 100 / (len(np.arange(self.ftu_0 + offset, self.ftu_1 - offset)))
+        line = self.make_linear_line(slope, start_date)
+        self.target = self.round_edge_values(line)
+
+        self.target_frame = pd.DataFrame(index=self.timeseries_date_range)
+        self.target_frame['y_target_percentage'] = self.target
         self.target_frame['y_target_amount'] = self.percentage_to_amount(self.target_frame['y_target_percentage'])
 
-    def set_prognoses_frame(self):
-        self.prognoses_frame = pd.DataFrame(index=self.prognoses_date_range)
-        self.prognoses_frame['prognose_percentage'] = self.prognose
-        self.prognoses_frame['prognose_amount'] = self.percentage_to_amount(self.prognoses_frame['prognose_percentage'])
+    def set_extrapolation_frame(self):
+        self.extrapolation_frame = pd.DataFrame(index=self.timeseries_date_range)
+        self.extrapolation_frame['extrapolation_percentage'] = self.extrapolation
+        self.extrapolation_frame['extrapolation_amount'] = self.percentage_to_amount(self.extrapolation_frame['extrapolation_percentage'])
 
-    def get_prognoses_frame(self):
-        return self.prognoses_frame
+    def get_extrapolation_frame(self):
+        return self.extrapolation_frame
 
     def get_realised_frame(self):
         try:
@@ -253,9 +267,9 @@ class Timeseries():
         return self.target_frame
 
     def get_timeseries_frame(self):
-        prognose = self.get_prognoses_frame()
+        extrapolation = self.get_extrapolation_frame()
         target = self.get_target_frame()
         realised = self.get_realised_frame()
-        self.complete_frame = pd.merge(prognose, target, how='left', left_index=True, right_index=True)
+        self.complete_frame = pd.merge(extrapolation, target, how='left', left_index=True, right_index=True)
         self.complete_frame = pd.merge(self.complete_frame, realised, how='left', left_index=True, right_index=True)
         return self.complete_frame
