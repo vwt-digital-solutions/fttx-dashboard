@@ -22,6 +22,7 @@ class Timeseries_collection():
             self.timeseries_collection[project] = Timeseries(project_df,
                                                              self.column,
                                                              self.agg_column,
+                                                             self.agg_column_func,
                                                              project,
                                                              self.totals[project],
                                                              self.cutoff,
@@ -98,7 +99,7 @@ class Timeseries_collection():
 
 
 class Timeseries():
-    def __init__(self, df, column, agg_column, agg_column_functie, total, project, cutoff, ftu_0, ftu_1, civil_startdate,
+    def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, civil_startdate,
                  fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
         self.df = df
         self.column = column
@@ -114,6 +115,11 @@ class Timeseries():
         self.start_date_geulen = start_date_geulen
         self.fase_delta = fase_delta
         self.bis_slope = bis_slope
+        self.agg_column_func = agg_column_func
+        self.serialize()
+        self.calculate_cumsum()
+        self.calculate_cumsum_percentage()
+        self.get_realised_date_range()
         self.get_extrapolation_date_range()
         self.set_realised_phase()
         self.calculate_cumsum_for_extrapolation()
@@ -121,6 +127,8 @@ class Timeseries():
         self.set_target_phase(self.bis_slope, self.fase_delta)
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
+
+        # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
         self.timeseries = self.df.groupby([self.column]).agg({self.agg_column: self.agg_column_func}) \
