@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 
 class Timeseries_collection():
-    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func):
+    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func,
+                 slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -17,6 +18,9 @@ class Timeseries_collection():
         self.set_timeseries_collection()
         self.extrapolation_set = False
         self._set_extrapolation()
+        self.slope_geulen = slope_geulen
+        self.intersect_geulen = intersect_geulen
+        self.start_date_geulen = start_date_geulen
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -30,9 +34,12 @@ class Timeseries_collection():
                                                              self.cutoff,
                                                              self.ftu_dates['date_FTU0'][project],
                                                              self.ftu_dates['date_FTU1'][project],
-                                                             civil_startdate=pd.to_datetime('2020-01-01'),
+                                                             civil_startdate=pd.to_datetime('2020-05-11'),
                                                              fase_delta=0,
-                                                             bis_slope=1
+                                                             bis_slope=360,
+                                                             slope_geulen=self.slope_geulen,
+                                                             intersect_geulen=self.intersect_geulen,
+                                                             start_date_geulen=self.start_date_geulen
                                                              )
 
     def set_min_date(self):
@@ -126,7 +133,7 @@ class Timeseries():
         self.start_date_geulen = start_date_geulen
         self.intersect_geulen = intersect_geulen
         self.fase_delta = fase_delta
-        self.bis_slope = bis_slope
+        self.bis_slope = (bis_slope / total) * 100
         self.serialize()
         self.calculate_cumsum()
         self.calculate_cumsum_percentage()
