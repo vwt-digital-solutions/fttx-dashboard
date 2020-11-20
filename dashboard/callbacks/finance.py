@@ -65,7 +65,7 @@ for client in config.client_config.keys():
     def calculate_figure(client, project, data, level, parent: dict = None):
         actuals_df, budget_df, expected_actuals_df = calculate_level_costs(data, level, parent=parent)
         assumed_expenses_df = calculate_assumed_expenses(client, project, expected_actuals_df, level, parent)
-        fig = get_fig(dict(name="Begrotintg",
+        fig = get_fig(dict(name="Begroting",
                            x=budget_df[level],
                            y=budget_df.kostenbedrag,
                            color=config.colors_vwt['vwt_blue']),
