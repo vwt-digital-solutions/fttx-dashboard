@@ -1,6 +1,7 @@
 from functions import linear_regression
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class Timeseries_collection():
@@ -96,6 +97,12 @@ class Timeseries_collection():
                 complete_frame['Totaal', col] = complete_frame.loc[idx[:], idx[:, col]].sum(axis=1)
 
         return complete_frame
+
+    def get_project_graph(self, project_name):
+        return self.timeseries_collection[project_name].get_graph()
+
+    def get_project_frame(self, project_name):
+        return self.timeseries_collection[project_name].get_timeseries_frame()
 
 
 class Timeseries():
@@ -331,13 +338,27 @@ class Timeseries():
         return self.forecast_phase
 
     def get_timeseries_frame(self):
-        extrapolation_phase = self.get_extrapolation_phase()
-        target_phase = self.get_target_phase()
-        realised_phase = self.get_realised_phase()
-        forecast_phase = self.get_forecast_phase()
-        self.complete_frame = realised_phase
-        # self.complete_frame = pd.merge(self.complete_frame, realised_phase, how='left', left_index=True, right_index=True)
-        self.complete_frame = pd.merge(self.complete_frame, target_phase, how='left', left_index=True, right_index=True)
-        self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
-        self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
-        return self.complete_frame
+        try:
+            return self.complete_frame
+        except AttributeError:
+            extrapolation_phase = self.get_extrapolation_phase()
+            target_phase = self.get_target_phase()
+            realised_phase = self.get_realised_phase()
+            forecast_phase = self.get_forecast_phase()
+            self.complete_frame = realised_phase
+            self.complete_frame = pd.merge(self.complete_frame, target_phase, how='left', left_index=True, right_index=True)
+            self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
+            self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
+            return self.complete_frame
+
+    def get_graph(self):
+        frame = self.get_timeseries_frame()
+        plt.figure(figsize=(20, 10))
+        plt.plot(frame['y_target_percentage'], '-b')
+        plt.plot(frame['cumsum_percentage'], 'xg')
+        try:
+            plt.plot(frame['forecast_percentage'], '-y')
+        except KeyError:
+            pass
+        full_plot = plt.plot(frame['extrapolation_percentage'], '-y')
+        return full_plot
