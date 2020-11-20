@@ -249,7 +249,7 @@ class Timeseries():
         return intersect_slow
 
     def percentage_to_amount(self, percentages):
-        return len(self.df) * (percentages / 100)
+        return self.total * (percentages / 100)
 
     def set_realised_phase(self):
         if not self.real_dates.empty:
