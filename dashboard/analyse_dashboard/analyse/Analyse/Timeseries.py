@@ -146,25 +146,7 @@ class Timeseries():
         self.cumsum_percentage['day_count'] = self.timeseries.day_count
 
     def get_realised_date_range(self):
-        try:
-            real_dates = self.df[~self.df[self.column].isna()][self.column]
-            if len(real_dates) < 2:
-                self.calculate_cumsum_lines = False
-                self.start_date = self.ftu_0
-            else:
-                self.start_date = real_dates.min()
-                self.calculate_cumsum_lines = True
-                start_date_realised = real_dates.min()
-                end_date_realised = real_dates.max()
-                self.realised_date_range = pd.date_range(start=start_date_realised, end=end_date_realised)
-                print(f'Realised date range is {start_date_realised} - {end_date_realised}')
-                self.set_realised_data()
-        except ValueError:
-            raise ValueError(f"start and end can not be 0: {start_date_realised} - {end_date_realised}")
-
-    def do_calculate_cumsum_lines_fast(self):
-        if self.calculate_cumsum_lines:
-            self.real_dates = self.df[~self.df[self.column].isna()][self.column]
+        self.real_dates = self.df[~self.df[self.column].isna()][self.column]
         if not self.real_dates.empty:
             start_date_realised = self.real_dates.min()
             end_date_realised = self.real_dates.max()
@@ -182,6 +164,7 @@ class Timeseries():
             self.extrapolation_date_range = pd.date_range(start=start_date_realised, end=end_date_realised)
 
     def do_calculate_extrapolation_fast(self):
+        do_calculate = False
         if self.calculate_extrapolation:
             if self.extrapolation_fast:
                 do_calculate = True
@@ -341,17 +324,19 @@ class Timeseries():
         return self.extrapolation_phase
 
     def get_forecast_phase(self):
+        try:
+            self.forecast_phase
+        except AttributeError:
+            self.forecast_phase = pd.DataFrame()
         return self.forecast_phase
 
     def get_timeseries_frame(self):
-        extrapolation = self.get_extrapolation_frame()
-        target = self.get_target_frame()
         extrapolation_phase = self.get_extrapolation_phase()
         target_phase = self.get_target_phase()
         realised_phase = self.get_realised_phase()
         forecast_phase = self.get_forecast_phase()
-        self.complete_frame = pd.merge(extrapolation, target, how='left', left_index=True, right_index=True)
-        self.complete_frame = pd.merge(self.complete_frame, realised_phase, how='left', left_index=True, right_index=True)
+        self.complete_frame = realised_phase
+        # self.complete_frame = pd.merge(self.complete_frame, realised_phase, how='left', left_index=True, right_index=True)
         self.complete_frame = pd.merge(self.complete_frame, target_phase, how='left', left_index=True, right_index=True)
         self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
         self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
