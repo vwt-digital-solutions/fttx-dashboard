@@ -9,6 +9,8 @@ import pandas as pd
 def no_graph(title="", text="No Data"):
     return {
         "layout": {
+            "paper_bgcolor": config.colors_vwt['paper_bgcolor'],
+            "plot_bgcolor": config.colors_vwt['plot_bgcolor'],
             "xaxis": {
                 "visible": False
             },
@@ -32,7 +34,6 @@ def no_graph(title="", text="No Data"):
 
 
 def has_planning_by(period, client):
-
     has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
                                              client=client)
     has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period,
