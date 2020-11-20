@@ -1,5 +1,6 @@
 from functions import linear_regression
 import numpy as np
+import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -118,8 +119,8 @@ class Timeseries():
         self.project = project
         self.cutoff = cutoff
         self.total = total
-        self.ftu_0 = np.datetime64(ftu_0)
-        self.ftu_1 = np.datetime64(ftu_1)
+        self.ftu_0 = pd.to_datetime(ftu_0)
+        self.ftu_1 = pd.to_datetime(ftu_1)
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
@@ -133,7 +134,7 @@ class Timeseries():
         self.get_extrapolation_date_range()
         self.set_realised_phase()
         self.calculate_cumsum_for_extrapolation()
-        # self.set_target_frame()
+        self.set_target_frame()
         self.set_target_phase(self.bis_slope, self.fase_delta)
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
@@ -232,9 +233,9 @@ class Timeseries():
             slope, intersect = linear_regression(self.realised_cumsum_fast)
         return slope, intersect
 
-    def make_linear_line(self, slope, start_date, fase_delta=0, intersect=0):
+    def make_linear_line(self, slope, start_date, fase_delta=0, intersect=None):
         shift = - (start_date - self.timeseries_date_range[0]).days * slope
-        if intersect > 0:
+        if intersect:
             shift = shift + (start_date - self.timeseries_date_range[0]).days * slope + intersect
         line = slope * self.get_range() + shift - fase_delta * slope
         return line
@@ -268,9 +269,9 @@ class Timeseries():
             self.realised_phase['cumsum_amount'] = self.cumsum_series.loc[self.realised_date_range].Aantal
 
     def set_target_frame(self):
-        offset = np.timedelta64(14, 'D')
+        offset = datetime.timedelta(14)
         start_date = self.ftu_0 + offset
-        slope = 100 / (len(np.arange(self.ftu_0 + offset, self.ftu_1 - offset)))
+        slope = 100 / ((self.ftu_0 + offset) - (self.ftu_1 - offset)).days
         line = self.make_linear_line(slope, start_date)
         self.target = self.round_edge_values(line)
 
