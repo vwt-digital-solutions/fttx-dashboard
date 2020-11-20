@@ -10,13 +10,22 @@ if toggles.financial_view:
         return [
             dcc.Store(id=f"financial-data-{client}",
                       data=None),
-            html.H1(f"Financien voor {client}"),
             html.Div(
                 className="container-display",
                 children=[
-                    figure(figure=no_graph("Graph1"),
-                           container_id=f"budget-bar-{client}-container",
-                           graph_id=f"budget-bar-{client}",
+                    figure(figure=no_graph(),
+                           container_id=f"budget-bar-category-{client}-container",
+                           graph_id=f"budget-bar-category-{client}",
+                           title="Begroting/Prognose einde werk/Realisatie"
+                           )
+                ]
+            ),
+            html.Div(
+                className="container-display",
+                children=[
+                    figure(figure=no_graph(text="Geen selectie"),
+                           container_id=f"budget-bar-sub-category-{client}-container",
+                           graph_id=f"budget-bar-sub-category-{client}",
                            title="Begroting/Prognose einde werk/Realisatie"
                            )
                 ]
