@@ -133,7 +133,7 @@ class Timeseries():
         self.get_extrapolation_date_range()
         self.set_realised_phase()
         self.calculate_cumsum_for_extrapolation()
-        self.set_target_frame()
+        # self.set_target_frame()
         self.set_target_phase(self.bis_slope, self.fase_delta)
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
@@ -233,7 +233,10 @@ class Timeseries():
         return slope, intersect
 
     def make_linear_line(self, slope, start_date, fase_delta=0, intersect=0):
-        line = slope * self.get_range() + intersect - fase_delta * slope
+        shift = - (start_date - self.timeseries_date_range[0]).days * slope
+        if intersect > 0:
+            shift = shift + (start_date - self.timeseries_date_range[0]).days * slope + intersect
+        line = slope * self.get_range() + shift - fase_delta * slope
         return line
 
     def add_second_line(self, line, slope_slow):
