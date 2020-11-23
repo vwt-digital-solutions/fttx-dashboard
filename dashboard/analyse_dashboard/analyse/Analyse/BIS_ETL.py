@@ -34,6 +34,7 @@ class BISTransform(Transform):
         self._expand_dates()
         self._set_projects()
         self._set_totals()
+        self._get_last_realised_data()
 
     def _rename_columns(self):
         df_renamed = pd.DataFrame()

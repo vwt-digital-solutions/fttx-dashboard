@@ -17,6 +17,7 @@ class Timeseries_collection():
         self.set_timeseries_collection()
         self.extrapolation_set = False
         self._set_extrapolation()
+        self.set_last_realised_data()
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -105,6 +106,15 @@ class Timeseries_collection():
     def get_project_frame(self, project_name):
         return self.timeseries_collection[project_name].get_timeseries_frame()
 
+    def set_last_realised_data(self):
+        df_copy = self.df.copy()
+        column = self.column
+        df_copy = df_copy.loc[df_copy[column].notnull(), :]
+
+        last_realised_data = df_copy.loc[df_copy.index.max(), :].to_dict()
+        last_realised_data['datum'] = df_copy.index.max()
+        return last_realised_data
+
 
 class Timeseries():
     def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, civil_startdate,
@@ -142,7 +152,7 @@ class Timeseries():
 
     def serialize(self):
         self.df = self.df[~self.df[self.agg_column].isna()]
-        self.timeseries = self.df.groupby([self.column]).agg({self.agg_column: self.agg_column_func}) \
+        self.timeseries = self.df.groupby(self.column).agg({self.agg_column: self.agg_column_func}) \
             .rename(columns={self.agg_column: 'Aantal'})
         self.set_index()
 
