@@ -1,6 +1,5 @@
 import dash_html_components as html
 import dash_core_components as dcc
-
 from app import toggles
 from data.data import no_graph
 from layout.components.figure import figure
@@ -12,6 +11,13 @@ if toggles.financial_view:
                       data=None),
             dcc.Store(id=f"progress-over-time-data-{client}",
                       data=None),
+            html.Div(
+                className="container-display ml-3",
+                id=f"finance-warnings-{client}",
+                children=[
+
+                ]
+            ),
             html.Div(
                 className="container-display",
                 children=[

@@ -1,5 +1,7 @@
 import dash
 from dash.dependencies import Input, Output, State
+import dash_bootstrap_components as dbc
+
 import pandas as pd
 import config
 from app import app
@@ -12,7 +14,8 @@ for client in config.client_config.keys():
     @app.callback(
         [
             Output(f'financial-data-{client}', 'data'),
-            Output(f'progress-over-time-data-{client}', 'data')
+            Output(f'progress-over-time-data-{client}', 'data'),
+            Output(f"finance-warnings-{client}", 'children')
         ],
         [
             Input(f'project-dropdown-{client}', 'value')
@@ -20,15 +23,33 @@ for client in config.client_config.keys():
     )
     def financial_storage(dropdown_selection, client=client):
         if dropdown_selection:
+            warnings = []
             finances = collection.get_document(collection="Finance",
                                                project=dropdown_selection,
                                                client=client)
+            finance_document_names = {
+                'expected_actuals': 'Prognose einde werk',
+                'budget': 'Begroting',
+                'actuals': "Realisatie"
+            }
+            missing_document_consequence = {
+                'expected_actuals': "De begroting word nu als referentie gebruikt."
+                                    "De prognose einde werk wordt gelijkgesteld aan de begroting."
+            }
+            for document, value in finances.items():
+                if not value:
+                    warnings.append(
+                        dbc.Alert(f"{dropdown_selection} heeft geen {finance_document_names[document]}. "
+                                  f"{missing_document_consequence.get(document, '')}", color="warning"))
+
+                    if document == "expected_actuals":
+                        finances[document] = finances['budget']
             progress_over_time_data = collection.get_document(collection="Data",
                                                               project=dropdown_selection,
                                                               client=client,
                                                               data_set="progress_over_time")
-            return [finances, progress_over_time_data]
-        return [None, None]
+            return [finances, progress_over_time_data, warnings]
+        return [None, None, None]
 
     @app.callback(
         [
@@ -82,15 +103,15 @@ for client in config.client_config.keys():
                       dict(name="Prognose einde werk",
                            x=expected_actuals_df[level],
                            y=expected_actuals_df.kostenbedrag,
-                           color=config.colors_vwt['vwt_blue']),
+                           color=config.colors_vwt['black']),
                       dict(name="Realisatie",
                            x=actuals_df[level],
                            y=actuals_df.kostenbedrag,
-                           color=config.colors_vwt['darkgray']),
+                           color=config.colors_vwt['vwt_blue']),
                       dict(name="Productie",
                            x=assumed_expenses_df[level],
                            y=assumed_expenses_df.kostenbedrag,
-                           color=config.colors_vwt['black'])
+                           color=config.colors_vwt['darkgray'])
                       )
         return fig
 
