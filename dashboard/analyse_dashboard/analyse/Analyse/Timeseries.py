@@ -172,8 +172,9 @@ class Timeseries():
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
+        self.df = self.df[~self.df[self.agg_column].isna()]
         self.timeseries = self.df.groupby([self.column]).agg({self.agg_column: self.agg_column_func}) \
-                                .rename(columns={self.agg_column: 'Aantal'})
+            .rename(columns={self.agg_column: 'Aantal'})
         self.set_index()
 
     def calculate_cumsum(self):
@@ -386,8 +387,8 @@ class Timeseries():
             target_phase = self.get_target_phase()
             realised_phase = self.get_realised_phase()
             forecast_phase = self.get_forecast_phase()
-            self.complete_frame = realised_phase
-            self.complete_frame = pd.merge(self.complete_frame, target_phase, how='left', left_index=True, right_index=True)
+            self.complete_frame = target_phase
+            self.complete_frame = pd.merge(self.complete_frame, realised_phase, how='left', left_index=True, right_index=True)
             self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
             self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
             return self.complete_frame
