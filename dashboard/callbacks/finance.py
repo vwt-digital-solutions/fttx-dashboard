@@ -108,7 +108,7 @@ for client in config.client_config.keys():
                            x=actuals_df[level],
                            y=actuals_df.kostenbedrag,
                            color=config.colors_vwt['vwt_blue']),
-                      dict(name="Productie",
+                      dict(name="Operationeel",
                            x=assumed_expenses_df[level],
                            y=assumed_expenses_df.kostenbedrag,
                            color=config.colors_vwt['darkgray'])
@@ -198,12 +198,18 @@ for client in config.client_config.keys():
                         x=time_series.index,
                         y=time_series,
                         mode='lines+markers',
-                        name="Financieel"
+                        name="Financieel",
+                        line=dict(color=config.colors_vwt['vwt_blue'])
                     )]
 
                     if parent.get("value") in ["has", "civiel", "montage", "schouwen"]:
                         if parent.get("value") != "montage":
-                            traces.append(get_progress_scatter(expected_cost, progress_data, parent.get("value")))
+                            traces.append(get_progress_scatter(
+                                expected_cost,
+                                progress_data,
+                                parent.get("value"),
+                                color=config.colors_vwt['darkgray']
+                            ))
                         else:
                             traces.append(get_progress_scatter(expected_cost, progress_data, 'montage ap'))
                             traces.append(get_progress_scatter(expected_cost, progress_data, 'montage dp'))
@@ -220,13 +226,14 @@ for client in config.client_config.keys():
                 break
         return [no_graph(text="Geen selectie")]
 
-    def get_progress_scatter(expected_cost, progress_data, phase):
+    def get_progress_scatter(expected_cost, progress_data, phase, color=None):
         progress_series = get_progress_series(expected_cost, phase, progress_data)
         scatter = go.Scatter(
             x=progress_series.index,
             y=progress_series,
             mode='lines+markers',
-            name="Operationeel"
+            name="Operationeel",
+            line=dict(color=color)
         )
         return scatter
 
