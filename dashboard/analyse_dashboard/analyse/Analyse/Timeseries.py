@@ -27,10 +27,10 @@ class Timeseries_collection():
         self.set_start_date_geulen()
 
     def set_slope_geulen(self):
-        return {project: timeseries.slope for (project, timeseries) in self.timeseries_collection.items()}
+        return {project: timeseries.get_slope() for (project, timeseries) in self.timeseries_collection.items()}
 
     def set_intersect_geulen(self):
-        return {project: timeseries.intersect for (project, timeseries) in self.timeseries_collection.items()}
+        return {project: timeseries.get_intersect() for (project, timeseries) in self.timeseries_collection.items()}
 
     def set_start_date_geulen(self):
         return {project: timeseries.start_date for (project, timeseries) in self.timeseries_collection.items()}
@@ -42,7 +42,7 @@ class Timeseries_collection():
         return self.intersect_geulen.get(project, 0)
 
     def get_start_date_geulen(self, project):
-        return self.start_date_geulen(project, 0)
+        return self.start_date_geulen.get(project, 0)
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -56,7 +56,7 @@ class Timeseries_collection():
                                                              self.cutoff,
                                                              self.ftu_dates['date_FTU0'][project],
                                                              self.ftu_dates['date_FTU1'][project],
-                                                             self.teams[project],
+                                                             1,
                                                              civil_startdate=pd.to_datetime('2020-05-11'),
                                                              fase_delta=0,
                                                              bis_slope=360,
@@ -392,6 +392,18 @@ class Timeseries():
             self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
             self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
             return self.complete_frame
+
+    def get_slope(self):
+        try:
+            return self.slope
+        except AttributeError:
+            return None
+
+    def get_intersect(self):
+        try:
+            return self.intersect
+        except AttributeError:
+            return None
 
     def get_graph(self):
         frame = self.get_timeseries_frame()

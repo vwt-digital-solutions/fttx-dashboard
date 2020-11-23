@@ -132,7 +132,8 @@ class KPNAnalyse(FttXAnalyse):
                                                         totals=self.transformed_data.totals,
                                                         cutoff=85,
                                                         ftu_dates=self.extracted_data.ftu,
-                                                        agg_column_func='count')
+                                                        agg_column_func='count',
+                                                        teams={})
 
         self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
         self.intermediate_results.d_real_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'cumsum_percentage']])
