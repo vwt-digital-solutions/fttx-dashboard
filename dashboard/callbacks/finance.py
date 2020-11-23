@@ -73,19 +73,19 @@ for client in config.client_config.keys():
         fig = get_fig(dict(name="Begroting",
                            x=budget_df[level],
                            y=budget_df.kostenbedrag,
-                           color=config.colors_vwt['vwt_blue']),
+                           color=config.colors_vwt['lightgray']),
                       dict(name="Prognose einde werk",
                            x=expected_actuals_df[level],
                            y=expected_actuals_df.kostenbedrag,
-                           color=config.colors_vwt['red']),
+                           color=config.colors_vwt['vwt_blue']),
                       dict(name="Realisatie",
                            x=actuals_df[level],
                            y=actuals_df.kostenbedrag,
-                           color=config.colors_vwt['green']),
+                           color=config.colors_vwt['darkgray']),
                       dict(name="Productie",
                            x=assumed_expenses_df[level],
                            y=assumed_expenses_df.kostenbedrag,
-                           color=config.colors_vwt['lightgreen'])
+                           color=config.colors_vwt['black'])
                       )
         return fig
 
