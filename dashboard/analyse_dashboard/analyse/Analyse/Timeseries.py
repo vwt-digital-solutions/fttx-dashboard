@@ -25,7 +25,6 @@ class Timeseries_collection():
         self.set_slope_geulen()
         self.set_intersect_geulen()
         self.set_start_date_geulen()
-        self.set_last_realised_data()
 
     def set_slope_geulen(self):
         return {project: timeseries.get_slope() for (project, timeseries) in self.timeseries_collection.items()}
@@ -136,15 +135,6 @@ class Timeseries_collection():
     def get_project_frame(self, project_name):
         return self.timeseries_collection[project_name].get_timeseries_frame()
 
-    def set_last_realised_data(self):
-        df_copy = self.df.copy()
-        column = self.column
-        df_copy = df_copy.loc[df_copy[column].notnull(), :]
-
-        last_realised_data = df_copy.loc[df_copy.index.max(), :].to_dict()
-        last_realised_data['datum'] = df_copy.index.max()
-        return last_realised_data
-
 
 class Timeseries():
     def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams,
@@ -179,6 +169,7 @@ class Timeseries():
         self.set_target_phase(self.bis_slope, self.fase_delta)
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
+        self.get_timeseries_frame
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
@@ -426,3 +417,12 @@ class Timeseries():
             pass
         full_plot = plt.plot(frame['extrapolation_percentage'], '-y')
         return full_plot
+
+    def get_last_realised_data(self):
+        df_copy = self.df.copy()
+        column = self.column
+        df_copy = df_copy.loc[df_copy[column].notnull(), :]
+
+        last_realised_data = df_copy.loc[df_copy.index.max(), :].to_dict()
+        last_realised_data['datum'] = df_copy.index.max()
+        return last_realised_data
