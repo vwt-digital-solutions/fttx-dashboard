@@ -203,16 +203,12 @@ for client in config.client_config.keys():
                     )]
 
                     if parent.get("value") in ["has", "civiel", "montage", "schouwen"]:
-                        if parent.get("value") != "montage":
-                            traces.append(get_progress_scatter(
-                                expected_cost,
-                                progress_data,
-                                parent.get("value"),
-                                color=config.colors_vwt['darkgray']
-                            ))
-                        else:
-                            traces.append(get_progress_scatter(expected_cost, progress_data, 'montage ap'))
-                            traces.append(get_progress_scatter(expected_cost, progress_data, 'montage dp'))
+                        traces.append(get_progress_scatter(
+                            expected_cost,
+                            progress_data,
+                            parent.get("value"),
+                            color=config.colors_vwt['darkgray']
+                        ))
 
                     fig = go.Figure(
                         data=traces
