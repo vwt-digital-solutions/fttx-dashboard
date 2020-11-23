@@ -1,3 +1,4 @@
+import dash
 from dash.dependencies import Input, Output, State
 import pandas as pd
 import config
@@ -51,21 +52,25 @@ for client in config.client_config.keys():
             Output(f'budget-bar-sub-category-{client}', 'figure')
         ],
         [
-            Input(f"budget-bar-category-{client}", 'clickData')
+            Input(f"budget-bar-category-{client}", 'clickData'),
+            Input(f'project-dropdown-{client}', 'value')
+
         ],
         [
-            State(f'financial-data-{client}', 'data'),
-            State(f'project-dropdown-{client}', 'value')
+            State(f'financial-data-{client}', 'data')
         ]
     )
-    def budget_bar_sub_category(click, data, project, client=client):
-        for point in click.get("points", []):
-            if data:
-                parent = dict(level='categorie', value=point.get("label"))
-                fig = calculate_figure(client, project, data, "sub_categorie", parent)
-                return [fig]
-            break
-        return [no_graph("Barchart", "Geen selectie")]
+    def budget_bar_sub_category(click, project, data, client=client):
+        ctx = dash.callback_context
+        if 'budget-bar-category' in [x['prop_id'].rpartition("-")[0] for x in ctx.triggered]:
+            for point in click.get("points", []):
+                print(f"point={point}")
+                if data:
+                    parent = dict(level='categorie', value=point.get("label"))
+                    fig = calculate_figure(client, project, data, "sub_categorie", parent)
+                    return [fig]
+                break
+        return [no_graph(text="Geen selectie")]
 
     def calculate_figure(client, project, data, level, parent: dict = None):
         actuals_df, budget_df, expected_actuals_df = calculate_level_costs(data, level, parent=parent)
@@ -145,51 +150,54 @@ for client in config.client_config.keys():
             Output(f'progress-over-time-{client}', 'figure')
         ],
         [
-            Input(f"budget-bar-category-{client}", 'clickData')
+            Input(f"budget-bar-category-{client}", 'clickData'),
+            Input(f'project-dropdown-{client}', 'value')
         ],
         [
             State(f'financial-data-{client}', 'data'),
             State(f'progress-over-time-data-{client}', 'data')
         ]
     )
-    def progress_over_time(click, finance_data, progress_data):
-        for point in click.get("points", []):
-            if finance_data:
-                parent = dict(level='categorie', value=point.get("label"))
-                actuals_df = pd.DataFrame(finance_data['actuals'])
-                actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
-                time_series = actuals_df.groupby("registratiedatum")['kostenbedrag'].sum().sort_index().cumsum()
+    def progress_over_time(click, project, finance_data, progress_data):
+        ctx = dash.callback_context
+        if 'budget-bar-category' in [x['prop_id'].rpartition("-")[0] for x in ctx.triggered]:
+            for point in click.get("points", []):
+                if finance_data:
+                    parent = dict(level='categorie', value=point.get("label"))
+                    actuals_df = pd.DataFrame(finance_data['actuals'])
+                    actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
+                    time_series = actuals_df.groupby("registratiedatum")['kostenbedrag'].sum().sort_index().cumsum()
 
-                expected_cost = finance_data['expected_actuals']
-                expected_cost = pd.DataFrame(expected_cost)
-                expected_cost = expected_cost[
-                    expected_cost[parent.get("level")] == parent.get('value')].kostenbedrag.sum()
+                    expected_cost = finance_data['expected_actuals']
+                    expected_cost = pd.DataFrame(expected_cost)
+                    expected_cost = expected_cost[
+                        expected_cost[parent.get("level")] == parent.get('value')].kostenbedrag.sum()
 
-                traces = [go.Scatter(
-                    x=time_series.index,
-                    y=time_series,
-                    mode='lines+markers',
-                    name="Financieel"
-                )]
+                    traces = [go.Scatter(
+                        x=time_series.index,
+                        y=time_series,
+                        mode='lines+markers',
+                        name="Financieel"
+                    )]
 
-                if parent.get("value") in ["has", "civiel", "montage", "schouwen"]:
-                    if parent.get("value") != "montage":
-                        traces.append(get_progress_scatter(expected_cost, progress_data, parent.get("value")))
-                    else:
-                        traces.append(get_progress_scatter(expected_cost, progress_data, 'montage ap'))
-                        traces.append(get_progress_scatter(expected_cost, progress_data, 'montage dp'))
+                    if parent.get("value") in ["has", "civiel", "montage", "schouwen"]:
+                        if parent.get("value") != "montage":
+                            traces.append(get_progress_scatter(expected_cost, progress_data, parent.get("value")))
+                        else:
+                            traces.append(get_progress_scatter(expected_cost, progress_data, 'montage ap'))
+                            traces.append(get_progress_scatter(expected_cost, progress_data, 'montage dp'))
 
-                fig = go.Figure(
-                    data=traces
-                )
-                fig.update_layout(
-                    height=500,
-                    paper_bgcolor=config.colors_vwt['paper_bgcolor'],
-                    plot_bgcolor=config.colors_vwt['plot_bgcolor'],
-                )
-                return [fig]
-            break
-        return [no_graph("Barchart", "Geen selectie")]
+                    fig = go.Figure(
+                        data=traces
+                    )
+                    fig.update_layout(
+                        height=500,
+                        paper_bgcolor=config.colors_vwt['paper_bgcolor'],
+                        plot_bgcolor=config.colors_vwt['plot_bgcolor'],
+                    )
+                    return [fig]
+                break
+        return [no_graph(text="Geen selectie")]
 
     def get_progress_scatter(expected_cost, progress_data, phase):
         progress_series = get_progress_series(expected_cost, phase, progress_data)
