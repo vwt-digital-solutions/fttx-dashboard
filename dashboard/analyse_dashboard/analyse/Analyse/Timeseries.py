@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 
 
 class Timeseries_collection():
-    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func):
+    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func, teams,
+                 slope_geulen={}, intersect_geulen={}, start_date_geulen={}):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -14,10 +15,35 @@ class Timeseries_collection():
         self.cutoff = cutoff
         self.ftu_dates = ftu_dates
         self.agg_column_func = agg_column_func
+        self.slope_geulen = slope_geulen
+        self.intersect_geulen = intersect_geulen
+        self.start_date_geulen = start_date_geulen
+        self.teams = teams
         self.set_timeseries_collection()
         self.extrapolation_set = False
         self._set_extrapolation()
+        self.set_slope_geulen()
+        self.set_intersect_geulen()
+        self.set_start_date_geulen()
         self.set_last_realised_data()
+
+    def set_slope_geulen(self):
+        return {project: timeseries.get_slope() for (project, timeseries) in self.timeseries_collection.items()}
+
+    def set_intersect_geulen(self):
+        return {project: timeseries.get_intersect() for (project, timeseries) in self.timeseries_collection.items()}
+
+    def set_start_date_geulen(self):
+        return {project: timeseries.start_date for (project, timeseries) in self.timeseries_collection.items()}
+
+    def get_slope_geulen(self, project):
+        return self.slope_geulen.get(project, 0)
+
+    def get_intersect_geulen(self, project):
+        return self.intersect_geulen.get(project, 0)
+
+    def get_start_date_geulen(self, project):
+        return self.start_date_geulen.get(project, 0)
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -31,9 +57,13 @@ class Timeseries_collection():
                                                              self.cutoff,
                                                              self.ftu_dates['date_FTU0'][project],
                                                              self.ftu_dates['date_FTU1'][project],
-                                                             civil_startdate=pd.to_datetime('2020-01-01'),
+                                                             1,
+                                                             civil_startdate=pd.to_datetime('2020-05-11'),
                                                              fase_delta=0,
-                                                             bis_slope=1
+                                                             bis_slope=360,
+                                                             slope_geulen=self.get_slope_geulen(project),
+                                                             intersect_geulen=self.get_intersect_geulen(project),
+                                                             start_date_geulen=self.get_start_date_geulen(project)
                                                              )
 
     def set_min_date(self):
@@ -117,8 +147,8 @@ class Timeseries_collection():
 
 
 class Timeseries():
-    def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, civil_startdate,
-                 fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
+    def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams,
+                 civil_startdate, fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -131,12 +161,13 @@ class Timeseries():
         self.total = total
         self.ftu_0 = pd.to_datetime(ftu_0)
         self.ftu_1 = pd.to_datetime(ftu_1)
+        self.teams = teams
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
         self.intersect_geulen = intersect_geulen
         self.fase_delta = fase_delta
-        self.bis_slope = bis_slope
+        self.bis_slope = (bis_slope / total) * 100
         self.serialize()
         self.calculate_cumsum()
         self.calculate_cumsum_percentage()
@@ -238,6 +269,12 @@ class Timeseries():
         line = self.add_second_line(line, slope_slow)
         self.extrapolation = self.round_edge_values(line)
         self.set_extrapolation_frame()
+
+    def set_variable_team_line(self):
+        # Is BIS slope based on one team?
+        slope = self.teams * self.bis_slope
+        intersect, y_translation = self.get_recent_realised_point()
+        self.make_linear_line(slope, self.start_date, intersect=intersect)
 
     def slope_linear_regression(self):
         if self.do_calculate_extrapolation_fast():
@@ -365,6 +402,18 @@ class Timeseries():
             self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
             self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
             return self.complete_frame
+
+    def get_slope(self):
+        try:
+            return self.slope
+        except AttributeError:
+            return None
+
+    def get_intersect(self):
+        try:
+            return self.intersect
+        except AttributeError:
+            return None
 
     def get_graph(self):
         frame = self.get_timeseries_frame()
