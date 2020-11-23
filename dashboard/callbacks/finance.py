@@ -70,7 +70,8 @@ for client in config.client_config.keys():
 
     @app.callback(
         [
-            Output(f'budget-bar-sub-category-{client}', 'figure')
+            Output(f'budget-bar-sub-category-{client}', 'figure'),
+            Output(f'budget-bar-sub-category-{client}-container-subtitle', 'children')
         ],
         [
             Input(f"budget-bar-category-{client}", 'clickData'),
@@ -89,9 +90,9 @@ for client in config.client_config.keys():
                 if data:
                     parent = dict(level='categorie', value=point.get("label"))
                     fig = calculate_figure(client, project, data, "sub_categorie", parent)
-                    return [fig]
+                    return [fig, point.get("label")]
                 break
-        return [no_graph(text="Geen selectie")]
+        return [no_graph(text="Geen selectie"), ""]
 
     def calculate_figure(client, project, data, level, parent: dict = None):
         actuals_df, budget_df, expected_actuals_df = calculate_level_costs(data, level, parent=parent)
@@ -168,7 +169,8 @@ for client in config.client_config.keys():
 
     @app.callback(
         [
-            Output(f'progress-over-time-{client}', 'figure')
+            Output(f'progress-over-time-{client}', 'figure'),
+            Output(f'progress-over-time-{client}-container-subtitle', 'children')
         ],
         [
             Input(f"budget-bar-category-{client}", 'clickData'),
@@ -218,9 +220,9 @@ for client in config.client_config.keys():
                         paper_bgcolor=config.colors_vwt['paper_bgcolor'],
                         plot_bgcolor=config.colors_vwt['plot_bgcolor'],
                     )
-                    return [fig]
+                    return [fig, parent.get("value")]
                 break
-        return [no_graph(text="Geen selectie")]
+        return [no_graph(text="Geen selectie"), ""]
 
     def get_progress_scatter(expected_cost, progress_data, phase, color=None):
         progress_series = get_progress_series(expected_cost, phase, progress_data)
