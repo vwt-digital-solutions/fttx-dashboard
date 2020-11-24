@@ -170,7 +170,7 @@ class Timeseries():
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
         self.get_timeseries_frame
-        self.get_last_realised_data()
+        self.get_latest_data_timeseries
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
@@ -394,6 +394,14 @@ class Timeseries():
             self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
             return self.complete_frame
 
+    def get_latest_data_timeseries(self, column):
+        df_copy = self.get_timeseries_frame()
+        df_copy = df_copy.loc[df_copy[column].notnull(), :]
+
+        last_realised_data = df_copy.loc[df_copy.index.max(), :]
+
+        return df_copy.index.max(), last_realised_data.column
+
     def get_slope(self):
         try:
             return self.slope
@@ -417,12 +425,3 @@ class Timeseries():
             pass
         full_plot = plt.plot(frame['extrapolation_percentage'], '-y')
         return full_plot
-
-    def get_last_realised_data(self):
-        df_copy = self.df.copy()
-        column = self.column
-        df_copy = df_copy.loc[df_copy[column].notnull(), :]
-
-        last_realised_data = df_copy.loc[df_copy.index.max(), :].to_dict()
-        last_realised_data['datum'] = df_copy.index.max()
-        return last_realised_data
