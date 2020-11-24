@@ -239,6 +239,11 @@ class FttXAnalyse(FttXBase):
             columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
                        'status_civiel_datum']
             date_df = df[columns]
+
+            mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
+            date_df.loc['montage'] = np.datetime64("NaT")
+            date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
+
             progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
                 df)
             progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
