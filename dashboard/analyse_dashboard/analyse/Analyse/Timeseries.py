@@ -264,8 +264,7 @@ class Timeseries():
     def set_variable_team_line(self):
         # Is BIS slope based on one team?
         slope = self.teams * self.bis_slope
-        intersect, y_translation = self.get_recent_realised_point()
-        self.make_linear_line(slope, self.start_date, intersect=intersect)
+        return slope
 
     def slope_linear_regression(self):
         if self.do_calculate_extrapolation_fast():
