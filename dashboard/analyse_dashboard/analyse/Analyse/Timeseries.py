@@ -350,15 +350,24 @@ class Timeseries():
             self.forecast_phase['forecast_percentage'] = self.forecast_line
             self.forecast_phase['forecast_amount'] = self.percentage_to_amount(self.forecast_phase['forecast_percentage'])
 
-    def set_planning_phase(self):
+    def set_planning_phase(self, teams=None):
         # Is BIS slope based on one team?
         # slope = self.teams * self.bis_slope
-        latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
-        final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
-        percentage_diff = final_percentage - latest_percentage
-        date_diff = (final_target_date - latest_realised_date).days
-        slope = percentage_diff / date_diff
-        line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
+        if not teams:
+            latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
+            final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
+            percentage_diff = final_percentage - latest_percentage
+            date_diff = (final_target_date - latest_realised_date).days
+            slope = percentage_diff / date_diff
+            line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
+
+        elif teams:
+            latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
+            final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
+            percentage_diff = final_percentage - latest_percentage
+            date_diff = (final_target_date - latest_realised_date).days
+            slope = self.teams * 100
+            line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
 
         self.planning_line = self.round_edge_values(line)
         self.planning_phase = pd.DataFrame(index=self.timeseries_date_range)
