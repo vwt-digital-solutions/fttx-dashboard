@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 class Timeseries_collection():
     def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func, teams,
-                 slope_geulen={}, intersect_geulen={}, start_date_geulen={}):
+                 slope_geulen={}, intersect_geulen={}, start_date_geulen={}, last_realised_geulen={}):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -18,10 +18,14 @@ class Timeseries_collection():
         self.slope_geulen = slope_geulen
         self.intersect_geulen = intersect_geulen
         self.start_date_geulen = start_date_geulen
+        self.geulen_realised = last_realised_geulen
         self.teams = teams
         self.set_timeseries_collection()
         self.extrapolation_set = False
         self._set_extrapolation()
+
+        # These only have to be ran if timeseries is for geulen
+        # Maybe move to own child class?
         self.set_slope_geulen()
         self.set_intersect_geulen()
         self.set_start_date_geulen()
@@ -40,8 +44,8 @@ class Timeseries_collection():
                                   for (project, timeseries) in self.timeseries_collection.items()}
 
     def set_last_realised_data(self):
-        self.realised_geulen = {project: timeseries.get_latest_data_timeseries('cumsum_percentage')
-                                for (project, timeseries) in self.timeseries_collection.items()}
+        self.last_realised = {project: timeseries.get_latest_data_timeseries('cumsum_percentage')
+                              for (project, timeseries) in self.timeseries_collection.items()}
 
     def get_slope_geulen(self, project):
         return self.slope_geulen.get(project, 0)
@@ -53,7 +57,7 @@ class Timeseries_collection():
         return self.start_date_geulen.get(project, 0)
 
     def get_geulen_realised(self, project):
-        return self.geulen_realised(project, 0)
+        return self.geulen_realised.get(project, 0)
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -150,7 +154,8 @@ class Timeseries_collection():
 
 class Timeseries():
     def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams,
-                 civil_startdate, fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
+                 civil_startdate, fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0,
+                 geulen_realised=0):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -170,6 +175,7 @@ class Timeseries():
         self.intersect_geulen = intersect_geulen
         self.fase_delta = fase_delta
         self.bis_slope = (bis_slope / total) * 100
+        self.geulen_realised = geulen_realised
         self.serialize()
         self.calculate_cumsum()
         self.calculate_cumsum_percentage()
@@ -183,6 +189,7 @@ class Timeseries():
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
         self.get_latest_data_timeseries
         self.set_planning_phase()
+        self.set_realised_geulen()
         self.get_timeseries_frame()
         # We might not be able to set time shift at init time, or we might not need it at all
 
@@ -413,6 +420,17 @@ class Timeseries():
             self.forecast_phase = pd.DataFrame()
         return self.forecast_phase
 
+    def set_realised_geulen(self):
+        line = self.make_linear_line(0, self.start_date, intersect2=self.get_geulen_realised())
+        self.realised_geulen_frame = pd.DataFrame(index=self.timeseries_date_range)
+        self.realised_geulen_frame['line'] = line
+
+    def get_geulen_realised(self):
+        if self.geulen_realised == 0:
+            return self.get_latest_data_timeseries('cumsum_percentage')[1]
+        else:
+            return self.geulen_realised
+
     def get_timeseries_frame(self):
         extrapolation_phase = self.get_extrapolation_phase()
         target_phase = self.get_target_phase()
@@ -463,5 +481,7 @@ class Timeseries():
             plt.plot(frame['planning_percentage'], '-r')
         except KeyError:
             pass
+        plt.plot(self.realised_geulen_frame)
+        plt.plot(frame)
         full_plot = plt.plot(frame['extrapolation_percentage'], '-y')
         return full_plot
