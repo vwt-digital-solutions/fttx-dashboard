@@ -25,15 +25,23 @@ class Timeseries_collection():
         self.set_slope_geulen()
         self.set_intersect_geulen()
         self.set_start_date_geulen()
+        self.set_last_realised_data()
 
     def set_slope_geulen(self):
-        return {project: timeseries.get_slope() for (project, timeseries) in self.timeseries_collection.items()}
+        self.start_date_geulen = {project: timeseries.get_slope()
+                                  for (project, timeseries) in self.timeseries_collection.items()}
 
     def set_intersect_geulen(self):
-        return {project: timeseries.get_intersect() for (project, timeseries) in self.timeseries_collection.items()}
+        self.intersect_geulen = {project: timeseries.get_intersect()
+                                 for (project, timeseries) in self.timeseries_collection.items()}
 
     def set_start_date_geulen(self):
-        return {project: timeseries.start_date for (project, timeseries) in self.timeseries_collection.items()}
+        self.start_date_geulen = {project: timeseries.start_date
+                                  for (project, timeseries) in self.timeseries_collection.items()}
+
+    def set_last_realised_data(self):
+        self.realised_geulen = {project: timeseries.get_latest_data_timeseries('cumsum_percentage')
+                                for (project, timeseries) in self.timeseries_collection.items()}
 
     def get_slope_geulen(self, project):
         return self.slope_geulen.get(project, 0)
@@ -43,6 +51,9 @@ class Timeseries_collection():
 
     def get_start_date_geulen(self, project):
         return self.start_date_geulen.get(project, 0)
+
+    def get_geulen_realised(self, project):
+        return self.geulen_realised(project, 0)
 
     def set_timeseries_collection(self):
         self.timeseries_collection = {}
@@ -62,7 +73,8 @@ class Timeseries_collection():
                                                              bis_slope=360,
                                                              slope_geulen=self.get_slope_geulen(project),
                                                              intersect_geulen=self.get_intersect_geulen(project),
-                                                             start_date_geulen=self.get_start_date_geulen(project)
+                                                             start_date_geulen=self.get_start_date_geulen(project),
+                                                             geulen_realised=self.get_geulen_realised(project)
                                                              )
 
     def set_min_date(self):
