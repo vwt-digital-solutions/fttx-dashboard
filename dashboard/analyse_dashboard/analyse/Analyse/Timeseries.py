@@ -181,8 +181,9 @@ class Timeseries():
         self.set_target_phase(self.bis_slope, self.fase_delta)
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
-        self.get_timeseries_frame
         self.get_latest_data_timeseries
+        self.set_planning_phase()
+        self.get_timeseries_frame()
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
@@ -274,27 +275,17 @@ class Timeseries():
         self.extrapolation = self.round_edge_values(line)
         self.set_extrapolation_frame()
 
-    def set_variable_team_line(self):
-        # Is BIS slope based on one team?
-        slope = self.teams * self.bis_slope
-        latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
-        final_target_date, final_amount = self.get_latest_data_timeseries('y_target_percentage')
-        percentage_diff = final_amount - latest_percentage
-        date_diff = (final_target_date - latest_realised_date).days
-        slope = percentage_diff / date_diff
-        print(latest_percentage)
-        line = self.make_linear_line(slope, latest_realised_date, intersect=latest_percentage)
-        return line
-
     def slope_linear_regression(self):
         if self.do_calculate_extrapolation_fast():
             slope, intersect = linear_regression(self.realised_cumsum_fast)
         return slope, intersect
 
-    def make_linear_line(self, slope, start_date, fase_delta=0, intersect=None):
+    def make_linear_line(self, slope, start_date, fase_delta=0, intersect=None, intersect2=None):
         shift = - (start_date - self.timeseries_date_range[0]).days * slope
         if intersect:
             shift = shift + (start_date - self.timeseries_date_range[0]).days * slope + intersect
+        if intersect2:
+            shift = shift + intersect2
         line = slope * self.get_range() + shift - fase_delta * slope
         return line
 
@@ -371,6 +362,29 @@ class Timeseries():
             self.forecast_phase['forecast_percentage'] = self.forecast_line
             self.forecast_phase['forecast_amount'] = self.percentage_to_amount(self.forecast_phase['forecast_percentage'])
 
+    def set_planning_phase(self):
+        # Is BIS slope based on one team?
+        # slope = self.teams * self.bis_slope
+        latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
+        final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
+        percentage_diff = final_percentage - latest_percentage
+        date_diff = (final_target_date - latest_realised_date).days
+        slope = percentage_diff / date_diff
+        line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
+
+        self.planning_line = self.round_edge_values(line)
+        self.planning_phase = pd.DataFrame(index=self.timeseries_date_range)
+        self.planning_phase['planning_percentage'] = self.planning_line
+        self.planning_phase['planning_amount'] = self.percentage_to_amount(self.planning_phase['planning_percentage'])
+        self.planning_phase = self.planning_phase[latest_realised_date:final_target_date]
+
+    def get_planning_phase(self):
+        try:
+            planning_phase = self.planning_phase
+        except AttributeError:
+            planning_phase = pd.DataFrame()
+        return planning_phase
+
     def get_extrapolation_frame(self):
         return self.extrapolation_frame
 
@@ -400,25 +414,29 @@ class Timeseries():
         return self.forecast_phase
 
     def get_timeseries_frame(self):
-        try:
-            return self.complete_frame
-        except AttributeError:
-            extrapolation_phase = self.get_extrapolation_phase()
-            target_phase = self.get_target_phase()
-            realised_phase = self.get_realised_phase()
-            forecast_phase = self.get_forecast_phase()
-            self.complete_frame = target_phase
-            self.complete_frame = pd.merge(self.complete_frame, realised_phase, how='left', left_index=True, right_index=True)
-            self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
-            self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
-            return self.complete_frame
+        extrapolation_phase = self.get_extrapolation_phase()
+        target_phase = self.get_target_phase()
+        realised_phase = self.get_realised_phase()
+        forecast_phase = self.get_forecast_phase()
+        planning_phase = self.get_planning_phase()
+        self.complete_frame = target_phase
+        self.complete_frame = pd.merge(self.complete_frame, realised_phase, how='left', left_index=True, right_index=True)
+        self.complete_frame = pd.merge(self.complete_frame, extrapolation_phase, how='left', left_index=True, right_index=True)
+        self.complete_frame = pd.merge(self.complete_frame, planning_phase, how='left', left_index=True, right_index=True)
+        self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
+        return self.complete_frame
 
     def get_latest_data_timeseries(self, column):
         df_copy = self.get_timeseries_frame()
-        df_copy = df_copy.loc[df_copy[column].notnull(), :]
-
-        last_realised_data = df_copy.loc[df_copy[column] == df_copy[column].max(), :]
-        return last_realised_data[column].index[0], last_realised_data[column][0]
+        if column in df_copy.keys():
+            df_copy = df_copy.loc[df_copy[column].notnull(), :]
+            last_realised_data = df_copy.loc[df_copy[column] == df_copy[column].max(), :]
+            last_realised_date = last_realised_data[column].index[0]
+            last_realised_datapoint = last_realised_data[column][0]
+        else:
+            last_realised_date = pd.Timestamp.now()
+            last_realised_datapoint = 0
+        return last_realised_date, last_realised_datapoint
 
     def get_slope(self):
         try:
@@ -439,6 +457,10 @@ class Timeseries():
         plt.plot(frame['cumsum_percentage'], 'xg')
         try:
             plt.plot(frame['forecast_percentage'], '-y')
+        except KeyError:
+            pass
+        try:
+            plt.plot(frame['planning_percentage'], '-r')
         except KeyError:
             pass
         full_plot = plt.plot(frame['extrapolation_percentage'], '-y')
