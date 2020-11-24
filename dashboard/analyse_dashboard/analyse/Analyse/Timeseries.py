@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 class Timeseries_collection():
-    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func, teams,
+    def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func, teams, norm,
                  slope_geulen={}, intersect_geulen={}, start_date_geulen={}):
         self.df = df
         self.column = column
@@ -19,6 +19,7 @@ class Timeseries_collection():
         self.intersect_geulen = intersect_geulen
         self.start_date_geulen = start_date_geulen
         self.teams = teams
+        self.norm = norm
         self.set_timeseries_collection()
         self.extrapolation_set = False
         self._set_extrapolation()
@@ -56,7 +57,8 @@ class Timeseries_collection():
                                                              self.cutoff,
                                                              self.ftu_dates['date_FTU0'][project],
                                                              self.ftu_dates['date_FTU1'][project],
-                                                             1,
+                                                             self.teams,
+                                                             self.norm,
                                                              civil_startdate=pd.to_datetime('2020-05-11'),
                                                              fase_delta=0,
                                                              bis_slope=360,
@@ -137,7 +139,7 @@ class Timeseries_collection():
 
 
 class Timeseries():
-    def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams,
+    def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams, norm,
                  civil_startdate, fase_delta, bis_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0):
         self.df = df
         self.column = column
@@ -152,6 +154,7 @@ class Timeseries():
         self.ftu_0 = pd.to_datetime(ftu_0)
         self.ftu_1 = pd.to_datetime(ftu_1)
         self.teams = teams
+        self.norm = norm
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
@@ -170,7 +173,7 @@ class Timeseries():
         self.set_extrapolation_phase()
         self.set_forecast_phase(self.start_date_geulen, self.slope_geulen, self.intersect_geulen, self.fase_delta)
         self.get_latest_data_timeseries
-        self.set_planning_phase()
+        self.set_planning_phase(teams=self.teams, norm=self.norm)
         self.get_timeseries_frame()
         # We might not be able to set time shift at init time, or we might not need it at all
 
@@ -366,7 +369,7 @@ class Timeseries():
             final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
             percentage_diff = final_percentage - latest_percentage
             date_diff = (final_target_date - latest_realised_date).days
-            slope = self.teams * self.norm
+            slope = self.teams * self.norm / self.total
             line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
 
         self.planning_line = self.round_edge_values(line)
