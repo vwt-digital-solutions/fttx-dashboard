@@ -265,7 +265,14 @@ class Timeseries():
     def set_variable_team_line(self):
         # Is BIS slope based on one team?
         slope = self.teams * self.bis_slope
-        return slope
+        latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
+        final_target_date, final_amount = self.get_latest_data_timeseries('y_target_percentage')
+        percentage_diff = final_amount - latest_percentage
+        date_diff = (final_target_date - latest_realised_date).days
+        slope = percentage_diff / date_diff
+        print(latest_percentage)
+        line = self.make_linear_line(slope, latest_realised_date, intersect=latest_percentage)
+        return line
 
     def slope_linear_regression(self):
         if self.do_calculate_extrapolation_fast():
@@ -398,9 +405,8 @@ class Timeseries():
         df_copy = self.get_timeseries_frame()
         df_copy = df_copy.loc[df_copy[column].notnull(), :]
 
-        last_realised_data = df_copy.loc[df_copy.index.max(), :]
-
-        return df_copy.index.max(), last_realised_data.column
+        last_realised_data = df_copy.loc[df_copy[column] == df_copy[column].max(), :]
+        return last_realised_data[column].index[0], last_realised_data[column][0]
 
     def get_slope(self):
         try:
