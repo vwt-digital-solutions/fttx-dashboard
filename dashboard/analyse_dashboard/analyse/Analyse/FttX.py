@@ -243,7 +243,7 @@ class FttXAnalyse(FttXBase):
             mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
             date_df.loc['montage'] = np.datetime64("NaT")
             date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
-
+            date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
             progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
                 df)
             progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
