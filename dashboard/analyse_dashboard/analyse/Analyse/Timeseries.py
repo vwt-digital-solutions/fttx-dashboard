@@ -9,11 +9,12 @@ class Timeseries_collection():
 
     def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func, teams, norm,
                  target_slope, slope_geulen={}, intersect_geulen={}, start_date_geulen={}, last_realised_geulen={},
-                 fase_delta=0):
+                 fase_delta=0, data_partition=None):
         self.df = df
         self.column = column
         self.agg_column = agg_column
         self.totals = totals
+        self.data_partition = data_partition
         self.cutoff = cutoff
         self.ftu_dates = ftu_dates
         self.agg_column_func = agg_column_func
@@ -84,7 +85,8 @@ class Timeseries_collection():
                                                              slope_geulen=self.get_slope_geulen(project),
                                                              intersect_geulen=self.get_intersect_geulen(project),
                                                              start_date_geulen=self.get_start_date_geulen(project),
-                                                             geulen_realised=self.get_geulen_realised(project)
+                                                             geulen_realised=self.get_geulen_realised(project),
+                                                             data_partition=self.data_partition
                                                              )
 
     def set_min_date(self):
@@ -162,7 +164,7 @@ class Timeseries():
 
     def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams, norm,
                  civil_startdate, fase_delta, target_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0,
-                 geulen_realised=0):
+                 geulen_realised=0, data_partition=None):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -177,6 +179,7 @@ class Timeseries():
         self.ftu_1 = pd.to_datetime(ftu_1)
         self.teams = teams
         self.norm = norm
+        self.data_partition = data_partition
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
@@ -293,9 +296,15 @@ class Timeseries():
         self.extrapolation = self.round_edge_values(line)
         self.set_extrapolation_frame()
 
-    def slope_linear_regression(self):
+    def slope_linear_regression(self, data_partition=None):
         if self.do_calculate_extrapolation_fast():
-            slope, intersect = linear_regression(self.realised_cumsum_fast)
+            if data_partition:
+                shift = int(len(self.realised_cumsum_fast) * data_partition)
+                start = self.realised_cumsum_fast.index[0] + shift
+                end = self.realised_cumsum_fast.index[-1]
+                slope, intersect = linear_regression(self.realised_cumsum_fast[start:end])
+            else:
+                slope, intersect = linear_regression(self.realised_cumsum_fast)
         else:
             slope = 0
             intersect = 0
@@ -361,7 +370,7 @@ class Timeseries():
     def set_extrapolation_phase(self):
         if self.calculate_extrapolation:
             start_date = self.start_date
-            self.slope, self.intersect = self.slope_linear_regression()
+            self.slope, self.intersect = self.slope_linear_regression(self.data_partition)
             line = self.make_linear_line(self.slope, start_date, intersect=self.intersect)
             self.extrapolation_line = self.round_edge_values(line)
 
