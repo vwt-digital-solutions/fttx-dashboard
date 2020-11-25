@@ -203,7 +203,7 @@ class Timeseries():
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
-        self.df = self.df[(~self.df[self.agg_column].isna()) | (~self.df[self.column].isna())]
+        self.df = self.df[(~self.df[self.agg_column].isna()) & (~self.df[self.column].isna())]
         self.timeseries = self.df.groupby(self.column).agg({self.agg_column: self.agg_column_func}) \
             .rename(columns={self.agg_column: 'Aantal'})
         self.set_index()
