@@ -476,13 +476,19 @@ class Timeseries():
         self.complete_frame = pd.merge(self.complete_frame, forecast_phase, how='left', left_index=True, right_index=True)
         return self.complete_frame
 
-    def get_latest_data_timeseries(self, column):
+    def get_latest_data_timeseries(self, column, max=True):
         df_copy = self.get_timeseries_frame()
         if column in df_copy.keys():
-            df_copy = df_copy.loc[df_copy[column].notnull(), :]
-            last_realised_data = df_copy.loc[df_copy[column] == df_copy[column].max(), :]
-            last_realised_date = last_realised_data[column].index[0]
-            last_realised_datapoint = last_realised_data[column][0]
+            if max:
+                df_copy = df_copy.loc[df_copy[column].notnull(), :]
+                last_realised_data = df_copy.loc[df_copy[column] == df_copy[column].max(), :]
+                last_realised_date = last_realised_data[column].index[0]
+                last_realised_datapoint = last_realised_data[column][0]
+            if not max:
+                df_copy = df_copy.loc[df_copy[column].notnull(), :]
+                last_realised_data = df_copy.loc[df_copy[column] == df_copy[column].max(), :]
+                last_realised_date = last_realised_data[column].index[-1]
+                last_realised_datapoint = last_realised_data[column][-1]
         else:
             last_realised_date = pd.Timestamp.now()
             last_realised_datapoint = 0
