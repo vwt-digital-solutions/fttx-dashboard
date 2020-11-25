@@ -391,16 +391,16 @@ class Timeseries():
             final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
             percentage_diff = final_percentage - latest_percentage
             date_diff = (final_target_date - latest_realised_date).days
-            slope = percentage_diff / date_diff
-            line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
+            self.slope = percentage_diff / date_diff
+            line = self.make_linear_line(self.slope, latest_realised_date, intersect2=latest_percentage)
 
         elif teams and norm:
             latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
             final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
             percentage_diff = final_percentage - latest_percentage
             date_diff = (final_target_date - latest_realised_date).days
-            slope = self.teams * self.norm / self.total
-            line = self.make_linear_line(slope, latest_realised_date, intersect2=latest_percentage)
+            self.slope = self.teams * self.norm / self.total
+            line = self.make_linear_line(self.slope, latest_realised_date, intersect2=latest_percentage)
 
         self.planning_line = self.round_edge_values(line)
         self.planning_phase = pd.DataFrame(index=self.timeseries_date_range)
@@ -511,3 +511,18 @@ class Timeseries():
         plt.ylabel('Percentage voltooid')
         plt.xlim(datetime.date(2020, 4, 1), datetime.date(2022, 1, 1))
         return full_plot
+
+    def calculate_teams(self, slope, total, norm_per_team):
+        percentage_per_day = slope / 100
+        unit_per_day = percentage_per_day * total
+        number_of_teams = unit_per_day / norm_per_team
+        return number_of_teams
+
+    def get_summary_phase_status(self):
+        frame = self.get_timeseries_frame()
+        today = pd.to_datetime(datetime.date.today())
+        two_weeks = today + pd.DateOffset(days=14)
+        df_today = frame.loc[frame.index == today, :]
+        df_two_weeks = frame.loc[frame.index == two_weeks, :]
+        df_total = pd.concat([df_today, df_two_weeks])
+        return df_total
