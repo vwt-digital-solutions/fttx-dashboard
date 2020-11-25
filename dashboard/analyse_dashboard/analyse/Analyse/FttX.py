@@ -237,13 +237,13 @@ class FttXAnalyse(FttXBase):
         document_list = []
         for project, df in self.transformed_data.df.groupby("project"):
             columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
-                       'status_civiel_datum']
+                       'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
             date_df = df[columns]
 
             mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
-            date_df.loc['montage'] = np.datetime64("NaT")
+            date_df['montage'] = np.datetime64("NaT")
             date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
-
+            date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
             progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
                 df)
             progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
