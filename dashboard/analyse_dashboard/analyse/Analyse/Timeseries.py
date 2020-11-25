@@ -400,16 +400,16 @@ class Timeseries():
             final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
             percentage_diff = final_percentage - latest_percentage
             date_diff = (final_target_date - latest_realised_date).days
-            self.slope = percentage_diff / date_diff
-            line = self.make_linear_line(self.slope, latest_realised_date, intersect2=latest_percentage)
+            self.slope_planning = percentage_diff / date_diff
+            line = self.make_linear_line(self.slope_planning, latest_realised_date, intersect2=latest_percentage)
 
         elif teams and norm:
             latest_realised_date, latest_percentage = self.get_latest_data_timeseries('cumsum_percentage')
             final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
             percentage_diff = final_percentage - latest_percentage
             date_diff = (final_target_date - latest_realised_date).days
-            self.slope = self.teams * self.norm / self.total
-            line = self.make_linear_line(self.slope, latest_realised_date, intersect2=latest_percentage)
+            self.slope_planning = self.teams * self.norm / self.total
+            line = self.make_linear_line(self.slope_planning, latest_realised_date, intersect2=latest_percentage)
 
         self.planning_line = self.round_edge_values(line)
         self.planning_phase = pd.DataFrame(index=self.timeseries_date_range)
