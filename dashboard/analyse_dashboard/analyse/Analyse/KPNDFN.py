@@ -126,6 +126,7 @@ class KPNAnalyse(FttXAnalyse):
     def _make_timeseries(self):
         idx = pd.IndexSlice
         logger.info(f"Generating timeseries for all projects for {self.client_name}")
+        target_slope = 0.51
         opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
                                                         column='opleverdatum',
                                                         agg_column='sleutel',
@@ -133,7 +134,9 @@ class KPNAnalyse(FttXAnalyse):
                                                         cutoff=85,
                                                         ftu_dates=self.extracted_data.ftu,
                                                         agg_column_func='count',
-                                                        teams={})
+                                                        teams=None,
+                                                        norm=None,
+                                                        target_slope=target_slope)
 
         self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
         self.intermediate_results.d_real_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'cumsum_percentage']])
