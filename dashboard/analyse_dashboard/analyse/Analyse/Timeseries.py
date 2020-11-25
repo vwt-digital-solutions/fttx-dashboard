@@ -453,15 +453,19 @@ class Timeseries():
     def get_graph(self):
         frame = self.get_timeseries_frame()
         plt.figure(figsize=(20, 10))
-        plt.plot(frame['y_target_percentage'], '-b')
-        plt.plot(frame['cumsum_percentage'], 'xg')
+        plt.plot(frame['y_target_percentage'], '-b', label='Ideaal verloop proces')
+        plt.plot(frame['cumsum_percentage'], 'xg', label='Gerealiseerd verloop proces')
         try:
-            plt.plot(frame['forecast_percentage'], '-y')
+            plt.plot(frame['forecast_percentage'], '-y', label='Voorspelling')
         except KeyError:
             pass
         try:
-            plt.plot(frame['planning_percentage'], '-r')
+            plt.plot(frame['planning_percentage'], '-r', label='Geplande werkzaamheden voor ideaal verloop')
         except KeyError:
             pass
-        full_plot = plt.plot(frame['extrapolation_percentage'], '-y')
+        full_plot = plt.plot(frame['extrapolation_percentage'], '-y', label='Verwacht verloop op basis van gerealiseerd verloop')
+        plt.legend()
+        plt.xlabel('Datum in tijd')
+        plt.ylabel('Percentage voltooid')
+        plt.xlim(datetime.date(2020, 4, 1), datetime.date(2022, 1, 1))
         return full_plot
