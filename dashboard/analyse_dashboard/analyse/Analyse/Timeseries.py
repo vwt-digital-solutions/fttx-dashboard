@@ -204,6 +204,7 @@ class Timeseries():
 
     def serialize(self):
         self.df = self.df[~self.df[self.agg_column].isna()]
+        self.df[self.column] = pd.to_datetime(self.df[self.column].dt.date)
         self.timeseries = self.df.groupby(self.column).agg({self.agg_column: self.agg_column_func}) \
             .rename(columns={self.agg_column: 'Aantal'})
         self.set_index()
