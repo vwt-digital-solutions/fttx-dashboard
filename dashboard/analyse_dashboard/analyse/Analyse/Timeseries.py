@@ -408,7 +408,7 @@ class Timeseries():
             final_target_date, final_percentage = self.get_latest_data_timeseries('y_target_percentage')
             percentage_diff = final_percentage - latest_percentage
             date_diff = (final_target_date - latest_realised_date).days
-            self.slope_planning = self.teams * self.norm / self.total
+            self.slope_planning = self.teams * self.norm / self.total * 100
             line = self.make_linear_line(self.slope_planning, latest_realised_date, intersect2=latest_percentage)
 
         self.planning_line = self.round_edge_values(line)
