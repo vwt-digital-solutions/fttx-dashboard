@@ -71,9 +71,9 @@ def transform_rapportage(df, project_name, project_nr, date):
 
 def transform_baan(df, column_mapping):
     df.rename(columns=column_mapping, inplace=True)
-    df = df[column_mapping.values()]
-    df.project = df.project.astype(str)
-    df.artikelcode = df.artikelcode.astype(str).str.strip()
+    df = df[column_mapping.values()].copy()
+    df.loc['project'] = df['project'].astype(str)
+    df.loc['artikelcode'] = df['artikelcode'].astype(str).str.strip()
     return df
 
 
