@@ -187,11 +187,11 @@ for client in config.client_config.keys():
             for point in click.get("points", []):
                 if finance_data:
                     parent = dict(level='categorie', value=point.get("label"))
-                    actuals_df = pd.DataFrame(finance_data['actuals'])
+                    actuals_df = pd.DataFrame(finance_data.get('actuals'))
                     actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
                     time_series = actuals_df.groupby("registratiedatum")['kostenbedrag'].sum().sort_index().cumsum()
 
-                    expected_cost = finance_data['expected_actuals']
+                    expected_cost = finance_data.get('expected_actuals')
                     expected_cost = pd.DataFrame(expected_cost)
                     expected_cost = expected_cost[
                         expected_cost[parent.get("level")] == parent.get('value')].kostenbedrag.sum()
