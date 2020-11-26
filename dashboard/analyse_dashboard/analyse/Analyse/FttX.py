@@ -238,7 +238,7 @@ class FttXAnalyse(FttXBase):
         for project, df in self.transformed_data.df.groupby("project"):
             columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
                        'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
-            date_df = df[columns]
+            date_df = df.loc[:, columns]
 
             mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
             date_df['montage'] = np.datetime64("NaT")
