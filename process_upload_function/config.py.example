@@ -1,0 +1,31 @@
+# Dict with relevant projects
+FINANCE_PROJECT_LIST = {
+    'project_abbrivation': {
+        'client': '',
+        'project_nr': '',
+        'project_name': '',
+        'remark': ''
+    },
+    'project_abbrivation': {
+        'client': '',
+        'project_nr': '',
+        'project_name': '',
+        'remark': ''
+    }
+}
+
+# Column mapping for realisation baan
+BAAN_REALISATION_MAPPING = {
+    'OLD_NAME': 'new_name',
+    'OLD_NAME': 'new_name'
+}
+
+# Column mapping for budget baan
+BAAN_BUDGET_MAPPING = {
+    'OLD_NAME': 'new_name',
+    'OLD_NAME': 'new_name'
+}
+
+# sheet_names
+BAAN_SHEET_REALISATION = 'sheet_name_realisation'
+BAAN_SHEET_BUDGET = 'sheet_name_budget'
