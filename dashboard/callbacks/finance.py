@@ -23,7 +23,10 @@ for client in config.client_config.keys():
     )
     def financial_storage(dropdown_selection, client=client):
         if dropdown_selection:
-            warnings = []
+            warnings = [
+                # dbc.Alert("Operationele voortgang voor civiel word berekend o.b.v. het status_civiel veld"
+                #           " i.p.v. de opleverstatus", color="info")
+            ]
             finances = collection.get_document(collection="Finance",
                                                project=dropdown_selection,
                                                client=client)
