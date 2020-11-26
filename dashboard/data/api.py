@@ -19,6 +19,8 @@ def get(path):
         logging.info(f"Requesting {path}")
         headers = {'Authorization': 'Bearer ' + azure.access_token}
         response = requests.get(url, headers=headers)
+        if response.status_code == 404:
+            logging.info(f"Path {path} not found: 404")
         return response.json().get('results')
 
 
