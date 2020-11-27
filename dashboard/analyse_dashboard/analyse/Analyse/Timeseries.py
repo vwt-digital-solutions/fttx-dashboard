@@ -9,12 +9,13 @@ class Timeseries_collection():
 
     def __init__(self, df, column, agg_column, totals, cutoff, ftu_dates, agg_column_func, teams, norm,
                  target_slope, slope_geulen={}, intersect_geulen={}, start_date_geulen={}, last_realised_geulen={},
-                 fase_delta=0, data_partition=None):
+                 fase_delta=0, data_partition=None, data_geulen=pd.DataFrame()):
         self.df = df
         self.column = column
         self.agg_column = agg_column
         self.totals = totals
         self.data_partition = data_partition
+        self.data_geulen = data_geulen
         self.cutoff = cutoff
         self.ftu_dates = ftu_dates
         self.agg_column_func = agg_column_func
@@ -86,7 +87,8 @@ class Timeseries_collection():
                                                              intersect_geulen=self.get_intersect_geulen(project),
                                                              start_date_geulen=self.get_start_date_geulen(project),
                                                              geulen_realised=self.get_geulen_realised(project),
-                                                             data_partition=self.data_partition
+                                                             data_partition=self.data_partition,
+                                                             data_geulen=self.data_geulen
                                                              )
 
     def set_min_date(self):
@@ -164,7 +166,7 @@ class Timeseries():
 
     def __init__(self, df, column, agg_column, agg_column_func, project, total, cutoff, ftu_0, ftu_1, teams, norm,
                  civil_startdate, fase_delta, target_slope, slope_geulen=0, intersect_geulen=0, start_date_geulen=0,
-                 geulen_realised=0, data_partition=None):
+                 geulen_realised=0, data_partition=None, data_geulen=pd.DataFrame()):
         self.df = df
         self.column = column
         self.agg_column = agg_column
@@ -180,6 +182,7 @@ class Timeseries():
         self.teams = teams
         self.norm = norm
         self.data_partition = data_partition
+        self.data_geulen = data_geulen
         self.civil_startdate = civil_startdate
         self.slope_geulen = slope_geulen
         self.start_date_geulen = start_date_geulen
@@ -391,6 +394,10 @@ class Timeseries():
             self.forecast_phase = pd.DataFrame(index=self.timeseries_date_range)
             self.forecast_phase['forecast_percentage'] = self.forecast_line
             self.forecast_phase['forecast_amount'] = self.percentage_to_amount(self.forecast_phase['forecast_percentage'])
+            if not self.data_geulen.empty:
+                self.forecast_phase.loc[
+                    self.data_geulen.index[0] + fase_delta:self.data_geulen.index[-1] + fase_delta, 'forecast_percentage'] = \
+                        self.data_geulen['cumsum_percentage'].to_list()
 
     def set_planning_phase(self, teams=None, norm=None):
         # Is BIS slope based on one team?
