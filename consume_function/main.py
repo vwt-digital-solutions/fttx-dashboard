@@ -27,8 +27,8 @@ def handler(request):
             primary_key = config.PRIMARY_KEYS if hasattr(config, 'PRIMARY_KEYS') else None
             logging.info(f'Read message from subscription {subscription}')
             records, logs = prepare_records(records)
-            write_records_to_fs(records, collection_name, primary_key)
-            write_records_to_fs(logs, 'transitionlog')
+            write_records_to_fs(records=records, collection_name=collection_name, primary_key=primary_key)
+            write_records_to_fs(records=logs, collection_name='transitionlog')
         else:
             records = data[topic_config.get('subject')]
             collection_name = topic_config.get('firestore_collection')
@@ -38,10 +38,18 @@ def handler(request):
 
             if topic_config.get('name') == 'fiberconnect':
                 records, logs = prepare_records(records)
-                write_records_to_fs(records, collection_name, update_date_document_name, primary_key)
-                write_records_to_fs(logs, 'transitionlog', update_date_document_name)
+                write_records_to_fs(records=records,
+                                    collection_name=collection_name,
+                                    update_date_document_name=update_date_document_name,
+                                    primary_key=primary_key)
+                write_records_to_fs(records=logs,
+                                    collection_name='transitionlog',
+                                    update_date_document_name=update_date_document_name)
             elif topic_config.get('name') == 'asbuilt-meters':
-                write_records_to_fs(records, collection_name, update_date_document_name, primary_key)
+                write_records_to_fs(records=records,
+                                    collection_name=collection_name,
+                                    update_date_document_name=update_date_document_name,
+                                    primary_key=primary_key)
 
     except Exception as e:
         logging.error(f'Extracting of data failed: {e}')
