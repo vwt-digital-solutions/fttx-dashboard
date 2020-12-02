@@ -544,7 +544,7 @@ def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook:'},
+                'title': {'text': 'Voortgang project vs target:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -567,7 +567,7 @@ def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook',
+                'name': 'Target',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -587,7 +587,7 @@ def prognose_graph_new(y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook:'},
+                'title': {'text': 'Voortgang project vs target:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
