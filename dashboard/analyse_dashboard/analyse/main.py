@@ -85,13 +85,13 @@ def str_to_datetime(str):
 
 
 def get_update_dates(client):
-    check = ((db.collection('Graphs').document('update_date_consume').get().exists) and
+    check = ((db.collection('Graphs').document('update_date_fiberconnect').get().exists) and
              (db.collection('Graphs').document(f'update_date_{client}').get().exists))
     if not check:
         return True
     latest_consume = str_to_datetime(
         db.collection('Graphs').
-        document('update_date_consume').
+        document('update_date_fiberconnect').
         get().to_dict().get('date'))
     latest_analysis = str_to_datetime(
         db.collection('Graphs').
