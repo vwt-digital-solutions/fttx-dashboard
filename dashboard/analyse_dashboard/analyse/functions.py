@@ -330,6 +330,7 @@ def transform_to_amounts(percentage_dict, total_dict, days_index):
         df += pd.DataFrame(index=days_index, columns=['d'], data=amounts).diff().fillna(0)
     if df.index[0] > pd.Timestamp('2020-01-01'):
         df = fill_2020(df)
+    df = df['2020-01-01':]  # remove values from 2019, not required
     return df
 
 
@@ -343,6 +344,7 @@ def transform_df_real(percentage_dict, total_dict, days_index):
         df = df.add(y_real, fill_value=0)
     if df.index[0] > pd.Timestamp('2020-01-01'):
         df = fill_2020(df)
+    df = df['2020-01-01':]  # remove values from 2019, not required
     return df
 
 
@@ -354,6 +356,7 @@ def transform_df_plan(x_d, HP):
     df = df.add(y_plan, fill_value=0)
     if df.index[0] > pd.Timestamp('2020-01-01'):
         df = fill_2020(df)
+    df = df['2020-01-01':]  # remove values from 2019, not required
     return df
 
 
@@ -394,7 +397,6 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
         close = 'left'
         loff = None
         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.month.to_list()
-        x[0] = 0
 
     prog0 = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
     prog = prog0.to_list()
@@ -406,9 +408,9 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
     plan = plan0.to_list()
 
     if 'M' == res:
-        jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target[1:]))), real=str(round(sum(real[1:]))),
-                             plan=str(round(sum(plan[n_now:]) - real[n_now])),
-                             prog=str(round(sum(prog[n_now:]) - real[n_now])),
+        jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target))), real=str(round(sum(real))),
+                             plan=str(round(sum(plan[n_now-1:]) - real[n_now-1])),
+                             prog=str(round(sum(prog[n_now-1:]) - real[n_now-1])),
                              HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
             jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -510,10 +512,10 @@ def preprocess_for_jaaroverzicht(*args):
 def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
     n_now = datetime.date.today().month
 
-    target_sum = str(round(sum(target[1:])))
-    planning_sum = sum(planning[n_now:]) - realisatie[n_now]
-    prognose_sum = sum(prognose[n_now:]) - realisatie[n_now]
-    realisatie_sum = str(round(sum(realisatie[1:])))
+    target_sum = str(round(sum(target)))
+    planning_sum = sum(planning[n_now-1:]) - realisatie[n_now-1]
+    prognose_sum = sum(prognose[n_now-1:]) - realisatie[n_now-1]
+    realisatie_sum = str(round(sum(realisatie)))
 
     jaaroverzicht = dict(id='jaaroverzicht',
                          target=str(int(target_sum)),
@@ -542,7 +544,7 @@ def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook:'},
+                'title': {'text': 'Voortgang project vs target:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
@@ -565,7 +567,7 @@ def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook',
+                'name': 'Target',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -585,7 +587,7 @@ def prognose_graph_new(y_prog_l, d_real_l, y_target_l):
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs outlook:'},
+                'title': {'text': 'Voortgang project vs target:'},
                 'showlegend': True,
                 'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
                 'height': 350,
