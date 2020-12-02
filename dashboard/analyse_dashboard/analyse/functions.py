@@ -422,7 +422,7 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
                    )
     bar_t = dict(x=[el - 0.5 * width for el in x],
                  y=target,
-                 name='Outlook',
+                 name='Planning',
                  type='bar',
                  marker=dict(color=colors['lightgray']),
                  width=width,
@@ -609,7 +609,7 @@ def prognose_graph_new(y_prog_l, d_real_l, y_target_l):
                 'y': list(y_target_l[key]['y_target_percentage']),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Outlook',
+                'name': 'Planning',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
