@@ -85,7 +85,7 @@ for client in config.client_config.keys():
             jaaroverzicht['plan'] = 'n.v.t.'
         jaaroverzicht_list = [
             dict(id_="info_globaal_container0",
-                 title='Outlook',
+                 title='Target',
                  text="HPend afgesproken: ",
                  value=jaaroverzicht.get('target', 'n.v.t.')),
             dict(id_="info_globaal_container1", title='Realisatie (HPend)', text="HPend gerealiseerd: ",
