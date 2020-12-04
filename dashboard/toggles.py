@@ -7,6 +7,7 @@ class ReleaseToggles(TogglesList):
     financial_view: bool
     consume_meters: bool
     upload: bool
+    years_dropdown: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')
