@@ -149,7 +149,7 @@ def update_date():
         date_an = "[niet beschikbaar]"
 
     try:
-        date_con = api.get('/Graphs?id=update_date_consume')[0]['date'][0:-4].replace('T', ' ')
+        date_con = api.get('/Graphs?id=update_date_fiberconnect')[0]['date'][0:-4].replace('T', ' ')
     except IndexError:
         date_con = "[niet beschikbaar]"
     return [date_an, date_con]

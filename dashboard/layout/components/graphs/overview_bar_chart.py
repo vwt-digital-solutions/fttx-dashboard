@@ -31,7 +31,7 @@ def get_fig(data):
                  type='lines', marker=dict(color=colors['red']), width=width),
             dict(name="Realisatie", x=[el + 0.5 * width for el in x_count], y=data.count_opleverdatum,
                  customdata=date_list, type='bar', marker=dict(color=colors['green']), width=width),
-            dict(name="Outlook", x=[el - 0.5 * width for el in x_count], y=data.count_outlookdatum,
+            dict(name="Target", x=[el - 0.5 * width for el in x_count], y=data.count_outlookdatum,
                  customdata=date_list, type='bar', marker=dict(color=colors['lightgray']), width=width),
             dict(name="Huidige week", x=[n_now], y=[y_range[1]], customdata=date_list,
                  type='bar', marker=dict(color=colors['black']), width=width * 0.2),
