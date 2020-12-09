@@ -16,7 +16,11 @@ from functions import calculate_projectspecs, overview_reden_na, individual_rede
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
 from pandas.api.types import CategoricalDtype
 
+from toggles import ReleaseToggles
+
 logger = logging.getLogger('FttX Analyse')
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 class FttXBase(ETLBase):
@@ -222,7 +226,11 @@ class FttXAnalyse(FttXBase):
 
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
-        self._calculate_projectspecs()
+        if toggles.years_dropdown:
+            self._calculate_list_of_years()
+            self._calculate_projectspecs_yearly()
+        else:
+            self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -298,6 +306,19 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Progress", documents, DocumentListRecord, "Data",
                              document_key=["client", "project", 'data_set'])
 
+    def _calculate_list_of_years(self):
+        logger.info("Calculating list of years")
+        date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col]
+        dc_data = self.transformed_data.df.loc[:, date_columns]
+        list_of_years = []
+        for col in dc_data.columns:
+            list_of_years += list(dc_data[col].dropna().dt.year.unique())
+        list_of_years = sorted(list(set(list_of_years)))
+
+        self.record_dict.add('List_of_years', list_of_years, Record, 'Data')
+        self.intermediate_results.List_of_years = list_of_years
+
+# TODO: Remove when toggle years_dropdown is removed
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
