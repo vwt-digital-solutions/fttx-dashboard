@@ -10,6 +10,7 @@ from toggles import toggles
 from sqlalchemy import create_engine
 from contextlib import contextmanager
 import pandas as pd
+import numpy as np
 
 db = firestore_v1.Client()
 
@@ -72,8 +73,7 @@ def write_records_to_fs(records, collection_name, update_date_document_name=None
 
 def write_records_to_sql(records):
     logging.info(f"Writing {len(records)} to the database")
-    df = pd.DataFrame(records)
-    df.where(pd.notnull(df), None, inplace=True)
+    df = pd.DataFrame(records).replace({np.nan: None})
     columns = ",".join(df.columns)
     values = ",\n".join(
         f"({x})" for x in
