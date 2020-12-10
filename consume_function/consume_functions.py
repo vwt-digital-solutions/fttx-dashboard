@@ -72,23 +72,26 @@ def write_records_to_fs(records, collection_name, update_date_document_name=None
 
 def write_records_to_sql(records):
     logging.info(f"Writing {len(records)} to the database")
-
-    columns = ",".join(list(records[0].keys()))
+    df = pd.DataFrame(records)
+    df.where(pd.notnull(df), None, inplace=True)
+    columns = ",".join(df.columns)
     values = ",\n".join(
         f"({x})" for x in
-        [",".join(f"'{x}'" if x is not None else 'null' for x in record.values()) for record in records])
-    duplicates = ",\n".join(f"{col}=values({col})" for col in records[0].keys())
+        [",".join(f"'{x}'" if x is not None else 'null' for x in record) for record in df.values])
+    values = [tuple(x for x in record) for record in df.values]
+    duplicates = ",\n".join(f"{col}=values({col})" for col in df.columns)
+    value_question_marks = ",".join(["%s"]*len(df.columns))
     update_query = f"""
 INSERT INTO fc_aansluitingen
     ({columns})
 values
-   {values}
+   ({value_question_marks})
 on duplicate key update
     {duplicates}
 """
 
     with sqlEngine.connect() as con:
-        result: ResultProxy = con.execute(update_query)
+        result: ResultProxy = con.execute(update_query, *values)
         logging.info(f"{result.rowcount} where written to the database")
 
 
@@ -129,7 +132,7 @@ where fca.sleutel in ({",".join([f"'{record}'" for record in record_ids])})
             if row.empty:
                 return None
             else:
-                return row.to_dict(orient="records")
+                return row.to_dict(orient="records")[0]
     else:
         def get_aansluiting(sleutel):
             sql = f"""
@@ -137,7 +140,7 @@ select *
 from fc_aansluitingen fca
 where fca.sleutel = '{sleutel}'
 """  # nosec
-            return pd.read_sql(sql, sqlEngine).to_dict(orient="records")
+            return pd.read_sql(sql, sqlEngine).to_dict(orient="records")[0]
 
     yield get_aansluiting
 
@@ -170,12 +173,11 @@ def prepare_records(records):
 
     with context as get_aansluiting:
         for record in records:
-            print(record[primary_keys])
             record_fs = get_aansluiting(record[primary_keys])
             if record_fs:
                 # add date column to new record if already exists or if value = 1
                 for column, date_column in history_columns.items():
-                    if date_column in record_fs:
+                    if record_fs.get(date_column) is not None:
                         record[date_column] = record_fs[date_column]
                     elif '1' in str(record[column]):
                         record[date_column] = datetime.now().strftime(datetime_format)
