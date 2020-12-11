@@ -13,7 +13,7 @@ import logging
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -48,14 +48,29 @@ class FttXExtract(Extract):
         Sets self.extracted_data to a pd.Dataframe of all data.
         """
         logger.info("Extracting the Projects collection")
+        if toggles.fc_sql:
+            self._extract_from_sql()
+        else:
+            self._extract_from_firestore()
+
+    def _extract_from_firestore(self):
+        logger.info("Extracting from the firestore")
         df = pd.DataFrame([])
         for key in self.projects:
             df = df.append(self._extract_project(key), ignore_index=True, sort=True)
-
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
-
         self.extracted_data.df = df
+
+    def _extract_from_sql(self):
+        logger.info("Extracting from the sql database")
+        sql = f"""
+select *
+from fc_aansluitingen fca
+inner join fc_client_project_map cpm on fca.project = cpm.project
+where cpm.client = '{self.config.get("name")}'
+"""  # nosec
+        self.extracted_data.df = pd.read_sql(sql, get_database_engine())
 
     @staticmethod
     def _extract_project(project_name, cursor=None):
@@ -318,7 +333,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add('List_of_years', list_of_years, Record, 'Data')
         self.intermediate_results.List_of_years = list_of_years
 
-# TODO: Remove when toggle years_dropdown is removed
+    # TODO: Remove when toggle years_dropdown is removed
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
