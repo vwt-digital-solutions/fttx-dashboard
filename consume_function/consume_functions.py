@@ -78,8 +78,9 @@ def write_records_to_sql(records):
     df = pd.DataFrame(records).replace({np.nan: None})
 
     datums = [col for col in df.columns if "datum" in col]
-    df[datums] = df[datums].apply(lambda x: x.dt.strftime("%Y-%m-%d %H:%M-%S") if hasattr(x, 'dt') else None, axis=1) \
-        .replace({'NaT': None})
+    df[datums] = df[datums].apply(
+        lambda x: x.dt.strftime("%Y-%m-%d %H:%M-%S") if hasattr(x, 'dt') else pd.Series([None] * len(df)), axis=1)
+    df[datums] = df[datums].replace({'NaT': None})
 
     logging.info('made df')
     columns = ",".join(df.columns)
@@ -161,7 +162,6 @@ if toggles.fc_sql:
         updated_records = []
         updated_log = []
         history_columns = config.HISTORY_COLUMNS
-        status_change_columns = config.STATUS_CHANGE_COLUMNS
         firestore_collection = config.FIRESTORE_COLLECTION
         primary_keys = config.PRIMARY_KEYS
 
@@ -192,19 +192,7 @@ if toggles.fc_sql:
                         elif '1' in str(record[column]):
                             record[date_column] = datetime.now().strftime(datetime_format)
 
-                    # add transition log if the status changed
-                    for key, value in status_change_columns.items():
-                        update = create_log(
-                            key=key,
-                            meta_data=value,
-                            record=record,
-                            reference_record=reference_record)
-                        if update:
-                            updated_log.append(update)
-
                 else:  # if not exists update log with 'primary entry'
-                    for key, value in status_change_columns.items():
-                        updated_log.append(create_log_document(key, value, record))
                     for key, value in history_columns.items():
                         if '1' in str(record[key]):
                             record[value] = datetime.now().strftime(datetime_format)
@@ -214,41 +202,6 @@ if toggles.fc_sql:
         logging.info(f"{len(updated_records)} records to be updated, {len(updated_log)} logs to be added")
         return updated_records, updated_log
 
-    def create_log(key, record, reference_record, meta_data):
-        def both_nat(obj1, obj2):
-            return isinstance(obj1, NaTType) and isinstance(obj2, NaTType)
-
-        if reference_record.get(key):
-            if reference_record.get(key) != record.get(key) and not both_nat(reference_record.get(key),
-                                                                             record.get(key)):
-                return create_log_document(key=key,
-                                           meta_data=meta_data,
-                                           record=record,
-                                           reference_record=reference_record)
-        else:  # if the column did not exists before, update log with 'primary entry'
-            return create_log_document(key=key,
-                                       meta_data=meta_data,
-                                       record=record)
-
-    def create_log_document(key, meta_data, record, reference_record=None):
-        if reference_record and record[key] == reference_record[key]:
-            raise ValueError(f"The value did not change. Old value: {reference_record[key]}, new value: {record[key]}")
-
-        from_value = reference_record[key] if reference_record and reference_record.get(key) else 'First entry'
-        from_value = from_value if not isinstance(from_value, NaTType) else None
-        to_value = record[key] if not isinstance(record[key], NaTType) else None
-
-        if from_value == to_value:
-            raise ValueError(f"The value did not change. Old value: {from_value}, new value: {to_value}")
-
-        return {
-            'sleutel': record[meta_data['sleutel']],
-            'key': key,
-            'from_value': from_value,
-            'to_value': to_value,
-            'date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'project': record[meta_data['project']]
-        }
 else:
     def prepare_records(records):
         updated_records = []
