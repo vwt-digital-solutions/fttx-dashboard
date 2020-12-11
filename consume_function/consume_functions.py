@@ -76,10 +76,13 @@ def write_records_to_fs(records, collection_name, update_date_document_name=None
 def write_records_to_sql(records):
     logging.info(f"Writing {len(records)} to the database")
     df = pd.DataFrame(records).replace({np.nan: None})
+
+    datums = [col for col in df.columns if "datum" in col]
+    df[datums] = df[datums].apply(lambda x: x.dt.strftime("%Y-%m-%d %H:%M-%S") if hasattr(x, 'dt') else None, axis=1) \
+        .replace({'NaT': None})
+
+    logging.info('made df')
     columns = ",".join(df.columns)
-    values = ",\n".join(
-        f"({x})" for x in
-        [",".join(f"'{x}'" if x is not None else 'null' for x in record) for record in df.values])
     values = [tuple(x for x in record) for record in df.values]
     duplicates = ",\n".join(f"{col}=values({col})" for col in df.columns)
     value_question_marks = ",".join(["%s"] * len(df.columns))
@@ -92,7 +95,9 @@ on duplicate key update
     {duplicates}
 """
 
+    logging.info('created query')
     with sqlEngine.connect() as con:
+        logging.info('created conn')
         result: ResultProxy = con.execute(update_query, *values)
         logging.info(f"{result.rowcount} where written to the database")
 
