@@ -13,7 +13,8 @@ import logging
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
+    sum_over_period
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -244,6 +245,8 @@ class FttXAnalyse(FttXBase):
 
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
+        if toggles.new_structure_overviews:
+            self._make_records_realisatie_bis
         if toggles.years_dropdown:
             self._calculate_list_of_years()
             self._calculate_projectspecs_yearly()
@@ -403,6 +406,10 @@ class FttXAnalyse(FttXBase):
                                                 date_column="hasdatum",
                                                 freq="MS")
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
+
+    def _make_records_realisatie_bis():
+        record = sum_over_period(ds=pd.Series(), freq='W-MON', year='2020')
+        print(record)
 
 
 class FttXLoad(Load, FttXBase):
