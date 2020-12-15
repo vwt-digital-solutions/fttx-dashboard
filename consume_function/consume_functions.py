@@ -41,9 +41,9 @@ def process_fiberconnect(records, topic_config):
                             collection_name=collection_name,
                             update_date_document_name=update_date_document_name,
                             primary_key=primary_key)
-    write_records_to_fs(records=logs,
-                        collection_name='transitionlog',
-                        update_date_document_name=update_date_document_name)
+        write_records_to_fs(records=logs,
+                            collection_name='transitionlog',
+                            update_date_document_name=update_date_document_name)
 
 
 def parse_request(request):
@@ -79,7 +79,7 @@ def write_records_to_sql(records):
 
     datums = [col for col in df.columns if "datum" in col]
     df[datums] = df[datums].apply(
-        lambda x: x.dt.strftime("%Y-%m-%d %H:%M-%S") if hasattr(x, 'dt') else pd.Series([None] * len(df)), axis=1)
+        lambda x: x.dt.strftime("%Y-%m-%d %H:%M-%S") if hasattr(x, 'dt') else pd.Series([None] * len(df)))
     df[datums] = df[datums].replace({'NaT': None})
 
     logging.info('made df')
