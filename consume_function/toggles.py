@@ -8,6 +8,7 @@ class ReleaseToggles(TogglesList):
     upload: bool
     fc_sql: bool
     years_dropdown: bool
+    new_structure_overviews: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')
