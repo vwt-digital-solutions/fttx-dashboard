@@ -64,12 +64,8 @@ def write_records_to_fs(records, collection_name, update_date_document_name=None
             batch.commit()
             logging.info(f'Write {i} message(s) to the firestore')
     batch.commit()
-    if not toggles.consume_meters:
-        db.collection('Graphs').document('update_date_consume').set(dict(
-            id='update_date_consume', date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
-    else:
-        db.collection('Graphs').document(update_date_document_name).set(dict(
-            id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
+    db.collection('Graphs').document(update_date_document_name).set(dict(
+        id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
     logging.info(f'Writing message to {collection_name} finished')
 
 

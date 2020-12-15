@@ -5,7 +5,6 @@ class ReleaseToggles(TogglesList):
     download_indicators: bool
     timeseries: bool
     financial_view: bool
-    consume_meters: bool
     upload: bool
     fc_sql: bool
     years_dropdown: bool
