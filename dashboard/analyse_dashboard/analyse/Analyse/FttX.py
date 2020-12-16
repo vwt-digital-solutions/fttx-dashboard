@@ -423,7 +423,7 @@ class FttXAnalyse(FttXBase):
         for y in year:
             for f in freq:
                 record = sum_over_period(ds, f, y)
-                self.record_dict.add('realisatie_bis', record, Record, "Data")
+                self.record_dict.add('werkvoorraad_has', record, Record, "Data")
 
     def _make_records_realisatie_hpend(self):
         ds = calculate_realisate_hpend(self.transformed_data.df)
