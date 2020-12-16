@@ -1335,7 +1335,9 @@ def calculate_realisate_bis(df):
 
 
 def calculate_werkvoorraad_has(df):
-    return df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum']]
+    ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+    ds.name = 'werkvoorraad_has_datum'
+    return ds
 
 
 def calculate_realisate_hpend(df):

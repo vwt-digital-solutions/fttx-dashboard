@@ -413,18 +413,20 @@ class FttXAnalyse(FttXBase):
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                data = sum_over_period(ds, f, period=[y+'01-01', y+'12-31'])
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_bis', record, Record, "Data")
 
     def _make_records_werkvoorraad_has(self):
-        ds = calculate_werkvoorraad_has(self.transformed_data.df)[['schouwdatum', 'toestemming_datum']].max(axis=1)
+        ds = calculate_werkvoorraad_has(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                record = sum_over_period(ds, f, y)
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('werkvoorraad_has', record, Record, "Data")
 
     def _make_records_realisatie_hpend(self):
@@ -433,7 +435,7 @@ class FttXAnalyse(FttXBase):
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                data = sum_over_period(ds, f, period=[y+'01-01', y+'12-31'])
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hpend', record, Record, "Data")
@@ -444,7 +446,7 @@ class FttXAnalyse(FttXBase):
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                data = sum_over_period(ds, f, period=[y+'01-01', y+'12-31'])
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hc', record, Record, "Data")

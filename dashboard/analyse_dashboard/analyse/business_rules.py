@@ -156,7 +156,7 @@ def has_werkvoorraad_new(df, time_delta_days=0):
             &
             ~df.toestemming_datum.isna()
             &
-            ~df['opleverstatus'].isin(['0', '90', '99'])
+            ~df.opleverstatus.isin(['0', '90', '99'])
     )
 
 
