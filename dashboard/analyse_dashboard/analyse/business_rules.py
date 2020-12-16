@@ -72,7 +72,7 @@ def laswerk_dp_niet_gereed(df):
 
 
 def bis_opgeleverd(df):
-    return df['opleverstatus'] != '0'
+    return ~df['opleverstatus'].isin(['0', '90', '99'])
 
 
 def bis_niet_opgeleverd(df):
