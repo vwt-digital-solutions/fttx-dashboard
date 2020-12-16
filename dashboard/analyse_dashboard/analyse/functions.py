@@ -1348,6 +1348,14 @@ def calculate_realisate_hc(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
 
 
+def calculate_planning_tmobile(df):
+    return df[~df.hasdatum.isna()].hasdatum
+
+
+def calculate_target_tmobile(df):
+    return df[~df.toestemming_datum.isna()].hasdatum
+
+
 def get_secret(project_id, secret_id, version_id='latest'):
     client = secretmanager.SecretManagerServiceClient()
     name = client.secret_version_path(project_id, secret_id, version_id)

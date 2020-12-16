@@ -15,7 +15,7 @@ import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
     sum_over_period, calculate_realisate_bis, calculate_realisate_hpend, calculate_realisate_hc, \
-    calculate_werkvoorraad_has
+    calculate_werkvoorraad_has, calculate_planning_tmobile, calculate_target_tmobile
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -450,6 +450,28 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hc', record, Record, "Data")
+
+    def _make_records_planning_tmobile(self):
+        ds = calculate_planning_tmobile(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('planning_tmobile', record, Record, "Data")
+
+    def _make_records_target_tmobile(self):
+        ds = calculate_target_tmobile(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('target_tmobile', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
