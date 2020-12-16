@@ -247,11 +247,8 @@ class FttXAnalyse(FttXBase):
         logger.info("Analysing using the FttX protocol")
         if toggles.new_structure_overviews:
             self._make_records_realisatie_bis
-        if toggles.years_dropdown:
             self._calculate_list_of_years()
-            self._calculate_projectspecs_yearly()
-        else:
-            self._calculate_projectspecs()
+        self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -339,7 +336,6 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add('List_of_years', list_of_years, Record, 'Data')
         self.intermediate_results.List_of_years = list_of_years
 
-    # TODO: Remove when toggle years_dropdown is removed
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)

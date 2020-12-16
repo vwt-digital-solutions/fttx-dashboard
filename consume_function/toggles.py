@@ -7,7 +7,6 @@ class ReleaseToggles(TogglesList):
     financial_view: bool
     upload: bool
     fc_sql: bool
-    years_dropdown: bool
     new_structure_overviews: bool
 
 
