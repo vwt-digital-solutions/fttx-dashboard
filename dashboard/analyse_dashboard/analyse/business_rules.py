@@ -75,6 +75,14 @@ def bis_opgeleverd(df):
     return df['opleverstatus'] != '0'
 
 
+def bis_opgeleverd_new(df):
+    return ~df['opleverstatus'].isin(['0', '90', '99'])
+
+
+def hpend_opgeleverd(df):
+    return ~df['opleverdatum'].isna()
+
+
 def bis_niet_opgeleverd(df):
     return df['opleverstatus'] == '0'
 
@@ -136,6 +144,19 @@ def has_werkvoorraad(schouw_df, time_delta_days=0):
             (
                     schouw_df.opleverstatus != '0'
             )
+    )
+
+
+def has_werkvoorraad_new(df, time_delta_days=0):
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    return (
+            (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
+            &
+            (df.opleverdatum.isna() | (df.opleverdatum >= time_point))
+            &
+            ~df.toestemming_datum.isna()
+            &
+            ~df.opleverstatus.isin(['0', '90', '99'])
     )
 
 

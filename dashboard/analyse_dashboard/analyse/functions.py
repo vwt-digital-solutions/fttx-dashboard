@@ -3,9 +3,11 @@ from typing import NamedTuple
 
 import pandas as pd
 import numpy as np
-from google.cloud import firestore
+from google.cloud import firestore, secretmanager
 import time
 import datetime
+
+from sqlalchemy import create_engine
 
 import business_rules as br
 import config
@@ -198,14 +200,16 @@ def get_cumsum_of_col(df: pd.DataFrame, column):
 def get_real_df(df: pd.DataFrame, t_s, tot_l):
     d_real_l = {}
     for project, project_df in df.groupby(by="project"):
-
         project_df_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
-        project_df_real_counts = project_df_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+        project_df_real_counts = project_df_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(
+            columns={'sleutel': 'Aantal'})
         project_df_real_counts.index = pd.to_datetime(project_df_real_counts.index, format='%Y-%m-%d')
         project_df_real_counts = project_df_real_counts.sort_index()
 
-        project_df_realised_counts_to_present = project_df_real_counts[project_df_real_counts.index < pd.Timestamp.now()]
-        project_df_realised_counts_to_present_percentage = project_df_realised_counts_to_present.cumsum() / tot_l[project] * 100
+        project_df_realised_counts_to_present = project_df_real_counts[
+            project_df_real_counts.index < pd.Timestamp.now()]
+        project_df_realised_counts_to_present_percentage = project_df_realised_counts_to_present.cumsum() / tot_l[
+            project] * 100
 
         # first date in counts dataframe
         min_date = project_df_realised_counts_to_present_percentage.index.min()
@@ -218,7 +222,8 @@ def get_real_df(df: pd.DataFrame, t_s, tot_l):
 
         # Dirty fix, still necessary?
         # only necessary for DH
-        project_df_realised_counts_to_present_percentage[project_df_realised_counts_to_present_percentage.Aantal > 100] = 100
+        project_df_realised_counts_to_present_percentage[
+            project_df_realised_counts_to_present_percentage.Aantal > 100] = 100
 
         d_real = 'dummy'
         # I think I'd prefer messing with the index completely separately.
@@ -409,8 +414,8 @@ def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorr
 
     if 'M' == res:
         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target))), real=str(round(sum(real))),
-                             plan=str(round(sum(plan[n_now-1:]) - real[n_now-1])),
-                             prog=str(round(sum(prog[n_now-1:]) - real[n_now-1])),
+                             plan=str(round(sum(plan[n_now - 1:]) - real[n_now - 1])),
+                             prog=str(round(sum(prog[n_now - 1:]) - real[n_now - 1])),
                              HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
             jaaroverzicht['prog_c'] = 'pretty_container_red'
@@ -513,8 +518,8 @@ def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoor
     n_now = datetime.date.today().month
 
     target_sum = str(round(sum(target)))
-    planning_sum = sum(planning[n_now-1:]) - realisatie[n_now-1]
-    prognose_sum = sum(prognose[n_now-1:]) - realisatie[n_now-1]
+    planning_sum = sum(planning[n_now - 1:]) - realisatie[n_now - 1]
+    prognose_sum = sum(prognose[n_now - 1:]) - realisatie[n_now - 1]
     realisatie_sum = str(round(sum(realisatie)))
 
     jaaroverzicht = dict(id='jaaroverzicht',
@@ -1323,3 +1328,84 @@ def calculate_bis_gereed(df):
     df_copy = df.copy()
     df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
     return sum(br.bis_opgeleverd(df_copy))
+
+
+def calculate_realisate_bis(df):
+    return df[br.bis_opgeleverd_new(df)].status_civiel_datum
+
+
+def calculate_werkvoorraad_has(df):
+    ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+    ds.name = 'werkvoorraad_has_datum'
+    return ds
+
+
+def calculate_realisate_hpend(df):
+    return df[br.hpend_opgeleverd(df)].opleverdatum
+
+
+def calculate_realisate_hc(df):
+    return df[br.hc_opgeleverd(df)].opleverdatum
+
+
+def calculate_planning_tmobile(df):
+    return df[~df.hasdatum.isna()].hasdatum
+
+
+def calculate_target_tmobile(df):
+    return df[~df.toestemming_datum.isna()].hasdatum
+
+
+def get_secret(project_id, secret_id, version_id='latest'):
+    client = secretmanager.SecretManagerServiceClient()
+    name = client.secret_version_path(project_id, secret_id, version_id)
+    response = client.access_secret_version(name)
+    payload = response.payload.data.decode('UTF-8')
+    return payload
+
+
+def get_database_engine():
+    if 'db_ip' in config.database:
+        SACN = 'mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}'.format(
+            config.database['db_user'],
+            get_secret(config.database['project_id'], config.database['secret_name']),
+            config.database['db_ip'],
+            config.database['db_name'],
+            config.database['server_ca'],
+            config.database['client_ca'],
+            config.database['client_key']
+        )
+    else:
+        SACN = 'mysql+pymysql://{}:{}@/{}?unix_socket=/cloudsql/{}:europe-west1:{}'.format(
+            config.database['db_user'],
+            get_secret(config.database['project_id'], config.database['secret_name']),
+            config.database['db_name'],
+            config.database['project_id'],
+            config.database['instance_id']
+        )
+
+    return create_engine(SACN, pool_recycle=3600)
+
+
+def sum_over_period(ds: pd.Series, freq: str, period=None) -> pd.Series:
+    """
+    Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+    We commonly use:
+        'MS' for the start of the month
+        'W-MON' for weeks starting on Monday.
+        'Y' for a year
+    """
+
+    if period:
+        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=ds.name, data=0)
+        if not ds[~ds.isna()].empty:
+            data = (data_filler + ds.groupby(ds).count().resample(freq, closed='left').sum()[period[0]:period[1]]).fillna(0)
+        else:
+            data = data_filler
+    else:
+        if not ds[~ds.isna()].empty:
+            data = ds.groupby(ds).count().resample(freq, closed='left').sum()
+        else:
+            data = pd.Series()
+
+    return data

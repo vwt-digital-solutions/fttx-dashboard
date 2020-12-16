@@ -23,3 +23,25 @@ STATUS_CHANGE_COLUMNS = {
         'project': 'project'
     }
 }
+
+
+# The topic config is used to because only 1 consume function is used to handle multiple sources. In the consume
+# function the 'if' statement defines which config to use.
+topic_config = {
+    '*subscription_name*': {
+        'name': '*for example "fiberconnect"',
+        'subscription': '*subscription_name*',
+        'subject': '',
+        'firestore_collection': '*firestore collection to store records*',
+        'primary_key': '',
+        'update_date_document': '*name of the document to store the update_date of the last item that came in*'
+    },
+    '*subscription_name*': {
+        'name': '*for example "asbuilt_meters"',
+        'subscription': '*subscription_name*',
+        'subject': '',
+        'firestore_collection': '*firestore collection to store records*',
+        'primary_key': '',
+        'update_date_document': '*name of the document to store the update_date of the last item that came in*'
+    },
+}

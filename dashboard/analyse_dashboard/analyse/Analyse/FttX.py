@@ -13,10 +13,16 @@ import logging
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
-    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na
+    calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
+    sum_over_period, calculate_realisate_bis, calculate_realisate_hpend, calculate_realisate_hc, \
+    calculate_werkvoorraad_has, calculate_planning_tmobile, calculate_target_tmobile
 from pandas.api.types import CategoricalDtype
 
+from toggles import ReleaseToggles
+
 logger = logging.getLogger('FttX Analyse')
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 class FttXBase(ETLBase):
@@ -44,13 +50,31 @@ class FttXExtract(Extract):
         Sets self.extracted_data to a pd.Dataframe of all data.
         """
         logger.info("Extracting the Projects collection")
+        if toggles.fc_sql:
+            self._extract_from_sql()
+        else:
+            self._extract_from_firestore()
+
+    def _extract_from_firestore(self):
+        logger.info("Extracting from the firestore")
         df = pd.DataFrame([])
         for key in self.projects:
             df = df.append(self._extract_project(key), ignore_index=True, sort=True)
-
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
+        self.extracted_data.df = df
 
+    def _extract_from_sql(self):
+        logger.info("Extracting from the sql database")
+        sql = f"""
+select fca.*
+from fc_aansluitingen fca
+inner join fc_client_project_map cpm on fca.project = cpm.project
+where cpm.client = '{self.config.get("name")}'
+"""  # nosec
+        df = pd.read_sql(sql, get_database_engine())
+        projects_category = pd.CategoricalDtype(categories=self.projects)
+        df['project'] = df.project.astype(projects_category)
         self.extracted_data.df = df
 
     @staticmethod
@@ -222,6 +246,12 @@ class FttXAnalyse(FttXBase):
 
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
+        if toggles.new_structure_overviews:
+            self._calculate_list_of_years()
+            self._make_records_realisatie_bis()
+            self._make_records_werkvoorraad_has()
+            self._make_records_realisatie_hpend()
+            self._make_records_realisatie_hc()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -298,6 +328,18 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Progress", documents, DocumentListRecord, "Data",
                              document_key=["client", "project", 'data_set'])
 
+    def _calculate_list_of_years(self):
+        logger.info("Calculating list of years")
+        date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col]
+        dc_data = self.transformed_data.df.loc[:, date_columns]
+        list_of_years = []
+        for col in dc_data.columns:
+            list_of_years += list(dc_data[col].dropna().dt.year.unique())
+        list_of_years = sorted(list(set(list_of_years)))
+
+        self.record_dict.add('List_of_years', list_of_years, Record, 'Data')
+        self.intermediate_results.List_of_years = list_of_years
+
     def _calculate_projectspecs(self):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
@@ -364,6 +406,72 @@ class FttXAnalyse(FttXBase):
                                                 date_column="hasdatum",
                                                 freq="MS")
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
+
+    def _make_records_realisatie_bis(self):
+        ds = calculate_realisate_bis(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_bis', record, Record, "Data")
+
+    def _make_records_werkvoorraad_has(self):
+        ds = calculate_werkvoorraad_has(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('werkvoorraad_has', record, Record, "Data")
+
+    def _make_records_realisatie_hpend(self):
+        ds = calculate_realisate_hpend(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_hpend', record, Record, "Data")
+
+    def _make_records_realisatie_hc(self):
+        ds = calculate_realisate_hc(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_hc', record, Record, "Data")
+
+    def _make_records_planning_tmobile(self):
+        ds = calculate_planning_tmobile(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('planning_tmobile', record, Record, "Data")
+
+    def _make_records_target_tmobile(self):
+        ds = calculate_target_tmobile(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('target_tmobile', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
