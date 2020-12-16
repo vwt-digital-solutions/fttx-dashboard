@@ -79,6 +79,10 @@ def bis_opgeleverd_new(df):
     return ~df['opleverstatus'].isin(['0', '90', '99'])
 
 
+def hpend_opgeleverd(df):
+    return ~df['opleverdatum'].isna()
+
+
 def bis_niet_opgeleverd(df):
     return df['opleverstatus'] == '0'
 

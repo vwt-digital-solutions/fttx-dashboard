@@ -14,7 +14,7 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentL
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
-    sum_over_period, calculate_realisate_bis
+    sum_over_period, calculate_realisate_bis, calculate_realisate_hpend, calculate_realisate_hc
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -248,6 +248,8 @@ class FttXAnalyse(FttXBase):
         if toggles.new_structure_overviews:
             self._calculate_list_of_years()
             self._make_records_realisatie_bis()
+            self._make_records_realisatie_hpend()
+            self._make_records_realisatie_hc()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -411,6 +413,24 @@ class FttXAnalyse(FttXBase):
             for f in freq:
                 record = sum_over_period(ds, f, y)
                 self.record_dict.add('realisatie_bis', record, Record, "Data")
+
+    def _make_records_realisatie_hpend(self):
+        ds = calculate_realisate_hpend(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                record = sum_over_period(ds, f, y)
+                self.record_dict.add('realisatie_hpend', record, Record, "Data")
+
+    def _make_records_realisatie_hc(self):
+        ds = calculate_realisate_hc(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                record = sum_over_period(ds, f, y)
+                self.record_dict.add('realisatie_hc', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):

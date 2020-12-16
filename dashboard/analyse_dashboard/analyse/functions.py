@@ -1334,6 +1334,14 @@ def calculate_realisate_bis(df):
     return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
+def calculate_realisate_hpend(df):
+    return df[br.hpend_opgeleverd(df)].opleverdatum
+
+
+def calculate_realisate_hc(df):
+    return df[br.hc_opgeleverd(df)].opleverdatum
+
+
 def get_secret(project_id, secret_id, version_id='latest'):
     client = secretmanager.SecretManagerServiceClient()
     name = client.secret_version_path(project_id, secret_id, version_id)
