@@ -147,6 +147,19 @@ def has_werkvoorraad(schouw_df, time_delta_days=0):
     )
 
 
+def has_werkvoorraad_new(df, time_delta_days=0):
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    return (
+            (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
+            &
+            (df.opleverdatum.isna() | (df.opleverdatum >= time_point))
+            &
+            ~df.toestemming_datum.isna()
+            &
+            ~df['opleverstatus'].isin(['0', '90', '99'])
+    )
+
+
 # TODO wat is hpend precies? Gewoon opleverdatum?
 def hpend_year(df, year=None):
     if not year:

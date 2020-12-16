@@ -14,7 +14,8 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentL
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
-    sum_over_period, calculate_realisate_bis, calculate_realisate_hpend, calculate_realisate_hc
+    sum_over_period, calculate_realisate_bis, calculate_realisate_hpend, calculate_realisate_hc, \
+    calculate_werkvoorraad_has
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -248,6 +249,7 @@ class FttXAnalyse(FttXBase):
         if toggles.new_structure_overviews:
             self._calculate_list_of_years()
             self._make_records_realisatie_bis()
+            self._make_records_werkvoorraad_has()
             self._make_records_realisatie_hpend()
             self._make_records_realisatie_hc()
         self._calculate_projectspecs()
@@ -415,6 +417,15 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_bis', record, Record, "Data")
+
+    def _make_records_werkvoorraad_has(self):
+        ds = calculate_werkvoorraad_has(self.transformed_data.df)[['schouwdatum', 'toestemming_datum']].max(axis=1)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                record = sum_over_period(ds, f, y)
+                self.record_dict.add('werkvoorraad_has', record, Record, "Data")
 
     def _make_records_realisatie_hpend(self):
         ds = calculate_realisate_hpend(self.transformed_data.df)
