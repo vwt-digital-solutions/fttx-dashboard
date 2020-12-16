@@ -1373,7 +1373,7 @@ def get_database_engine():
     return create_engine(SACN, pool_recycle=3600)
 
 
-def sum_over_period(ds=pd.Series(), freq='W-MON', year='2020'):  # input is a panda series of dates
+def sum_over_period(ds: pd.Series, freq: str, period=None) -> pd.Series:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
@@ -1381,15 +1381,17 @@ def sum_over_period(ds=pd.Series(), freq='W-MON', year='2020'):  # input is a pa
         'W-MON' for weeks starting on Monday.
         'Y' for a year
     """
-    if not ds[~ds.isna()].empty:
-        data = ds.groupby(ds).count().resample(freq, closed='left').sum()[year+'-01-01':year+'-12-31']
+
+    if period:
+        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=ds.name, data=0)
+        if not ds[~ds.isna()].empty:
+            data = (data_filler + ds.groupby(ds).count().resample(freq, closed='left').sum()[period[0]:period[1]]).fillna(0)
+        else:
+            data = data_filler
     else:
-        data = pd.Series(index=pd.date_range(start=year+'-01-01', end=year+'-12-31', freq=freq), name=ds.name, data=0)
+        if not ds[~ds.isna()].empty:
+            data = ds.groupby(ds).count().resample(freq, closed='left').sum()
+        else:
+            data = pd.Series()
 
-    data_filler = pd.Series(index=pd.date_range(start=year+'-01-01', end=year+'-12-31', freq=freq), name=ds.name, data=0)
-    data = (data_filler + data).fillna(0)
-
-    data.index = data.index.format()
-    record = {data.name: data.to_dict()}
-
-    return record
+    return data

@@ -411,7 +411,9 @@ class FttXAnalyse(FttXBase):
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                record = sum_over_period(ds, f, y)
+                data = sum_over_period(ds, f, period=[y+'01-01', y+'12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_bis', record, Record, "Data")
 
     def _make_records_realisatie_hpend(self):
@@ -420,7 +422,9 @@ class FttXAnalyse(FttXBase):
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                record = sum_over_period(ds, f, y)
+                data = sum_over_period(ds, f, period=[y+'01-01', y+'12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hpend', record, Record, "Data")
 
     def _make_records_realisatie_hc(self):
@@ -429,7 +433,9 @@ class FttXAnalyse(FttXBase):
         year = ['2019', '2020', '2021']
         for y in year:
             for f in freq:
-                record = sum_over_period(ds, f, y)
+                data = sum_over_period(ds, f, period=[y+'01-01', y+'12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hc', record, Record, "Data")
 
 
