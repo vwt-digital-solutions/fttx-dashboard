@@ -1331,7 +1331,7 @@ def calculate_bis_gereed(df):
 
 
 def calculate_realisate_bis(df):
-    return df[br.bis_opgeleverd(df)].status_civiel_datum
+    return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
