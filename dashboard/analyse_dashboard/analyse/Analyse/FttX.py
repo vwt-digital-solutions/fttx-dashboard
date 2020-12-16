@@ -17,6 +17,7 @@ from functions import calculate_projectspecs, overview_reden_na, individual_rede
     calculate_werkvoorraad_has, get_start_time, get_timeline, calculate_realisatie_prognose, get_data_targets_init, \
     sum_over_period, calculate_realisatie_bis, calculate_realisatie_hpend, calculate_realisatie_hc, \
     calculate_planning_tmobile, calculate_target_tmobile, calculate_realisatie_under_8weeks
+    calculate_werkvoorraad_has, calculate_planning_tmobile, calculate_target_tmobile
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
