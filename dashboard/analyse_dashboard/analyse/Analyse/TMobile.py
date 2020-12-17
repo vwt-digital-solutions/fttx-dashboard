@@ -119,8 +119,9 @@ class TMobileAnalyse(FttXAnalyse):
         self._delete_collection(u'Houses')
         df_copy = self.transformed_data.df.copy()
         df_copy = df_copy[df_copy['wait_category'].notna()]
-        datums = [col for col in df_copy.columns if "datum" in col]
+        datums = [col for col in df_copy.columns if "datum" in col or 'date' in col or "creation" in col]
         df_copy.loc[:, datums] = df_copy[datums].apply(lambda x: x.dt.strftime("%Y-%m-%d"))
+        df_copy.astype(str, inplace=True)
         doc_list = [{'record': x, 'sleutel': x['sleutel']} for x in df_copy.to_dict(orient='rows')]
         self.record_dict.add('enriched_data', doc_list, DocumentListRecord, 'Houses', document_key=['sleutel'])
 
