@@ -271,16 +271,10 @@ class FttXAnalyse(FttXBase):
         logger.info("Analysing using the FttX protocol")
         if toggles.new_structure_overviews:
             # self._calculate_list_of_years()
-            self._make_records_realisatie_bis()
-            self._make_records_werkvoorraad_has()
-            self._make_records_realisatie_under_8weeks()
-            self._make_records_realisatie_hpend()
+            self._make_records
             self._make_records_ratio_under_8weeks_versus_hpend()
-            self._make_records_realisatie_hc()
             self._make_records_ratio_hc_versus_hpend()
             self._make_records_realisatie_prog()
-            self._make_records_planning_tmobile()
-            self._make_records_target_tmobile()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -436,49 +430,32 @@ class FttXAnalyse(FttXBase):
                                                 freq="MS")
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
 
-    def _make_records_realisatie_bis(self):
-        ds = calculate_realisatie_bis(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_bis', record, Record, "Data")
+    def _make_records(self):
+        ds1 = calculate_realisatie_bis(self.transformed_data.df)
+        ds2 = calculate_werkvoorraad_has(self.transformed_data.df)
+        ds3 = calculate_realisatie_under_8weeks(self.transformed_data.df)
+        ds4 = calculate_realisatie_hpend(self.transformed_data.df)
+        ds5 = calculate_realisatie_hc(self.transformed_data.df)
+        ds6 = calculate_planning_tmobile(self.transformed_data.df)
+        ds7 = calculate_target_tmobile(self.transformed_data.df)
 
-    def _make_records_werkvoorraad_has(self):
-        ds = calculate_werkvoorraad_has(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('werkvoorraad_has', record, Record, "Data")
+        # Create a dictionary that contains the functions and the output name
+        function_dict = {'realisatie_bis': ds1, 'werkvoorraad_has': ds2, 'realisatie_under_8weeks': ds3,
+                         'realisatie_hpend': ds4, 'realisatie_hc': ds5, 'planning_tmobile': ds6,
+                         'target_tmobile': ds7
+                         }
 
-    def _make_records_realisatie_under_8weeks(self):
-        ds = calculate_realisatie_under_8weeks(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
         year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_under_8weeks', record, Record, "Data")
 
-    def _make_records_realisatie_hpend(self):
-        ds = calculate_realisatie_hpend(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_hpend', record, Record, "Data")
+        for outname, ds in function_dict.items():
+            for y in year:
+                for f in freq:
+                    data = sum_over_period(ds, f, period=[y + '-01-01', y + '-12-31'])
+                    data.index = data.index.format()
+                    record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                    print(outname, record, "\n")
+                    self.record_dict.add(outname, record, Record, "Data")
 
     def _make_records_ratio_under_8weeks_versus_hpend(self):
         ds1 = calculate_realisatie_under_8weeks(self.transformed_data.df)
@@ -495,17 +472,6 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('ratio_8weeks_hpend', record, Record, "Data")
-
-    def _make_records_realisatie_hc(self):
-        ds = calculate_realisatie_hc(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_hc', record, Record, "Data")
 
     def _make_records_ratio_hc_versus_hpend(self):
         ds1 = calculate_realisatie_hc(self.transformed_data.df)
@@ -537,28 +503,6 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_prog', record, Record, "Data")
-
-    def _make_records_planning_tmobile(self):
-        ds = calculate_planning_tmobile(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('planning_tmobile', record, Record, "Data")
-
-    def _make_records_target_tmobile(self):
-        ds = calculate_target_tmobile(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('target_tmobile', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
