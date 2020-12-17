@@ -14,8 +14,8 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentL
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
-    sum_over_period, calculate_realisate_bis, calculate_realisate_hpend, calculate_realisate_hc, \
-    calculate_werkvoorraad_has
+    sum_over_period, calculate_realisatie_bis, calculate_realisatie_hpend, calculate_realisatie_hc, \
+    calculate_werkvoorraad_has, get_start_time, get_timeline, calculate_realisatie_prognose, get_data_targets_init
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -54,6 +54,9 @@ class FttXExtract(Extract):
             self._extract_from_sql()
         else:
             self._extract_from_firestore()
+
+        if toggles.new_structure_overviews:
+            self._extract_ftu()
 
     def _extract_from_firestore(self):
         logger.info("Extracting from the firestore")
@@ -104,6 +107,24 @@ where cpm.client = '{self.config.get("name")}'
             break
         logger.info(f"Extracted {len(df)} records in {time.time() - start_time} seconds")
         return df
+
+    def _extract_ftu(self):
+        logger.info(f"Extracting FTU {self.client_name}")
+        doc = next(
+            firestore.Client().collection('Data')
+            .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
+            .stream(), None).get('record')
+        if doc is not None:
+            if doc['FTU0']:
+                date_FTU0 = doc['FTU0']
+                date_FTU1 = doc['FTU1']
+            else:
+                logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
+                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
+        else:
+            logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
+            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
+        self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
 
 
 class PickleExtract(Extract, FttXBase):
@@ -252,6 +273,7 @@ class FttXAnalyse(FttXBase):
             self._make_records_werkvoorraad_has()
             self._make_records_realisatie_hpend()
             self._make_records_realisatie_hc()
+            self._make_records_realisatie_prog()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -408,7 +430,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
 
     def _make_records_realisatie_bis(self):
-        ds = calculate_realisate_bis(self.transformed_data.df)
+        ds = calculate_realisatie_bis(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
         year = ['2019', '2020', '2021']
         for y in year:
@@ -430,7 +452,7 @@ class FttXAnalyse(FttXBase):
                 self.record_dict.add('werkvoorraad_has', record, Record, "Data")
 
     def _make_records_realisatie_hpend(self):
-        ds = calculate_realisate_hpend(self.transformed_data.df)
+        ds = calculate_realisatie_hpend(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
         year = ['2019', '2020', '2021']
         for y in year:
@@ -441,7 +463,7 @@ class FttXAnalyse(FttXBase):
                 self.record_dict.add('realisatie_hpend', record, Record, "Data")
 
     def _make_records_realisatie_hc(self):
-        ds = calculate_realisate_hc(self.transformed_data.df)
+        ds = calculate_realisatie_hc(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
         year = ['2019', '2020', '2021']
         for y in year:
@@ -450,6 +472,22 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hc', record, Record, "Data")
+
+    def _make_records_realisatie_prog(self):
+        ds = calculate_realisatie_prognose(self.transformed_data.df,
+                                           get_start_time(self.transformed_data.df),
+                                           get_timeline(get_start_time(self.transformed_data.df)),
+                                           self.transformed_data.totals,
+                                           self.extracted_data.ftu)
+
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_prog', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):

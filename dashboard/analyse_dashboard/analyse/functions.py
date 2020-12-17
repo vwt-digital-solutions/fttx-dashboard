@@ -1330,7 +1330,7 @@ def calculate_bis_gereed(df):
     return sum(br.bis_opgeleverd(df_copy))
 
 
-def calculate_realisate_bis(df):
+def calculate_realisatie_bis(df):
     return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
@@ -1340,12 +1340,25 @@ def calculate_werkvoorraad_has(df):
     return ds
 
 
-def calculate_realisate_hpend(df):
+def calculate_realisatie_hpend(df):
     return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
-def calculate_realisate_hc(df):
+def calculate_realisatie_hc(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
+
+
+def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
+    result = prognose(df,
+                      start_time,
+                      timeline,
+                      totals,
+                      ftu['date_FTU0'])
+    df_prog = pd.DataFrame(index=timeline, columns=['prognose'], data=0)
+    for key in result.y_prog_l:
+        amounts = result.y_prog_l[key] / 100 * totals[key]
+        df_prog += pd.DataFrame(index=timeline, columns=['prognose'], data=amounts).diff().fillna(0)
+    return df_prog.prognose
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
@@ -1379,7 +1392,7 @@ def get_database_engine():
     return create_engine(SACN, pool_recycle=3600)
 
 
-def sum_over_period(ds: pd.Series, freq: str, period=None) -> pd.Series:
+def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
@@ -1388,16 +1401,19 @@ def sum_over_period(ds: pd.Series, freq: str, period=None) -> pd.Series:
         'Y' for a year
     """
 
-    if period:
-        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=ds.name, data=0)
-        if not ds[~ds.isna()].empty:
-            data = (data_filler + ds.groupby(ds).count().resample(freq, closed='left').sum()[period[0]:period[1]]).fillna(0)
-        else:
-            data = data_filler
-    else:
-        if not ds[~ds.isna()].empty:
-            data = ds.groupby(ds).count().resample(freq, closed='left').sum()
-        else:
-            data = pd.Series()
+    if not isinstance(data.index[0], pd.Timestamp):
+        data = data.groupby(data).count()
 
-    return data
+    if period:
+        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
+        if not data[~data.isna()].empty:
+            data_counted = (data_filler + data.resample(freq, closed='left').sum()[period[0]:period[1]]).fillna(0)
+        else:
+            data_counted = data_filler
+    else:
+        if not data[~data.isna()].empty:
+            data_counted = data.resample(freq, closed='left').sum()
+        else:
+            data_counted = pd.Series()
+
+    return data_counted
