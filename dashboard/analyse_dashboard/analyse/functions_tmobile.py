@@ -41,6 +41,7 @@ def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
 
     for col in date_cols:
         if len(df[~df[col].isna()]):
+            print(col)
             count_df = df[['project', col]].groupby(by=[pd.Grouper(key=col,
                                                                    freq=freq,
                                                                    closed='left',

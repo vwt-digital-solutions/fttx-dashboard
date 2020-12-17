@@ -166,7 +166,7 @@ class FttXTransform(Transform):
 
     def _fix_dates(self):
         logger.info("Changing columns to datetime column if there is 'datum' in column name.")
-        datums = [col for col in self.transformed_data.df.columns if "datum" in col]
+        datums = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col or "creation" in col]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(pd.to_datetime,
                                                                                   infer_datetime_format=True,
                                                                                   errors="coerce",
@@ -269,7 +269,7 @@ class FttXAnalyse(FttXBase):
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
         if toggles.new_structure_overviews:
-            self._calculate_list_of_years()
+            # self._calculate_list_of_years()
             self._make_records_realisatie_bis()
             self._make_records_werkvoorraad_has()
             self._make_records_realisatie_hpend()

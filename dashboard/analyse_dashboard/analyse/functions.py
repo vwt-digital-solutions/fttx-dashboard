@@ -1344,7 +1344,7 @@ def calculate_realisatie_under_8weeks(df):
     return df[br.oplevertijd_new(df)].opleverdatum
 
 
-def calculate_realisate_hpend(df):
+def calculate_realisatie_hpend(df):
     return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
