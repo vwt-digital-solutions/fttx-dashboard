@@ -490,10 +490,10 @@ class FttXAnalyse(FttXBase):
             for f in freq:
                 data1 = sum_over_period(ds1, f, period=[y + '-01-01', y + '-12-31'])
                 data2 = sum_over_period(ds2, f, period=[y + '-01-01', y + '-12-31'])
-                ratio = (data1 / data2).fillna(0)
+                data = (data1 / data2).fillna(0)
 
-                ratio.index = ratio.index.format()
-                record = {ratio.name: ratio.to_dict(), 'year': y, 'freq': f}
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('ratio_8weeks_hpend', record, Record, "Data")
 
     def _make_records_realisatie_hc(self):
@@ -517,10 +517,10 @@ class FttXAnalyse(FttXBase):
             for f in freq:
                 data1 = sum_over_period(ds1, f, period=[y + '-01-01', y + '-12-31'])
                 data2 = sum_over_period(ds2, f, period=[y + '-01-01', y + '-12-31'])
-                ratio = (data1 / data2).fillna(0)
+                data = (data1 / data2).fillna(0)
 
-                ratio.index = ratio.index.format()
-                record = {ratio.name: ratio.to_dict(), 'year': y, 'freq': f}
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('ratio_hc_hpend', record, Record, "Data")
 
     def _make_records_realisatie_prog(self):
