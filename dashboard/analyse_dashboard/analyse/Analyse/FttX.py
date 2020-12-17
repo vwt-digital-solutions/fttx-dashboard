@@ -14,8 +14,9 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentL
 import business_rules as br
 from functions import calculate_projectspecs, overview_reden_na, individual_reden_na, set_filters, \
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
+    calculate_werkvoorraad_has, get_start_time, get_timeline, calculate_realisatie_prognose, get_data_targets_init, \
     sum_over_period, calculate_realisatie_bis, calculate_realisatie_hpend, calculate_realisatie_hc, \
-    calculate_werkvoorraad_has, get_start_time, get_timeline, calculate_realisatie_prognose, get_data_targets_init
+    calculate_planning_tmobile, calculate_target_tmobile, calculate_realisatie_under_8weeks
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -274,6 +275,8 @@ class FttXAnalyse(FttXBase):
             self._make_records_realisatie_hpend()
             self._make_records_realisatie_hc()
             self._make_records_realisatie_prog()
+            self._make_records_planning_tmobile()
+            self._make_records_target_tmobile()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -451,6 +454,17 @@ class FttXAnalyse(FttXBase):
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('werkvoorraad_has', record, Record, "Data")
 
+    def _make_records_realisatie_under_8weeks(self):
+        ds = calculate_realisatie_under_8weeks(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_under_8weeks', record, Record, "Data")
+
     def _make_records_realisatie_hpend(self):
         ds = calculate_realisatie_hpend(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
@@ -479,7 +493,6 @@ class FttXAnalyse(FttXBase):
                                            get_timeline(get_start_time(self.transformed_data.df)),
                                            self.transformed_data.totals,
                                            self.extracted_data.ftu)
-
         freq = ['W-MON', 'MS', 'Y']
         year = ['2019', '2020', '2021']
         for y in year:
@@ -488,6 +501,28 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_prog', record, Record, "Data")
+
+    def _make_records_planning_tmobile(self):
+        ds = calculate_planning_tmobile(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('planning_tmobile', record, Record, "Data")
+
+    def _make_records_target_tmobile(self):
+        ds = calculate_target_tmobile(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('target_tmobile', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):

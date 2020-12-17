@@ -1340,7 +1340,11 @@ def calculate_werkvoorraad_has(df):
     return ds
 
 
-def calculate_realisatie_hpend(df):
+def calculate_realisatie_under_8weeks(df):
+    return df[br.oplevertijd_new(df)].opleverdatum
+
+
+def calculate_realisate_hpend(df):
     return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
@@ -1359,6 +1363,14 @@ def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
         amounts = result.y_prog_l[key] / 100 * totals[key]
         df_prog += pd.DataFrame(index=timeline, columns=['prognose'], data=amounts).diff().fillna(0)
     return df_prog.prognose
+
+
+def calculate_planning_tmobile(df):
+    return df[~df.hasdatum.isna()].hasdatum
+
+
+def calculate_target_tmobile(df):
+    return df[~df.toestemming_datum.isna()].hasdatum
 
 
 def get_secret(project_id, secret_id, version_id='latest'):

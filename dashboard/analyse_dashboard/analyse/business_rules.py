@@ -47,8 +47,14 @@ def geschouwed(df, time_delta_days=0):
     return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
 
 
+# TODO: remove when removing toggle new_structure_overviews
 def ordered(df, time_delta_days=0):
     return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
+
+
+def oplevertijd_new(df):
+    # Used to calculate the homes that have been completed within 8 weeks (56 days)
+    return (df['opleverdatum'] - df['toestemming_datum']).dt.days < 56
 
 
 def toestemming_bekend(df):
@@ -71,6 +77,7 @@ def laswerk_dp_niet_gereed(df):
     return df['laswerkdpgereed'] != '1'
 
 
+# TODO: remove when removing toggle new_structure_overviews
 def bis_opgeleverd(df):
     return df['opleverstatus'] != '0'
 
@@ -121,6 +128,7 @@ def opgeleverd(df, time_delta_days=0):
     return is_date_set(df.opleverdatum, time_delta_days=time_delta_days)
 
 
+# TODO: remove when removing toggle new_structure_overviews
 def has_werkvoorraad(schouw_df, time_delta_days=0):
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
     return (
