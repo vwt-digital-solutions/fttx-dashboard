@@ -186,6 +186,32 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
     return TargetResults(y_target_l, t_diff)
 
 
+def targets_new(x_d, p_list, date_FTU0, date_FTU1):
+    # to add target info KPN in days uitgaande van FTU0 en FTU1
+    x_prog = np.array(list(range(0, len(x_d))))
+    y_target_l = {}
+    for key in p_list:
+        if date_FTU0[key] != ' ':
+            t_start = x_prog[x_d == date_FTU0[key]][0]
+            t_max = x_prog[x_d == date_FTU1[key]][0]
+            t_diff = t_max - t_start - 14  # two weeks round up
+            rc = 100 / t_diff  # target naar KPN is 100% HPend
+        else:  # incomplete information on FTU dates
+            t_start = 0
+            rc = 0  # target naar KPN is 100% HPend
+
+        b = -(rc * (t_start + 14))  # two weeks startup
+        y_target = b + rc * x_prog
+        y_target[y_target > 100] = 100
+        y_target_l[key] = y_target
+
+    for key in y_target_l:
+        y_target_l[key][y_target_l[key] > 100] = 100
+        y_target_l[key][y_target_l[key] < 0] = 0
+
+    return y_target_l
+
+
 def get_cumsum_of_col(df: pd.DataFrame, column):
     # Can we make it generic by passing column, or does df need to be filtered beforehand?
     filtered_df = df[~df[column].isna()]
@@ -1363,6 +1389,25 @@ def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
         amounts = result.y_prog_l[key] / 100 * totals[key]
         df_prog += pd.DataFrame(index=timeline, columns=['prognose'], data=amounts).diff().fillna(0)
     return df_prog.prognose
+
+
+def calculate_realisatie_target(timeline, totals, p_list, ftu0, ftu1):
+    y_target_l = targets_new(timeline, p_list, ftu0, ftu1)
+    df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
+    for key in y_target_l:
+        amounts = y_target_l[key] / 100 * totals[key]
+        df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
+    return df_target.target
+
+
+def calculate_planning_kpn(data, timeline):
+    df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
+    if data:
+        y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(data), freq='W-MON'),
+                              columns=['planning_kpn'], data=data)
+        y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
+        df = df.add(y_plan, fill_value=0)
+    return df.planning_kpn
 
 
 def calculate_planning_tmobile(df):

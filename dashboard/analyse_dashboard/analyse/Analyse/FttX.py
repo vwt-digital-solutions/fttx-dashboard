@@ -16,7 +16,8 @@ from functions import calculate_projectspecs, overview_reden_na, individual_rede
     calculate_redenna_per_period, rules_to_state, calculate_y_voorraad_act, cluster_reden_na, get_database_engine, \
     calculate_werkvoorraad_has, get_start_time, get_timeline, calculate_realisatie_prognose, get_data_targets_init, \
     sum_over_period, calculate_realisatie_bis, calculate_realisatie_hpend, calculate_realisatie_hc, \
-    calculate_planning_tmobile, calculate_target_tmobile, calculate_realisatie_under_8weeks
+    calculate_planning_tmobile, calculate_target_tmobile, calculate_realisatie_under_8weeks, \
+    calculate_realisatie_target, calculate_planning_kpn
 
 from pandas.api.types import CategoricalDtype
 
@@ -59,6 +60,7 @@ class FttXExtract(Extract):
 
         if toggles.new_structure_overviews:
             self._extract_ftu()
+            self._extract_planning()
 
     def _extract_from_firestore(self):
         logger.info("Extracting from the firestore")
@@ -128,6 +130,18 @@ where cpm.client = '{self.config.get("name")}'
             date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
         self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
 
+    def _extract_planning(self):
+        logger.info("Extracting Planning")
+        if hasattr(self, 'planning_location'):
+            if 'gs://' in self.planning_location:
+                xls = pd.ExcelFile(self.planning_location)
+            else:
+                xls = pd.ExcelFile(self.planning_location)
+            df = pd.read_excel(xls, 'FTTX ').fillna(0)
+            self.extracted_data.planning = df
+        else:
+            self.extracted_data.planning = pd.DataFrame()
+
 
 class PickleExtract(Extract, FttXBase):
     def __init__(self, **kwargs):
@@ -158,6 +172,7 @@ class FttXTransform(Transform):
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
+        self._transform_planning()
 
     def _set_totals(self):
         self.transformed_data.totals = {}
@@ -258,6 +273,35 @@ class FttXTransform(Transform):
         self.transformed_data.df.drop('false', inplace=True, axis=1)
         self.transformed_data.df = pd.merge(self.transformed_data.df, status_df, on="sleutel", how="left")
 
+    def _transform_planning(self):
+        logger.info("Transforming planning for KPN")
+        HP = dict(HPendT=[0] * 52)
+        df = self.extracted_data.planning
+        if not df.empty:
+            for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
+                if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
+                    HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
+                    HP['HPendT'] = [sum(x) for x in zip(HP['HPendT'], HP[df.loc[el, ('Unnamed: 0')]])]
+                    if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Oude Stad':
+                        HP['Bergen op Zoom oude stad'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
+                        HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
+                        HP['Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
+                        HP['Den Haag - Haagse Hout-Bezuidenhout West'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
+                        HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
+                        HP['Den Haag - Vrederust en Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == '':
+                        HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+                    if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
+                        HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+        else:
+            HP = {}
+        self.transformed_data.planning = HP
+
 
 class FttXAnalyse(FttXBase):
     def __init__(self, **kwargs):
@@ -275,6 +319,8 @@ class FttXAnalyse(FttXBase):
             self._make_records_ratio_under_8weeks_versus_hpend()
             self._make_records_ratio_hc_versus_hpend()
             self._make_records_realisatie_prog()
+            self._make_records_realisatie_target()
+            self._make_records_planning_kpn()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -503,6 +549,33 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_prog', record, Record, "Data")
+
+    def _make_records_realisatie_target(self):
+        ds = calculate_realisatie_target(get_timeline(get_start_time(self.transformed_data.df)),
+                                         self.transformed_data.totals,
+                                         self.transformed_data.df.project.unique().tolist(),
+                                         self.extracted_data.ftu['date_FTU0'],
+                                         self.extracted_data.ftu['date_FTU1'])
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_target', record, Record, "Data")
+
+    def _make_records_planning_kpn(self):
+        ds = calculate_planning_kpn(self.transformed_data.planning['HPendT'],
+                                    get_timeline(get_start_time(self.transformed_data.df)))
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+        for y in year:
+            for f in freq:
+                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
+                data.index = data.index.format()
+                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('realisatie_target', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
