@@ -17,6 +17,7 @@ from functions import calculate_projectspecs, overview_reden_na, individual_rede
     calculate_werkvoorraad_has, get_start_time, get_timeline, calculate_realisatie_prognose, get_data_targets_init, \
     sum_over_period, calculate_realisatie_bis, calculate_realisatie_hpend, calculate_realisatie_hc, \
     calculate_planning_tmobile, calculate_target_tmobile, calculate_realisatie_under_8weeks
+
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -272,8 +273,11 @@ class FttXAnalyse(FttXBase):
             # self._calculate_list_of_years()
             self._make_records_realisatie_bis()
             self._make_records_werkvoorraad_has()
+            self._make_records_realisatie_under_8weeks()
             self._make_records_realisatie_hpend()
+            self._make_records_ratio_under_8weeks_versus_hpend()
             self._make_records_realisatie_hc()
+            self._make_records_ratio_hc_versus_hpend()
             self._make_records_realisatie_prog()
             self._make_records_planning_tmobile()
             self._make_records_target_tmobile()
@@ -476,6 +480,22 @@ class FttXAnalyse(FttXBase):
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hpend', record, Record, "Data")
 
+    def _make_records_ratio_under_8weeks_versus_hpend(self):
+        ds1 = calculate_realisatie_under_8weeks(self.transformed_data.df)
+        ds2 = calculate_realisatie_hpend(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+
+        for y in year:
+            for f in freq:
+                data1 = sum_over_period(ds1, f, period=[y + '-01-01', y + '-12-31'])
+                data2 = sum_over_period(ds2, f, period=[y + '-01-01', y + '-12-31'])
+                ratio = (data1 / data2).fillna(0)
+
+                ratio.index = ratio.index.format()
+                record = {ratio.name: ratio.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('ratio_8weeks_hpend', record, Record, "Data")
+
     def _make_records_realisatie_hc(self):
         ds = calculate_realisatie_hc(self.transformed_data.df)
         freq = ['W-MON', 'MS', 'Y']
@@ -486,6 +506,22 @@ class FttXAnalyse(FttXBase):
                 data.index = data.index.format()
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_hc', record, Record, "Data")
+
+    def _make_records_ratio_hc_versus_hpend(self):
+        ds1 = calculate_realisatie_hc(self.transformed_data.df)
+        ds2 = calculate_realisatie_hpend(self.transformed_data.df)
+        freq = ['W-MON', 'MS', 'Y']
+        year = ['2019', '2020', '2021']
+
+        for y in year:
+            for f in freq:
+                data1 = sum_over_period(ds1, f, period=[y + '-01-01', y + '-12-31'])
+                data2 = sum_over_period(ds2, f, period=[y + '-01-01', y + '-12-31'])
+                ratio = (data1 / data2).fillna(0)
+
+                ratio.index = ratio.index.format()
+                record = {ratio.name: ratio.to_dict(), 'year': y, 'freq': f}
+                self.record_dict.add('ratio_hc_hpend', record, Record, "Data")
 
     def _make_records_realisatie_prog(self):
         ds = calculate_realisatie_prognose(self.transformed_data.df,
