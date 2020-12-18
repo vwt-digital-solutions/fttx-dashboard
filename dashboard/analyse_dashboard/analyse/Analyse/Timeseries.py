@@ -209,8 +209,8 @@ class Timeseries():
         # We might not be able to set time shift at init time, or we might not need it at all
 
     def serialize(self):
-        self.df = self.df[(~self.df[self.agg_column].isna()) & (~self.df[self.column].isna())]
-        self.df[self.column] = pd.to_datetime(self.df[self.column].dt.date)
+        self.df = self.df[(~self.df[self.agg_column].isna()) & (~self.df[self.column].isna())].copy()
+        self.df[self.column] = pd.to_datetime(self.df[self.column].dt.date).copy()
         self.timeseries = self.df.groupby(self.column).agg({self.agg_column: self.agg_column_func}) \
             .rename(columns={self.agg_column: 'Aantal'})
         self.set_index()
