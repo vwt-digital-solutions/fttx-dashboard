@@ -12,13 +12,13 @@ import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
-from functions import calculate_realisatie_hpend, get_data_targets_init, cluster_reden_na,\
-  calculate_target_tmobile, set_filters, calculate_realisate_bis, calculate_y_voorraad_act,\
+from functions import calculate_realisatie_hpend, get_data_targets_init, cluster_reden_na, \
+  calculate_target_tmobile, set_filters, calculate_y_voorraad_act, \
   calculate_realisatie_hc, sum_over_period, rules_to_state, calculate_planning_tmobile, \
-  calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, calculate_realisate_hc,\
+  calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, \
   calculate_realisatie_target, calculate_redenna_per_period, calculate_projectspecs, \
   calculate_realisatie_prognose, individual_reden_na, ratio_sum_over_periods_to_record, \
-  calculate_realisate_hpend, get_database_engine, calculate_realisatie_under_8weeks, \
+  get_database_engine, calculate_realisatie_under_8weeks, \
   calculate_planning_kpn, overview_reden_na, sum_over_period_to_record, get_timeline
 from pandas.api.types import CategoricalDtype
 
