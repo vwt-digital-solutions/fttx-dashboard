@@ -510,7 +510,7 @@ class FttXAnalyse(FttXBase):
                     data = sum_over_period(ds, f, period=[y + '-01-01', y + '-12-31'])
                     data.index = data.index.format()
                     record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                    self.record_dict.add(outname, record, Record, "Data")
+                    self.record_dict.add(outname+f+y, record, Record, "Data")
 
     def _make_records_ratio(self):
         logger.info("Make ratio records for dashboard overview  values")
@@ -531,7 +531,7 @@ class FttXAnalyse(FttXBase):
                     data = (data_num / data_div).fillna(0)
                     data.index = data.index.format()
                     record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                    self.record_dict.add(outname, record, Record, "Data")
+                    self.record_dict.add(outname+f+y, record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
