@@ -318,9 +318,6 @@ class FttXAnalyse(FttXBase):
             self._calculate_list_of_years()
             self._make_records()
             self._make_records_ratio()
-            self._make_records_realisatie_prog()
-            self._make_records_realisatie_target()
-            self._make_records_planning_kpn()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -403,7 +400,7 @@ class FttXAnalyse(FttXBase):
         dc_data = self.transformed_data.df.loc[:, date_columns]
         list_of_years = []
         for col in dc_data.columns:
-            list_of_years += list(dc_data[col].dropna().dt.year.unique())
+            list_of_years += list(dc_data[col].dropna().dt.year.unique().astype(str))
         list_of_years = sorted(list(set(list_of_years)))
 
         self.record_dict.add('List_of_years', list_of_years, Record, 'Data')
