@@ -1409,7 +1409,6 @@ def calculate_planning_kpn(data, timeline):
         df = df.add(y_plan, fill_value=0)
     return df.planning_kpn
 
-
 def calculate_planning_tmobile(df):
     return df[~df.hasdatum.isna()].hasdatum
 
