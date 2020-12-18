@@ -492,8 +492,11 @@ class FttXAnalyse(FttXBase):
                                           self.transformed_data.df.project.unique().tolist(),
                                           self.extracted_data.ftu['date_FTU0'],
                                           self.extracted_data.ftu['date_FTU1'])
-        ds10 = calculate_planning_kpn(self.transformed_data.planning['HPendT'],
-                                      get_timeline(get_start_time(self.transformed_data.df)))
+        if self.transformed_data.planning:
+            ds10 = calculate_planning_kpn(self.transformed_data.planning['HPendT'],
+                                          get_timeline(get_start_time(self.transformed_data.df)))
+        else:
+            ds10 = pd.Series(name='planning_tmobile', index=[0])
 
         # Create a dictionary that contains the functions and the output name
         function_dict = {'realisatie_bis': ds1, 'werkvoorraad_has': ds2, 'realisatie_under_8weeks': ds3,
