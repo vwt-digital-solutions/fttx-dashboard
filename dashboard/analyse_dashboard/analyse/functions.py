@@ -1474,3 +1474,19 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
             data_counted = pd.Series()
 
     return data_counted
+
+
+def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
+    data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
+    data.index = data.index.format()
+    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    return record
+
+
+def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):
+    data_num = sum_over_period(numerator, freq, period=[year + '-01-01', year + '-12-31'])
+    data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
+    data = (data_num / data_div).fillna(0)
+    data.index = data.index.format()
+    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    return record
