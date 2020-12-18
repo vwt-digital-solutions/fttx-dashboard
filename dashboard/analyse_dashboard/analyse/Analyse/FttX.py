@@ -504,7 +504,7 @@ class FttXAnalyse(FttXBase):
                                                 self.extracted_data.ftu['date_FTU1']),
                          'planning_kpn': planning_kpn
                          }
-        freq = ['W-MON', 'MS', 'Y']
+        freq = ['W-MON', 'M', 'Y']
         year = self.intermediate_results.List_of_years
 
         for key, values in function_dict.items():
@@ -519,7 +519,7 @@ class FttXAnalyse(FttXBase):
         function_dict = {'ratio_8weeks_hpend': calculate_realisatie_under_8weeks(self.transformed_data.df),
                          'ratio_hc_hpend': calculate_realisatie_hc(self.transformed_data.df)}
         realisatie_hpend = calculate_realisatie_hpend(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
+        freq = ['W-MON', 'M', 'Y']
         year = self.intermediate_results.List_of_years
 
         for key, values in function_dict.items():

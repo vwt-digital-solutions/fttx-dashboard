@@ -180,14 +180,15 @@ class DocumentListRecord(Record):
         if not self.record:
             return
 
+        logging.info(f"Creating documents for {graph_name} in DocumentListRecord")
         db = firestore.Client()
         batch = db.batch()
         for i, document in enumerate(self.record):
             if client and "client" not in document:
                 document['client'] = client
-            fs_document = db.collection(self.collection).document(self.document_name(document=document,
-                                                                                     client=client,
-                                                                                     graph_name=graph_name))
+            document_name = self.document_name(document=document, client=client, graph_name=graph_name)
+            fs_document = db.collection(self.collection).document(document_name)
+            logging.info(f"Set document {document_name}")
             batch.set(fs_document, document)
             if not i % 100:
                 batch.commit()
@@ -211,7 +212,7 @@ class DictRecord(Record):
     The key for the dict is used to fill the project field in the document."""
 
     def to_firestore(self, graph_name, client):
-        logging.info(f"Creating documents for {graph_name}")
+        logging.info(f"Creating documents for {graph_name} in DictRecord")
         for k, v in self.record.items():
             document_name = f"{client}_{graph_name}_{k}"
             document = firestore.Client().collection(self.collection).document(document_name)
@@ -254,6 +255,7 @@ class RecordDict(MutableMapping):
         self.record_collection[key] = RecordType(record, collection, **kwargs)
 
     def to_firestore(self, client):
+        record: Record
         for key, record in self.record_collection.items():
             record.to_firestore(key, client)
 

@@ -1449,7 +1449,7 @@ def get_database_engine():
     return create_engine(SACN, pool_recycle=3600)
 
 
-def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
+def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.Series:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
@@ -1458,18 +1458,21 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
         'Y' for a year
     """
 
+    if freq == 'W-MON':
+        offset = '-1W-MON'
+
     if not isinstance(data.index[0], pd.Timestamp):
         data = data.groupby(data).count()
 
     if period:
         data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
         if not data[~data.isna()].empty:
-            data_counted = (data_filler + data.resample(freq, closed='left').sum()[period[0]:period[1]]).fillna(0)
+            data_counted = (data_filler + data.resample(freq, closed='left', loffset=offset).sum()[period[0]:period[1]]).fillna(0)
         else:
             data_counted = data_filler
     else:
         if not data[~data.isna()].empty:
-            data_counted = data.resample(freq, closed='left').sum()
+            data_counted = data.resample(freq, closed='left', loffset=offset).sum()
         else:
             data_counted = pd.Series()
 
