@@ -1409,12 +1409,13 @@ def calculate_planning_kpn(data, timeline):
         df = df.add(y_plan, fill_value=0)
     return df.planning_kpn
 
+
 def calculate_planning_tmobile(df):
     return df[~df.hasdatum.isna()].hasdatum
 
 
 def calculate_target_tmobile(df):
-    return df[~df.toestemming_datum.isna()].hasdatum
+    return df[(~df.creation.isna()) & ~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']) & (df.type == 'AANLEG')].creation
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
@@ -1460,8 +1461,9 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
     if freq == 'W-MON':
         offset = '-1W-MON'
 
-    if not isinstance(data.index[0], pd.Timestamp):
-        data = data.groupby(data).count()
+    if not data[~data.isna()].empty:
+        if not isinstance(data.index[0], pd.Timestamp):
+            data = data.groupby(data).count()
 
     if period:
         data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
