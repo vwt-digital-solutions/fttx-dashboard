@@ -399,7 +399,7 @@ class FttXAnalyse(FttXBase):
 
     def _calculate_list_of_years(self):
         logger.info("Calculating list of years")
-        date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col or "creatiion" in col]
+        date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col or "creation" in col]
         dc_data = self.transformed_data.df.loc[:, date_columns]
         list_of_years = []
         for col in dc_data.columns:
