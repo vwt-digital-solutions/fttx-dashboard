@@ -315,13 +315,13 @@ class FttXAnalyse(FttXBase):
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
         if toggles.new_structure_overviews:
-            # self._calculate_list_of_years()
+            self._calculate_list_of_years()
             self._make_records
             self._make_records_ratio_under_8weeks_versus_hpend()
             self._make_records_ratio_hc_versus_hpend()
-            self._make_records_realisatie_prog()
-            self._make_records_realisatie_target()
-            self._make_records_planning_kpn()
+            self._make_records_prog()
+            self._make_records_target_kpndfn()
+            self._make_records_planning_kpndfn()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -400,7 +400,7 @@ class FttXAnalyse(FttXBase):
 
     def _calculate_list_of_years(self):
         logger.info("Calculating list of years")
-        date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col]
+        date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col or "creatiion" in col]
         dc_data = self.transformed_data.df.loc[:, date_columns]
         list_of_years = []
         for col in dc_data.columns:
@@ -536,7 +536,7 @@ class FttXAnalyse(FttXBase):
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('ratio_hc_hpend', record, Record, "Data")
 
-    def _make_records_realisatie_prog(self):
+    def _make_records_prog(self):
         ds = calculate_realisatie_prognose(self.transformed_data.df,
                                            get_start_time(self.transformed_data.df),
                                            get_timeline(get_start_time(self.transformed_data.df)),
@@ -551,7 +551,7 @@ class FttXAnalyse(FttXBase):
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_prog', record, Record, "Data")
 
-    def _make_records_realisatie_target(self):
+    def _make_records_target_kpndfn(self):
         ds = calculate_realisatie_target(get_timeline(get_start_time(self.transformed_data.df)),
                                          self.transformed_data.totals,
                                          self.transformed_data.df.project.unique().tolist(),
@@ -566,7 +566,7 @@ class FttXAnalyse(FttXBase):
                 record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                 self.record_dict.add('realisatie_target', record, Record, "Data")
 
-    def _make_records_planning_kpn(self):
+    def _make_records_planning_kpndfn(self):
         ds = calculate_planning_kpn(self.transformed_data.planning['HPendT'],
                                     get_timeline(get_start_time(self.transformed_data.df)))
         freq = ['W-MON', 'MS', 'Y']
