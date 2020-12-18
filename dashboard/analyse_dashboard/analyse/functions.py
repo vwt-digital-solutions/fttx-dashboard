@@ -999,7 +999,7 @@ def error_check_FCBC(df: pd.DataFrame):
 
     business_rules['516'] = no_errors_series  # cannot check
     business_rules['517'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
-    business_rules['518'] = (~df.toestemming.isin(['Ja', 'Nee', np.nan]))
+    business_rules['518'] = (~df.toestemming.isin(['Ja', 'Nee', np.nan, None]))
     business_rules['519'] = (~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend']))
     business_rules['520'] = ((df.ftu_type.isna() & df.opleverstatus.isin(['2', '10'])) | (~df.ftu_type.isin(
         ['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02', 'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend'])))
@@ -1008,7 +1008,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['524'] = no_errors_series  # Kavel not present in our FC dump
     business_rules['527'] = no_errors_series  # HL opleverdatum not present in our FC dump
     business_rules['528'] = (~df.redenna.isin(
-        [np.nan, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15',
+        [np.nan, None, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15',
          'R16', 'R17', 'R18', 'R19', 'R20', 'R21', 'R22']))
     business_rules['531'] = no_errors_series  # strengID niet aanwezig in deze FCdump
     # if df[~df.CATVpos.isin(['999'])].shape[0] > 0:
