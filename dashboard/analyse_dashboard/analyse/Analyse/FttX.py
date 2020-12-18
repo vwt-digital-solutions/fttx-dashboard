@@ -477,6 +477,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
 
     def _make_records(self):
+        logger.info("Make records for dashboard overview  values")
         ds1 = calculate_realisatie_bis(self.transformed_data.df)
         ds2 = calculate_werkvoorraad_has(self.transformed_data.df)
         ds3 = calculate_realisatie_under_8weeks(self.transformed_data.df)
@@ -484,15 +485,27 @@ class FttXAnalyse(FttXBase):
         ds5 = calculate_realisatie_hc(self.transformed_data.df)
         ds6 = calculate_planning_tmobile(self.transformed_data.df)
         ds7 = calculate_target_tmobile(self.transformed_data.df)
+        ds8 = calculate_realisatie_prognose(self.transformed_data.df,
+                                            get_start_time(self.transformed_data.df),
+                                            get_timeline(get_start_time(self.transformed_data.df)),
+                                            self.transformed_data.totals,
+                                            self.extracted_data.ftu)
+        ds9 = calculate_realisatie_target(get_timeline(get_start_time(self.transformed_data.df)),
+                                          self.transformed_data.totals,
+                                          self.transformed_data.df.project.unique().tolist(),
+                                          self.extracted_data.ftu['date_FTU0'],
+                                          self.extracted_data.ftu['date_FTU1'])
+        ds10 = calculate_planning_kpn(self.transformed_data.planning['HPendT'],
+                                      get_timeline(get_start_time(self.transformed_data.df)))
 
         # Create a dictionary that contains the functions and the output name
         function_dict = {'realisatie_bis': ds1, 'werkvoorraad_has': ds2, 'realisatie_under_8weeks': ds3,
                          'realisatie_hpend': ds4, 'realisatie_hc': ds5, 'planning_tmobile': ds6,
-                         'target_tmobile': ds7
+                         'target_tmobile': ds7, 'realisatie_prog': ds8, 'realisatie_target': ds9,
+                         'planning_kpn': ds10
                          }
-
         freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
+        year = self.intermediate_results.List_of_years
 
         for outname, ds in function_dict.items():
             for y in year:
@@ -503,16 +516,15 @@ class FttXAnalyse(FttXBase):
                     self.record_dict.add(outname, record, Record, "Data")
 
     def _make_records_ratio(self):
+        logger.info("Make ratio records for dashboard overview  values")
         ds1 = calculate_realisatie_under_8weeks(self.transformed_data.df)
         ds2 = calculate_realisatie_hc(self.transformed_data.df)
-
         ds_div = calculate_realisatie_hpend(self.transformed_data.df)
 
         # Create a dictionary that contains the functions and the output name
         function_dict = {'ratio_8weeks_hpend': ds1, 'ratio_hc_hpend': ds2}
-
         freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
+        year = self.intermediate_results.List_of_years
 
         for outname, ds in function_dict.items():
             for y in year:
@@ -520,52 +532,9 @@ class FttXAnalyse(FttXBase):
                     data_num = sum_over_period(ds, f, period=[y + '-01-01', y + '-12-31'])
                     data_div = sum_over_period(ds_div, f, period=[y + '-01-01', y + '-12-31'])
                     data = (data_num / data_div).fillna(0)
-
                     data.index = data.index.format()
                     record = {data.name: data.to_dict(), 'year': y, 'freq': f}
                     self.record_dict.add(outname, record, Record, "Data")
-
-    def _make_records_prog(self):
-        ds = calculate_realisatie_prognose(self.transformed_data.df,
-                                           get_start_time(self.transformed_data.df),
-                                           get_timeline(get_start_time(self.transformed_data.df)),
-                                           self.transformed_data.totals,
-                                           self.extracted_data.ftu)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_prog', record, Record, "Data")
-
-    def _make_records_target_kpndfn(self):
-        ds = calculate_realisatie_target(get_timeline(get_start_time(self.transformed_data.df)),
-                                         self.transformed_data.totals,
-                                         self.transformed_data.df.project.unique().tolist(),
-                                         self.extracted_data.ftu['date_FTU0'],
-                                         self.extracted_data.ftu['date_FTU1'])
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_target', record, Record, "Data")
-
-    def _make_records_planning_kpndfn(self):
-        ds = calculate_planning_kpn(self.transformed_data.planning['HPendT'],
-                                    get_timeline(get_start_time(self.transformed_data.df)))
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('realisatie_target', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
