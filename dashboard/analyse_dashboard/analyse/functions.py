@@ -186,6 +186,32 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
     return TargetResults(y_target_l, t_diff)
 
 
+def targets_new(x_d, p_list, date_FTU0, date_FTU1):
+    # to add target info KPN in days uitgaande van FTU0 en FTU1
+    x_prog = np.array(list(range(0, len(x_d))))
+    y_target_l = {}
+    for key in p_list:
+        if date_FTU0[key] != ' ':
+            t_start = x_prog[x_d == date_FTU0[key]][0]
+            t_max = x_prog[x_d == date_FTU1[key]][0]
+            t_diff = t_max - t_start - 14  # two weeks round up
+            rc = 100 / t_diff  # target naar KPN is 100% HPend
+        else:  # incomplete information on FTU dates
+            t_start = 0
+            rc = 0  # target naar KPN is 100% HPend
+
+        b = -(rc * (t_start + 14))  # two weeks startup
+        y_target = b + rc * x_prog
+        y_target[y_target > 100] = 100
+        y_target_l[key] = y_target
+
+    for key in y_target_l:
+        y_target_l[key][y_target_l[key] > 100] = 100
+        y_target_l[key][y_target_l[key] < 0] = 0
+
+    return y_target_l
+
+
 def get_cumsum_of_col(df: pd.DataFrame, column):
     # Can we make it generic by passing column, or does df need to be filtered beforehand?
     filtered_df = df[~df[column].isna()]
@@ -973,7 +999,7 @@ def error_check_FCBC(df: pd.DataFrame):
 
     business_rules['516'] = no_errors_series  # cannot check
     business_rules['517'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
-    business_rules['518'] = (~df.toestemming.isin(['Ja', 'Nee', np.nan]))
+    business_rules['518'] = (~df.toestemming.isin(['Ja', 'Nee', np.nan, None]))
     business_rules['519'] = (~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend']))
     business_rules['520'] = ((df.ftu_type.isna() & df.opleverstatus.isin(['2', '10'])) | (~df.ftu_type.isin(
         ['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02', 'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend'])))
@@ -982,7 +1008,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['524'] = no_errors_series  # Kavel not present in our FC dump
     business_rules['527'] = no_errors_series  # HL opleverdatum not present in our FC dump
     business_rules['528'] = (~df.redenna.isin(
-        [np.nan, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15',
+        [np.nan, None, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14', 'R15',
          'R16', 'R17', 'R18', 'R19', 'R20', 'R21', 'R22']))
     business_rules['531'] = no_errors_series  # strengID niet aanwezig in deze FCdump
     # if df[~df.CATVpos.isin(['999'])].shape[0] > 0:
@@ -1330,7 +1356,7 @@ def calculate_bis_gereed(df):
     return sum(br.bis_opgeleverd(df_copy))
 
 
-def calculate_realisate_bis(df):
+def calculate_realisatie_bis(df):
     return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
@@ -1340,13 +1366,48 @@ def calculate_werkvoorraad_has(df):
     return ds
 
 
-def calculate_realisate_hpend(df):
+def calculate_realisatie_under_8weeks(df):
+    return df[br.oplevertijd_new(df)].opleverdatum
+
+
+def calculate_realisatie_hpend(df):
     return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
-def calculate_realisate_hc(df):
+def calculate_realisatie_hc(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
 
+
+def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
+    result = prognose(df,
+                      start_time,
+                      timeline,
+                      totals,
+                      ftu['date_FTU0'])
+    df_prog = pd.DataFrame(index=timeline, columns=['prognose'], data=0)
+    for key in result.y_prog_l:
+        amounts = result.y_prog_l[key] / 100 * totals[key]
+        df_prog += pd.DataFrame(index=timeline, columns=['prognose'], data=amounts).diff().fillna(0)
+    return df_prog.prognose
+
+
+def calculate_realisatie_target(timeline, totals, p_list, ftu0, ftu1):
+    y_target_l = targets_new(timeline, p_list, ftu0, ftu1)
+    df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
+    for key in y_target_l:
+        amounts = y_target_l[key] / 100 * totals[key]
+        df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
+    return df_target.target
+
+
+def calculate_planning_kpn(data, timeline):
+    df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
+    if data:
+        y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(data), freq='W-MON'),
+                              columns=['planning_kpn'], data=data)
+        y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
+        df = df.add(y_plan, fill_value=0)
+    return df.planning_kpn
 
 def calculate_planning_tmobile(df):
     return df[~df.hasdatum.isna()].hasdatum
@@ -1387,7 +1448,7 @@ def get_database_engine():
     return create_engine(SACN, pool_recycle=3600)
 
 
-def sum_over_period(ds: pd.Series, freq: str, period=None) -> pd.Series:
+def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.Series:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
@@ -1396,16 +1457,38 @@ def sum_over_period(ds: pd.Series, freq: str, period=None) -> pd.Series:
         'Y' for a year
     """
 
-    if period:
-        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=ds.name, data=0)
-        if not ds[~ds.isna()].empty:
-            data = (data_filler + ds.groupby(ds).count().resample(freq, closed='left').sum()[period[0]:period[1]]).fillna(0)
-        else:
-            data = data_filler
-    else:
-        if not ds[~ds.isna()].empty:
-            data = ds.groupby(ds).count().resample(freq, closed='left').sum()
-        else:
-            data = pd.Series()
+    if freq == 'W-MON':
+        offset = '-1W-MON'
 
-    return data
+    if not isinstance(data.index[0], pd.Timestamp):
+        data = data.groupby(data).count()
+
+    if period:
+        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
+        if not data[~data.isna()].empty:
+            data_counted = (data_filler + data.resample(freq, closed='left', loffset=offset).sum()[period[0]:period[1]]).fillna(0)
+        else:
+            data_counted = data_filler
+    else:
+        if not data[~data.isna()].empty:
+            data_counted = data.resample(freq, closed='left', loffset=offset).sum()
+        else:
+            data_counted = pd.Series()
+
+    return data_counted
+
+
+def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
+    data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
+    data.index = data.index.format()
+    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    return record
+
+
+def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):
+    data_num = sum_over_period(numerator, freq, period=[year + '-01-01', year + '-12-31'])
+    data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
+    data = (data_num / data_div).fillna(0)
+    data.index = data.index.format()
+    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    return record

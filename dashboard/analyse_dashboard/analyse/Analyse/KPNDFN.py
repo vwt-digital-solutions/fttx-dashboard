@@ -27,7 +27,8 @@ class KPNDFNExtract(FttXExtract):
 
     def extract(self):
         self._extract_ftu()
-        self._extract_planning()
+        if not toggles.new_structure_overviews:
+            self._extract_planning()
         super().extract()
 
     def _extract_ftu(self):
@@ -65,7 +66,8 @@ class KPNDFNTransform(FttXTransform):
 
     def transform(self):
         super().transform()
-        self._transform_planning()
+        if not toggles.new_structure_overviews:
+            self._transform_planning()
 
     def _transform_planning(self):
         logger.info("Transforming planning for KPN")
