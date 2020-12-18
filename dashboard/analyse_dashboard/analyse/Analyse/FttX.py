@@ -316,9 +316,8 @@ class FttXAnalyse(FttXBase):
         logger.info("Analysing using the FttX protocol")
         if toggles.new_structure_overviews:
             # self._calculate_list_of_years()
-            self._make_records
-            self._make_records_ratio_under_8weeks_versus_hpend()
-            self._make_records_ratio_hc_versus_hpend()
+            self._make_records()
+            self._make_records_ratio()
             self._make_records_realisatie_prog()
             self._make_records_realisatie_target()
             self._make_records_planning_kpn()
