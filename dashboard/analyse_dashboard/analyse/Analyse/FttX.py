@@ -172,7 +172,8 @@ class FttXTransform(Transform):
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
-        self._transform_planning()
+        if toggles.new_structure_overviews:
+            self._transform_planning()
 
     def _set_totals(self):
         self.transformed_data.totals = {}
