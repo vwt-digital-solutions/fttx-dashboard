@@ -14,7 +14,7 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentL
 import business_rules as br
 from functions import calculate_realisatie_hpend, get_data_targets_init, cluster_reden_na, \
   calculate_target_tmobile, set_filters, calculate_y_voorraad_act, \
-  calculate_realisatie_hc, sum_over_period, rules_to_state, calculate_planning_tmobile, \
+  calculate_realisatie_hc, rules_to_state, calculate_planning_tmobile, \
   calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, \
   calculate_realisatie_target, calculate_redenna_per_period, calculate_projectspecs, \
   calculate_realisatie_prognose, individual_reden_na, ratio_sum_over_periods_to_record, \
@@ -476,7 +476,7 @@ class FttXAnalyse(FttXBase):
 
     def _make_records_for_dashboard_values(self):
         logger.info("Make records for dashboard overview  values")
-        if self.transformed_data.planning:
+        if len(self.transformed_data.planning) != 0:
             planning_kpn = calculate_planning_kpn(
                                     self.transformed_data.planning['HPendT'],
                                     get_timeline(get_start_time(self.transformed_data.df)))
@@ -529,28 +529,6 @@ class FttXAnalyse(FttXBase):
                     record = ratio_sum_over_periods_to_record(numerator=values, divider=realisatie_hpend,
                                                               freq=f, year=y)
                     self.record_dict.add(key+f+y, record, Record, "Data")
-
-    def _make_records_planning_tmobile(self):
-        ds = calculate_planning_tmobile(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('planning_tmobile', record, Record, "Data")
-
-    def _make_records_target_tmobile(self):
-        ds = calculate_target_tmobile(self.transformed_data.df)
-        freq = ['W-MON', 'MS', 'Y']
-        year = ['2019', '2020', '2021']
-        for y in year:
-            for f in freq:
-                data = sum_over_period(ds, f, period=[y+'-01-01', y+'-12-31'])
-                data.index = data.index.format()
-                record = {data.name: data.to_dict(), 'year': y, 'freq': f}
-                self.record_dict.add('target_tmobile', record, Record, "Data")
 
 
 class FttXLoad(Load, FttXBase):
