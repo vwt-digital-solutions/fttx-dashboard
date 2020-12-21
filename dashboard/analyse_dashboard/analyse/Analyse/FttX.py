@@ -16,8 +16,8 @@ from functions import calculate_realisatie_hpend, get_data_targets_init, cluster
   calculate_target_tmobile, set_filters, calculate_y_voorraad_act, \
   calculate_realisatie_hc, rules_to_state, calculate_planning_tmobile, \
   calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, \
-  calculate_realisatie_target, calculate_redenna_per_period, calculate_projectspecs, \
-  calculate_realisatie_prognose, individual_reden_na, ratio_sum_over_periods_to_record, \
+  calculate_target_kpn, calculate_redenna_per_period, calculate_projectspecs, \
+  calculate_voorspelling, individual_reden_na, ratio_sum_over_periods_to_record, \
   get_database_engine, calculate_realisatie_under_8weeks, \
   calculate_planning_kpn, overview_reden_na, sum_over_period_to_record, get_timeline
 from pandas.api.types import CategoricalDtype
@@ -491,13 +491,13 @@ class FttXAnalyse(FttXBase):
                          'realisatie_hc': calculate_realisatie_hc(self.transformed_data.df),
                          'planning_tmobile': calculate_planning_tmobile(self.transformed_data.df),
                          'target_tmobile': calculate_target_tmobile(self.transformed_data.df),
-                         'realisatie_prog': calculate_realisatie_prognose(
+                         'voorspelling': calculate_voorspelling(
                                                 self.transformed_data.df,
                                                 get_start_time(self.transformed_data.df),
                                                 get_timeline(get_start_time(self.transformed_data.df)),
                                                 self.transformed_data.totals,
                                                 self.extracted_data.ftu),
-                         'realisatie_target': calculate_realisatie_target(
+                         'target_kpn': calculate_target_kpn(
                                                 get_timeline(get_start_time(self.transformed_data.df)),
                                                 self.transformed_data.totals,
                                                 self.transformed_data.df.project.unique().tolist(),

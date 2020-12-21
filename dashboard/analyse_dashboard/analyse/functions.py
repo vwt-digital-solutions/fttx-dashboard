@@ -1378,7 +1378,7 @@ def calculate_realisatie_hc(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
 
 
-def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
+def calculate_voorspelling(df, start_time, timeline, totals, ftu):
     result = prognose(df,
                       start_time,
                       timeline,
@@ -1391,7 +1391,7 @@ def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
     return df_prog.prognose
 
 
-def calculate_realisatie_target(timeline, totals, p_list, ftu0, ftu1):
+def calculate_target_kpn(timeline, totals, p_list, ftu0, ftu1):
     y_target_l = targets_new(timeline, p_list, ftu0, ftu1)
     df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
     for key in y_target_l:
