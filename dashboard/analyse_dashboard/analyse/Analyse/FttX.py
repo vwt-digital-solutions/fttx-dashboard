@@ -13,13 +13,14 @@ import logging
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
 from functions import calculate_realisatie_hpend, get_data_targets_init, cluster_reden_na, \
-  calculate_target_tmobile, set_filters, calculate_y_voorraad_act, \
-  calculate_realisatie_hc, rules_to_state, calculate_planning_tmobile, \
-  calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, \
-  calculate_target_kpn, calculate_redenna_per_period, calculate_projectspecs, \
-  calculate_voorspelling, individual_reden_na, ratio_sum_over_periods_to_record, \
-  get_database_engine, calculate_realisatie_under_8weeks, \
-  calculate_planning_kpn, overview_reden_na, sum_over_period_to_record, get_timeline
+    calculate_target_tmobile, set_filters, calculate_y_voorraad_act, \
+    calculate_realisatie_hc, rules_to_state, calculate_planning_tmobile, \
+    calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, \
+    calculate_target_kpn, calculate_redenna_per_period, calculate_projectspecs, \
+    calculate_voorspelling, individual_reden_na, ratio_sum_over_periods_to_record, \
+    get_database_engine, calculate_realisatie_under_8weeks, \
+    calculate_planning_kpn, overview_reden_na, sum_over_period_to_record, get_timeline, \
+    voorspel_and_planning_sum_over_periods_to_record
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -318,6 +319,7 @@ class FttXAnalyse(FttXBase):
         if toggles.new_structure_overviews:
             self._calculate_list_of_years()
             self._make_records_for_dashboard_values()
+            self._make_voorspelling_and_planning_for_dashboard_values()
             self._make_records_ratio_for_dashboard_values()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
@@ -476,34 +478,18 @@ class FttXAnalyse(FttXBase):
 
     def _make_records_for_dashboard_values(self):
         logger.info("Make records for dashboard overview  values")
-        if len(self.transformed_data.planning) != 0:
-            planning_kpn = calculate_planning_kpn(
-                                    self.transformed_data.planning['HPendT'],
-                                    get_timeline(get_start_time(self.transformed_data.df)))
-        else:
-            planning_kpn = pd.Series(name='planning_tmobile', index=[0])
-
         # Create a dictionary that contains the functions and the output name
         function_dict = {'realisatie_bis': calculate_realisatie_bis(self.transformed_data.df),
                          'werkvoorraad_has': calculate_werkvoorraad_has(self.transformed_data.df),
-                         'realisatie_under_8weeks': calculate_realisatie_under_8weeks(self.transformed_data.df),
                          'realisatie_hpend': calculate_realisatie_hpend(self.transformed_data.df),
-                         'realisatie_hc': calculate_realisatie_hc(self.transformed_data.df),
                          'planning_tmobile': calculate_planning_tmobile(self.transformed_data.df),
                          'target_tmobile': calculate_target_tmobile(self.transformed_data.df),
-                         'voorspelling': calculate_voorspelling(
-                                                self.transformed_data.df,
-                                                get_start_time(self.transformed_data.df),
-                                                get_timeline(get_start_time(self.transformed_data.df)),
-                                                self.transformed_data.totals,
-                                                self.extracted_data.ftu),
                          'target_kpn': calculate_target_kpn(
                                                 get_timeline(get_start_time(self.transformed_data.df)),
                                                 self.transformed_data.totals,
                                                 self.transformed_data.df.project.unique().tolist(),
                                                 self.extracted_data.ftu['date_FTU0'],
                                                 self.extracted_data.ftu['date_FTU1']),
-                         'planning_kpn': planning_kpn
                          }
         freq = ['W-MON', 'M', 'Y']
         year = self.intermediate_results.List_of_years
@@ -512,6 +498,35 @@ class FttXAnalyse(FttXBase):
             for y in year:
                 for f in freq:
                     record = sum_over_period_to_record(timeseries=values, freq=f, year=y)
+                    self.record_dict.add(key+f+y, record, Record, "Data")
+
+    def _make_voorspelling_and_planning_for_dashboard_values(self):
+        logger.info("Make intermediate results for dashboard overview  values")
+        if len(self.transformed_data.planning) != 0:
+            planning_kpn = calculate_planning_kpn(
+                                    self.transformed_data.planning['HPendT'],
+                                    get_timeline(get_start_time(self.transformed_data.df)))
+        else:
+            planning_kpn = pd.Series(name='planning_tmobile', index=[0])
+
+        # Create a dictionary that contains the functions and the output name
+        function_dict = {'voorspelling': calculate_voorspelling(
+                                                self.transformed_data.df,
+                                                get_start_time(self.transformed_data.df),
+                                                get_timeline(get_start_time(self.transformed_data.df)),
+                                                self.transformed_data.totals,
+                                                self.extracted_data.ftu),
+                         'planning_kpn': planning_kpn
+                         }
+        realisatie_hpend = calculate_realisatie_hpend(self.transformed_data.df)
+        freq = ['W-MON', 'M', 'Y']
+        year = self.intermediate_results.List_of_years
+
+        for key, values in function_dict.items():
+            for y in year:
+                for f in freq:
+                    record = voorspel_and_planning_sum_over_periods_to_record(predicted=values,
+                                                                              realized=realisatie_hpend, freq=f, year=y)
                     self.record_dict.add(key+f+y, record, Record, "Data")
 
     def _make_records_ratio_for_dashboard_values(self):
