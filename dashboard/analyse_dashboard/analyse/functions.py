@@ -1378,7 +1378,7 @@ def calculate_realisatie_hc(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
 
 
-def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
+def calculate_voorspelling(df, start_time, timeline, totals, ftu):
     result = prognose(df,
                       start_time,
                       timeline,
@@ -1391,7 +1391,7 @@ def calculate_realisatie_prognose(df, start_time, timeline, totals, ftu):
     return df_prog.prognose
 
 
-def calculate_realisatie_target(timeline, totals, p_list, ftu0, ftu1):
+def calculate_target_kpn(timeline, totals, p_list, ftu0, ftu1):
     y_target_l = targets_new(timeline, p_list, ftu0, ftu1)
     df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
     for key in y_target_l:
@@ -1415,7 +1415,7 @@ def calculate_planning_tmobile(df):
 
 
 def calculate_target_tmobile(df):
-    return df[~df.toestemming_datum.isna()].hasdatum
+    return df[(~df.creation.isna()) & ~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']) & (df.type == 'AANLEG')].creation
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
@@ -1461,8 +1461,9 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
     if freq == 'W-MON':
         offset = '-1W-MON'
 
-    if not isinstance(data.index[0], pd.Timestamp):
-        data = data.groupby(data).count()
+    if not data[~data.isna()].empty:
+        if not isinstance(data.index[0], pd.Timestamp):
+            data = data.groupby(data).count()
 
     if period:
         data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
@@ -1490,6 +1491,15 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     data_num = sum_over_period(numerator, freq, period=[year + '-01-01', year + '-12-31'])
     data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
     data = (data_num / data_div).fillna(0)
+    data.index = data.index.format()
+    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    return record
+
+
+def voorspel_and_planning_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str, year: str):
+    data_voorspelling_or_planning = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
+    data_realized = sum_over_period(realized, freq, period=[year + '-01-01', year + '-12-31'])
+    data = (data_voorspelling_or_planning - data_realized).fillna(0)
     data.index = data.index.format()
     record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
     return record
