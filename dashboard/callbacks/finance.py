@@ -127,10 +127,14 @@ for client in config.client_config.keys():
                        Example: dict(level='categorie', value='civiel')
         :return: actuals_df, budget_df, expected_actuals_df
         """
+        if parent is None:
+            parent = {}
 
-        budget_df = pd.DataFrame(data.get("budget"))
-        expected_actuals_df = pd.DataFrame(data.get("expected_actuals"))
-        actuals_df = pd.DataFrame(data.get("actuals_aggregated"))
+        budget_df = pd.DataFrame(data.get("budget", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+        expected_actuals_df = pd.DataFrame(
+            data.get("expected_actuals", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+        actuals_df = pd.DataFrame(
+            data.get("actuals_aggregated", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
 
         if parent:
             budget_df = budget_df[budget_df[parent.get("level")] == parent.get("value")]
@@ -138,7 +142,9 @@ for client in config.client_config.keys():
             actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
 
         budget_df = budget_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+
         expected_actuals_df = expected_actuals_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+
         actuals_df = actuals_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
         return actuals_df, budget_df, expected_actuals_df
 
@@ -190,12 +196,14 @@ for client in config.client_config.keys():
             for point in click.get("points", []):
                 if finance_data:
                     parent = dict(level='categorie', value=point.get("label"))
-                    actuals_df = pd.DataFrame(finance_data.get('actuals'))
+                    actuals_df = pd.DataFrame(
+                        finance_data.get('actuals', {parent.get("level"): [], 'kostenbedrag': []}))
                     actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
                     time_series = actuals_df.groupby("registratiedatum")['kostenbedrag'].sum().sort_index().cumsum()
 
-                    expected_cost = finance_data.get('expected_actuals')
-                    expected_cost = pd.DataFrame(expected_cost)
+                    expected_cost = pd.DataFrame(
+                        finance_data.get('expected_actuals', {parent.get("level"): [], 'kostenbedrag': []})
+                    )
                     expected_cost = expected_cost[
                         expected_cost[parent.get("level")] == parent.get('value')].kostenbedrag.sum()
 
