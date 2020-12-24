@@ -247,3 +247,90 @@ for client in config.client_config.keys():
                                                      ])
             return [redenna_pie]
         return [{'data': None, 'layout': None}]
+
+    # TODO: remove when the select year dropdown is fixed
+    @app.callback(
+        [
+            Output(f'year-output-{client}', 'children')
+        ],
+        [
+            Input(f'year-dropdown-{client}', 'value')
+        ]
+    )
+    def child_year_output(year):
+        return [f"Current year selected: {year}"]
+
+    @app.callback(
+        Output(f'info-container-year-{client}', 'children'),
+        [
+            Input(f'year-dropdown-{client}', 'value')
+        ]
+    )
+    def load_global_info_per_year(year, client=client):
+        parameters_global_info_list = [
+            dict(id_="info_globaal_container0",
+                 title='Target',
+                 text=f"HPend afgesproken in {year}: ",
+                 value=str(int(collection.get_document(collection="Data",
+                                                       graph_name="target",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y")))),
+            dict(id_="info_globaal_container1",
+                 title='Realisatie (HPend)',
+                 text=f"HPend gerealiseerd in {year}: ",
+                 value=str(collection.get_document(collection="Data",
+                                                   graph_name="realisatie_hpend",
+                                                   client=client,
+                                                   year=year,
+                                                   frequency="Y"))),
+            dict(id_="info_globaal_container1",
+                 title='Realisatie (BIS)',
+                 text=f"BIS gerealiseerd in {year}: ",
+                 value=str(collection.get_document(collection="Data",
+                                                   graph_name="realisatie_bis",
+                                                   client=client,
+                                                   year=year,
+                                                   frequency="Y"))),
+            dict(id_="info_globaal_container2",
+                 title='Planning (VWT)',
+                 text=f"HPend gepland in {year}: ",
+                 value=str(int(collection.get_document(collection="Data",
+                                                       graph_name="planning",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y")))),
+            dict(id_="info_globaal_container3",
+                 title='Voorspelling (VQD)',
+                 text=f"HPend voorspeld in {year}: ",
+                 value=str(int(collection.get_document(collection="Data",
+                                                       graph_name="voorspelling",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y")))),
+            dict(id_="info_globaal_container5",
+                 title='Werkvoorraad HAS',
+                 value=str(collection.get_document(collection="Data",
+                                                   graph_name="werkvoorraad_has",
+                                                   client=client,
+                                                   year=year,
+                                                   frequency="Y"))),
+            dict(id_="info_globaal_container4",
+                 title='Actuele HC / HPend',
+                 value=str(round(collection.get_document(collection="Data",
+                                                         graph_name="ratio_hc_hpend",
+                                                         client=client,
+                                                         year=year,
+                                                         frequency="Y"), 2))),
+            dict(id_="info_globaal_container4",
+                 title='Ratio <8 weken',
+                 value=str(round(collection.get_document(collection="Data",
+                                                         graph_name="ratio_8weeks_hpend",
+                                                         client=client,
+                                                         year=year,
+                                                         frequency="Y"), 2))),
+        ]
+        return [
+            global_info_list(items=parameters_global_info_list,
+                             className="container-display")
+        ]
