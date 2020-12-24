@@ -275,7 +275,8 @@ for client in config.client_config.keys():
                                                        graph_name="target",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y")))),
+                                                       frequency="Y")))
+                 ),
             dict(id_="info_globaal_container1",
                  title='Realisatie (HPend)',
                  text=f"HPend gerealiseerd in {year}: ",
@@ -283,7 +284,8 @@ for client in config.client_config.keys():
                                                    graph_name="realisatie_hpend",
                                                    client=client,
                                                    year=year,
-                                                   frequency="Y"))),
+                                                   frequency="Y"))
+                 ),
             dict(id_="info_globaal_container1",
                  title='Realisatie (BIS)',
                  text=f"BIS gerealiseerd in {year}: ",
@@ -291,7 +293,8 @@ for client in config.client_config.keys():
                                                    graph_name="realisatie_bis",
                                                    client=client,
                                                    year=year,
-                                                   frequency="Y"))),
+                                                   frequency="Y"))
+                 ),
             dict(id_="info_globaal_container2",
                  title='Planning (VWT)',
                  text=f"HPend gepland in {year}: ",
@@ -299,7 +302,8 @@ for client in config.client_config.keys():
                                                        graph_name="planning",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y")))),
+                                                       frequency="Y"))) if client == 'kpn' else 'n.v.t.'
+                 ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
                  text=f"HPend voorspeld in {year}: ",
@@ -307,28 +311,32 @@ for client in config.client_config.keys():
                                                        graph_name="voorspelling",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y")))),
+                                                       frequency="Y"))) if client != 'tmobile' else 'n.v.t.'
+                 ),
             dict(id_="info_globaal_container5",
                  title='Werkvoorraad HAS',
                  value=str(collection.get_document(collection="Data",
                                                    graph_name="werkvoorraad_has",
                                                    client=client,
                                                    year=year,
-                                                   frequency="Y"))),
+                                                   frequency="Y"))
+                 ),
             dict(id_="info_globaal_container4",
                  title='Actuele HC / HPend',
                  value=str(round(collection.get_document(collection="Data",
                                                          graph_name="ratio_hc_hpend",
                                                          client=client,
                                                          year=year,
-                                                         frequency="Y"), 2))),
+                                                         frequency="Y"), 2)) if client != 'tmobile' else 'n.v.t.'
+                 ),
             dict(id_="info_globaal_container4",
                  title='Ratio <8 weken',
                  value=str(round(collection.get_document(collection="Data",
                                                          graph_name="ratio_8weeks_hpend",
                                                          client=client,
                                                          year=year,
-                                                         frequency="Y"), 2))),
+                                                         frequency="Y"), 2)) if client == 'tmobile' else 'n.v.t.'
+                 ),
         ]
         return [
             global_info_list(items=parameters_global_info_list,
