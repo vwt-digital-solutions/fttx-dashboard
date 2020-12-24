@@ -10,18 +10,26 @@ import requests
 from flask_dance.contrib.azure import azure
 import logging
 
+from app import cache
+
 
 def get(path):
     url = config.api_url + path
     if 'FIRESTORE_EMULATOR_HOST' in os.environ:
         return local_api(url)
     else:
-        logging.info(f"Requesting {path}")
         headers = {'Authorization': 'Bearer ' + azure.access_token}
-        response = requests.get(url, headers=headers)
+        response = cachable_request(url, headers)
         if response.status_code == 404:
             logging.info(f"Path {path} not found: 404")
         return response.json().get('results')
+
+
+@cache.memoize(timeout=60*10)
+def cachable_request(url, headers):
+    logging.info(f"Requesting {url}")
+    response = requests.get(url, headers=headers)
+    return response
 
 
 def make_problem_json(title, status):
