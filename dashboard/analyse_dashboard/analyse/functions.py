@@ -34,19 +34,18 @@ def get_data_targets_init(path_data, map_key):
     return date_FTU0, date_FTU1
 
 
-def get_start_time(df: pd.DataFrame):
-    # What does t_s stand for? Would prefer to use a descriptive variable name.
-    t_s = {}
+def get_start_time(df: pd.DataFrame) -> dict:
+    start_time_by_project = {}
     for project, project_df in df.groupby("project"):
         start_time = project_df.opleverdatum.min()
         if start_time is pd.NaT:
-            t_s[project] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
+            start_time_by_project[project] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
         else:
-            t_s[project] = start_time
-    return t_s
+            start_time_by_project[project] = start_time
+    return start_time_by_project
 
 
-def get_timeline(t_s):
+def get_timeline(t_s) -> pd.DatetimeIndex:
     x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
     return x_axis
 
@@ -1378,12 +1377,29 @@ def calculate_realisatie_hc(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
 
 
-def calculate_voorspelling(df, start_time, timeline, totals, ftu):
+def calculate_voorspelling(df, ftu=None, totals=None):
+    if ftu:
+        return calculate_voorspelling_kpn(
+            df=df,
+            start_time=get_start_time(df),
+            timeline=get_timeline(get_start_time(df)),
+            totals=totals,
+            ftu=ftu['date_FTU0']
+        )
+    else:
+        df_prog = pd.DataFrame(index=get_timeline(get_start_time(df)), columns=['prognose'], data=0)
+        return df_prog.prognose
+
+
+def calculate_voorspelling_kpn(df, start_time, timeline, totals, ftu):
+    """
+    This function should ???
+    """
     result = prognose(df,
                       start_time,
                       timeline,
                       totals,
-                      ftu['date_FTU0'])
+                      ftu)
     df_prog = pd.DataFrame(index=timeline, columns=['prognose'], data=0)
     for key in result.y_prog_l:
         amounts = result.y_prog_l[key] / 100 * totals[key]
@@ -1391,18 +1407,17 @@ def calculate_voorspelling(df, start_time, timeline, totals, ftu):
     return df_prog.prognose
 
 
-def calculate_target_kpn(timeline, totals, p_list, ftu0, ftu1):
-    y_target_l = targets_new(timeline, p_list, ftu0, ftu1)
-    df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
-    for key in y_target_l:
-        amounts = y_target_l[key] / 100 * totals[key]
-        df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
-    return df_target.target
+def calculate_planning(df, planning=None):
+    if planning:
+        return calculate_planning_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
+    else:
+        return calculate_planning_tmobile(df)
 
 
-def calculate_planning_kpn(data, timeline):
+def calculate_planning_kpn(data: list, timeline: pd.DatetimeIndex):
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
+        # TODO: remove hardcoded start date
         y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(data), freq='W-MON'),
                               columns=['planning_kpn'], data=data)
         y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
@@ -1414,8 +1429,32 @@ def calculate_planning_tmobile(df):
     return df[~df.hasdatum.isna()].hasdatum
 
 
+def calculate_target(df, ftu=None, totals=None):
+    if ftu:
+        return calculate_target_kpn(
+            timeline=get_timeline(get_start_time(df)),
+            totals=totals,
+            project_list=df.project.unique().tolist(),
+            ftu0=ftu['date_FTU0'],
+            ftu1=ftu['date_FTU1'])
+    else:
+        return calculate_target_tmobile(df)
+
+
+def calculate_target_kpn(timeline, totals, project_list, ftu0, ftu1):
+    y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
+    df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
+    for key in y_target_l:
+        amounts = y_target_l[key] / 100 * totals[key]
+        df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
+    return df_target.target
+
+
 def calculate_target_tmobile(df):
-    return df[(~df.creation.isna()) & ~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']) & (df.type == 'AANLEG')].creation
+    return df[(~df.creation.isna())
+              & ~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED'])
+              & (df.type == 'AANLEG')] \
+              .creation
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
@@ -1457,6 +1496,8 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
         'W-MON' for weeks starting on Monday.
         'Y' for a year
     """
+    if data is None:
+        data = pd.Series()
 
     if freq == 'W-MON':
         offset = '-1W-MON'
@@ -1483,7 +1524,7 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
 def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
     data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
     data.index = data.index.format()
-    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    record = data.to_dict()
     return record
 
 
@@ -1492,7 +1533,7 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
     data = (data_num / data_div).fillna(0)
     data.index = data.index.format()
-    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    record = data.to_dict()
     return record
 
 
@@ -1501,5 +1542,5 @@ def voorspel_and_planning_sum_over_periods_to_record(predicted: pd.Series, reali
     data_realized = sum_over_period(realized, freq, period=[year + '-01-01', year + '-12-31'])
     data = (data_voorspelling_or_planning - data_realized).fillna(0)
     data.index = data.index.format()
-    record = {data.name: data.to_dict(), 'year': year, 'freq': freq}
+    record = data.to_dict()
     return record

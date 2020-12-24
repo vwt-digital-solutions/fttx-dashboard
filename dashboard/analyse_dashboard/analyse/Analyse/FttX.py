@@ -13,14 +13,12 @@ import logging
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
 from functions import calculate_realisatie_hpend, get_data_targets_init, cluster_reden_na, \
-    calculate_target_tmobile, set_filters, calculate_y_voorraad_act, \
-    calculate_realisatie_hc, rules_to_state, calculate_planning_tmobile, \
-    calculate_werkvoorraad_has, calculate_realisatie_bis, get_start_time, \
-    calculate_target_kpn, calculate_redenna_per_period, calculate_projectspecs, \
-    calculate_voorspelling, individual_reden_na, ratio_sum_over_periods_to_record, \
-    get_database_engine, calculate_realisatie_under_8weeks, \
-    calculate_planning_kpn, overview_reden_na, sum_over_period_to_record, get_timeline, \
-    voorspel_and_planning_sum_over_periods_to_record
+    set_filters, calculate_y_voorraad_act, calculate_realisatie_hc, rules_to_state, \
+    calculate_werkvoorraad_has, calculate_realisatie_bis, calculate_redenna_per_period, \
+    calculate_projectspecs, calculate_voorspelling, individual_reden_na, \
+    ratio_sum_over_periods_to_record, get_database_engine, calculate_realisatie_under_8weeks, \
+    overview_reden_na, sum_over_period_to_record, voorspel_and_planning_sum_over_periods_to_record, \
+    calculate_planning, calculate_target
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -170,12 +168,12 @@ class FttXTransform(Transform):
         super().transform()
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
+        if toggles.new_structure_overviews:
+            self._transform_planning()
         self._add_columns()
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
-        if toggles.new_structure_overviews:
-            self._transform_planning()
 
     def _set_totals(self):
         self.transformed_data.totals = {}
@@ -279,8 +277,8 @@ class FttXTransform(Transform):
     def _transform_planning(self):
         logger.info("Transforming planning for KPN")
         HP = dict(HPendT=[0] * 52)
-        df = self.extracted_data.planning
-        if not df.empty:
+        df = self.extracted_data.get("planning")
+        if df and not df.empty:
             for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
                 if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
                     HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
@@ -482,52 +480,68 @@ class FttXAnalyse(FttXBase):
         function_dict = {'realisatie_bis': calculate_realisatie_bis(self.transformed_data.df),
                          'werkvoorraad_has': calculate_werkvoorraad_has(self.transformed_data.df),
                          'realisatie_hpend': calculate_realisatie_hpend(self.transformed_data.df),
-                         'planning_tmobile': calculate_planning_tmobile(self.transformed_data.df),
-                         'target_tmobile': calculate_target_tmobile(self.transformed_data.df),
-                         'target_kpn': calculate_target_kpn(
-                                                get_timeline(get_start_time(self.transformed_data.df)),
-                                                self.transformed_data.totals,
-                                                self.transformed_data.df.project.unique().tolist(),
-                                                self.extracted_data.ftu['date_FTU0'],
-                                                self.extracted_data.ftu['date_FTU1']),
+                         'target': calculate_target(df=self.transformed_data.df,
+                                                    totals=self.transformed_data.get("totals"),
+                                                    ftu=self.extracted_data.get("ftu")
+                                                    ),
+                         # TODO: remove voorspelling_raw and planning_raw
+                         'voorspelling_raw': calculate_voorspelling(
+                                                     df=self.transformed_data.df,
+                                                     ftu=self.extracted_data.get("ftu"),
+                                                     totals=self.transformed_data.get("totals")),
+                         'planning_raw': calculate_planning(df=self.transformed_data.df,
+                                                            planning=self.transformed_data.get("planning")),
                          }
-        freq = ['W-MON', 'M', 'Y']
-        year = self.intermediate_results.List_of_years
-
+        list_of_freq = ['W-MON', 'M', 'Y']
+        document_list = []
         for key, values in function_dict.items():
-            for y in year:
-                for f in freq:
-                    record = sum_over_period_to_record(timeseries=values, freq=f, year=y)
-                    self.record_dict.add(key+f+y, record, Record, "Data")
+            for year in self.intermediate_results.List_of_years:
+                for freq in list_of_freq:
+                    record = sum_over_period_to_record(timeseries=values, freq=freq, year=year)
+                    # To remove the date when there is only one period (when summing over a year):
+                    if len(record) == 1:
+                        record = list(record.values())[0]
+                    document_list.append(dict(
+                        client=self.client,
+                        graph_name=key,
+                        frequency=freq,
+                        year=year,
+                        record=record
+                    ))
+        self.record_dict.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
+                             document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_voorspelling_and_planning_for_dashboard_values(self):
-        logger.info("Make intermediate results for dashboard overview  values")
-        if len(self.transformed_data.planning) != 0:
-            planning_kpn = calculate_planning_kpn(
-                                    self.transformed_data.planning['HPendT'],
-                                    get_timeline(get_start_time(self.transformed_data.df)))
-        else:
-            planning_kpn = pd.Series(name='planning_tmobile', index=[0])
-
+        logger.info("Make voorspelling and planning for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         function_dict = {'voorspelling': calculate_voorspelling(
-                                                self.transformed_data.df,
-                                                get_start_time(self.transformed_data.df),
-                                                get_timeline(get_start_time(self.transformed_data.df)),
-                                                self.transformed_data.totals,
-                                                self.extracted_data.ftu),
-                         'planning_kpn': planning_kpn
+                                                df=self.transformed_data.df,
+                                                ftu=self.extracted_data.get("ftu"),
+                                                totals=self.transformed_data.get("totals")),
+                         'planning': calculate_planning(df=self.transformed_data.df,
+                                                        planning=self.transformed_data.get("planning")),
                          }
         realisatie_hpend = calculate_realisatie_hpend(self.transformed_data.df)
-        freq = ['W-MON', 'M', 'Y']
-        year = self.intermediate_results.List_of_years
-
+        list_of_freq = ['W-MON', 'M', 'Y']
+        document_list = []
         for key, values in function_dict.items():
-            for y in year:
-                for f in freq:
+            for year in self.intermediate_results.List_of_years:
+                for freq in list_of_freq:
                     record = voorspel_and_planning_sum_over_periods_to_record(predicted=values,
-                                                                              realized=realisatie_hpend, freq=f, year=y)
-                    self.record_dict.add(key+f+y, record, Record, "Data")
+                                                                              realized=realisatie_hpend,
+                                                                              freq=freq, year=year)
+                    # To remove the date when there is only one period (when summing over a year):
+                    if len(record) == 1:
+                        record = list(record.values())[0]
+                    document_list.append(dict(
+                        client=self.client,
+                        graph_name=key,
+                        frequency=freq,
+                        year=year,
+                        record=record
+                    ))
+        self.record_dict.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
+                             document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_for_dashboard_values(self):
         logger.info("Make ratio records for dashboard overview  values")
@@ -535,15 +549,25 @@ class FttXAnalyse(FttXBase):
         function_dict = {'ratio_8weeks_hpend': calculate_realisatie_under_8weeks(self.transformed_data.df),
                          'ratio_hc_hpend': calculate_realisatie_hc(self.transformed_data.df)}
         realisatie_hpend = calculate_realisatie_hpend(self.transformed_data.df)
-        freq = ['W-MON', 'M', 'Y']
-        year = self.intermediate_results.List_of_years
-
+        list_of_freq = ['W-MON', 'M', 'Y']
+        document_list = []
         for key, values in function_dict.items():
-            for y in year:
-                for f in freq:
+            for year in self.intermediate_results.List_of_years:
+                for freq in list_of_freq:
                     record = ratio_sum_over_periods_to_record(numerator=values, divider=realisatie_hpend,
-                                                              freq=f, year=y)
-                    self.record_dict.add(key+f+y, record, Record, "Data")
+                                                              freq=freq, year=year)
+                    # To remove the date when there is only one period (when summing over a year):
+                    if len(record) == 1:
+                        record = list(record.values())[0]
+                    document_list.append(dict(
+                        client=self.client,
+                        graph_name=key,
+                        frequency=freq,
+                        year=year,
+                        record=record
+                    ))
+        self.record_dict.add("Overzicht_ratios_per_jaar", document_list, DocumentListRecord, "Data",
+                             document_key=["client", "graph_name", "frequency", "year"])
 
 
 class FttXLoad(Load, FttXBase):
