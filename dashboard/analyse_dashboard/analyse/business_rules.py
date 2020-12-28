@@ -52,10 +52,10 @@ def ordered(df, time_delta_days=0):
     return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
 
 
-def oplevertijd_new(df):
+def on_time_opgeleverd(df):
     # Used to calculate the homes that have been completed within 8 weeks (56 days)
     # TODO: change toestemming_datum to creation (and check other tmobile business rules)
-    return (df['opleverdatum'] - df['toestemming_datum']).dt.days < 56
+    return (df['opleverdatum'] - df['toestemming_datum']).dt.days <= 56
 
 
 def toestemming_bekend(df):

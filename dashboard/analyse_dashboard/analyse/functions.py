@@ -27,9 +27,9 @@ def get_data_targets_init(path_data, map_key):
     for i, key in enumerate(df_targets['d.d. 01-05-2020 v11']):
         if key in map_key:
             if not pd.isnull(df_targets.loc[i, '1e FTU']):
-                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d')
+                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d').strip()
             if (not pd.isnull(df_targets.loc[i, 'Laatste FTU'])) & (df_targets.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d')
+                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d').strip()
 
     return date_FTU0, date_FTU1
 
@@ -1355,31 +1355,38 @@ def calculate_bis_gereed(df):
     return sum(br.bis_opgeleverd(df_copy))
 
 
-def calculate_realisatie_bis(df):
+def extract_realisatie_bis_dates(df):
     return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
-def calculate_werkvoorraad_has(df):
+def extract_werkvoorraad_has_dates(df):
     ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
     ds.name = 'werkvoorraad_has_datum'
     return ds
 
 
-def calculate_realisatie_under_8weeks(df):
-    return df[br.oplevertijd_new(df)].opleverdatum
+def extract_realisatie_under_8weeks_dates(df):
+    return df[br.on_time_opgeleverd(df)].opleverdatum
 
 
-def calculate_realisatie_hpend(df):
+def extract_realisatie_hpend_dates(df):
     return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
-def calculate_realisatie_hc(df):
+def extract_realisatie_hpend_and_ordered_dates(df):
+    if 'ordered' in df.columns:
+        return df[br.hpend_opgeleverd(df) & df.ordered].opleverdatum
+    else:
+        return df[br.hpend_opgeleverd(df)].opleverdatum
+
+
+def extract_realisatie_hc_dates(df):
     return df[br.hc_opgeleverd(df)].opleverdatum
 
 
-def calculate_voorspelling(df, ftu=None, totals=None):
-    if ftu:
-        return calculate_voorspelling_kpn(
+def extract_voorspelling_dates(df, ftu=None, totals=None):
+    if any(ftu['date_FTU0'].values()):
+        return extract_voorspelling_dates_kpn(
             df=df,
             start_time=get_start_time(df),
             timeline=get_timeline(get_start_time(df)),
@@ -1391,7 +1398,7 @@ def calculate_voorspelling(df, ftu=None, totals=None):
         return df_prog.prognose
 
 
-def calculate_voorspelling_kpn(df, start_time, timeline, totals, ftu):
+def extract_voorspelling_dates_kpn(df, start_time, timeline, totals, ftu):
     """
     This function should ???
     """
@@ -1407,14 +1414,14 @@ def calculate_voorspelling_kpn(df, start_time, timeline, totals, ftu):
     return df_prog.prognose
 
 
-def calculate_planning(df, planning=None):
+def extract_planning_dates(df, planning=None):
     if planning:
-        return calculate_planning_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
+        return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
     else:
-        return calculate_planning_tmobile(df)
+        return extract_planning_dates_tmobile(df)
 
 
-def calculate_planning_kpn(data: list, timeline: pd.DatetimeIndex):
+def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
         # TODO: remove hardcoded start date
@@ -1425,23 +1432,23 @@ def calculate_planning_kpn(data: list, timeline: pd.DatetimeIndex):
     return df.planning_kpn
 
 
-def calculate_planning_tmobile(df):
+def extract_planning_dates_tmobile(df):
     return df[~df.hasdatum.isna()].hasdatum
 
 
-def calculate_target(df, ftu=None, totals=None):
-    if ftu:
-        return calculate_target_kpn(
+def extract_target_dates(df, ftu=None, totals=None):
+    if any(ftu['date_FTU0'].values()):
+        return extract_target_dates_kpn(
             timeline=get_timeline(get_start_time(df)),
             totals=totals,
             project_list=df.project.unique().tolist(),
             ftu0=ftu['date_FTU0'],
             ftu1=ftu['date_FTU1'])
     else:
-        return calculate_target_tmobile(df)
+        return extract_target_dates_tmobile(df)
 
 
-def calculate_target_kpn(timeline, totals, project_list, ftu0, ftu1):
+def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
     y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
     df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
     for key in y_target_l:
@@ -1450,7 +1457,7 @@ def calculate_target_kpn(timeline, totals, project_list, ftu0, ftu1):
     return df_target.target
 
 
-def calculate_target_tmobile(df):
+def extract_target_dates_tmobile(df):
     return df[(~df.creation.isna())
               & ~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED'])
               & (df.type == 'AANLEG')] \
