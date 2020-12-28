@@ -13,6 +13,8 @@ from layout.components.global_info_list import global_info_list
 from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
 from layout.components import redenna_status_pie
+from datetime import datetime
+from calendar import monthrange
 
 for client in config.client_config.keys():
     @app.callback(
@@ -267,6 +269,20 @@ for client in config.client_config.keys():
         ]
     )
     def load_global_info_per_year(year, client=client):
+        current_month = datetime.now().month
+        current_month_str = datetime.now().strftime("%B")
+        last_day_of_month = monthrange(int(year), current_month)[1]
+        planning = collection.get_document(collection="Data",
+                                           graph_name="planning",
+                                           client=client,
+                                           year=year,
+                                           frequency="M")
+        voorspelling = collection.get_document(collection="Data",
+                                               graph_name="voorspelling",
+                                               client=client,
+                                               year=year,
+                                               frequency="M")
+
         parameters_global_info_list = [
             dict(id_="info_globaal_container0",
                  title='Target',
@@ -297,21 +313,15 @@ for client in config.client_config.keys():
                  ),
             dict(id_="info_globaal_container2",
                  title='Planning (VWT)',
-                 text=f"HPend gepland in {year}: ",
-                 value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="planning",
-                                                       client=client,
-                                                       year=year,
-                                                       frequency="Y"))) if client == 'kpn' else 'n.v.t.'
+                 text=f"HPend gepland in {current_month_str}: ",
+                 value=str(int(planning[f'{year}-{current_month}-{last_day_of_month}']))
+                 if client == 'kpn' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
-                 text=f"HPend voorspeld in {year}: ",
-                 value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="voorspelling",
-                                                       client=client,
-                                                       year=year,
-                                                       frequency="Y"))) if client != 'tmobile' else 'n.v.t.'
+                 text=f"HPend voorspeld in {current_month_str}: ",
+                 value=str(int(voorspelling[f'{year}-{current_month}-{last_day_of_month}']))
+                 if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container5",
                  title='Werkvoorraad HAS',
