@@ -45,7 +45,7 @@ def get_page(page):
     return page_body
 
 
-# CALBACKS
+# CALLBACKS
 @app.callback(
     Output('page-content', 'children'),
     [

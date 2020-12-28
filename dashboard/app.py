@@ -8,13 +8,14 @@ import dash_bootstrap_components as dbc
 import flask
 import pandas as pd
 from flask import send_file
+from flask_caching import Cache
 from flask_cors import CORS
 from flask_sslify import SSLify
 
 import config
 import utils
 from authentication.azure_auth import AzureOAuth
-from data import api
+
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from toggles import ReleaseToggles
@@ -35,8 +36,12 @@ app = dash.Dash(
     __name__,
     meta_tags=[{"name": "viewport", "content": "width=device-width"}],
     external_stylesheets=[dbc.themes.BOOTSTRAP],
-    server=server,
+    server=server
 )
+
+cache = Cache(app.server,
+              config={'CACHE_TYPE': 'simple'}
+              )
 
 logging.info("Setting serve locally to false")
 app.css.config.serve_locally = False
@@ -73,6 +78,7 @@ if config.authentication:
 
 @app.server.route('/dash/order_wait_download')
 def download_csv():
+    from data import api
     wait_category = flask.request.args.get('wait_category')
     project = flask.request.args.get('project')
     logging.info(f"Collecting data for {wait_category}.")

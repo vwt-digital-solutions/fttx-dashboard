@@ -13,8 +13,6 @@ import plotly.graph_objects as go
 for client in config.client_config.keys():
     @app.callback(
         [
-            Output(f'financial-data-{client}', 'data'),
-            Output(f'progress-over-time-data-{client}', 'data'),
             Output(f"finance-warnings-{client}", 'children')
         ],
         [
@@ -47,25 +45,24 @@ for client in config.client_config.keys():
 
                     if document == "expected_actuals":
                         finances[document] = finances['budget']
-            progress_over_time_data = collection.get_document(collection="Data",
-                                                              project=dropdown_selection,
-                                                              client=client,
-                                                              data_set="progress_over_time")
-            return [finances, progress_over_time_data, warnings]
-        return [None, None, None]
+            return [warnings]
+        return [None]
 
     @app.callback(
         [
             Output(f'budget-bar-category-{client}', 'figure')
         ],
         [
-            Input(f'financial-data-{client}', 'data')
+            Input(f'project-dropdown-{client}', 'value')
         ],
         [
             State(f'project-dropdown-{client}', 'value')
         ]
     )
-    def budget_bar_category(data, project, client=client):
+    def budget_bar_category(dropdown_selection, project, client=client):
+        data = collection.get_document(collection="Finance",
+                                       project=dropdown_selection,
+                                       client=client)
         if data:
             fig = calculate_figure(client, project, data, "categorie")
             return [fig]
@@ -80,16 +77,15 @@ for client in config.client_config.keys():
             Input(f"budget-bar-category-{client}", 'clickData'),
             Input(f'project-dropdown-{client}', 'value')
 
-        ],
-        [
-            State(f'financial-data-{client}', 'data')
         ]
     )
-    def budget_bar_sub_category(click, project, data, client=client):
+    def budget_bar_sub_category(click, project, client=client):
         ctx = dash.callback_context
         if 'budget-bar-category' in [x['prop_id'].rpartition("-")[0] for x in ctx.triggered]:
             for point in click.get("points", []):
-                print(f"point={point}")
+                data = collection.get_document(collection="Finance",
+                                               project=project,
+                                               client=client)
                 if data:
                     parent = dict(level='categorie', value=point.get("label"))
                     fig = calculate_figure(client, project, data, "sub_categorie", parent)
@@ -127,10 +123,14 @@ for client in config.client_config.keys():
                        Example: dict(level='categorie', value='civiel')
         :return: actuals_df, budget_df, expected_actuals_df
         """
+        if parent is None:
+            parent = {}
 
-        budget_df = pd.DataFrame(data.get("budget"))
-        expected_actuals_df = pd.DataFrame(data.get("expected_actuals"))
-        actuals_df = pd.DataFrame(data.get("actuals_aggregated"))
+        budget_df = pd.DataFrame(data.get("budget", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+        expected_actuals_df = pd.DataFrame(
+            data.get("expected_actuals", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+        actuals_df = pd.DataFrame(
+            data.get("actuals_aggregated", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
 
         if parent:
             budget_df = budget_df[budget_df[parent.get("level")] == parent.get("value")]
@@ -138,7 +138,9 @@ for client in config.client_config.keys():
             actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
 
         budget_df = budget_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+
         expected_actuals_df = expected_actuals_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+
         actuals_df = actuals_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
         return actuals_df, budget_df, expected_actuals_df
 
@@ -178,24 +180,27 @@ for client in config.client_config.keys():
         [
             Input(f"budget-bar-category-{client}", 'clickData'),
             Input(f'project-dropdown-{client}', 'value')
-        ],
-        [
-            State(f'financial-data-{client}', 'data'),
-            State(f'progress-over-time-data-{client}', 'data')
         ]
     )
-    def progress_over_time(click, project, finance_data, progress_data):
+    def progress_over_time(click, project, client=client):
         ctx = dash.callback_context
         if 'budget-bar-category' in [x['prop_id'].rpartition("-")[0] for x in ctx.triggered]:
             for point in click.get("points", []):
+
+                finance_data = collection.get_document(collection="Finance",
+                                                       project=project,
+                                                       client=client)
+
                 if finance_data:
                     parent = dict(level='categorie', value=point.get("label"))
-                    actuals_df = pd.DataFrame(finance_data.get('actuals'))
+                    actuals_df = pd.DataFrame(
+                        finance_data.get('actuals', {parent.get("level"): [], 'kostenbedrag': []}))
                     actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
                     time_series = actuals_df.groupby("registratiedatum")['kostenbedrag'].sum().sort_index().cumsum()
 
-                    expected_cost = finance_data.get('expected_actuals')
-                    expected_cost = pd.DataFrame(expected_cost)
+                    expected_cost = pd.DataFrame(
+                        finance_data.get('expected_actuals', {parent.get("level"): [], 'kostenbedrag': []})
+                    )
                     expected_cost = expected_cost[
                         expected_cost[parent.get("level")] == parent.get('value')].kostenbedrag.sum()
 
@@ -208,6 +213,11 @@ for client in config.client_config.keys():
                     )]
 
                     if parent.get("value") in ["has", "civiel", "montage", "schouwen"]:
+                        progress_data = collection.get_document(collection="Data",
+                                                                project=project,
+                                                                client=client,
+                                                                data_set="progress_over_time")
+
                         traces.append(get_progress_scatter(
                             expected_cost,
                             progress_data,
