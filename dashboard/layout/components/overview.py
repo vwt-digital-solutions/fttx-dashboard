@@ -21,7 +21,8 @@ def get_html(client):
                                    options=[{'label': year, 'value': year} for year in collection.get_document(
                                        collection="Data", client=client, graph_name="List_of_years")],
                                    value=str(datetime.now().year),
-                                   placeholder="Select a year"
+                                   placeholder="Select a year",
+                                   clearable=False
                                    ),
                       html.Div(id=f'year-output-{client}')
                       ],
