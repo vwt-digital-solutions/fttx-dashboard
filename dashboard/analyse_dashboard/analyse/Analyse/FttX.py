@@ -487,7 +487,7 @@ class FttXAnalyse(FttXBase):
                                                         ),
                          'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
                          }
-        list_of_freq = ['W-MON', 'M', 'Y']
+        list_of_freq = ['W-MON', 'MS', 'Y']
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
@@ -517,7 +517,7 @@ class FttXAnalyse(FttXBase):
                                                             planning=self.transformed_data.get("planning")),
                          }
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
-        list_of_freq = ['W-MON', 'M', 'Y']
+        list_of_freq = ['W-MON', 'MS', 'Y']
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
@@ -543,7 +543,7 @@ class FttXAnalyse(FttXBase):
         # Create a dictionary that contains the functions and the output name
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
-        list_of_freq = ['W-MON', 'M', 'Y']
+        list_of_freq = ['W-MON', 'MS', 'Y']
         document_list = []
         for year in self.intermediate_results.List_of_years:
             for freq in list_of_freq:
@@ -567,7 +567,7 @@ class FttXAnalyse(FttXBase):
         # Create a dictionary that contains the functions and the output name
         realisatie_under_8weeks = extract_realisatie_under_8weeks_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(self.transformed_data.df)
-        list_of_freq = ['W-MON', 'M', 'Y']
+        list_of_freq = ['W-MON', 'MS', 'Y']
         document_list = []
         for year in self.intermediate_results.List_of_years:
             for freq in list_of_freq:
