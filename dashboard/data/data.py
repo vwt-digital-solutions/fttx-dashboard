@@ -80,6 +80,58 @@ def has_planning_by(period, client):
     return df[mask]
 
 
+def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
+    opgeleverd_data_dict = collection.get_document(collection="Data", graph_name="realisatie_hpend",
+                                                   client=client, year=year, frequency=freq)
+
+    planning_data_dict = collection.get_document(collection="Data", graph_name="planning",
+                                                 client=client, year=year, frequency=freq)
+    planning_data_dict = {key: int(value) for key, value in planning_data_dict.items()}
+
+    target_data_dict = collection.get_document(collection="Data", graph_name="target",
+                                               client=client, year=year, frequency=freq)
+    target_data_dict = {key: int(value) for key, value in target_data_dict.items()}
+
+    voorspelling_data_dict = collection.get_document(collection="Data", graph_name="voorspelling",
+                                                     client=client, year=year, frequency=freq)
+    voorspelling_data_dict = {key: int(value) for key, value in voorspelling_data_dict.items()}
+
+    # for tmobile the toestemming_datum is used as outlook
+    if client == 'tmobile':
+        target_data_dict = collection.get_document(collection="Data", graph_name="toestemming",
+                                                   client=client, year=year, frequency=freq)
+    # if not target_data_dict:
+    #     target_data_dict['count_outlookdatum'] = opgeleverd_data_dict['opleverdatum'].copy()
+    #     for el in target_data_dict['count_outlookdatum']:
+    #         target_data_dict['count_outlookdatum'][el] = 0
+    #     if period == 'month':
+    #         target_data_dict['count_outlookdatum']['2020-11-02'] = 0
+    #         target_data_dict['count_outlookdatum']['2020-12-01'] = 0
+    # # temporary solution until we also have voorspelling data for T-Mobile
+    # if not voorspelling_data_dict:
+    #     voorspelling_data_dict['count_voorspellingdatum'] = opgeleverd_data_dict['opleverdatum'].copy()
+    #     for el in voorspelling_data_dict['count_voorspellingdatum'].keys():
+    #         voorspelling_data_dict['count_voorspellingdatum'][el] = 0
+    #
+    # # temporary solution until we also have planning data for DFN
+    # if client == 'dfn':
+    #     planning_data_dict['count_hasdatum'] = planning_data_dict['count_hasdatum'].copy()
+    #     for el in planning_data_dict['count_hasdatum'].keys():
+    #         planning_data_dict['count_hasdatum'][el] = 0
+
+    df = pd.DataFrame({'count_hasdatum': planning_data_dict,
+                       'count_opleverdatum': opgeleverd_data_dict,
+                       'count_outlookdatum': target_data_dict,
+                       'count_voorspellingdatum': voorspelling_data_dict})\
+        .reset_index().rename(columns={"index": "date"})
+    df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
+    df['period'] = period
+    start_date = pd.to_datetime(year + '-01-01', format="%Y-%m-%d")
+    end_date = pd.to_datetime(year + '-12-31', format="%Y-%m-%d")
+    mask = (df['date'] >= start_date) & (df['date'] <= end_date)
+    return df[mask]
+
+
 def redenna_by_completed_status(project_name, client, click_filter=None, ):
     RedenNADataFrames = namedtuple("RedenNADataFrames",
                                    ["total", "laagbouw", "hoogbouw"])  # Used to return a named tuple

@@ -18,7 +18,7 @@ from functions import extract_realisatie_hpend_dates, get_data_targets_init, clu
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, extract_realisatie_under_8weeks_dates, \
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_sum_over_periods_to_record, \
-    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
+    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates, extract_toestemming_dates
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -484,7 +484,8 @@ class FttXAnalyse(FttXBase):
                          'target': extract_target_dates(df=self.transformed_data.df,
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
-                                                        )
+                                                        ),
+                         'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
                          }
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []

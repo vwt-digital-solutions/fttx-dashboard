@@ -20,7 +20,7 @@ def get_body(client="", project=''):
                     html.Hr(className="my-2"),
                     html.P("""
                         Op deze pagina komt een totaal overzicht voor de verschillende projecten binnen FttX.
-                        Gebruik de knoppen hier onder om naar speciefieke projecten te gaan.
+                        Gebruik de knoppen hier onder om naar specifieke projecten te gaan.
                         """),
                     html.P(dbc.ButtonGroup([
                         dbc.Button(page_config['name'], href=page_config['link'][0], style={'background-color': colors['vwt_blue']})

@@ -62,6 +62,10 @@ def toestemming_bekend(df):
     return ~df['toestemming'].isna()
 
 
+def toestemming_gegeven(df):
+    return ~df['toestemming_datum'].isna()
+
+
 def laswerk_ap_gereed(df):
     return df['laswerkapgereed'] == '1'
 
