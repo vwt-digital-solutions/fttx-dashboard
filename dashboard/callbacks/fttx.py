@@ -337,18 +337,6 @@ for client in config.client_config.keys():
             return [redenna_pie]
         return [{'data': None, 'layout': None}]
 
-    # TODO: remove when the select year dropdown is fixed
-    @app.callback(
-        [
-            Output(f'year-output-{client}', 'children')
-        ],
-        [
-            Input(f'year-dropdown-{client}', 'value')
-        ]
-    )
-    def child_year_output(year):
-        return [f"Current year selected: {year}"]
-
     @app.callback(
         Output(f'info-container-year-{client}', 'children'),
         [
@@ -356,6 +344,8 @@ for client in config.client_config.keys():
         ]
     )
     def load_global_info_per_year(year, client=client):
+        if not year:
+            raise PreventUpdate
         current_month = datetime.now().month
         planning = collection.get_document(collection="Data",
                                            graph_name="planning",

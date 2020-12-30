@@ -15,12 +15,15 @@ colors = config.colors_vwt
 def get_html(client):
     return [
         html.Div(
-            children=[dcc.Dropdown(id=f'year-dropdown-{client}',
-                                   placeholder="Select a year",
-                                   clearable=False
-                                   ),
-                      html.Div(id=f'year-output-{client}')
-                      ],
+            children=html.Div(
+                children=[dcc.Dropdown(id=f'year-dropdown-{client}',
+                                       placeholder="Select a year",
+                                       clearable=False,
+                                       ),
+                          ],
+                className="column",
+                style={"width": "77px"}
+            ),
             className="container-display"
         ) if toggles.new_structure_overviews else None,
         html.Div(
