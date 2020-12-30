@@ -35,7 +35,7 @@ def get_html(client):
         html.Div(
             children=[],
             id=f"info-container-{client}",
-        ),
+        ) if toggles.old_structure_overview_boxes else None,
         html.Div(
             className="container-display",
             children=[
@@ -53,7 +53,7 @@ def get_html(client):
                 figure(container_id=f"pie_chart_overview_{client}_container",
                        graph_id=f"pie_chart_overview_{client}",
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
-        ),
+        ) if toggles.old_structure_overview_graphs else None,
         html.Div(
             get_performance(client),
             className="container-display",

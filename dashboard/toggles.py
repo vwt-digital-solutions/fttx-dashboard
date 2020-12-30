@@ -8,6 +8,8 @@ class ReleaseToggles(TogglesList):
     upload: bool
     fc_sql: bool
     new_structure_overviews: bool
+    old_structure_overview_boxes: bool
+    old_structure_overview_graphs: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')
