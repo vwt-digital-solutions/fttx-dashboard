@@ -1426,6 +1426,9 @@ def extract_planning_dates(df, planning=None):
 
 
 def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
+    """
+    This function should ???
+    """
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
         # TODO: remove hardcoded start date
@@ -1453,6 +1456,9 @@ def extract_target_dates(df, ftu=None, totals=None):
 
 
 def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
+    """
+    This function should ???
+    """
     y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
     df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
     for key in y_target_l:

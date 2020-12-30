@@ -8,6 +8,7 @@ class ReleaseToggles(TogglesList):
     upload: bool
     fc_sql: bool
     new_structure_overviews: bool
+    new_structure_overviews_graphs: bool
     old_structure_overview_boxes: bool
     old_structure_overview_graphs: bool
 

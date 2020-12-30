@@ -42,7 +42,7 @@ def get_html(client):
                 figure(container_id=f"pie_chart_overview_{client}_container",
                        graph_id=f"pie_chart_overview-year_{client}",
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
-        ) if toggles.new_structure_overviews else None,
+        ) if toggles.new_structure_overviews_graphs else None,
         html.Div(
             className="container-display",
             children=[
