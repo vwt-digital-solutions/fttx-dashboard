@@ -188,8 +188,6 @@ for client in config.client_config.keys():
          ]
     )
     def display_click_data(week_click_data, month_click_data, reset, client=client):
-        if client == 'kpn':
-            return original_pie_chart(client)
         ctx = dash.callback_context
         first_day_of_period = ""
         period = ""
