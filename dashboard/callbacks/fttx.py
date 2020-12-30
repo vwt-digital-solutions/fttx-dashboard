@@ -66,7 +66,7 @@ for client in config.client_config.keys():
             Output(f'project-dropdown-{client}', 'options')
         ],
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_dropdown(dummy_data, client=client):
@@ -80,7 +80,7 @@ for client in config.client_config.keys():
             Output(f'year-dropdown-{client}', 'value')
         ],
         [
-            Input(f'{client}-overview', 'children'),
+            Input(f'{client}-overview', 'style'),
             Input(f'overview-reset-{client}', 'n_clicks')
         ]
     )
@@ -97,7 +97,7 @@ for client in config.client_config.keys():
     @app.callback(
         Output(f'info-container-{client}', 'children'),
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_project_info(dummy_data, client=client):
@@ -135,7 +135,7 @@ for client in config.client_config.keys():
     @app.callback(
         Output(f'month-overview-{client}', 'figure'),
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_month_overview(dummy_data, client=client):
@@ -158,7 +158,7 @@ for client in config.client_config.keys():
     @app.callback(
         Output(f'week-overview-{client}', 'figure'),
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_week_overview(dummy_data, client=client):
