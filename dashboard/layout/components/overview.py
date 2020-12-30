@@ -9,8 +9,6 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import config
 
-from datetime import datetime
-
 colors = config.colors_vwt
 
 
@@ -18,9 +16,6 @@ def get_html(client):
     return [
         html.Div(
             children=[dcc.Dropdown(id=f'year-dropdown-{client}',
-                                   options=[{'label': year, 'value': year} for year in collection.get_document(
-                                       collection="Data", client=client, graph_name="List_of_years")],
-                                   value=str(datetime.now().year),
                                    placeholder="Select a year",
                                    clearable=False
                                    ),

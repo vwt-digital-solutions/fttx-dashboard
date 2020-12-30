@@ -1,5 +1,6 @@
 import dash
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 from data.graph import pie_chart as original_pie_chart
 from layout.components.graphs import pie_chart, completed_status_counts_bar
@@ -8,7 +9,7 @@ from app import app
 import config
 from data import collection
 from data.data import has_planning_by, completed_status_counts, redenna_by_completed_status, \
-     fetch_data_for_overview_graphs
+    fetch_data_for_overview_graphs
 from layout.components.global_info_list import global_info_list
 from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
@@ -73,6 +74,25 @@ for client in config.client_config.keys():
                                         client=client,
                                         graph_name="project_names")['filters']]
 
+    @app.callback(
+        [
+            Output(f'year-dropdown-{client}', 'options'),
+            Output(f'year-dropdown-{client}', 'value')
+        ],
+        [
+            Input(f'{client}-overview', 'children'),
+            Input(f'overview-reset-{client}', 'n_clicks')
+        ]
+    )
+    def load_year_dropdown(dummy_data, reset, client=client):
+        return [
+            [
+                {'label': year, 'value': year} for year in
+                collection.get_document(collection="Data", client=client, graph_name="List_of_years")
+            ],
+            str(datetime.now().year)
+        ]
+
     # TODO: remove when removing toggle new_structure_overviews
     @app.callback(
         Output(f'info-container-{client}', 'children'),
@@ -128,8 +148,11 @@ for client in config.client_config.keys():
         ]
     )
     def load_month_overview_per_year(year, client=client):
-        return overview_bar_chart.get_fig(data=fetch_data_for_overview_graphs(year=year, freq='MS', period='month', client=client),
-                                          year=year)
+        if year:
+            return overview_bar_chart.get_fig(
+                data=fetch_data_for_overview_graphs(year=year, freq='MS', period='month', client=client),
+                year=year)
+        raise PreventUpdate
 
     # TODO: remove when removing toggle new_structure_overviews
     @app.callback(
@@ -149,10 +172,11 @@ for client in config.client_config.keys():
         ]
     )
     def load_week_overview_per_year(year, client=client):
-        print("Running week overview")
-        return overview_bar_chart.get_fig(
-            data=fetch_data_for_overview_graphs(year=year, freq='W-MON', period='week', client=client),
-            year=year)
+        if year:
+            return overview_bar_chart.get_fig(
+                data=fetch_data_for_overview_graphs(year=year, freq='W-MON', period='week', client=client),
+                year=year)
+        raise PreventUpdate
 
     # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
     # does not work correctly yet.

@@ -1389,7 +1389,7 @@ def extract_realisatie_hc_dates(df):
 
 
 def extract_voorspelling_dates(df, ftu=None, totals=None):
-    if any(ftu['date_FTU0'].values()):
+    if ftu and any(ftu.get('date_FTU0', {}).values()):
         return extract_voorspelling_dates_kpn(
             df=df,
             start_time=get_start_time(df),
@@ -1441,7 +1441,7 @@ def extract_planning_dates_tmobile(df):
 
 
 def extract_target_dates(df, ftu=None, totals=None):
-    if any(ftu['date_FTU0'].values()):
+    if ftu and any(ftu.get('date_FTU0', {}).values()):
         return extract_target_dates_kpn(
             timeline=get_timeline(get_start_time(df)),
             totals=totals,
