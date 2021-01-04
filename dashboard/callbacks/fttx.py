@@ -389,13 +389,13 @@ for client in config.client_config.keys():
             dict(id_="info_globaal_container2",
                  title='Planning (VWT)',
                  text=f"HPend gepland in {datetime.now().strftime('%B')}: ",
-                 value=str(int(planning[f'{year}-{current_month}-01']))
+                 value=str(int(planning[f'{year}-{current_month:02}-01']))
                  if client == 'kpn' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
                  text=f"HPend voorspeld in {datetime.now().strftime('%B')}: ",
-                 value=str(int(voorspelling[f'{year}-{current_month}-01']))
+                 value=str(int(voorspelling[f'{year}-{current_month:02}-01']))
                  if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container5",
