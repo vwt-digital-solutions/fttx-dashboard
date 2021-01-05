@@ -20,7 +20,7 @@ def get_fig(data, year):
     if data.period.iloc[0] == 'week':
         n_now = pd.Timestamp.now().weekofyear - 1
         maand_of_week = 'Huidige week'
-        x_tick_text = [el2 + '<br>W' + str(el + 1) for el, el2 in
+        x_tick_text = [el2 + '<br>W' + str(el) for el, el2 in
                        zip(x_count, data.date.dt.strftime('%Y-%m-%d').to_list())]
         x_range = [n_now - 1.5, n_now + 3.5]
         title = f"Maandoverzicht {datetime.now().strftime('%B')} {year}"

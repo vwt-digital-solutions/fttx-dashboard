@@ -97,9 +97,9 @@ def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: st
     voorspelling_data_dict = {key: int(value) for key, value in voorspelling_data_dict.items()}
 
     # for tmobile the toestemming_datum is used as outlook
-    if client == 'tmobile':
-        target_data_dict = collection.get_document(collection="Data", graph_name="toestemming",
-                                                   client=client, year=year, frequency=freq)
+    # if client == 'tmobile':
+    #     target_data_dict = collection.get_document(collection="Data", graph_name="toestemming",
+    #                                                client=client, year=year, frequency=freq)
     # if not target_data_dict:
     #     target_data_dict['count_outlookdatum'] = opgeleverd_data_dict['opleverdatum'].copy()
     #     for el in target_data_dict['count_outlookdatum']:
