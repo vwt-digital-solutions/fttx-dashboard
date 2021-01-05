@@ -15,6 +15,7 @@ from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
 from layout.components import redenna_status_pie
 from datetime import datetime
+from calendar import monthrange
 
 for client in config.client_config.keys():
     @app.callback(
@@ -150,7 +151,7 @@ for client in config.client_config.keys():
     def load_month_overview_per_year(year, client=client):
         if year:
             return overview_bar_chart.get_fig(
-                data=fetch_data_for_overview_graphs(year=year, freq='MS', period='month', client=client),
+                data=fetch_data_for_overview_graphs(year=year, freq='M', period='month', client=client),
                 year=year)
         raise PreventUpdate
 
@@ -347,16 +348,17 @@ for client in config.client_config.keys():
         if not year:
             raise PreventUpdate
         current_month = datetime.now().month
+        last_day_of_month = monthrange(int(year), current_month)[1]
         planning = collection.get_document(collection="Data",
                                            graph_name="planning",
                                            client=client,
                                            year=year,
-                                           frequency="MS")
+                                           frequency="M")
         voorspelling = collection.get_document(collection="Data",
                                                graph_name="voorspelling",
                                                client=client,
                                                year=year,
-                                               frequency="MS")
+                                               frequency="M")
 
         parameters_global_info_list = [
             dict(id_="info_globaal_container0",
@@ -389,13 +391,13 @@ for client in config.client_config.keys():
             dict(id_="info_globaal_container2",
                  title='Planning (VWT)',
                  text=f"HPend gepland in {datetime.now().strftime('%B')}: ",
-                 value=str(int(planning[f'{year}-{current_month:02}-01']))
+                 value=str(int(planning[f'{year}-{current_month:02}-{last_day_of_month}']))
                  if client == 'kpn' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
                  text=f"HPend voorspeld in {datetime.now().strftime('%B')}: ",
-                 value=str(int(voorspelling[f'{year}-{current_month:02}-01']))
+                 value=str(int(voorspelling[f'{year}-{current_month:02}-{last_day_of_month}']))
                  if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container5",
