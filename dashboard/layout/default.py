@@ -70,6 +70,7 @@ def client_page_body(client, project):
         html.Div(
             id=f"{client}-overview",
             children=overview.get_html(client),
+            style={'display': "block"}
         ),
         html.Div(
             style={'display': 'none'},

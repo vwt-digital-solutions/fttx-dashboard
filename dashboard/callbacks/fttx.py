@@ -8,11 +8,13 @@ from app import app
 
 import config
 from data import collection
-from data.data import has_planning_by, completed_status_counts, redenna_by_completed_status
+from data.data import has_planning_by, completed_status_counts, redenna_by_completed_status, \
+    fetch_data_for_overview_graphs
 from layout.components.global_info_list import global_info_list
 from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
 from layout.components import redenna_status_pie
+from datetime import datetime
 
 for client in config.client_config.keys():
     @app.callback(
@@ -64,7 +66,7 @@ for client in config.client_config.keys():
             Output(f'project-dropdown-{client}', 'options')
         ],
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_dropdown(dummy_data, client=client):
@@ -73,9 +75,29 @@ for client in config.client_config.keys():
                                         graph_name="project_names")['filters']]
 
     @app.callback(
+        [
+            Output(f'year-dropdown-{client}', 'options'),
+            Output(f'year-dropdown-{client}', 'value')
+        ],
+        [
+            Input(f'{client}-overview', 'style'),
+            Input(f'overview-reset-{client}', 'n_clicks')
+        ]
+    )
+    def load_year_dropdown(dummy_data, reset, client=client):
+        return [
+            [
+                {'label': year, 'value': year} for year in
+                collection.get_document(collection="Data", client=client, graph_name="List_of_years")
+            ],
+            str(datetime.now().year)
+        ]
+
+    # TODO: remove when removing toggle new_structure_overviews
+    @app.callback(
         Output(f'info-container-{client}', 'children'),
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_project_info(dummy_data, client=client):
@@ -109,24 +131,52 @@ for client in config.client_config.keys():
                              className="container-display")
         ]
 
+    # TODO: remove when removing toggle new_structure_overviews
     @app.callback(
         Output(f'month-overview-{client}', 'figure'),
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_month_overview(dummy_data, client=client):
-        return overview_bar_chart.get_fig(has_planning_by('month', client))
+        return overview_bar_chart.get_fig(has_planning_by('month', client), '2020')
 
+    @app.callback(
+        Output(f'month-overview-year-{client}', 'figure'),
+        [
+            Input(f'year-dropdown-{client}', 'value')
+        ]
+    )
+    def load_month_overview_per_year(year, client=client):
+        if year:
+            return overview_bar_chart.get_fig(
+                data=fetch_data_for_overview_graphs(year=year, freq='M', period='month', client=client),
+                year=year)
+        raise PreventUpdate
+
+    # TODO: remove when removing toggle new_structure_overviews
     @app.callback(
         Output(f'week-overview-{client}', 'figure'),
         [
-            Input(f'{client}-overview', 'children')
+            Input(f'{client}-overview', 'style')
         ]
     )
     def load_week_overview(dummy_data, client=client):
         print("Running week overview")
-        return overview_bar_chart.get_fig(has_planning_by('week', client))
+        return overview_bar_chart.get_fig(has_planning_by('week', client), '2020')
+
+    @app.callback(
+        Output(f'week-overview-year-{client}', 'figure'),
+        [
+            Input(f'year-dropdown-{client}', 'value')
+        ]
+    )
+    def load_week_overview_per_year(year, client=client):
+        if year:
+            return overview_bar_chart.get_fig(
+                data=fetch_data_for_overview_graphs(year=year, freq='W-MON', period='week', client=client),
+                year=year)
+        raise PreventUpdate
 
     # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
     # does not work correctly yet.
@@ -148,8 +198,46 @@ for client in config.client_config.keys():
                 period, _, _ = trigger['prop_id'].partition("-")
                 if period == "overview":
                     return original_pie_chart(client)
-                if trigger['value']['points'][0]['curveNumber'] != 1:
-                    raise PreventUpdate
+                for point in trigger['value']['points']:
+                    first_day_of_period = point['customdata']
+                    break
+                break
+
+            redenna_by_period = collection.get_document(collection="Data",
+                                                        client=client,
+                                                        graph_name=f"redenna_by_{period}")
+            redenna_dict = dict(sorted(redenna_by_period.get(first_day_of_period, dict()).items()))
+            fig = pie_chart.get_html(labels=list(redenna_dict.keys()),
+                                     values=list(redenna_dict.values()),
+                                     title=f"Reden na voor de {period} {first_day_of_period}",
+                                     colors=[
+                                         colors['green'],
+                                         colors['yellow'],
+                                         colors['red'],
+                                         colors['vwt_blue'],
+                                     ])
+
+            return fig
+        return original_pie_chart(client)
+
+    # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
+    # does not work correctly yet.
+    @app.callback(
+        Output(f'pie_chart_overview-year_{client}', 'figure'),
+        [Input(f'week-overview-year-{client}', 'clickData'),
+         Input(f'month-overview-year-{client}', 'clickData'),
+         Input(f'overview-reset-{client}', 'n_clicks')
+         ]
+    )
+    def display_click_data_per_year(week_click_data, month_click_data, reset, client=client):
+        ctx = dash.callback_context
+        first_day_of_period = ""
+        period = ""
+        if ctx.triggered:
+            for trigger in ctx.triggered:
+                period, _, _ = trigger['prop_id'].partition("-")
+                if period == "overview":
+                    return original_pie_chart(client)
                 for point in trigger['value']['points']:
                     first_day_of_period = point['customdata']
                     break
@@ -159,8 +247,9 @@ for client in config.client_config.keys():
                                                         client=client,
                                                         graph_name=f"redenna_by_{period}")
 
-            fig = pie_chart.get_html(labels=list(redenna_by_period.get(first_day_of_period, dict()).keys()),
-                                     values=list(redenna_by_period.get(first_day_of_period, dict()).values()),
+            redenna_dict = dict(sorted(redenna_by_period.get(first_day_of_period, dict()).items()))
+            fig = pie_chart.get_html(labels=list(redenna_dict.keys()),
+                                     values=list(redenna_dict.values()),
                                      title=f"Reden na voor de {period} {first_day_of_period}",
                                      colors=[
                                          colors['green'],
@@ -248,18 +337,6 @@ for client in config.client_config.keys():
             return [redenna_pie]
         return [{'data': None, 'layout': None}]
 
-    # TODO: remove when the select year dropdown is fixed
-    @app.callback(
-        [
-            Output(f'year-output-{client}', 'children')
-        ],
-        [
-            Input(f'year-dropdown-{client}', 'value')
-        ]
-    )
-    def child_year_output(year):
-        return [f"Current year selected: {year}"]
-
     @app.callback(
         Output(f'info-container-year-{client}', 'children'),
         [
@@ -267,6 +344,9 @@ for client in config.client_config.keys():
         ]
     )
     def load_global_info_per_year(year, client=client):
+        if not year:
+            raise PreventUpdate
+
         parameters_global_info_list = [
             dict(id_="info_globaal_container0",
                  title='Target',
@@ -297,24 +377,27 @@ for client in config.client_config.keys():
                  ),
             dict(id_="info_globaal_container2",
                  title='Planning (VWT)',
-                 text=f"HPend gepland in {year}: ",
+                 text="HPend gepland vanaf nu: ",
                  value=str(int(collection.get_document(collection="Data",
                                                        graph_name="planning",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y"))) if client == 'kpn' else 'n.v.t.'
+                                                       frequency="Y")))
+                 if client == 'kpn' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
-                 text=f"HPend voorspeld in {year}: ",
+                 text="HPend voorspeld vanaf nu: ",
                  value=str(int(collection.get_document(collection="Data",
                                                        graph_name="voorspelling",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y"))) if client != 'tmobile' else 'n.v.t.'
+                                                       frequency="Y")))
+                 if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container5",
                  title='Werkvoorraad HAS',
+                 text=f"Werkvoorraad HAS in {year}: ",
                  value=str(collection.get_document(collection="Data",
                                                    graph_name="werkvoorraad_has",
                                                    client=client,
@@ -323,19 +406,23 @@ for client in config.client_config.keys():
                  ),
             dict(id_="info_globaal_container4",
                  title='Actuele HC / HPend',
+                 text=f"HC/HPend in {year}: ",
                  value=str(round(collection.get_document(collection="Data",
                                                          graph_name="ratio_hc_hpend",
                                                          client=client,
                                                          year=year,
-                                                         frequency="Y"), 2)) if client != 'tmobile' else 'n.v.t.'
+                                                         frequency="Y"), 2))
+                 if client != 'tmobile' else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container4",
                  title='Ratio <8 weken',
+                 text=f"Ratio <8 weken in {year}: ",
                  value=str(round(collection.get_document(collection="Data",
                                                          graph_name="ratio_8weeks_hpend",
                                                          client=client,
                                                          year=year,
-                                                         frequency="Y"), 2)) if client == 'tmobile' else 'n.v.t.'
+                                                         frequency="Y"), 2))
+                 if client == 'tmobile' else 'n.v.t.'
                  ),
         ]
         return [

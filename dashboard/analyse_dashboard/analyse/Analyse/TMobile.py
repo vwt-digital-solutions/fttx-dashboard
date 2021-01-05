@@ -58,7 +58,8 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_month()
         self._get_counts_by_week()
         self._get_voorraadvormend()
-        self._jaaroverzicht()
+        if not toggles.new_structure_overviews:
+            self._jaaroverzicht()
         self._calculate_project_indicators()
         if toggles.download_indicators:
             self._endriched_data()

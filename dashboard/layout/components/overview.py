@@ -9,22 +9,21 @@ import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import config
 
-from datetime import datetime
-
 colors = config.colors_vwt
 
 
 def get_html(client):
     return [
         html.Div(
-            children=[dcc.Dropdown(id=f'year-dropdown-{client}',
-                                   options=[{'label': year, 'value': year} for year in collection.get_document(
-                                       collection="Data", client=client, graph_name="List_of_years")],
-                                   value=str(datetime.now().year),
-                                   placeholder="Select a year"
-                                   ),
-                      html.Div(id=f'year-output-{client}')
-                      ],
+            children=html.Div(
+                children=[dcc.Dropdown(id=f'year-dropdown-{client}',
+                                       placeholder="Select a year",
+                                       clearable=False,
+                                       ),
+                          ],
+                className="column",
+                style={"width": "77px"}
+            ),
             className="container-display"
         ) if toggles.new_structure_overviews else None,
         html.Div(
@@ -34,7 +33,16 @@ def get_html(client):
         html.Div(
             children=[],
             id=f"info-container-{client}",
-        ),
+        ) if toggles.old_structure_overviews_boxes else None,
+        html.Div(
+            className="container-display",
+            children=[
+                figure(graph_id=f"month-overview-year-{client}", figure=no_graph(title="Jaaroverzicht", text='Loading...')),
+                figure(graph_id=f"week-overview-year-{client}", figure=no_graph(title="Maandoverzicht", text='Loading...')),
+                figure(container_id=f"pie_chart_overview_{client}_container",
+                       graph_id=f"pie_chart_overview-year_{client}",
+                       figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
+        ) if toggles.new_structure_overviews_graphs else None,
         html.Div(
             className="container-display",
             children=[
@@ -43,7 +51,7 @@ def get_html(client):
                 figure(container_id=f"pie_chart_overview_{client}_container",
                        graph_id=f"pie_chart_overview_{client}",
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
-        ),
+        ) if toggles.old_structure_overviews_graphs else None,
         html.Div(
             get_performance(client),
             className="container-display",

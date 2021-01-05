@@ -12,13 +12,13 @@ import logging
 
 from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
 import business_rules as br
-from functions import calculate_realisatie_hpend, get_data_targets_init, cluster_reden_na, \
-    set_filters, calculate_y_voorraad_act, calculate_realisatie_hc, rules_to_state, \
-    calculate_werkvoorraad_has, calculate_realisatie_bis, calculate_redenna_per_period, \
-    calculate_projectspecs, calculate_voorspelling, individual_reden_na, \
-    ratio_sum_over_periods_to_record, get_database_engine, calculate_realisatie_under_8weeks, \
+from functions import extract_realisatie_hpend_dates, get_data_targets_init, cluster_reden_na, \
+    set_filters, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
+    extract_werkvoorraad_has_dates, extract_realisatie_bis_dates, calculate_redenna_per_period, \
+    calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
+    ratio_sum_over_periods_to_record, get_database_engine, extract_realisatie_under_8weeks_dates, \
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_sum_over_periods_to_record, \
-    calculate_planning, calculate_target
+    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates, extract_toestemming_dates
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -120,8 +120,8 @@ where cpm.client = '{self.config.get("name")}'
             .stream(), None).get('record')
         if doc is not None:
             if doc['FTU0']:
-                date_FTU0 = doc['FTU0']
-                date_FTU1 = doc['FTU1']
+                date_FTU0 = {key: value.strip() for key, value in doc['FTU0'].items()}
+                date_FTU1 = {key: value.strip() for key, value in doc['FTU1'].items()}
             else:
                 logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
                 date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
@@ -277,8 +277,8 @@ class FttXTransform(Transform):
     def _transform_planning(self):
         logger.info("Transforming planning for KPN")
         HP = dict(HPendT=[0] * 52)
-        df = self.extracted_data.get("planning")
-        if df and not df.empty:
+        df = self.extracted_data.get("planning", pd.DataFrame())
+        if not df.empty:
             for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
                 if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
                     HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
@@ -318,8 +318,10 @@ class FttXAnalyse(FttXBase):
             self._calculate_list_of_years()
             self._make_records_for_dashboard_values()
             self._make_voorspelling_and_planning_for_dashboard_values()
-            self._make_records_ratio_for_dashboard_values()
-        self._calculate_projectspecs()
+            self._make_records_ratio_hc_hpend_for_dashboard_values()
+            self._make_records_ratio_under_8weeks_for_dashboard_values()
+        else:
+            self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -471,26 +473,20 @@ class FttXAnalyse(FttXBase):
 
         by_month = calculate_redenna_per_period(self.transformed_data.df,
                                                 date_column="hasdatum",
-                                                freq="MS")
+                                                freq="M")
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
 
     def _make_records_for_dashboard_values(self):
-        logger.info("Make records for dashboard overview  values")
+        logger.info("Making records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
-        function_dict = {'realisatie_bis': calculate_realisatie_bis(self.transformed_data.df),
-                         'werkvoorraad_has': calculate_werkvoorraad_has(self.transformed_data.df),
-                         'realisatie_hpend': calculate_realisatie_hpend(self.transformed_data.df),
-                         'target': calculate_target(df=self.transformed_data.df,
-                                                    totals=self.transformed_data.get("totals"),
-                                                    ftu=self.extracted_data.get("ftu")
-                                                    ),
-                         # TODO: remove voorspelling_raw and planning_raw
-                         'voorspelling_raw': calculate_voorspelling(
-                                                     df=self.transformed_data.df,
-                                                     ftu=self.extracted_data.get("ftu"),
-                                                     totals=self.transformed_data.get("totals")),
-                         'planning_raw': calculate_planning(df=self.transformed_data.df,
-                                                            planning=self.transformed_data.get("planning")),
+        function_dict = {'realisatie_bis': extract_realisatie_bis_dates(self.transformed_data.df),
+                         'werkvoorraad_has': extract_werkvoorraad_has_dates(self.transformed_data.df),
+                         'realisatie_hpend': extract_realisatie_hpend_dates(self.transformed_data.df),
+                         'target': extract_target_dates(df=self.transformed_data.df,
+                                                        totals=self.transformed_data.get("totals"),
+                                                        ftu=self.extracted_data.get("ftu")
+                                                        ),
+                         'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
                          }
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
@@ -512,23 +508,21 @@ class FttXAnalyse(FttXBase):
                              document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_voorspelling_and_planning_for_dashboard_values(self):
-        logger.info("Make voorspelling and planning for dashboard overview  values")
+        logger.info("Making voorspelling and planning records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
-        function_dict = {'voorspelling': calculate_voorspelling(
+        function_dict = {'voorspelling': extract_voorspelling_dates(
                                                 df=self.transformed_data.df,
                                                 ftu=self.extracted_data.get("ftu"),
                                                 totals=self.transformed_data.get("totals")),
-                         'planning': calculate_planning(df=self.transformed_data.df,
-                                                        planning=self.transformed_data.get("planning")),
+                         'planning': extract_planning_dates(df=self.transformed_data.df,
+                                                            planning=self.transformed_data.get("planning")),
                          }
-        realisatie_hpend = calculate_realisatie_hpend(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
                 for freq in list_of_freq:
                     record = voorspel_and_planning_sum_over_periods_to_record(predicted=values,
-                                                                              realized=realisatie_hpend,
                                                                               freq=freq, year=year)
                     # To remove the date when there is only one period (when summing over a year):
                     if len(record) == 1:
@@ -543,30 +537,52 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
-    def _make_records_ratio_for_dashboard_values(self):
-        logger.info("Make ratio records for dashboard overview  values")
+    def _make_records_ratio_hc_hpend_for_dashboard_values(self):
+        logger.info("Making record of ratio HC/HPend for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
-        function_dict = {'ratio_8weeks_hpend': calculate_realisatie_under_8weeks(self.transformed_data.df),
-                         'ratio_hc_hpend': calculate_realisatie_hc(self.transformed_data.df)}
-        realisatie_hpend = calculate_realisatie_hpend(self.transformed_data.df)
+        realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
+        realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
-        for key, values in function_dict.items():
-            for year in self.intermediate_results.List_of_years:
-                for freq in list_of_freq:
-                    record = ratio_sum_over_periods_to_record(numerator=values, divider=realisatie_hpend,
-                                                              freq=freq, year=year)
-                    # To remove the date when there is only one period (when summing over a year):
-                    if len(record) == 1:
-                        record = list(record.values())[0]
-                    document_list.append(dict(
-                        client=self.client,
-                        graph_name=key,
-                        frequency=freq,
-                        year=year,
-                        record=record
-                    ))
-        self.record_dict.add("Overzicht_ratios_per_jaar", document_list, DocumentListRecord, "Data",
+        for year in self.intermediate_results.List_of_years:
+            for freq in list_of_freq:
+                record = ratio_sum_over_periods_to_record(numerator=realisatie_hc, divider=realisatie_hpend,
+                                                          freq=freq, year=year)
+                # To remove the date when there is only one period (when summing over a year):
+                if len(record) == 1:
+                    record = list(record.values())[0]
+                document_list.append(dict(
+                    client=self.client,
+                    graph_name='ratio_hc_hpend',
+                    frequency=freq,
+                    year=year,
+                    record=record
+                ))
+        self.record_dict.add("Ratios_hc_hpend_per_jaar", document_list, DocumentListRecord, "Data",
+                             document_key=["client", "graph_name", "frequency", "year"])
+
+    def _make_records_ratio_under_8weeks_for_dashboard_values(self):
+        logger.info("Making records of ratio under 8 weeks/HPend for dashboard overview  values")
+        # Create a dictionary that contains the functions and the output name
+        realisatie_under_8weeks = extract_realisatie_under_8weeks_dates(self.transformed_data.df)
+        realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(self.transformed_data.df)
+        list_of_freq = ['W-MON', 'M', 'Y']
+        document_list = []
+        for year in self.intermediate_results.List_of_years:
+            for freq in list_of_freq:
+                record = ratio_sum_over_periods_to_record(numerator=realisatie_under_8weeks, divider=realisatie_hpend,
+                                                          freq=freq, year=year)
+                # To remove the date when there is only one period (when summing over a year):
+                if len(record) == 1:
+                    record = list(record.values())[0]
+                document_list.append(dict(
+                    client=self.client,
+                    graph_name='ratio_8weeks_hpend',
+                    frequency=freq,
+                    year=year,
+                    record=record
+                ))
+        self.record_dict.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
 
