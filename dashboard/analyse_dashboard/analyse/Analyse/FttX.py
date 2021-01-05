@@ -320,7 +320,8 @@ class FttXAnalyse(FttXBase):
             self._make_voorspelling_and_planning_for_dashboard_values()
             self._make_records_ratio_hc_hpend_for_dashboard_values()
             self._make_records_ratio_under_8weeks_for_dashboard_values()
-        self._calculate_projectspecs()
+        else:
+            self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
