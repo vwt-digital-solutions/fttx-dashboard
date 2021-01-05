@@ -1555,9 +1555,12 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
 
 
 def voorspel_and_planning_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str, year: str):
-    data_voorspelling_or_planning = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
-    data_realized = sum_over_period(realized, freq, period=[year + '-01-01', year + '-12-31'])
-    data = (data_voorspelling_or_planning - data_realized).fillna(0)
+    if freq == 'Y':
+        value = sum_over_period(predicted, 'D', period=[year + '-01-01', year + '-12-31'])[pd.Timestamp.now():].sum()
+        data = pd.Series(name=predicted.name, data=value, index=[pd.to_datetime(year + '-12-31')])
+    else:
+        data = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
+
     data.index = data.index.format()
     record = data.to_dict()
     return record
