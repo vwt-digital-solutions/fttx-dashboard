@@ -516,14 +516,12 @@ class FttXAnalyse(FttXBase):
                          'planning': extract_planning_dates(df=self.transformed_data.df,
                                                             planning=self.transformed_data.get("planning")),
                          }
-        realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
                 for freq in list_of_freq:
                     record = voorspel_and_planning_sum_over_periods_to_record(predicted=values,
-                                                                              realized=realisatie_hpend,
                                                                               freq=freq, year=year)
                     # To remove the date when there is only one period (when summing over a year):
                     if len(record) == 1:

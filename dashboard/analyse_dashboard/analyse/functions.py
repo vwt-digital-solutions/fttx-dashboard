@@ -1554,7 +1554,7 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     return record
 
 
-def voorspel_and_planning_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str, year: str):
+def voorspel_and_planning_sum_over_periods_to_record(predicted: pd.Series, freq: str, year: str):
     if freq == 'Y':
         value = sum_over_period(predicted, 'D', period=[year + '-01-01', year + '-12-31'])[pd.Timestamp.now():].sum()
         data = pd.Series(name=predicted.name, data=value, index=[pd.to_datetime(year + '-12-31')])

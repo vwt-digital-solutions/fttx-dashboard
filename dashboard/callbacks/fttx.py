@@ -15,7 +15,6 @@ from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
 from layout.components import redenna_status_pie
 from datetime import datetime
-from calendar import monthrange
 
 for client in config.client_config.keys():
     @app.callback(
@@ -347,18 +346,6 @@ for client in config.client_config.keys():
     def load_global_info_per_year(year, client=client):
         if not year:
             raise PreventUpdate
-        current_month = datetime.now().month
-        last_day_of_month = monthrange(int(year), current_month)[1]
-        planning = collection.get_document(collection="Data",
-                                           graph_name="planning",
-                                           client=client,
-                                           year=year,
-                                           frequency="M")
-        voorspelling = collection.get_document(collection="Data",
-                                               graph_name="voorspelling",
-                                               client=client,
-                                               year=year,
-                                               frequency="M")
 
         parameters_global_info_list = [
             dict(id_="info_globaal_container0",
@@ -390,14 +377,22 @@ for client in config.client_config.keys():
                  ),
             dict(id_="info_globaal_container2",
                  title='Planning (VWT)',
-                 text=f"HPend gepland in {datetime.now().strftime('%B')}: ",
-                 value=str(int(planning[f'{year}-{current_month:02}-{last_day_of_month}']))
+                 text="HPend gepland vanaf nu: ",
+                 value=str(int(collection.get_document(collection="Data",
+                                                       graph_name="planning",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y")))
                  if client == 'kpn' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
-                 text=f"HPend voorspeld in {datetime.now().strftime('%B')}: ",
-                 value=str(int(voorspelling[f'{year}-{current_month:02}-{last_day_of_month}']))
+                 text="HPend voorspeld vanaf nu: ",
+                 value=str(int(collection.get_document(collection="Data",
+                                                       graph_name="voorspelling",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y")))
                  if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container5",
@@ -416,7 +411,8 @@ for client in config.client_config.keys():
                                                          graph_name="ratio_hc_hpend",
                                                          client=client,
                                                          year=year,
-                                                         frequency="Y"), 2)) if client != 'tmobile' else 'n.v.t.'
+                                                         frequency="Y"), 2))
+                 if client != 'tmobile' else 'n.v.t.'
                  ),
             dict(id_="info_globaal_container4",
                  title='Ratio <8 weken',
@@ -425,7 +421,8 @@ for client in config.client_config.keys():
                                                          graph_name="ratio_8weeks_hpend",
                                                          client=client,
                                                          year=year,
-                                                         frequency="Y"), 2)) if client == 'tmobile' else 'n.v.t.'
+                                                         frequency="Y"), 2))
+                 if client == 'tmobile' else 'n.v.t.'
                  ),
         ]
         return [

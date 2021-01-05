@@ -37,8 +37,8 @@ def get_html(client):
         html.Div(
             className="container-display",
             children=[
-                figure(graph_id=f"month-overview-year-{client}", figure=no_graph(title="Jaaroverzicht (updatable)", text='Loading...')),
-                figure(graph_id=f"week-overview-year-{client}", figure=no_graph(title="Maandoverzicht (updatable)", text='Loading...')),
+                figure(graph_id=f"month-overview-year-{client}", figure=no_graph(title="Jaaroverzicht", text='Loading...')),
+                figure(graph_id=f"week-overview-year-{client}", figure=no_graph(title="Maandoverzicht", text='Loading...')),
                 figure(container_id=f"pie_chart_overview_{client}_container",
                        graph_id=f"pie_chart_overview-year_{client}",
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
