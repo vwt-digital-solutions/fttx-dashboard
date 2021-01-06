@@ -143,9 +143,8 @@ for client in config.client_config.keys():
 
     @app.callback(
         Output(f'month-overview-year-{client}', 'figure'),
-        [
-            Input(f'year-dropdown-{client}', 'value')
-        ]
+        [Input(f'year-dropdown-{client}', 'value')
+         ]
     )
     def load_month_overview_per_year(year, client=client):
         if year:
@@ -167,9 +166,8 @@ for client in config.client_config.keys():
 
     @app.callback(
         Output(f'week-overview-year-{client}', 'figure'),
-        [
-            Input(f'year-dropdown-{client}', 'value')
-        ]
+        [Input(f'year-dropdown-{client}', 'value')
+         ]
     )
     def load_week_overview_per_year(year, client=client):
         if year:
@@ -178,6 +176,7 @@ for client in config.client_config.keys():
                 year=year)
         raise PreventUpdate
 
+    # TODO: remove when removing toggle new_structure_overviews
     # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
     # does not work correctly yet.
     @app.callback(
@@ -220,8 +219,6 @@ for client in config.client_config.keys():
             return fig
         return original_pie_chart(client)
 
-    # TODO Dirty fix with hardcoded client name here, to prevent graph not loading for KPN, for which this function
-    # does not work correctly yet.
     @app.callback(
         Output(f'pie_chart_overview-year_{client}', 'figure'),
         [Input(f'week-overview-year-{client}', 'clickData'),
@@ -339,9 +336,8 @@ for client in config.client_config.keys():
 
     @app.callback(
         Output(f'info-container-year-{client}', 'children'),
-        [
-            Input(f'year-dropdown-{client}', 'value')
-        ]
+        [Input(f'year-dropdown-{client}', 'value')
+         ]
     )
     def load_global_info_per_year(year, client=client):
         if not year:

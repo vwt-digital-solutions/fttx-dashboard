@@ -467,15 +467,20 @@ class FttXAnalyse(FttXBase):
 
     def _calculate_redenna_per_period(self):
         logger.info("Calculating redenna per period (week & month)")
-        by_week = calculate_redenna_per_period(self.transformed_data.df,
+        by_week = calculate_redenna_per_period(df=self.transformed_data.df,
                                                date_column="hasdatum",
                                                freq="W-MON")
         self.record_dict.add('redenna_by_week', by_week, Record, 'Data')
 
-        by_month = calculate_redenna_per_period(self.transformed_data.df,
+        by_month = calculate_redenna_per_period(df=self.transformed_data.df,
                                                 date_column="hasdatum",
                                                 freq="M")
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
+
+        by_year = calculate_redenna_per_period(df=self.transformed_data.df,
+                                               date_column="hasdatum",
+                                               freq="Y")
+        self.record_dict.add('redenna_by_year', by_year, Record, 'Data')
 
     def _make_records_for_dashboard_values(self):
         logger.info("Making records for dashboard overview  values")
