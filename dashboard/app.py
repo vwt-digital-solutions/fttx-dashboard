@@ -78,30 +78,36 @@ if config.authentication:
 
 @app.server.route('/dash/order_wait_download')
 def download_csv():
-    from data import api
+    from sqlalchemy import create_engine
+    from data.download_queries import waiting_category
+
     wait_category = flask.request.args.get('wait_category')
     project = flask.request.args.get('project')
     logging.info(f"Collecting data for {wait_category}.")
 
-    request_result = api.get(f"/Houses?record.wait_category={wait_category}&record.project={project}")
+    url = f"mysql+mysqlconnector://{config.database['db_user']}:"\
+          f"{utils.get_secret(project_id=config.database['project_id'], secret_id=config.database['secret_name'])}@"\
+          f"{config.database['db_ip']}:{config.database.get('port', 3306)}/{config.database['db_name']}"\
+          f"?charset=utf8&ssl_ca={config.database['server_ca']}&ssl_cert={config.database['client_ca']}"\
+          f"&ssl_key={config.database['client_key']}"
+    sqlEngine = create_engine(url, pool_recycle=3600)
+    sql_query = waiting_category(project, wait_category)
+    result = pd.read_sql(sql_query, sqlEngine)
 
-    result = pd.DataFrame(
-        x['record'] for x in request_result)
-
-    relevant_columns = [
-        'adres',
-        'postcode',
-        'huisnummer',
-        'soort_bouw',
-        'toestemming_datum',
-        'opleverstatus',
-        'schouw_status',
-        'hasdatum',
-        'cluster_redenna',
-        'redenna',
-        'toelichting_status',
-        'voorkeur'
-    ]
+    relevant_columns = ['adres',
+                        'postcode',
+                        'huisnummer',
+                        'soort_bouw',
+                        'toestemming',
+                        'toestemming_datum',
+                        'opleverstatus',
+                        'opleverdatum',
+                        'hasdatum',
+                        'cluster_redenna',
+                        'redenna',
+                        'toelichting_status',
+                        'wachttijd'
+                        ]
 
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
