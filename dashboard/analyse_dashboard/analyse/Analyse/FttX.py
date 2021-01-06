@@ -18,7 +18,7 @@ from functions import extract_realisatie_hpend_dates, get_data_targets_init, clu
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, extract_realisatie_under_8weeks_dates, \
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_sum_over_periods_to_record, \
-    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates, extract_toestemming_dates
+    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -485,8 +485,8 @@ class FttXAnalyse(FttXBase):
                          'target': extract_target_dates(df=self.transformed_data.df,
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
-                                                        ),
-                         'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
+                                                        )
+                         # 'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
                          }
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
@@ -515,14 +515,15 @@ class FttXAnalyse(FttXBase):
                                                 ftu=self.extracted_data.get("ftu"),
                                                 totals=self.transformed_data.get("totals")),
                          'planning': extract_planning_dates(df=self.transformed_data.df,
-                                                            planning=self.transformed_data.get("planning")),
+                                                            planning=self.transformed_data.get("planning"),
+                                                            client=self.client),
                          }
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
                 for freq in list_of_freq:
-                    record = voorspel_and_planning_sum_over_periods_to_record(predicted=values,
+                    record = voorspel_and_planning_sum_over_periods_to_record(timeseries=values,
                                                                               freq=freq, year=year)
                     # To remove the date when there is only one period (when summing over a year):
                     if len(record) == 1:

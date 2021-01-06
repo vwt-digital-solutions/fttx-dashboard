@@ -1418,8 +1418,9 @@ def extract_voorspelling_dates_kpn(df, start_time, timeline, totals, ftu):
     return df_prog.prognose
 
 
-def extract_planning_dates(df, planning=None):
-    if planning:
+def extract_planning_dates(df, client, planning=None):
+    # client == kpn can be removed once dfn has a planning
+    if planning and client == 'kpn':
         return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
     else:
         return extract_planning_dates_tmobile(df)
@@ -1554,12 +1555,12 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     return record
 
 
-def voorspel_and_planning_sum_over_periods_to_record(predicted: pd.Series, freq: str, year: str):
+def voorspel_and_planning_sum_over_periods_to_record(timeseries: pd.Series, freq: str, year: str):
     if freq == 'Y':
-        value = sum_over_period(predicted, 'D', period=[year + '-01-01', year + '-12-31'])[pd.Timestamp.now():].sum()
-        data = pd.Series(name=predicted.name, data=value, index=[pd.to_datetime(year + '-12-31')])
+        value = sum_over_period(timeseries, 'D', period=[year + '-01-01', year + '-12-31'])[pd.Timestamp.now():].sum()
+        data = pd.Series(name=timeseries.name, data=value, index=[pd.to_datetime(year + '-12-31')])
     else:
-        data = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
+        data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
 
     data.index = data.index.format()
     record = data.to_dict()
