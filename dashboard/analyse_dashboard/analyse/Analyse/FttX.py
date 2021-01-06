@@ -46,6 +46,7 @@ class FttXExtract(Extract):
         if not self.config:
             raise ValueError("No config provided in init")
         self.projects = self.config["projects"]
+        self.client_name = kwargs['config'].get('name')
         super().__init__(**kwargs)
 
     def extract(self):
