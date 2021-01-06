@@ -6,7 +6,11 @@ from datetime import datetime
 
 def get_fig(data, year):
     x_count = list(range(1, len(data.date) + 1))
-    y_range = [0, 2.2 * max(data.count_outlookdatum[data.count_outlookdatum < 20000])]
+    if max(data.count_outlookdatum[data.count_outlookdatum < 20000]) \
+            > max(data.count_opleverdatum[data.count_opleverdatum < 20000]):
+        y_range = [0, 2.2 * max(data.count_outlookdatum[data.count_outlookdatum < 20000])]
+    else:
+        y_range = [0, 2.2 * max(data.count_opleverdatum[data.count_opleverdatum < 20000])]
     date_list = data.date.dt.strftime("%Y-%m-%d")
 
     if data.period.iloc[0] == 'month':
