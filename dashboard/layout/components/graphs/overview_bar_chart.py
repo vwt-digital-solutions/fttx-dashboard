@@ -22,7 +22,7 @@ def get_fig(data, year):
         width = 0.2
 
     if data.period.iloc[0] == 'week':
-        n_now = pd.Timestamp.now().weekofyear - 1
+        n_now = pd.Timestamp.now().weekofyear
         maand_of_week = 'Huidige week'
         x_tick_text = [el2 + '<br>W' + str(el) for el, el2 in
                        zip(x_count, data.date.dt.strftime('%Y-%m-%d').to_list())]
@@ -31,7 +31,7 @@ def get_fig(data, year):
         width = 0.08
 
     if year != str(datetime.now().year):
-        n_now = 0
+        n_now = ''
 
     return dict(
         data=[
