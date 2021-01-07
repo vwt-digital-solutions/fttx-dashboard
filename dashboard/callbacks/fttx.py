@@ -223,20 +223,24 @@ for client in config.client_config.keys():
         Output(f'pie_chart_overview-year_{client}', 'figure'),
         [Input(f'week-overview-year-{client}', 'clickData'),
          Input(f'month-overview-year-{client}', 'clickData'),
-         Input(f'overview-reset-{client}', 'n_clicks')
+         Input(f'overview-reset-{client}', 'n_clicks'),
+         Input(f'year-dropdown-{client}', 'value')
          ]
     )
-    def display_click_data_per_year(week_click_data, month_click_data, reset, client=client):
+    def display_click_data_per_year(week_click_data, month_click_data, reset, year, client=client):
         ctx = dash.callback_context
-        first_day_of_period = ""
+        last_day_of_period = ""
         period = ""
         if ctx.triggered:
             for trigger in ctx.triggered:
                 period, _, _ = trigger['prop_id'].partition("-")
                 if period == "overview":
                     return original_pie_chart(client)
+                if period == 'year':
+                    last_day_of_period = f"{year}-12-31"
+                    break
                 for point in trigger['value']['points']:
-                    first_day_of_period = point['customdata']
+                    last_day_of_period = point['customdata']
                     break
                 break
 
@@ -244,10 +248,10 @@ for client in config.client_config.keys():
                                                         client=client,
                                                         graph_name=f"redenna_by_{period}")
 
-            redenna_dict = dict(sorted(redenna_by_period.get(first_day_of_period, dict()).items()))
+            redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
             fig = pie_chart.get_html(labels=list(redenna_dict.keys()),
                                      values=list(redenna_dict.values()),
-                                     title=f"Reden na voor de {period} {first_day_of_period}",
+                                     title=f"Reden na voor de {period} {last_day_of_period}",
                                      colors=[
                                          colors['green'],
                                          colors['yellow'],
