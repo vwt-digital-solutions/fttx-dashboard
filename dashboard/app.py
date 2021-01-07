@@ -91,8 +91,13 @@ def download_csv():
           f"?charset=utf8&ssl_ca={config.database['server_ca']}&ssl_cert={config.database['client_ca']}"\
           f"&ssl_key={config.database['client_key']}"
     sqlEngine = create_engine(url, pool_recycle=3600)
-    sql_query = waiting_category(project, wait_category)
-    result = pd.read_sql(sql_query, sqlEngine)
+    try:
+        sql_query = waiting_category(project, wait_category)
+        result = pd.read_sql(sql_query, sqlEngine)
+
+    except ValueError as e:
+        logging.info(e)
+        result = pd.DataFrame()
 
     relevant_columns = ['adres',
                         'postcode',

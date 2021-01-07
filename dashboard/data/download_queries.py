@@ -1,4 +1,5 @@
 from sqlalchemy import text
+import config
 
 
 def waiting_category(project, wait_category):
@@ -10,6 +11,11 @@ def waiting_category(project, wait_category):
         having = "wachttijd > 12"
     else:
         having = "wachttijd > 0"
+
+    projects = config.projects_dfn + config.projects_tmobile + config.subset_KPN_2020
+
+    if project not in projects:
+        raise ValueError(f"Unknown project supplied: {project}")
 
     return text(f"""
 Select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming,
