@@ -113,8 +113,8 @@ class KPNAnalyse(FttXAnalyse):
         if not toggles.new_structure_overviews:
             self._calculate_graph_overview()
             self._jaaroverzicht()
-            self._calculate_project_indicators()
             self._analysis_documents()
+        self._calculate_project_indicators()
         self._calculate_project_dates()
         self._set_filters()
 

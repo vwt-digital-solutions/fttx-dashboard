@@ -141,6 +141,7 @@ class ProjectSpecs(NamedTuple):
 
 
 def calculate_projectspecs(df: pd.DataFrame) -> ProjectSpecs:
+    # TODO: cleanup of this function (see _calculate_projectspecs)
     homes_completed = get_homes_completed(df)
     homes_ended_2020 = get_HPend_2020(df)
     homes_ended = get_HPend(df)

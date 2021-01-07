@@ -321,8 +321,7 @@ class FttXAnalyse(FttXBase):
             self._make_voorspelling_and_planning_for_dashboard_values()
             self._make_records_ratio_hc_hpend_for_dashboard_values()
             self._make_records_ratio_under_8weeks_for_dashboard_values()
-        else:
-            self._calculate_projectspecs()
+        self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -414,17 +413,18 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
 
-        self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
+        # TODO: cleanup of this function
+        # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
         self.record_dict.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
-        self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
-        self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
-        self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
+        # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
+        # self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
+        # self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
 
-        self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
+        # self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
         self.intermediate_results.HC_HPend_l = results.hc_hpend_ratio
-        self.intermediate_results.Schouw_BIS = results.has_ready
-        self.intermediate_results.HPend_l = results.homes_ended
-        self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
+        # self.intermediate_results.Schouw_BIS = results.has_ready
+        # self.intermediate_results.HPend_l = results.homes_ended
+        # self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
 
     def _calculate_y_voorraad_act(self):
         logger.info("Calculating y voorraad act for KPN")
