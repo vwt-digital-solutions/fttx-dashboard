@@ -1173,8 +1173,9 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
 
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
-        'MS' for the start of the month
-        'W-MON' for weeks starting on Monday.
+        'M' for month (label is the last day of the period)
+        'W-MON' for weeks starting on Monday. (label = monday)
+        'Y' for year (label is the last day of the period)
 
         :param df: The data set
         :param date_column: The column used to group on
@@ -1185,8 +1186,10 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
     redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
         .groupby(by=[pd.Grouper(key=date_column,
                                 freq=freq,
-                                closed='left',
-                                label="left"
+                                closed='left',  # closed end of the interval, see:
+                                # (https://en.wikipedia.org/wiki/Interval_(mathematics)#Terminology)
+                                label="right"  # label specifies whether the result is labeled
+                                # with the beginning or the end of the interval.
                                 ),
                      "cluster_redenna",
                      ]
