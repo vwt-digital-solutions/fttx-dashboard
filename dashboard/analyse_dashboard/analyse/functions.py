@@ -1174,15 +1174,15 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
 
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
-        'M' for month (label is the last day of the period)
         'W-MON' for weeks starting on Monday. (label = monday)
+        'M' for month (label is the last day of the period)
         'Y' for year (label is the last day of the period)
 
-        :param df: The data set
-        :param date_column: The column used to group on
-        :param freq: The period to use in the grouper
-        :return: a dictionary with the first day of the period as key, and the clusters with their occurence counts
-                 as value.
+    :param df: The data set
+    :param date_column: The column used to group on
+    :param freq: The period to use in the grouper
+    :return: a dictionary with the first day of the period as key, and the clusters with their occurence counts
+             as value.
     """
     redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
         .groupby(by=[pd.Grouper(key=date_column,
