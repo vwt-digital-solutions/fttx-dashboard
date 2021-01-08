@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 import dash
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -317,7 +319,8 @@ for client in config.client_config.keys():
 
     @app.callback(
         [
-            Output(f'redenna_project_{client}', 'figure')
+            Output(f'redenna_project_{client}', 'figure'),
+            Output(f'project-redenna-download-{client}', 'href')
         ],
         [
             Input(f'status-count-filter-{client}', 'data'),
@@ -335,8 +338,13 @@ for client in config.client_config.keys():
                                                         colors['red'],
                                                         colors['green']
                                                      ])
-            return [redenna_pie]
-        return [{'data': None, 'layout': None}]
+            if click_filter:
+                download_url = f'/dash/project_redenna_download?project={project_name}&{urlencode(click_filter)}'
+            else:
+                download_url = f'/dash/project_redenna_download?project={project_name}'
+
+            return [redenna_pie, download_url]
+        return [{'data': None, 'layout': None}, ""]
 
     @app.callback(
         Output(f'info-container-year-{client}', 'children'),

@@ -1,5 +1,5 @@
 import dash_html_components as html
-
+import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import config
 from data.data import no_graph
@@ -32,9 +32,20 @@ def get_html(client):
                 figure(figure=no_graph(title="Status oplevering per fase (HB)", text='Loading...'),
                        container_id=f"status-counts-hoogbouw-{client}-container",
                        graph_id=f"status-counts-hoogbouw-{client}"),
-                figure(container_id=f"redenna_project_{client}_container",
-                       graph_id=f"redenna_project_{client}",
-                       figure=no_graph(title="Opgegeven reden na", text='Loading...'))
+                html.Div(
+                    className="pretty_container column",
+                    children=[
+                        figure(container_id=f"redenna_project_{client}_container",
+                               graph_id=f"redenna_project_{client}",
+                               figure=no_graph(title="Opgegeven reden na", text='Loading...'),
+                               className=""),
+                        html.A(
+                            dbc.Button("Download", className="ml-auto"),
+                            id=f"project-redenna-download-{client}",
+                            href="")
+                    ]
+                )
+
             ],
             id="main_graphs",
             className="container-display",
