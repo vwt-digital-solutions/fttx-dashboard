@@ -233,6 +233,7 @@ for client in config.client_config.keys():
         '''
         This function returns the "Opgegeven reden na" pie chart, based on what the used has clicked on.
         If no input is given, an annual overview is returned. With input, a monthly or weekly view is returned.
+
         :return: This function returns a pie chart figure.
         '''
         ctx = dash.callback_context
@@ -267,9 +268,10 @@ for client in config.client_config.keys():
     def get_lastdayofperiod_and_titletext(ctx, year):
         '''
         This function returns the settings to plot a pie chart based on annual, monthly or weekly views.
+
         :param ctx: A dash callback, triggered by clicking in Jaaroverzicht or Maandoverzicht graphs
         :param year: The current year, as set by the year selector dropdown
-        :return: This function returns the variables: last_day_of_period, period, title_text, which are all strings
+        :return: last_day_of_period, period, title_text
         '''
         last_day_of_period = ""
         period = ""
