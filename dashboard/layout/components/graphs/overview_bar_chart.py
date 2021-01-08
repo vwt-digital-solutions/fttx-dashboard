@@ -6,17 +6,19 @@ from datetime import datetime
 
 def get_fig(data, year):
     x_count = list(range(1, len(data.date) + 1))
+    # setting the y-scale based on the highest target (outlookdatum) or realisatie (opleverdatum):
     if max(data.count_outlookdatum[data.count_outlookdatum < 20000]) \
             > max(data.count_opleverdatum[data.count_opleverdatum < 20000]):
         y_range = [0, 2.2 * max(data.count_outlookdatum[data.count_outlookdatum < 20000])]
     else:
         y_range = [0, 2.2 * max(data.count_opleverdatum[data.count_opleverdatum < 20000])]
     date_list = data.date.dt.strftime("%Y-%m-%d")
+    dutch_month_list = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
 
     if data.period.iloc[0] == 'month':
         n_now = pd.Timestamp.now().month
         maand_of_week = 'Huidige maand'
-        x_tick_text = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+        x_tick_text = dutch_month_list
         x_range = [0.5, 12.5]
         title = f"Jaaroverzicht {year}"
         width = 0.2
@@ -27,7 +29,7 @@ def get_fig(data, year):
         x_tick_text = [el2 + '<br>W' + str(el) for el, el2 in
                        zip(x_count, data.date.dt.strftime('%Y-%m-%d').to_list())]
         x_range = [n_now - 1.5, n_now + 3.5]
-        title = f"Maandoverzicht {datetime.now().strftime('%B')} {year}"
+        title = f"Maandoverzicht {dutch_month_list[pd.Timestamp.now().month - 1]} {year}"
         width = 0.08
 
     if year != str(datetime.now().year):

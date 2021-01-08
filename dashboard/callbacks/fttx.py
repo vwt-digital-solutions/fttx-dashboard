@@ -11,7 +11,7 @@ from app import app
 import config
 from data import collection
 from data.data import has_planning_by, completed_status_counts, redenna_by_completed_status, \
-    fetch_data_for_overview_graphs
+    fetch_data_for_overview_graphs, no_graph
 from layout.components.global_info_list import global_info_list
 from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
@@ -233,16 +233,24 @@ for client in config.client_config.keys():
         ctx = dash.callback_context
         last_day_of_period = ""
         period = ""
+        dutch_month_list = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+
         if ctx.triggered:
             for trigger in ctx.triggered:
                 period, _, _ = trigger['prop_id'].partition("-")
                 if period == "overview":
-                    return original_pie_chart(client)
+                    return no_graph(title="Opgegeven reden na", text='Loading...')
                 if period == 'year':
                     last_day_of_period = f"{year}-12-31"
+                    title_text = f"Reden na voor het jaar {year}"
                     break
                 for point in trigger['value']['points']:
                     last_day_of_period = point['customdata']
+                    if period == 'week':
+                        title_text = f"Reden na voor de week {last_day_of_period}"
+                    extract_month_in_dutch = dutch_month_list[int(last_day_of_period.split("-")[1]) - 1]
+                    if period == 'month':
+                        title_text = f"Reden na voor de maand {extract_month_in_dutch} {year}"
                     break
                 break
 
@@ -253,7 +261,7 @@ for client in config.client_config.keys():
             redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
             fig = pie_chart.get_html(labels=list(redenna_dict.keys()),
                                      values=list(redenna_dict.values()),
-                                     title=f"Reden na voor de {period} {last_day_of_period}",
+                                     title=title_text,
                                      colors=[
                                          colors['green'],
                                          colors['yellow'],
