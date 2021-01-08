@@ -75,7 +75,7 @@ def get_homes_completed(df: pd.DataFrame):
 
 # Calculate the amount of objects per project that have been
 # Permanently passed or completed
-def get_HPend_2020(df: pd.DataFrame):
+def get_HPend(df: pd.DataFrame):
     result = df[['project', 'hpend']] \
         .groupby(by="project") \
         .sum() \
@@ -86,7 +86,7 @@ def get_HPend_2020(df: pd.DataFrame):
     return result
 
 
-def get_HPend(df: pd.DataFrame):
+def get_HPend_for_2020(df: pd.DataFrame):
     test_df = df[['project']].copy()
     test_df["hpend_not_2020"] = df.opleverdatum.notna()
     return test_df.groupby(by="project").sum().reset_index().set_index("project").to_dict()['hpend_not_2020']
@@ -143,14 +143,14 @@ class ProjectSpecs(NamedTuple):
 def calculate_projectspecs(df: pd.DataFrame) -> ProjectSpecs:
     # TODO: cleanup of this function (see _calculate_projectspecs)
     homes_completed = get_homes_completed(df)
-    homes_ended_2020 = get_HPend_2020(df)
     homes_ended = get_HPend(df)
+    homes_ended_in_2020 = get_HPend_for_2020(df)
     has_ready = get_has_ready(df)
     hc_hpend_ratio = get_hc_hpend_ratio(df)
-    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended_2020)
+    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
     werkvoorraad = get_has_werkvoorraad(df)
 
-    return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad)
+    return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended_in_2020, werkvoorraad)
 
 
 def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
