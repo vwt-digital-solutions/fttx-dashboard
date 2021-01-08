@@ -1514,9 +1514,15 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
-        'MS' for the start of the month
         'W-MON' for weeks starting on Monday.
+        'M' for the end of the month
         'Y' for a year
+
+    :param data: A pd.Series to sum over
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param period: ???
+    :param offset: ???
+    :return: A pd.Series object
     """
     if data is None:
         data = pd.Series()
@@ -1544,6 +1550,15 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
 
 
 def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
+    '''
+    This function takes a timeseries, sums the series over a defined period (either annual, monthly or weekly),
+    converts the result to a dictionary and returns a record ready for the firestore
+
+    :param timeseries: A pd.Series
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param year: The year to sum over
+    :return: Record for the firestore
+    '''
     data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
     data.index = data.index.format()
     record = data.to_dict()
@@ -1551,6 +1566,16 @@ def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
 
 
 def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):
+    '''
+    Similar to sum_over_period_to_record, but it takes two timeseries and divides them before returning the record.
+    This allows for the calculation of HC/HPend ratios and <8 weeks ratios
+
+    :param numerator: A pd.Series used as numerator in division
+    :param divider: A pd.Series used as divider in division
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param year: The year to sum over
+    :return: Record for the firestore
+    '''
     data_num = sum_over_period(numerator, freq, period=[year + '-01-01', year + '-12-31'])
     data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
     data = (data_num / data_div).fillna(0)
