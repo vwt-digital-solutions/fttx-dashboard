@@ -14,7 +14,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../dashboard'))
 sys.path.insert(0, os.path.abspath('../dashboard/analyse_dashboard/analyse'))
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "/home/erik/Documents/Application Credentials/vwt-d-gew1-fttx-dashboard.json"
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = ""
 
 
 # -- Project information -----------------------------------------------------
