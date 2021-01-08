@@ -230,47 +230,72 @@ for client in config.client_config.keys():
          ]
     )
     def display_click_data_per_year(week_click_data, month_click_data, reset, year, client=client):
+        '''
+        This function returns the "Opgegeven reden na" pie chart, based on what the used has clicked on.
+        If no input is given, an annual overview is returned. With input, a monthly or weekly view is returned.
+        :return: This function returns a pie chart figure.
+        '''
         ctx = dash.callback_context
-        last_day_of_period = ""
-        period = ""
-        dutch_month_list = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
 
-        if ctx.triggered:
-            for trigger in ctx.triggered:
-                period, _, _ = trigger['prop_id'].partition("-")
-                if period == "overview":
-                    return no_graph(title="Opgegeven reden na", text='Loading...')
-                if period == 'year':
-                    last_day_of_period = f"{year}-12-31"
-                    title_text = f"Reden na voor het jaar {year}"
-                    break
-                for point in trigger['value']['points']:
-                    last_day_of_period = point['customdata']
-                    if period == 'week':
-                        title_text = f"Reden na voor de week {last_day_of_period}"
-                    extract_month_in_dutch = dutch_month_list[int(last_day_of_period.split("-")[1]) - 1]
-                    if period == 'month':
-                        title_text = f"Reden na voor de maand {extract_month_in_dutch} {year}"
-                    break
-                break
+        if not ctx.triggered:
+            return no_graph(title="Opgegeven reden na", text='Loading...')
 
-            redenna_by_period = collection.get_document(collection="Data",
-                                                        client=client,
-                                                        graph_name=f"redenna_by_{period}")
+        last_day_of_period, period, title_text = get_lastdayofperiod_and_titletext(ctx, year)
 
-            redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
-            fig = pie_chart.get_html(labels=list(redenna_dict.keys()),
-                                     values=list(redenna_dict.values()),
-                                     title=title_text,
-                                     colors=[
+        if not last_day_of_period and not title_text:
+            return no_graph(title="Opgegeven reden na", text='Loading...')
+
+        redenna_by_period = collection.get_document(collection="Data",
+                                                    client=client,
+                                                    graph_name=f"redenna_by_{period}")
+
+        redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
+
+        if redenna_dict:
+            return pie_chart.get_html(labels=list(redenna_dict.keys()),
+                                      values=list(redenna_dict.values()),
+                                      title=title_text,
+                                      colors=[
                                          colors['green'],
                                          colors['yellow'],
                                          colors['red'],
                                          colors['vwt_blue'],
                                      ])
+        else:
+            return no_graph(title=title_text, text='No Data')
 
-            return fig
-        return original_pie_chart(client)
+    def get_lastdayofperiod_and_titletext(ctx, year):
+        '''
+        This function returns the settings to plot a pie chart based on annual, monthly or weekly views.
+        :param ctx: A dash callback, triggered by clicking in Jaaroverzicht or Maandoverzicht graphs
+        :param year: The current year, as set by the year selector dropdown
+        :return: This function returns the variables: last_day_of_period, period, title_text, which are all strings
+        '''
+        last_day_of_period = ""
+        period = ""
+        dutch_month_list = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+
+        for trigger in ctx.triggered:
+            period, _, _ = trigger['prop_id'].partition("-")
+
+            if period == "overview":
+                last_day_of_period = None
+                title_text = None
+                break
+            if period == 'year':
+                last_day_of_period = f"{year}-12-31"
+                title_text = f"Reden na voor het jaar {year}"
+                break
+            for point in trigger['value']['points']:
+                last_day_of_period = point['customdata']
+                if period == 'week':
+                    title_text = f"Reden na voor de week {last_day_of_period}"
+                if period == 'month':
+                    extract_month_in_dutch = dutch_month_list[int(last_day_of_period.split("-")[1]) - 1]
+                    title_text = f"Reden na voor de maand {extract_month_in_dutch} {year}"
+                break
+            break
+        return last_day_of_period, period, title_text
 
     @app.callback(
         [
