@@ -1584,13 +1584,20 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     return record
 
 
-def voorspel_and_planning_sum_over_periods_to_record(timeseries: pd.Series, freq: str, year: str):
-    if freq == 'Y':
-        value = sum_over_period(timeseries, 'D', period=[year + '-01-01', year + '-12-31'])[pd.Timestamp.now():].sum()
-        data = pd.Series(name=timeseries.name, data=value, index=[pd.to_datetime(year + '-12-31')])
-    else:
-        data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
+def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str, year: str):
+    '''
+    Similar to sum_over_period_to_record, but it takes two timeseries and subtracts one from the other
+    before returning the record. This allows for calculation of voorspelling minus HPend and planning minus HPend
 
+    :param predicted: A pd.Series to be subtracted from
+    :param realized: A pd.Series to use for subtraction
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param year: The year to sum over
+    :return: Record for the firestore
+    '''
+    data_predicted = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
+    data_realized = sum_over_period(realized, freq, period=[year + '-01-01', year + '-12-31'])
+    data = (data_predicted - data_realized).fillna(0)
     data.index = data.index.format()
     record = data.to_dict()
     return record

@@ -422,7 +422,7 @@ for client in config.client_config.keys():
                  title='Planning (VWT)',
                  text="HPend gepland vanaf nu: ",
                  value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="planning",
+                                                       graph_name="planning_minus_HPend",
                                                        client=client,
                                                        year=year,
                                                        frequency="Y")))
@@ -432,7 +432,7 @@ for client in config.client_config.keys():
                  title='Voorspelling (VQD)',
                  text="HPend voorspeld vanaf nu: ",
                  value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="voorspelling",
+                                                       graph_name="voorspelling_minus_HPend",
                                                        client=client,
                                                        year=year,
                                                        frequency="Y")))
