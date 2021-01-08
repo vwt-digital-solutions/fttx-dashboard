@@ -11,6 +11,7 @@ from flask import send_file
 from flask_caching import Cache
 from flask_cors import CORS
 from flask_sslify import SSLify
+from sqlalchemy import create_engine
 
 import config
 import utils
@@ -76,18 +77,33 @@ if config.authentication:
     logging.info("Authorization is set up")
 
 
-def download_from_sql(query):
-    from sqlalchemy import create_engine
-    url = f"mysql+mysqlconnector://{config.database['db_user']}:" \
-          f"{utils.get_secret(project_id=config.database['project_id'], secret_id=config.database['secret_name'])}@" \
-          f"{config.database['db_ip']}:{config.database.get('port', 3306)}/{config.database['db_name']}" \
-          f"?charset=utf8&ssl_ca={config.database['server_ca']}&ssl_cert={config.database['client_ca']}" \
-          f"&ssl_key={config.database['client_key']}"
-    sqlEngine = create_engine(url, pool_recycle=3600)
+def get_database_engine():
+    if 'db_ip' in config.database:
+        SACN = 'mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}'.format(
+            config.database['db_user'],
+            utils.get_secret(config.database['project_id'], config.database['secret_name']),
+            config.database['db_ip'],
+            config.database['db_name'],
+            config.database['server_ca'],
+            config.database['client_ca'],
+            config.database['client_key']
+        )
+    else:
+        SACN = 'mysql+pymysql://{}:{}@/{}?unix_socket=/cloudsql/{}:europe-west1:{}'.format(
+            config.database['db_user'],
+            utils.get_secret(config.database['project_id'], config.database['secret_name']),
+            config.database['db_name'],
+            config.database['project_id'],
+            config.database['instance_id']
+        )
 
+    return create_engine(SACN, pool_recycle=3600)
+
+
+def download_from_sql(query):
+    sqlEngine = get_database_engine()
     try:
         result = pd.read_sql(query, sqlEngine)
-
     except ValueError as e:
         logging.info(e)
         result = pd.DataFrame()
