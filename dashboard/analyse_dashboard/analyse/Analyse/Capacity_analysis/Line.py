@@ -1,58 +1,7 @@
 import pandas as pd
-from datetime import timedelta
 import numpy as np
 
-
-class Domain:
-    def __init__(self, begin, end):
-        self.begin = begin
-        self.end = end
-        self.domain = range(begin, end)
-
-    def shift(self, integer):
-        new_begin = self.begin + integer
-        new_end = self.end + integer
-        return Domain(new_begin, new_end)
-
-    def __call__(self):
-        return self.domain
-
-    def __len__(self):
-        return len(self.domain)
-
-    def __iter__(self):
-        return range(self.begin, self.end)
-
-    def get_range(self):
-        return np.array(list(range(0, len(self.domain))))
-
-    def get_intersect_index(self, value):
-        raise NotImplementedError
-
-
-class DateDomain(Domain):
-    def __init__(self, begin, end):
-        print(f'making domain between {begin}, {end}')
-        self.begin = pd.to_datetime(begin)
-        self.end = pd.to_datetime(end)
-        self.domain = pd.date_range(start=begin,
-                                    end=end,
-                                    freq='D'
-                                    )
-
-    def shift(self, days):
-        new_begin = self.begin + timedelta(days=days)
-        new_end = self.end + timedelta(days=days)
-        return DateDomain(begin=new_begin,
-                          end=new_end
-                          )
-
-    def slice_domain(self, start_offset, stop_offset=0):
-        return DateDomain(begin=self.begin + start_offset,
-                          end=self.end + stop_offset)
-
-    def get_intersect_index(self, value):
-        return (value - self.begin).days
+from Analyse.Capacity_analysis.Domain import DateDomain
 
 
 class Line:
@@ -214,39 +163,3 @@ class TimeseriesLine(PointLine):
         return TimeseriesLine(data=integral)
 
 
-class ProjectGraph:
-    def __init__(self, lines, xlabel=None, ylabel=None, date=None, limit=None):
-        self.line_dict = {line.name: line for line in lines}
-        pass
-
-    def get(self, line):
-        return self.line_dict.get(line)
-
-    def _repr_html_(self):
-        return '<h1>GRAPH<h1>'
-
-
-class Project():
-
-    def __init__(self):
-        pass
-
-    def get_project_lines(self, fase_delta, project_df, geulen_line=None):
-        print('getting production per day')
-        production_by_day = TimeseriesLine(project_df.groupby([project_df.index]).count())
-        print('getting production over time')
-        production_over_time = production_by_day.integrate()
-        production_over_time.set_name('production_over_time')
-        print('getting extrapolation')
-        extrapolated_line = production_over_time.extrapolate()
-        extrapolated_line.set_name('extrapolated_line')
-        if geulen_line:
-            forecast_line = geulen_line.translate_x(fase_delta)
-            forecast_line.set_name('forecast_line')
-        else:
-            forecast_line = None
-        required_production = None  # get_required_production(production_over_time, target_line)
-        print('Combining and making graph')
-        lines = [line for line in [production_over_time, extrapolated_line, forecast_line, required_production]
-                 if line is not None]
-        return ProjectGraph(lines=lines)
