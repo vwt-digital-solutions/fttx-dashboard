@@ -75,7 +75,7 @@ def get_homes_completed(df: pd.DataFrame):
 
 # Calculate the amount of objects per project that have been
 # Permanently passed or completed
-def get_HPend_2020(df: pd.DataFrame):
+def get_HPend(df: pd.DataFrame):
     result = df[['project', 'hpend']] \
         .groupby(by="project") \
         .sum() \
@@ -86,7 +86,7 @@ def get_HPend_2020(df: pd.DataFrame):
     return result
 
 
-def get_HPend(df: pd.DataFrame):
+def get_HPend_for_2020(df: pd.DataFrame):
     test_df = df[['project']].copy()
     test_df["hpend_not_2020"] = df.opleverdatum.notna()
     return test_df.groupby(by="project").sum().reset_index().set_index("project").to_dict()['hpend_not_2020']
@@ -141,15 +141,16 @@ class ProjectSpecs(NamedTuple):
 
 
 def calculate_projectspecs(df: pd.DataFrame) -> ProjectSpecs:
+    # TODO: cleanup of this function (see _calculate_projectspecs)
     homes_completed = get_homes_completed(df)
-    homes_ended_2020 = get_HPend_2020(df)
     homes_ended = get_HPend(df)
+    homes_ended_in_2020 = get_HPend_for_2020(df)
     has_ready = get_has_ready(df)
     hc_hpend_ratio = get_hc_hpend_ratio(df)
-    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended_2020)
+    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
     werkvoorraad = get_has_werkvoorraad(df)
 
-    return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended, werkvoorraad)
+    return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended_in_2020, werkvoorraad)
 
 
 def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
@@ -1173,20 +1174,23 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
 
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
-        'MS' for the start of the month
-        'W-MON' for weeks starting on Monday.
+        'W-MON' for weeks starting on Monday. (label = monday)
+        'M' for month (label is the last day of the period)
+        'Y' for year (label is the last day of the period)
 
-        :param df: The data set
-        :param date_column: The column used to group on
-        :param freq: The period to use in the grouper
-        :return: a dictionary with the first day of the period as key, and the clusters with their occurence counts
-                 as value.
+    :param df: The data set
+    :param date_column: The column used to group on
+    :param freq: The period to use in the grouper
+    :return: a dictionary with the first day of the period as key, and the clusters with their occurence counts
+             as value.
     """
     redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
         .groupby(by=[pd.Grouper(key=date_column,
                                 freq=freq,
-                                closed='left',
-                                label="left"
+                                closed='left',  # closed end of the interval, see:
+                                # (https://en.wikipedia.org/wiki/Interval_(mathematics)#Terminology)
+                                label="right"  # label specifies whether the result is labeled
+                                # with the beginning or the end of the interval.
                                 ),
                      "cluster_redenna",
                      ]
@@ -1510,9 +1514,15 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
-        'MS' for the start of the month
         'W-MON' for weeks starting on Monday.
+        'M' for the end of the month
         'Y' for a year
+
+    :param data: A pd.Series to sum over
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param period: ???
+    :param offset: ???
+    :return: A pd.Series object
     """
     if data is None:
         data = pd.Series()
@@ -1540,6 +1550,15 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
 
 
 def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
+    '''
+    This function takes a timeseries, sums the series over a defined period (either annual, monthly or weekly),
+    converts the result to a dictionary and returns a record ready for the firestore
+
+    :param timeseries: A pd.Series
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param year: The year to sum over
+    :return: Record for the firestore
+    '''
     data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
     data.index = data.index.format()
     record = data.to_dict()
@@ -1547,6 +1566,16 @@ def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
 
 
 def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):
+    '''
+    Similar to sum_over_period_to_record, but it takes two timeseries and divides them before returning the record.
+    This allows for the calculation of HC/HPend ratios and <8 weeks ratios
+
+    :param numerator: A pd.Series used as numerator in division
+    :param divider: A pd.Series used as divider in division
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param year: The year to sum over
+    :return: Record for the firestore
+    '''
     data_num = sum_over_period(numerator, freq, period=[year + '-01-01', year + '-12-31'])
     data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
     data = (data_num / data_div).fillna(0)
@@ -1555,13 +1584,20 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     return record
 
 
-def voorspel_and_planning_sum_over_periods_to_record(timeseries: pd.Series, freq: str, year: str):
-    if freq == 'Y':
-        value = sum_over_period(timeseries, 'D', period=[year + '-01-01', year + '-12-31'])[pd.Timestamp.now():].sum()
-        data = pd.Series(name=timeseries.name, data=value, index=[pd.to_datetime(year + '-12-31')])
-    else:
-        data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
+def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str, year: str):
+    '''
+    Similar to sum_over_period_to_record, but it takes two timeseries and subtracts one from the other
+    before returning the record. This allows for calculation of voorspelling minus HPend and planning minus HPend
 
+    :param predicted: A pd.Series to be subtracted from
+    :param realized: A pd.Series to use for subtraction
+    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param year: The year to sum over
+    :return: Record for the firestore
+    '''
+    data_predicted = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
+    data_realized = sum_over_period(realized, freq, period=[year + '-01-01', year + '-12-31'])
+    data = (data_predicted - data_realized).fillna(0)
     data.index = data.index.format()
     record = data.to_dict()
     return record

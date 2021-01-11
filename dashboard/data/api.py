@@ -3,6 +3,7 @@ from urllib.parse import urlparse, parse_qs
 
 from flask import make_response, jsonify
 from google.cloud import firestore_v1
+from requests import Response
 
 import config
 import requests
@@ -26,7 +27,14 @@ def get(path):
 
 
 @cache.memoize(timeout=60*10)
-def cachable_request(url, headers):
+def cachable_request(url: str, headers: dict) -> Response:
+    """
+    A cacheable request is a wrapper around the request.get() that uses the url and the headers as caching key
+
+    :param url: The requested url
+    :param headers: The request headers
+    :return: response
+    """
     logging.info(f"Requesting {url}")
     response = requests.get(url, headers=headers)
     return response
