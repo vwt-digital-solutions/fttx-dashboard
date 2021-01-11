@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from Analyse.Capacity_analysis.Domain import DateDomain
+from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
 
 class Line:
@@ -46,19 +46,31 @@ class Line:
 
 
 class LinearLine(Line):
-    def __init__(self, slope, intersect, domain=None):
+    """
+    A linear line is defined by the slope and the y-intercept.
+
+    https://en.wikipedia.org/wiki/Linear_equation#Slope%E2%80%93intercept_form
+
+    :param slope: The slope of line
+    :param intercept: The y coordinate of the lines intersection with the y-axis
+    :param domain: :class: `Domain`, The domain for which the line is defined.
+    """
+
+    def __init__(self, slope: float, intercept: float, domain: Domain = None, *args, **kwargs):
+
         self.slope = slope
-        self.intersect = intersect
+        self.intercept = intercept
         self.domain = domain
+        super().__init__(*args, **kwargs)
 
     def make_series(self) -> pd.Series:
-        '''
+        """
         Given attributes of the line,
         return a series with x-values as index, and y-value as values.
-        '''
+        """
         if not self.domain:
             raise NotImplementedError
-        values = self.slope * self.domain.get_range() + self.intersect
+        values = self.slope * self.domain.get_range() + self.intercept
         series = pd.Series(index=self.domain.domain, data=values)
         return series
 
@@ -66,10 +78,10 @@ class LinearLine(Line):
         '''
         Given a delta, shift the line object and return a new line object
         '''
-        translated_intersect = self.intersect - delta * self.slope
+        translated_intersect = self.intercept - delta * self.slope
         new_domain = self.domain.shift(delta)
         translated_line = LinearLine(slope=self.slope,
-                                     intersect=translated_intersect,
+                                     intercept=translated_intersect,
                                      domain=new_domain
                                      )
 
@@ -87,11 +99,11 @@ class LinearLine(Line):
             intersect = lower_treshold
         else:
             lower_treshold = -np.Inf
-            intersect = self.intersect
+            intersect = self.intercept
         series = self.make_series()
         focused_series = series[(series >= lower_treshold) & (series <= upper_treshold)]
         domain = DateDomain(focused_series.index.min(), focused_series.index.max())
-        return LinearLine(slope=self.slope, intersect=intersect, domain=domain)
+        return LinearLine(slope=self.slope, intercept=intersect, domain=domain)
 
 
 class PointLine(Line):
@@ -151,7 +163,7 @@ class TimeseriesLine(PointLine):
         slope, intersect = self.linear_regression(data_partition)
         domain = DateDomain(self.data.index[0], self.data.index[-1])
         return LinearLine(slope=slope,
-                          intersect=intersect,
+                          intercept=intersect,
                           domain=domain)
 
     def integrate(self):
@@ -161,5 +173,3 @@ class TimeseriesLine(PointLine):
         # Temporarily use old cumsum method to mimic old implementation
         integral = self.make_series().cumsum()
         return TimeseriesLine(data=integral)
-
-
