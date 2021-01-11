@@ -4,6 +4,15 @@ import inspect
 
 
 def validate_project(func):
+    """
+    A decorator that checks if the value of the project argument is one of the configured projects
+
+    :raises ValueError: When a the value of the project argument is not in one of the configured projects a ValueError
+     is raised
+    :param func: the decorated function
+    :return: The original function
+    """
+
     def wrapper(*args, **kwargs):
         # Gets a dictionary of all supplied arguments and their values
         all_args = {**dict(zip(inspect.getfullargspec(func).args, args)), **kwargs}
@@ -15,11 +24,20 @@ def validate_project(func):
             raise ValueError(f"Unknown project supplied: {project}")
         return func(*args, **kwargs)
 
+    wrapper.__doc__ = func.__doc__
     return wrapper
 
 
 @validate_project
-def waiting_category(project, wait_category):
+def waiting_category(project: str, wait_category: str):
+    """
+    This function generates an sql query for a particular project that returns the houses in a particular waiting
+    category.
+
+    :param project: A fiberconnect project name
+    :param wait_category: The wait category used in the filter. One of [on_time, limited_time, late]
+    :return: A parameterized SQL-query
+    """
     if wait_category == "on_time":
         having = "wachttijd > 0 and wachttijd <= 8"
     elif wait_category == "limited_time":
@@ -51,6 +69,18 @@ def project_redenna(project,
                     lasdp_status=None,
                     has_status=None
                     ):
+    """
+    This function generates an sql query for a particular project with optional filters for the phases (Schouwen,
+    BIS, lasAP, lasDP HAS).
+
+    :param project: A fiberconnect project name
+    :param schouw_status: One of [niet_opgeleverd, opgeleverd]
+    :param bis_status: One of [niet_opgeleverd, opgeleverd]
+    :param lasap_status: One of [niet_opgeleverd, opgeleverd]
+    :param lasdp_status: One of [niet_opgeleverd, opgeleverd]
+    :param has_status: One of [niet_opgeleverd, ingeplanned, opgeleverd_zonder_hc, opgeleverd]
+    :return: A parameterized SQL-query
+    """
     filters = ""
     if schouw_status:
         if schouw_status == "niet_opgeleverd":
@@ -83,7 +113,10 @@ def project_redenna(project,
             filters += "and fc.opleverstatus = 2\n"
 
     sql = text(f"""
-    Select fc.project,
+    Select
+        fc.sleutel,
+        fc.project,
+        fc.plaats, fc.postcode, fc.adres, fc.huisnummer
         f.cluster_redenna, fc.redenna, fc.toelichting_status,
         fc.soort_bouw,
         fc.schouwdatum,

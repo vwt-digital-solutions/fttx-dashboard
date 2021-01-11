@@ -167,7 +167,12 @@ def project_redenna_download():
 
     result = download_from_sql(query)
 
-    relevant_columns = ['project',
+    relevant_columns = ["sleutel",
+                        "project",
+                        "plaats",
+                        "postcode",
+                        "adres",
+                        "huisnummer",
                         'cluster_redenna',
                         'redenna',
                         'toelichting_status',
