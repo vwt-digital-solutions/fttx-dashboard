@@ -116,7 +116,7 @@ def project_redenna(project,
     Select
         fc.sleutel,
         fc.project,
-        fc.plaats, fc.postcode, fc.adres, fc.huisnummer
+        fc.plaats, fc.postcode, fc.adres, fc.huisnummer,
         f.cluster_redenna, fc.redenna, fc.toelichting_status,
         fc.soort_bouw,
         fc.schouwdatum,
