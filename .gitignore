@@ -19,3 +19,4 @@ test.py
 *.pem
 *toggles.no_sql_consume_func.yaml
 *config.py
+*.DS_Store
