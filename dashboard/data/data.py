@@ -1,4 +1,3 @@
-from datetime import datetime
 from collections import namedtuple
 
 import config
@@ -33,53 +32,6 @@ def no_graph(title="", text="No Data"):
     }
 
 
-def has_planning_by(period, client):
-    has_opgeleverd = collection.get_document(collection="Data", graph_name="count_opleverdatum_by_" + period,
-                                             client=client)
-    has_planning = collection.get_document(collection="Data", graph_name="count_hasdatum_by_" + period,
-                                           client=client)
-    has_outlook = collection.get_document(collection="Data", graph_name="count_outlookdatum_by_" + period,
-                                          client=client) if client == 'kpn' else {}  # temp fix
-    has_voorspeld = collection.get_document(collection="Data", graph_name="count_voorspellingdatum_by_" + period,
-                                            client=client) if client == 'kpn' else {}  # temp fix
-
-    # for tmobile the toestemming_datum is used as outlook
-    if client == 'tmobile':
-        has_outlook = collection.get_document(collection="Data", graph_name="count_toestemming_datum_by_" + period,
-                                              client=client)
-        has_outlook['count_outlookdatum'] = has_outlook.pop('count_toestemming_datum')
-        has_outlook['count_outlookdatum']['2020-11-02'] = 0
-        has_outlook['count_outlookdatum']['2020-12-01'] = 0
-
-    if not has_outlook:
-        has_outlook['count_outlookdatum'] = has_opgeleverd['count_opleverdatum'].copy()
-        for el in has_outlook['count_outlookdatum']:
-            has_outlook['count_outlookdatum'][el] = 0
-        if period == 'month':
-            has_outlook['count_outlookdatum']['2020-11-02'] = 0
-            has_outlook['count_outlookdatum']['2020-12-01'] = 0
-    # temporary solution until we also have voorspelling data for T-Mobile
-    if not has_voorspeld:
-        has_voorspeld['count_voorspellingdatum'] = has_opgeleverd['count_opleverdatum'].copy()
-        for el in has_voorspeld['count_voorspellingdatum'].keys():
-            has_voorspeld['count_voorspellingdatum'][el] = 0
-
-    # temporary solution until we also have planning data for DFN
-    if client == 'dfn':
-        has_planning['count_hasdatum'] = has_planning['count_hasdatum'].copy()
-        for el in has_planning['count_hasdatum'].keys():
-            has_planning['count_hasdatum'][el] = 0
-
-    df = pd.DataFrame({**has_planning, **has_opgeleverd, **has_outlook,
-                       **has_voorspeld}).reset_index().fillna(0).rename(columns={"index": "date"})
-    df['date'] = pd.to_datetime(df['date'], format="%Y-%m-%d")
-    df['period'] = period
-    start_date = pd.to_datetime(str(datetime.now().year) + '-01-01', format="%Y-%m-%d")
-    end_date = pd.to_datetime(str(datetime.now().year) + '-12-31', format="%Y-%m-%d")
-    mask = (df['date'] >= start_date) & (df['date'] <= end_date)
-    return df[mask]
-
-
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
     opgeleverd_data_dict = collection.get_document(collection="Data", graph_name="realisatie_hpend",
                                                    client=client, year=year, frequency=freq)
@@ -96,6 +48,8 @@ def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: st
                                                      client=client, year=year, frequency=freq)
     voorspelling_data_dict = {key: int(value) for key, value in voorspelling_data_dict.items()}
 
+    # The following commented lines are from the old function "has_planning_by", I don't think we need them anymore:
+    #
     # for tmobile the toestemming_datum is used as outlook
     # if client == 'tmobile':
     #     target_data_dict = collection.get_document(collection="Data", graph_name="toestemming",

@@ -3,7 +3,6 @@ import logging
 import dash_html_components as html
 from urllib import parse
 
-from app import toggles
 from layout.components import overview
 from layout.components.header import header
 from layout.components.nav_bar import nav_bar
@@ -60,8 +59,7 @@ def client_project_view(client):
 
 def client_page_body(client, project):
     body = [
-        header(f"Status projecten {get_client_name(client)}") if toggles.new_structure_overviews
-        else header(f"Status projecten {get_client_name(client)} in 2020"),
+        header(f"Status projecten {get_client_name(client)}"),
         html.Div(
             overview.get_search_bar(client, project),
             className="container-display",
