@@ -7,7 +7,6 @@ class ReleaseToggles(TogglesList):
     financial_view: bool
     upload: bool
     fc_sql: bool
-    new_structure_overviews: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')

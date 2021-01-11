@@ -58,10 +58,8 @@ class FttXExtract(Extract):
             self._extract_from_sql()
         else:
             self._extract_from_firestore()
-
-        if toggles.new_structure_overviews:
-            self._extract_ftu()
-            self._extract_planning()
+        self._extract_ftu()
+        self._extract_planning()
 
     def _extract_from_firestore(self):
         logger.info("Extracting from the firestore")
@@ -169,8 +167,7 @@ class FttXTransform(Transform):
         super().transform()
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
-        if toggles.new_structure_overviews:
-            self._transform_planning()
+        self._transform_planning()
         self._add_columns()
         self._cluster_reden_na()
         self._add_status_columns()
@@ -315,19 +312,17 @@ class FttXAnalyse(FttXBase):
 
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
-        if toggles.new_structure_overviews:
-            self._calculate_list_of_years()
-            self._make_records_for_dashboard_values()
-            self._make_voorspelling_and_planning_for_dashboard_values()
-            self._make_records_ratio_hc_hpend_for_dashboard_values()
-            self._make_records_ratio_under_8weeks_for_dashboard_values()
+        self._calculate_list_of_years()
+        self._make_records_for_dashboard_values()
+        self._make_voorspelling_and_planning_for_dashboard_values()
+        self._make_records_ratio_hc_hpend_for_dashboard_values()
+        self._make_records_ratio_under_8weeks_for_dashboard_values()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
         self._calculate_status_counts_per_project()
         self._calculate_redenna_per_period()
-        self._jaaroverzicht()
         self._progress_per_phase()
         self._progress_per_phase_over_time()
 
@@ -442,10 +437,10 @@ class FttXAnalyse(FttXBase):
     def _set_filters(self):
         self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
 
-    def _jaaroverzicht(self):
-        # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
-        jaaroverzicht = {}
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+    # def _jaaroverzicht(self):
+    #     # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
+    #     jaaroverzicht = {}
+    #     self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")

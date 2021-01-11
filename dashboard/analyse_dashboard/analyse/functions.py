@@ -400,127 +400,127 @@ def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
     return OverviewResults(df_prog, df_target, df_real, df_plan)
 
 
-def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res, show_planning=True):
-    if 'W' in res:
-        n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-        n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
-        x_ticks = list(range(n_now - n_d, n_now + 5 - n_d))
-        x_ticks_text = [datetime.datetime.strptime('2020-W' + str(int(el - 1)) + '-1', "%Y-W%W-%w").date().strftime(
-            '%Y-%m-%d') + '<br>W' + str(el) for el in x_ticks]
-        x_range = [n_now - n_d - 0.5, n_now + 4.5 - n_d]
-        y_range = [0, 3000]
-        width = 0.08
-        text_title = 'Maandoverzicht'
-        period = ['2019-12-23', '2020-12-27']
-        close = 'left'
-        loff = '-1W-MON'
-        x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.week.to_list()
-        x[0] = 0
-    if 'M' == res:
-        n_now = datetime.date.today().month
-        x_ticks = list(range(0, 13))
-        x_ticks_text = ['dec', 'jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
-        x_range = [0.5, 12.5]
-        y_range = [0, 18000]
-        width = 0.2
-        text_title = 'Jaaroverzicht'
-        period = ['2019-12-23', '2020-12-27']
-        close = 'left'
-        loff = None
-        x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.month.to_list()
-
-    prog0 = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-    prog = prog0.to_list()
-    target0 = df_target[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-    target = target0.to_list()
-    real0 = df_real[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-    real = real0.to_list()
-    plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-    plan = plan0.to_list()
-
-    if 'M' == res:
-        jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target))), real=str(round(sum(real))),
-                             plan=str(round(sum(plan[n_now - 1:]) - real[n_now - 1])),
-                             prog=str(round(sum(prog[n_now - 1:]) - real[n_now - 1])),
-                             HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
-        if jaaroverzicht['prog'] < jaaroverzicht['plan']:
-            jaaroverzicht['prog_c'] = 'pretty_container_red'
-
-    bar_now = dict(x=[n_now],
-                   y=[y_range[1]],
-                   name='Huidige week',
-                   type='bar',
-                   marker=dict(color=colors['black']),
-                   width=0.5 * width,
-                   )
-    bar_t = dict(x=[el - 0.5 * width for el in x],
-                 y=target,
-                 name='Planning',
-                 type='bar',
-                 marker=dict(color=colors['lightgray']),
-                 width=width,
-                 )
-    bar_pr = dict(x=x,
-                  y=prog,
-                  name='Voorspelling (VQD)',
-                  mode='markers',
-                  marker=dict(color=colors['yellow'], symbol='diamond', size=15),
-                  #   width=0.2,
-                  )
-    bar_r = dict(x=[el + 0.5 * width for el in x],
-                 y=real,
-                 name='Realisatie (FC)',
-                 type='bar',
-                 marker=dict(color=colors['green']),
-                 width=width,
-                 )
-    bar_pl = dict(x=x,
-                  y=plan,
-                  name='Planning HP (VWT)',
-                  type='lines',
-                  marker=dict(color=colors['red']),
-                  width=width,
-                  )
-    fig = {
-        'data': [bar_pr, bar_pl, bar_r, bar_t, bar_now],
-        'layout': {
-            'barmode': 'stack',
-            #   'clickmode': 'event+select',
-            'showlegend': True,
-            'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
-            'height': 300,
-            'margin': {'l': 5, 'r': 15, 'b': 10, 't': 40},
-            'title': {'text': text_title},
-            'xaxis': {'range': x_range,
-                      'tickvals': x_ticks,
-                      'ticktext': x_ticks_text,
-                      'title': ' '},
-            'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
-            'plot_bgcolor': colors['plot_bgcolor'],
-            'paper_bgcolor': colors['paper_bgcolor'],
-            #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
-            #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
-        },
-    }
-
-    prog0.index = prog0.index.strftime('%Y-%m-%d')
-    data_pr = dict(count_voorspellingdatum=prog0.to_dict())
-    target0.index = target0.index.strftime('%Y-%m-%d')
-    data_t = dict(count_outlookdatum=target0.to_dict())
-    real0.index = real0.index.strftime('%Y-%m-%d')
-    data_r = dict(count_opleverdatum=real0.to_dict())
-    plan0.index = plan0.index.strftime('%Y-%m-%d')
-    data_p = dict(count_hasdatum=plan0.to_dict())
-
-    if not show_planning:
-        data_p = dict.fromkeys(data_p, 0)
-
-    if 'W' in res:
-        record = dict(id='graph_targets_W', figure=fig)
-        return record, data_pr, data_t, data_r, data_p
-    if 'M' == res:
-        record = dict(id='graph_targets_M', figure=fig)
-        return record, data_pr, data_t, data_r, data_p
+# def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res, show_planning=True):
+#     if 'W' in res:
+#         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
+#         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
+#         x_ticks = list(range(n_now - n_d, n_now + 5 - n_d))
+#         x_ticks_text = [datetime.datetime.strptime('2020-W' + str(int(el - 1)) + '-1', "%Y-W%W-%w").date().strftime(
+#             '%Y-%m-%d') + '<br>W' + str(el) for el in x_ticks]
+#         x_range = [n_now - n_d - 0.5, n_now + 4.5 - n_d]
+#         y_range = [0, 3000]
+#         width = 0.08
+#         text_title = 'Maandoverzicht'
+#         period = ['2019-12-23', '2020-12-27']
+#         close = 'left'
+#         loff = '-1W-MON'
+#         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.week.to_list()
+#         x[0] = 0
+#     if 'M' == res:
+#         n_now = datetime.date.today().month
+#         x_ticks = list(range(0, 13))
+#         x_ticks_text = ['dec', 'jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+#         x_range = [0.5, 12.5]
+#         y_range = [0, 18000]
+#         width = 0.2
+#         text_title = 'Jaaroverzicht'
+#         period = ['2019-12-23', '2020-12-27']
+#         close = 'left'
+#         loff = None
+#         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.month.to_list()
+#
+#     prog0 = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     prog = prog0.to_list()
+#     target0 = df_target[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     target = target0.to_list()
+#     real0 = df_real[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     real = real0.to_list()
+#     plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     plan = plan0.to_list()
+#
+#     if 'M' == res:
+#         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target))), real=str(round(sum(real))),
+#                              plan=str(round(sum(plan[n_now - 1:]) - real[n_now - 1])),
+#                              prog=str(round(sum(prog[n_now - 1:]) - real[n_now - 1])),
+#                              HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
+#         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
+#             jaaroverzicht['prog_c'] = 'pretty_container_red'
+#
+#     bar_now = dict(x=[n_now],
+#                    y=[y_range[1]],
+#                    name='Huidige week',
+#                    type='bar',
+#                    marker=dict(color=colors['black']),
+#                    width=0.5 * width,
+#                    )
+#     bar_t = dict(x=[el - 0.5 * width for el in x],
+#                  y=target,
+#                  name='Planning',
+#                  type='bar',
+#                  marker=dict(color=colors['lightgray']),
+#                  width=width,
+#                  )
+#     bar_pr = dict(x=x,
+#                   y=prog,
+#                   name='Voorspelling (VQD)',
+#                   mode='markers',
+#                   marker=dict(color=colors['yellow'], symbol='diamond', size=15),
+#                   #   width=0.2,
+#                   )
+#     bar_r = dict(x=[el + 0.5 * width for el in x],
+#                  y=real,
+#                  name='Realisatie (FC)',
+#                  type='bar',
+#                  marker=dict(color=colors['green']),
+#                  width=width,
+#                  )
+#     bar_pl = dict(x=x,
+#                   y=plan,
+#                   name='Planning HP (VWT)',
+#                   type='lines',
+#                   marker=dict(color=colors['red']),
+#                   width=width,
+#                   )
+#     fig = {
+#         'data': [bar_pr, bar_pl, bar_r, bar_t, bar_now],
+#         'layout': {
+#             'barmode': 'stack',
+#             #   'clickmode': 'event+select',
+#             'showlegend': True,
+#             'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
+#             'height': 300,
+#             'margin': {'l': 5, 'r': 15, 'b': 10, 't': 40},
+#             'title': {'text': text_title},
+#             'xaxis': {'range': x_range,
+#                       'tickvals': x_ticks,
+#                       'ticktext': x_ticks_text,
+#                       'title': ' '},
+#             'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
+#             'plot_bgcolor': colors['plot_bgcolor'],
+#             'paper_bgcolor': colors['paper_bgcolor'],
+#             #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
+#             #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
+#         },
+#     }
+#
+#     prog0.index = prog0.index.strftime('%Y-%m-%d')
+#     data_pr = dict(count_voorspellingdatum=prog0.to_dict())
+#     target0.index = target0.index.strftime('%Y-%m-%d')
+#     data_t = dict(count_outlookdatum=target0.to_dict())
+#     real0.index = real0.index.strftime('%Y-%m-%d')
+#     data_r = dict(count_opleverdatum=real0.to_dict())
+#     plan0.index = plan0.index.strftime('%Y-%m-%d')
+#     data_p = dict(count_hasdatum=plan0.to_dict())
+#
+#     if not show_planning:
+#         data_p = dict.fromkeys(data_p, 0)
+#
+#     if 'W' in res:
+#         record = dict(id='graph_targets_W', figure=fig)
+#         return record, data_pr, data_t, data_r, data_p
+#     if 'M' == res:
+#         record = dict(id='graph_targets_M', figure=fig)
+#         return record, data_pr, data_t, data_r, data_p
 
 
 def slice_for_jaaroverzicht(data):
@@ -531,35 +531,35 @@ def slice_for_jaaroverzicht(data):
     return data[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
 
 
-def preprocess_for_jaaroverzicht(*args):
-    return [slice_for_jaaroverzicht(arg) for arg in args]
-    # prog = slice_for_jaaroverzicht(df_prog)
-    # target = slice_for_jaaroverzicht(df_target)
-    # real = slice_for_jaaroverzicht(df_real)
-    # plan = slice_for_jaaroverzicht(df_plan)
-    # return prog, target, real, plan
+# def preprocess_for_jaaroverzicht(*args):
+#     return [slice_for_jaaroverzicht(arg) for arg in args]
+#     # prog = slice_for_jaaroverzicht(df_prog)
+#     # target = slice_for_jaaroverzicht(df_target)
+#     # real = slice_for_jaaroverzicht(df_real)
+#     # plan = slice_for_jaaroverzicht(df_plan)
+#     # return prog, target, real, plan
 
 
-def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
-    n_now = datetime.date.today().month
-
-    target_sum = str(round(sum(target)))
-    planning_sum = sum(planning[n_now - 1:]) - realisatie[n_now - 1]
-    prognose_sum = sum(prognose[n_now - 1:]) - realisatie[n_now - 1]
-    realisatie_sum = str(round(sum(realisatie)))
-
-    jaaroverzicht = dict(id='jaaroverzicht',
-                         target=str(int(target_sum)),
-                         real=str(int(realisatie_sum)),
-                         plan=str(int(planning_sum)),
-                         prog=str(int(prognose_sum)),
-                         HC_HPend=str(HC_HPend),
-                         HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
-                         bis_gereed=str(bis_gereed),
-                         prog_c='pretty_container')
-    if jaaroverzicht['prog'] < jaaroverzicht['plan']:
-        jaaroverzicht['prog_c'] = 'pretty_container_red'
-    return jaaroverzicht
+# def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
+#     n_now = datetime.date.today().month
+#
+#     target_sum = str(round(sum(target)))
+#     planning_sum = sum(planning[n_now - 1:]) - realisatie[n_now - 1]
+#     prognose_sum = sum(prognose[n_now - 1:]) - realisatie[n_now - 1]
+#     realisatie_sum = str(round(sum(realisatie)))
+#
+#     jaaroverzicht = dict(id='jaaroverzicht',
+#                          target=str(int(target_sum)),
+#                          real=str(int(realisatie_sum)),
+#                          plan=str(int(planning_sum)),
+#                          prog=str(int(prognose_sum)),
+#                          HC_HPend=str(HC_HPend),
+#                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
+#                          bis_gereed=str(bis_gereed),
+#                          prog_c='pretty_container')
+#     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
+#         jaaroverzicht['prog_c'] = 'pretty_container_red'
+#     return jaaroverzicht
 
 
 def prognose_graph_old(x_d, y_prog_l, d_real_l, y_target_l):
@@ -1138,33 +1138,33 @@ def get_project_dates(date_FTU0, date_FTU1, y_target_l, x_prog, x_d, rc1, d_real
     return analysis
 
 
-def analyse_documents(y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-                      df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-                      Schouw_BIS, HPend_l, n_err, Schouw, BIS):
-    y_prog_l_r = {}
-    y_target_l_r = {}
-    t_shift_r = {}
-    d_real_l_r = {}
-    d_real_l_ri = {}
-    rc1_r = {}
-    rc2_r = {}
-    for key in y_prog_l:
-        y_prog_l_r[key] = list(y_prog_l[key])
-        y_target_l_r[key] = list(y_target_l[key])
-        t_shift_r[key] = str(t_shift[key])
-        if key in d_real_l:
-            d_real_l_r[key] = list(d_real_l[key]['Aantal'])
-            d_real_l_ri[key] = list(d_real_l[key].index)
-        if key in rc1:
-            rc1_r[key] = list(rc1[key])
-        if key in rc2:
-            rc2_r[key] = list(rc2[key])
-    analysis2 = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
-                     y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
-                     x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
-                     Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
-    analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
-    return analysis2, analysis3
+# def analyse_documents(y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
+#                       df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+#                       Schouw_BIS, HPend_l, n_err, Schouw, BIS):
+#     y_prog_l_r = {}
+#     y_target_l_r = {}
+#     t_shift_r = {}
+#     d_real_l_r = {}
+#     d_real_l_ri = {}
+#     rc1_r = {}
+#     rc2_r = {}
+#     for key in y_prog_l:
+#         y_prog_l_r[key] = list(y_prog_l[key])
+#         y_target_l_r[key] = list(y_target_l[key])
+#         t_shift_r[key] = str(t_shift[key])
+#         if key in d_real_l:
+#             d_real_l_r[key] = list(d_real_l[key]['Aantal'])
+#             d_real_l_ri[key] = list(d_real_l[key].index)
+#         if key in rc1:
+#             rc1_r[key] = list(rc1[key])
+#         if key in rc2:
+#             rc2_r[key] = list(rc2[key])
+#     analysis2 = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
+#                      y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
+#                      x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
+#                      Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
+#     analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
+#     return analysis2, analysis3
 
 
 def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum', freq: str = 'W-MON') -> dict:
@@ -1353,10 +1353,10 @@ def multi_index_to_dict(df):
     return project_dict
 
 
-def calculate_bis_gereed(df):
-    df_copy = df.copy()
-    df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
-    return sum(br.bis_opgeleverd(df_copy))
+# def calculate_bis_gereed(df):
+#     df_copy = df.copy()
+#     df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
+#     return sum(br.bis_opgeleverd(df_copy))
 
 
 def extract_realisatie_bis_dates(df):

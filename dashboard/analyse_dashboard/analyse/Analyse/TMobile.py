@@ -2,11 +2,8 @@ from google.cloud import firestore
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record import Record, DocumentListRecord, DictRecord
 import business_rules as br
-from functions import calculate_projectindicators_tmobile
-from functions_tmobile import calculate_voorraadvormend, add_weeknumber, preprocess_for_jaaroverzicht
-from functions_tmobile import counts_by_time_period, calculate_jaaroverzicht
-from functions import calculate_on_time_ratio, calculate_oplevertijd, calculate_bis_gereed
-from functions import wait_bins
+from functions import calculate_projectindicators_tmobile, calculate_oplevertijd, wait_bins
+from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
 import logging
 from toggles import toggles
 
@@ -58,8 +55,6 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_month()
         self._get_counts_by_week()
         self._get_voorraadvormend()
-        if not toggles.new_structure_overviews:
-            self._jaaroverzicht()
         self._calculate_project_indicators()
         if toggles.download_indicators:
             self._endriched_data()
@@ -77,27 +72,27 @@ class TMobileAnalyse(FttXAnalyse):
                for k, v in counts_by_week.items()]
         self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
-    def _jaaroverzicht(self):
-        # Function should not be ran on first pass, as it is called in super constructor.
-        # Required variables will not be accessible during call of super constructor.
-        if 'counts_by_month' in self.intermediate_results:
-            real, plan = preprocess_for_jaaroverzicht(
-                self.intermediate_results.counts_by_month['count_opleverdatum'],
-                self.intermediate_results.counts_by_month['count_hasdatum'],
-            )
-            on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
-            outlook = self.transformed_data.df['ordered'].sum()
-            bis_gereed = calculate_bis_gereed(self.transformed_data.df)
-            jaaroverzicht = calculate_jaaroverzicht(
-                real,
-                plan,
-                self.intermediate_results.HAS_werkvoorraad,
-                self.intermediate_results.HC_HPend,
-                on_time_ratio,
-                outlook,
-                bis_gereed
-            )
-            self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+    # def _jaaroverzicht(self):
+    #     # Function should not be ran on first pass, as it is called in super constructor.
+    #     # Required variables will not be accessible during call of super constructor.
+    #     if 'counts_by_month' in self.intermediate_results:
+    #         real, plan = preprocess_for_jaaroverzicht(
+    #             self.intermediate_results.counts_by_month['count_opleverdatum'],
+    #             self.intermediate_results.counts_by_month['count_hasdatum'],
+    #         )
+    #         on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
+    #         outlook = self.transformed_data.df['ordered'].sum()
+    #         bis_gereed = calculate_bis_gereed(self.transformed_data.df)
+    #         jaaroverzicht = calculate_jaaroverzicht(
+    #             real,
+    #             plan,
+    #             self.intermediate_results.HAS_werkvoorraad,
+    #             self.intermediate_results.HC_HPend,
+    #             on_time_ratio,
+    #             outlook,
+    #             bis_gereed
+    #         )
+    #         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")

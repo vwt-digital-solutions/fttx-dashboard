@@ -134,30 +134,30 @@ def opgeleverd(df, time_delta_days=0):
 
 
 # TODO: remove when removing toggle new_structure_overviews
-def has_werkvoorraad(schouw_df, time_delta_days=0):
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    return (
-            (
-                (
-                        ~schouw_df.schouwdatum.isna() &
-                        (
-                                schouw_df.schouwdatum <= time_point
-                        )
-                )
-            ) &
-            (
-                    schouw_df.opleverdatum.isna() |
-                    (
-                            schouw_df.opleverdatum >= time_point
-                    )
-            ) &
-            (
-                ~schouw_df.toestemming_datum.isna()
-            ) &
-            (
-                    schouw_df.opleverstatus != '0'
-            )
-    )
+# def has_werkvoorraad(schouw_df, time_delta_days=0):
+#     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+#     return (
+#             (
+#                 (
+#                         ~schouw_df.schouwdatum.isna() &
+#                         (
+#                                 schouw_df.schouwdatum <= time_point
+#                         )
+#                 )
+#             ) &
+#             (
+#                     schouw_df.opleverdatum.isna() |
+#                     (
+#                             schouw_df.opleverdatum >= time_point
+#                     )
+#             ) &
+#             (
+#                 ~schouw_df.toestemming_datum.isna()
+#             ) &
+#             (
+#                     schouw_df.opleverstatus != '0'
+#             )
+#     )
 
 
 def has_werkvoorraad_new(df, time_delta_days=0):
