@@ -1,11 +1,21 @@
+import base64
+from io import BytesIO
+
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
+import matplotlib
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
+
+matplotlib.use('Agg')
 
 
 class Line:
-    def __init__(self, name=None, label=None):
+    """
+    This is the base class for all `Line` objects.
+    """
+
+    def __init__(self, name="", label=None):
         self.name = name
         pass
 
@@ -44,6 +54,21 @@ class Line:
     def set_name(self, name):
         self.name = name
 
+    def _notebook_name(self):
+        return self.__str__()
+
+    def __str__(self):
+        return self.name
+
+    def _repr_html_(self):
+        fig = plt.figure()
+        self.make_series().plot()
+        tmpfile = BytesIO()
+        fig.savefig(tmpfile, format='png')
+        encoded = base64.b64encode(tmpfile.getvalue()).decode('utf-8')
+        html = f"{self._notebook_name()}<br/><img src=\'data:image/png;base64,{encoded}\'>"
+        return html
+
 
 class LinearLine(Line):
     """
@@ -62,6 +87,13 @@ class LinearLine(Line):
         self.intercept = intercept
         self.domain = domain
         super().__init__(*args, **kwargs)
+
+    def _notebook_name(self):
+        name = "<br/>".join(x for x in [self.name, f"$$f(x) = {self.slope} \\cdot x + {self.intercept}$$"] if x)
+        return name
+
+    def __str__(self):
+        return f"f(x) = {self.slope} * x + {self.intercept}"
 
     def make_series(self) -> pd.Series:
         """
@@ -107,31 +139,35 @@ class LinearLine(Line):
 
 
 class PointLine(Line):
-    '''
-    A point line is a collection of datapoints on a shared index.
-    '''
+    """
+    A point line is defined a series of points. The index is used for the y-axis and the values for the x-axis.
+    """
 
-    def __init__(self, data):
+    def __init__(self, data: pd.Series, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.data = data
 
+    def make_series(self) -> pd.Series:
+        return self.data
+
     def translate_x(self, delta):
-        '''
+        """
         Given a delta, shift the line object and return a new line object
-        '''
+        """
         raise NotImplementedError
 
     def integrate(self):
-        '''
+        """
         https://en.wikipedia.org/wiki/Numerical_integration
-        '''
+        """
         # Temporarily use old cumsum method to mimic old implementation
         integral = self.make_series().cumsum()
         return PointLine(data=integral)
 
     def linear_regression(self, data_partition=None):
-        '''
+        """
         Given a set of points, do a linear regression to extrapolate future data
-        '''
+        """
         if data_partition:
             shift = int(len(self.domain) * data_partition)
             start = self.data.index[0] + shift
@@ -147,11 +183,12 @@ class PointLine(Line):
 
 
 class TimeseriesLine(PointLine):
-    '''
+    """
     A point line is a collection of datapoints on a shared datetime index.
-    '''
+    """
 
-    def __init__(self, data):
+    def __init__(self, data, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.data = data
         self.domain = DateDomain(data.index[0], data.index[-1])
 
