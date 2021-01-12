@@ -4,10 +4,7 @@ from io import BytesIO
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
-
-matplotlib.use('Agg')
 
 
 class Line:
@@ -20,21 +17,26 @@ class Line:
         pass
 
     def make_series(self) -> pd.Series:
-        '''
+        """
         Given attributes of the line,
         return a series with x-values as index, and y-value as values.
-        '''
+        """
         raise NotImplementedError
 
-    def make_normalised_series(self, total=None) -> pd.Series:
-        '''
-        Given the series from make_series and an optional total.
-        If total is not given, use maximum x-value of series.
-        return a series with x-values as index, and normalised y-values as values.
+    def make_normalised_series(self, maximum=None) -> pd.Series:
+        """
+        A function to return a normalized series of the line.
 
-        '''
+        :arg maximum: optional, if maximum is not given, use maximum x-value of series. Otherwise use the provided
+                      maximum
+
+        :returns: a `pd.Series` with x-values as index, and normalised y-values as values.
+        :rtype: pd.Series
+        """
         series = self.make_series()
-        return series / total
+        if not maximum:
+            maximum = max(series)
+        return series / maximum
 
     def intersect(self, other):
         raise NotImplementedError
@@ -51,6 +53,30 @@ class Line:
         '''
         raise NotImplementedError
 
+    def __add__(self, other):
+        raise NotImplementedError
+
+    def __iadd__(self, other):
+        raise NotImplementedError
+
+    def __sub__(self, other):
+        raise NotImplementedError
+
+    def __isub__(self, other):
+        raise NotImplementedError
+
+    def __mul__(self, other):
+        raise NotImplementedError
+
+    def __imul__(self, other):
+        raise NotImplementedError
+
+    def __truediv__(self, other):
+        raise NotImplementedError
+
+    def __idiv__(self, other):
+        raise NotImplementedError
+
     def set_name(self, name):
         self.name = name
 
@@ -62,15 +88,26 @@ class Line:
 
     def _repr_html_(self):
         fig = plt.figure()
-        self.make_series().plot()
+        series = self.make_series()
+        series.plot()
         tmpfile = BytesIO()
         fig.savefig(tmpfile, format='png')
+        plt.close()
         encoded = base64.b64encode(tmpfile.getvalue()).decode('utf-8')
         html = f"{self._notebook_name()}<br/><img src=\'data:image/png;base64,{encoded}\'>"
         return html
 
 
-class LinearLine(Line):
+class FunctionLine(Line):
+    """
+    A function line is defined by a mathematical function
+    """
+
+    def make_series(self) -> pd.Series:
+        raise NotImplementedError
+
+
+class LinearLine(FunctionLine):
     """
     A linear line is defined by the slope and the y-intercept.
 
@@ -140,12 +177,27 @@ class LinearLine(Line):
 
 class PointLine(Line):
     """
-    A point line is defined a series of points. The index is used for the y-axis and the values for the x-axis.
+    A point line is defined a :pd.Series: `Series` of points. The index is used for the y-axis and the values for the x-axis.
     """
 
     def __init__(self, data: pd.Series, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = data
+
+    def __truediv__(self, other):
+        if isinstance(other, FunctionLine):
+            other = PointLine(other.make_series())
+
+        if isinstance(other, PointLine):
+            return self.__class__(data=self.make_series() / other.make_series())
+        else:
+            try:
+                return self.__class__(data=self.make_series().divide(other))
+            except TypeError as e:
+                raise e
+
+    def __idiv__(self, other):
+        self = self.__truediv__(other)
 
     def make_series(self) -> pd.Series:
         return self.data
@@ -187,10 +239,12 @@ class TimeseriesLine(PointLine):
     A point line is a collection of datapoints on a shared datetime index.
     """
 
-    def __init__(self, data, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.data = data
-        self.domain = DateDomain(data.index[0], data.index[-1])
+    def __init__(self, data, domain=None, *args, **kwargs):
+        super().__init__(data=data, *args, **kwargs)
+        if domain:
+            self.domain = domain
+        else:
+            self.domain = DateDomain(data.index[0], data.index[-1])
 
     def make_series(self):
         filled_data = self.data.reindex(self.domain.domain, fill_value=0)
@@ -204,9 +258,9 @@ class TimeseriesLine(PointLine):
                           domain=domain)
 
     def integrate(self):
-        '''
+        """
         https://en.wikipedia.org/wiki/Numerical_integration
-        '''
+        """
         # Temporarily use old cumsum method to mimic old implementation
         integral = self.make_series().cumsum()
         return TimeseriesLine(data=integral)
