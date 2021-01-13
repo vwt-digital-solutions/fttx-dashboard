@@ -95,6 +95,10 @@ def hpend_opgeleverd(df):
     return ~df['opleverdatum'].isna()
 
 
+def hpend_opgeleverd_and_ordered(df):
+    return (~df['opleverdatum'].isna()) & (~df['ordered'].isna())
+
+
 def bis_niet_opgeleverd(df):
     return df['opleverstatus'] == '0'
 

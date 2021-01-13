@@ -1384,7 +1384,7 @@ def extract_realisatie_hpend_dates(df):
 
 def extract_realisatie_hpend_and_ordered_dates(df):
     if 'ordered' in df.columns:
-        return df[br.hpend_opgeleverd(df) & df.ordered].opleverdatum
+        return df[br.hpend_opgeleverd_and_ordered(df)].opleverdatum
     else:
         return df[br.hpend_opgeleverd(df)].opleverdatum
 
