@@ -7,14 +7,25 @@ Welcome to FttX Dashboard's documentation!
 ==========================================
 
 .. toctree::
-   :maxdepth: 1000
-   :caption: Contents:
+   :maxdepth: 5
+   :hidden:
+   :caption: Analyse:
 
-   dashboard/*
+   modules/analyse_dashboard.analyse.Analyse
+   modules/analyse_dashboard.analyse.tests
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Dashboard:
+
+   modules/callbacks
+   modules/data
+   modules/layout
+   modules/upload
+
 
 Indices and tables
 ==================
 
-* :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`

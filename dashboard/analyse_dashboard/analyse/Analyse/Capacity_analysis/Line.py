@@ -1,15 +1,24 @@
+"""
+Line.py
+=====================
+A module to work and calculate with Lines
+"""
+
 import base64
 from io import BytesIO
 
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
 
 class Line:
     """
     This is the base class for all `Line` objects.
+
+    :arg name: optional, a name for the line
     """
 
     def __init__(self, name="", label=None):
@@ -102,9 +111,7 @@ class FunctionLine(Line):
     """
     A function line is defined by a mathematical function
     """
-
-    def make_series(self) -> pd.Series:
-        raise NotImplementedError
+    ...
 
 
 class LinearLine(FunctionLine):
@@ -116,6 +123,7 @@ class LinearLine(FunctionLine):
     :param slope: The slope of line
     :param intercept: The y coordinate of the lines intersection with the y-axis
     :param domain: :class: `Domain`, The domain for which the line is defined.
+    :type slope: float
     """
 
     def __init__(self, slope: float, intercept: float, domain: Domain = None, *args, **kwargs):
@@ -144,9 +152,11 @@ class LinearLine(FunctionLine):
         return series
 
     def translate_x(self, delta):
-        '''
+        """
         Given a delta, shift the line object and return a new line object
-        '''
+
+        :arg delta:
+        """
         translated_intersect = self.intercept - delta * self.slope
         new_domain = self.domain.shift(delta)
         translated_line = LinearLine(slope=self.slope,
@@ -178,6 +188,8 @@ class LinearLine(FunctionLine):
 class PointLine(Line):
     """
     A point line is defined a :pd.Series: `Series` of points. The index is used for the y-axis and the values for the x-axis.
+
+    :param data:
     """
 
     def __init__(self, data: pd.Series, *args, **kwargs):
@@ -251,10 +263,10 @@ class TimeseriesLine(PointLine):
         return filled_data
 
     def extrapolate(self, data_partition=None):
-        slope, intersect = self.linear_regression(data_partition)
+        slope, intercept = self.linear_regression(data_partition)
         domain = DateDomain(self.data.index[0], self.data.index[-1])
         return LinearLine(slope=slope,
-                          intercept=intersect,
+                          intercept=intercept,
                           domain=domain)
 
     def integrate(self):
