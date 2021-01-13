@@ -487,7 +487,6 @@ class FttXAnalyse(FttXBase):
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
                                                         ),
-                         # 'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
                          'voorspelling': extract_voorspelling_dates(
                              df=self.transformed_data.df,
                              ftu=self.extracted_data.get("ftu"),

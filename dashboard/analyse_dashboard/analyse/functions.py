@@ -1426,10 +1426,6 @@ def extract_realisatie_hpend_and_ordered_dates(df):
         return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
-def extract_toestemming_dates(df):
-    return df[br.toestemming_gegeven(df)].toestemming_datum
-
-
 def extract_realisatie_hc_dates(df):
     """
     This function extracts the realisatie HC dates per client from their transformed dataframes, based on the BR:
