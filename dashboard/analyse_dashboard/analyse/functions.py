@@ -1365,24 +1365,61 @@ def multi_index_to_dict(df):
 
 
 def extract_realisatie_bis_dates(df):
+    """
+    This function extracts the realisatie BIS dates per client from their transformed dataframes, based on the BR:
+    bis_opgeleverd_new (opleverstatus != 0, 90, 99) and the date: status_civiel_datum.
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
 def extract_werkvoorraad_has_dates(df):
+    """
+    This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
+    has_werkvoorraad_new (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
     ds.name = 'werkvoorraad_has_datum'
     return ds
 
 
 def extract_realisatie_under_8weeks_dates(df):
+    """
+    This function extracts the realisatie HPend under 8 weeks dates per client from their transformed dataframes,
+    based on the BR: on_time_opgeleverd ((opleverdatum - toestemming_datum) < 56 days) and the date: opleverdatum.
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     return df[br.on_time_opgeleverd(df)].opleverdatum
 
 
 def extract_realisatie_hpend_dates(df):
+    """
+    This function extracts the realisatie HPend dates per client from their transformed dataframes, based on the BR:
+    hpend_opgeleverd (opleverdatum has been set) and the date: opleverdatum.
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
 def extract_realisatie_hpend_and_ordered_dates(df):
+    """
+    This function extracts the realisatie HPend dates that have been ordered per client from their transformed
+    dataframes, based on the BR: hpend_opgeleverd_and_ordered (opleverdatum and ordered are present) and the date:
+    opleverdatum. The 'ordered' column is only available for tmobile and is necessary to calculate the HPend houses
+    that have been actually ordered (instead of the total HPend houses).
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     if 'ordered' in df.columns:
         return df[br.hpend_opgeleverd_and_ordered(df)].opleverdatum
     else:
@@ -1394,10 +1431,27 @@ def extract_toestemming_dates(df):
 
 
 def extract_realisatie_hc_dates(df):
+    """
+    This function extracts the realisatie HC dates per client from their transformed dataframes, based on the BR:
+    hc_opgeleverd (opleverstatus == 2) and the date: opleverdatum.
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     return df[br.hc_opgeleverd(df)].opleverdatum
 
 
 def extract_voorspelling_dates(df, ftu=None, totals=None):
+    """
+    This function extracts the voorspelling dates per client from their transformed dataframes. For tmobile no
+    voorspelling is done yet. For KPN, the voorspelling date is extracted via the extract_voorspelling_dates_kpn
+    function, which needs a declared ftu column and totals column in addition to the DataFrame.
+
+    :param df: The transformed dataframe
+    :param ftu: ???
+    :param totals: ???
+    :return: A pd.Series object
+    """
     if ftu and any(ftu.get('date_FTU0', {}).values()):
         return extract_voorspelling_dates_kpn(
             df=df,
@@ -1413,7 +1467,7 @@ def extract_voorspelling_dates(df, ftu=None, totals=None):
 
 def extract_voorspelling_dates_kpn(df, start_time, timeline, totals, ftu):
     """
-    This function should ???
+    This function ???
     """
     result = prognose(df,
                       start_time,
@@ -1429,7 +1483,7 @@ def extract_voorspelling_dates_kpn(df, start_time, timeline, totals, ftu):
 
 def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None):
     """
-    This function extracts the planning dates from the transformed dataframe per client. For KPN a planning column
+    This function extracts the planning dates per client from their transformed dataframes. For KPN a planning column
     can be supplied, which is obtained from an excel sheet from Wout. Since this excel sheet is always late, we will
     use the hasdatum as the planning date, which is also used for tMobile and DFN.
 
@@ -1447,7 +1501,8 @@ def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None)
 
 def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     """
-    This function extracts the planning HPend value from the planning supplied by Wout (?)
+    This function extracts the planning HPend value from the planning supplied by Wout. We don't use this function
+    anymore, but keep it here in case the excel files are supplied in a timely manner in future.
     """
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
@@ -1460,6 +1515,16 @@ def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
 
 
 def extract_target_dates(df, ftu=None, totals=None):
+    """
+    This function extracts the target dates per client from their transformed dataframes. The target is calculated
+    differently for KPN/DFN than for tmobile: when a ftu and totals column is declared in addition to the DataFrame,
+    the function for KPN/DFN is used, otherwise the function for tmobile is used.
+
+    :param df: The transformed dataframe
+    :param ftu: ???
+    :param totals: ???
+    :return: A pd.Series object
+    """
     if ftu and any(ftu.get('date_FTU0', {}).values()):
         return extract_target_dates_kpn(
             timeline=get_timeline(get_start_time(df)),
@@ -1473,7 +1538,7 @@ def extract_target_dates(df, ftu=None, totals=None):
 
 def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
     """
-    This function should ???
+    This function ???
     """
     y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
     df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
@@ -1484,6 +1549,13 @@ def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
 
 
 def extract_target_dates_tmobile(df):
+    """
+    This function extracts the target dates for tmobile from its transformed dataframe, based on the BR:
+    target_tmobile (see BR) and the date: creation.
+
+    :param df: The transformed dataframe
+    :return: A pd.Series object
+    """
     return df[br.target_tmobile(df)].creation
 
 
