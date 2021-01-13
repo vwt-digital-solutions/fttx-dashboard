@@ -1427,17 +1427,27 @@ def extract_voorspelling_dates_kpn(df, start_time, timeline, totals, ftu):
     return df_prog.prognose
 
 
-def extract_planning_dates(df, client, planning=None):
-    # client == kpn can be removed once dfn has a planning
-    if planning and client == 'kpn':
+def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None):
+    """
+    This function extracts the planning dates from the transformed dataframe per client. For KPN a planning column
+    can be supplied, which is obtained from an excel sheet from Wout. Since this excel sheet is always late, we will
+    use the hasdatum as the planning date, which is also used for tMobile and DFN.
+
+    :param df: The transformed dataframe
+    :param client: Either 'kpn', 'tmobile' or 'dfn'
+    :param planning: Optional column for kpn, not used anymore
+    :return: A pd.Series object
+    """
+    use_old_kpn_planning = False
+    if planning and client == 'kpn' and use_old_kpn_planning is True:
         return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
     else:
-        return extract_planning_dates_tmobile(df)
+        return df[~df.hasdatum.isna()].hasdatum
 
 
 def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     """
-    This function should ???
+    This function extracts the planning HPend value from the planning supplied by Wout (?)
     """
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
@@ -1447,10 +1457,6 @@ def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
         y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
         df = df.add(y_plan, fill_value=0)
     return df.planning_kpn
-
-
-def extract_planning_dates_tmobile(df):
-    return df[~df.hasdatum.isna()].hasdatum
 
 
 def extract_target_dates(df, ftu=None, totals=None):
