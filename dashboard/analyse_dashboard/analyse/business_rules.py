@@ -95,6 +95,10 @@ def hpend_opgeleverd(df):
     return ~df['opleverdatum'].isna()
 
 
+def hpend_opgeleverd_and_ordered(df):
+    return (~df['opleverdatum'].isna()) & (~df['ordered'].isna())
+
+
 def bis_niet_opgeleverd(df):
     return df['opleverstatus'] == '0'
 
@@ -161,6 +165,17 @@ def has_werkvoorraad(schouw_df, time_delta_days=0):
 
 
 def has_werkvoorraad_new(df, time_delta_days=0):
+    """
+    This BR determines the werkvoorraad HAS by checking each row of a DataFrame for:
+        Does the df row have a schouwdatum AND is the schouwdatum earlier than today?
+        Does the df row not have a opleverdatum OR is the opleverdatum later than today?
+        Does the df row have a toestemming_datum?
+        Is the df row opleverstatus not equal to 0, 90 or 99?
+
+    :param df: The transformed dataframe
+    :param time_delta_days: An optional offset to today's date
+    :return: A pd.Series mask
+    """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
     return (
             (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
@@ -181,3 +196,22 @@ def hpend_year(df, year=None):
     end_year = pd.to_datetime(year + '-12-31')
     return df.opleverdatum.apply(
         lambda x: (x >= start_year) and (x <= end_year))
+
+
+def target_tmobile(df):
+    """
+    This BR determines the target for tmobile by checking each row of a DataFrame for:
+        Does the df row have a creation (date)?
+        Is the df row status not equal to CANCELLED or TO_BE_CANCELLED?
+        Is the df row type equal to AANLEG?
+
+    :param df: The transformed dataframe
+    :return: A pd.Series mask
+    """
+    return (
+            (~df.creation.isna())
+            &
+            (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
+            &
+            (df.type == 'AANLEG')
+    )

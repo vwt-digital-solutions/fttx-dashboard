@@ -17,8 +17,8 @@ from functions import extract_realisatie_hpend_dates, get_data_targets_init, clu
     extract_werkvoorraad_has_dates, extract_realisatie_bis_dates, calculate_redenna_per_period, \
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, extract_realisatie_under_8weeks_dates, \
-    overview_reden_na, sum_over_period_to_record, voorspel_and_planning_sum_over_periods_to_record, \
-    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates, extract_toestemming_dates
+    overview_reden_na, sum_over_period_to_record, voorspel_and_planning_minus_HPend_sum_over_periods_to_record, \
+    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -46,6 +46,7 @@ class FttXExtract(Extract):
         if not self.config:
             raise ValueError("No config provided in init")
         self.projects = self.config["projects"]
+        self.client_name = kwargs['config'].get('name')
         super().__init__(**kwargs)
 
     def extract(self):
@@ -57,10 +58,8 @@ class FttXExtract(Extract):
             self._extract_from_sql()
         else:
             self._extract_from_firestore()
-
-        if toggles.new_structure_overviews:
-            self._extract_ftu()
-            self._extract_planning()
+        self._extract_ftu()
+        self._extract_planning()
 
     def _extract_from_firestore(self):
         logger.info("Extracting from the firestore")
@@ -168,8 +167,7 @@ class FttXTransform(Transform):
         super().transform()
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
-        if toggles.new_structure_overviews:
-            self._transform_planning()
+        self._transform_planning()
         self._add_columns()
         self._cluster_reden_na()
         self._add_status_columns()
@@ -314,20 +312,17 @@ class FttXAnalyse(FttXBase):
 
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
-        if toggles.new_structure_overviews:
-            self._calculate_list_of_years()
-            self._make_records_for_dashboard_values()
-            self._make_voorspelling_and_planning_for_dashboard_values()
-            self._make_records_ratio_hc_hpend_for_dashboard_values()
-            self._make_records_ratio_under_8weeks_for_dashboard_values()
-        else:
-            self._calculate_projectspecs()
+        self._calculate_list_of_years()
+        self._make_records_for_dashboard_values()
+        self._make_voorspelling_and_planning_for_dashboard_values()
+        self._make_records_ratio_hc_hpend_for_dashboard_values()
+        self._make_records_ratio_under_8weeks_for_dashboard_values()
+        self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
         self._calculate_status_counts_per_project()
         self._calculate_redenna_per_period()
-        self._jaaroverzicht()
         self._progress_per_phase()
         self._progress_per_phase_over_time()
 
@@ -413,17 +408,18 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
 
-        self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
+        # TODO: cleanup of this function
+        # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
         self.record_dict.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
-        self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
-        self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
-        self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
+        # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
+        # self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
+        # self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
 
-        self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
+        # self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
         self.intermediate_results.HC_HPend_l = results.hc_hpend_ratio
-        self.intermediate_results.Schouw_BIS = results.has_ready
-        self.intermediate_results.HPend_l = results.homes_ended
-        self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
+        # self.intermediate_results.Schouw_BIS = results.has_ready
+        # self.intermediate_results.HPend_l = results.homes_ended
+        # self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
 
     def _calculate_y_voorraad_act(self):
         logger.info("Calculating y voorraad act for KPN")
@@ -441,10 +437,10 @@ class FttXAnalyse(FttXBase):
     def _set_filters(self):
         self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
 
-    def _jaaroverzicht(self):
-        # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
-        jaaroverzicht = {}
-        self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
+    # def _jaaroverzicht(self):
+    #     # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
+    #     jaaroverzicht = {}
+    #     self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
@@ -466,15 +462,20 @@ class FttXAnalyse(FttXBase):
 
     def _calculate_redenna_per_period(self):
         logger.info("Calculating redenna per period (week & month)")
-        by_week = calculate_redenna_per_period(self.transformed_data.df,
+        by_week = calculate_redenna_per_period(df=self.transformed_data.df,
                                                date_column="hasdatum",
                                                freq="W-MON")
         self.record_dict.add('redenna_by_week', by_week, Record, 'Data')
 
-        by_month = calculate_redenna_per_period(self.transformed_data.df,
+        by_month = calculate_redenna_per_period(df=self.transformed_data.df,
                                                 date_column="hasdatum",
                                                 freq="M")
         self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
+
+        by_year = calculate_redenna_per_period(df=self.transformed_data.df,
+                                               date_column="hasdatum",
+                                               freq="Y")
+        self.record_dict.add('redenna_by_year', by_year, Record, 'Data')
 
     def _make_records_for_dashboard_values(self):
         logger.info("Making records for dashboard overview  values")
@@ -486,7 +487,13 @@ class FttXAnalyse(FttXBase):
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
                                                         ),
-                         'toestemming': extract_toestemming_dates(df=self.transformed_data.df)
+                         'voorspelling': extract_voorspelling_dates(
+                             df=self.transformed_data.df,
+                             ftu=self.extracted_data.get("ftu"),
+                             totals=self.transformed_data.get("totals")),
+                         'planning': extract_planning_dates(df=self.transformed_data.df,
+                                                            planning=self.transformed_data.get("planning"),
+                                                            client=self.client)
                          }
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
@@ -510,20 +517,23 @@ class FttXAnalyse(FttXBase):
     def _make_voorspelling_and_planning_for_dashboard_values(self):
         logger.info("Making voorspelling and planning records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
-        function_dict = {'voorspelling': extract_voorspelling_dates(
+        function_dict = {'voorspelling_minus_HPend': extract_voorspelling_dates(
                                                 df=self.transformed_data.df,
                                                 ftu=self.extracted_data.get("ftu"),
                                                 totals=self.transformed_data.get("totals")),
-                         'planning': extract_planning_dates(df=self.transformed_data.df,
-                                                            planning=self.transformed_data.get("planning")),
+                         'planning_minus_HPend': extract_planning_dates(df=self.transformed_data.df,
+                                                                        planning=self.transformed_data.get("planning"),
+                                                                        client=self.client),
                          }
+        realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
                 for freq in list_of_freq:
-                    record = voorspel_and_planning_sum_over_periods_to_record(predicted=values,
-                                                                              freq=freq, year=year)
+                    record = voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted=values,
+                                                                                          realized=realisatie_hpend,
+                                                                                          freq=freq, year=year)
                     # To remove the date when there is only one period (when summing over a year):
                     if len(record) == 1:
                         record = list(record.values())[0]

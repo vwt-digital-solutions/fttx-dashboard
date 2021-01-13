@@ -1,4 +1,3 @@
-from app import toggles
 from data.data import no_graph
 from layout.components.figure import figure
 from data import collection
@@ -25,15 +24,11 @@ def get_html(client):
                 style={"width": "77px"}
             ),
             className="container-display"
-        ) if toggles.new_structure_overviews else None,
+        ),
         html.Div(
             children=[],
             id=f"info-container-year-{client}",
-        ) if toggles.new_structure_overviews else None,
-        html.Div(
-            children=[],
-            id=f"info-container-{client}",
-        ) if toggles.old_structure_overviews_boxes else None,
+        ),
         html.Div(
             className="container-display",
             children=[
@@ -42,16 +37,7 @@ def get_html(client):
                 figure(container_id=f"pie_chart_overview_{client}_container",
                        graph_id=f"pie_chart_overview-year_{client}",
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
-        ) if toggles.new_structure_overviews_graphs else None,
-        html.Div(
-            className="container-display",
-            children=[
-                figure(graph_id=f"month-overview-{client}", figure=no_graph(title="Jaaroverzicht", text='Loading...')),
-                figure(graph_id=f"week-overview-{client}", figure=no_graph(title="Maandoverzicht", text='Loading...')),
-                figure(container_id=f"pie_chart_overview_{client}_container",
-                       graph_id=f"pie_chart_overview_{client}",
-                       figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
-        ) if toggles.old_structure_overviews_graphs else None,
+        ),
         html.Div(
             get_performance(client),
             className="container-display",

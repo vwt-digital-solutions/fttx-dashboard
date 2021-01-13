@@ -30,6 +30,7 @@ def info_table():
     return fig
 
 
+# TODO: check if this is still used after removing toggle new_structure_overviews
 def pie_chart(client, key="overview"):
     if key == "overview":
         fig = collection.get_document(collection="Data",
