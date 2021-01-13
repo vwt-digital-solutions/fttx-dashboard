@@ -323,7 +323,7 @@ for client in config.client_config.keys():
                                                        client=client,
                                                        year=year,
                                                        frequency="Y")))
-                 if client == 'kpn' and year == str(datetime.now().year) else 'n.v.t.'
+                 if year == str(datetime.now().year) else 'n.v.t.'  # We only show planning for the current year
                  ),
             dict(id_="info_globaal_container3",
                  title='Voorspelling (VQD)',
@@ -334,6 +334,7 @@ for client in config.client_config.keys():
                                                        year=year,
                                                        frequency="Y")))
                  if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
+                 # We only show voorspelling for the current year and only for KPN and DFN
                  ),
             dict(id_="info_globaal_container5",
                  title='Werkvoorraad HAS',
@@ -347,22 +348,22 @@ for client in config.client_config.keys():
             dict(id_="info_globaal_container4",
                  title='Actuele HC / HPend',
                  text=f"HC/HPend in {year}: ",
-                 value=str(round(collection.get_document(collection="Data",
-                                                         graph_name="ratio_hc_hpend",
-                                                         client=client,
-                                                         year=year,
-                                                         frequency="Y"), 2))
-                 if client != 'tmobile' else 'n.v.t.'
+                 value=str(format(collection.get_document(collection="Data",
+                                                          graph_name="ratio_hc_hpend",
+                                                          client=client,
+                                                          year=year,
+                                                          frequency="Y"), '.2f'))
+                 if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
                  ),
             dict(id_="info_globaal_container4",
                  title='Ratio <8 weken',
                  text=f"Ratio <8 weken in {year}: ",
-                 value=str(round(collection.get_document(collection="Data",
-                                                         graph_name="ratio_8weeks_hpend",
-                                                         client=client,
-                                                         year=year,
-                                                         frequency="Y"), 2))
-                 if client == 'tmobile' else 'n.v.t.'
+                 value=str(format(collection.get_document(collection="Data",
+                                                          graph_name="ratio_8weeks_hpend",
+                                                          client=client,
+                                                          year=year,
+                                                          frequency="Y"), '.2f'))
+                 if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
                  ),
         ]
         return [
