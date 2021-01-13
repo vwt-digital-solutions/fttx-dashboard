@@ -3,7 +3,7 @@ import json
 import base64
 from datetime import datetime
 import logging
-from google.cloud import firestore_v1, secretmanager
+from google.cloud import firestore, secretmanager
 from pandas._libs.tslibs.nattype import NaTType
 from sqlalchemy.engine import ResultProxy
 
@@ -14,29 +14,30 @@ from contextlib import contextmanager
 import pandas as pd
 import numpy as np
 
-db = firestore_v1.Client()
+db = firestore.Client()
 
 
 def process_asbuilt(records, topic_config):
     logging.info("Processing asbuilt")
-    collection_name = topic_config.get('firestore_collection')
-    primary_key = topic_config.get('primary_key')
     update_date_document_name = topic_config.get('update_date_document')
-    write_records_to_fs(records=records,
-                        collection_name=collection_name,
-                        update_date_document_name=update_date_document_name,
-                        primary_key=primary_key)
+    table = topic_config.get('sql_table')
+    write_records_to_sql(records=records,
+                         table=table,
+                         update_date_document_name=update_date_document_name)
 
 
 def process_fiberconnect(records, topic_config):
     logging.info("Processing fiber connect")
-    collection_name = topic_config.get('firestore_collection')
-    primary_key = topic_config.get('primary_key')
     update_date_document_name = topic_config.get('update_date_document')
     records, logs = prepare_records(records)
     if toggles.fc_sql:
-        write_records_to_sql(records)
+        table = topic_config.get('sql_table')
+        write_records_to_sql(records=records,
+                             table=table,
+                             update_date_document_name=update_date_document_name)
     else:
+        collection_name = topic_config.get('firestore_collection')
+        primary_key = topic_config.get('primary_key')
         write_records_to_fs(records=records,
                             collection_name=collection_name,
                             update_date_document_name=update_date_document_name,
@@ -64,13 +65,13 @@ def write_records_to_fs(records, collection_name, update_date_document_name=None
             batch.commit()
             logging.info(f'Write {i} message(s) to the firestore')
     batch.commit()
-    db.collection('Graphs').document(update_date_document_name).set(dict(
-        id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
+    db.collection('Graphs').document(update_date_document_name).\
+        set(dict(id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
     logging.info(f'Writing message to {collection_name} finished')
 
 
-def write_records_to_sql(records):
-    logging.info(f"Writing {len(records)} to the database")
+def write_records_to_sql(records, table, update_date_document_name):
+    logging.info(f"Writing {len(records)} to {table}")
     df = pd.DataFrame(records).replace({np.nan: None})
 
     datums = [col for col in df.columns if "datum" in col]
@@ -84,19 +85,20 @@ def write_records_to_sql(records):
     duplicates = ",\n".join(f"{col}=values({col})" for col in df.columns)
     value_question_marks = ",".join(["%s"] * len(df.columns))
     update_query = f"""
-INSERT INTO fc_aansluitingen
+INSERT INTO {table}
     ({columns})
 values
    ({value_question_marks})
 on duplicate key update
     {duplicates}
 """
-
     logging.info('created query')
     with sqlEngine.connect() as con:
         logging.info('created conn')
         result: ResultProxy = con.execute(update_query, *values)
-        logging.info(f"{result.rowcount} where written to the database")
+    db.collection('Graphs').document(update_date_document_name).\
+        set(dict(id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
+    logging.info(f"{result.rowcount} where written to the database")
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
