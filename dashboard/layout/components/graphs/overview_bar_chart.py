@@ -6,12 +6,10 @@ from datetime import datetime
 
 def get_fig(data, year):
     x_count = list(range(1, len(data.date) + 1))
-    # setting the y-scale based on the highest target (outlookdatum) or realisatie (opleverdatum):
-    if max(data.count_outlookdatum[data.count_outlookdatum < 20000]) \
-            > max(data.count_opleverdatum[data.count_opleverdatum < 20000]):
-        y_range = [0, 2.2 * max(data.count_outlookdatum[data.count_outlookdatum < 20000])]
-    else:
-        y_range = [0, 2.2 * max(data.count_opleverdatum[data.count_opleverdatum < 20000])]
+    y_range = [0, 2.2 * max(max(data.count_outlookdatum[data.count_outlookdatum < 20000]),
+                            max(data.count_opleverdatum[data.count_opleverdatum < 20000]),
+                            max(data.count_hasdatum[data.count_hasdatum < 20000]),
+                            max(data.count_voorspellingdatum[data.count_voorspellingdatum < 20000]))]
     date_list = data.date.dt.strftime("%Y-%m-%d")
     dutch_month_list = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
 
