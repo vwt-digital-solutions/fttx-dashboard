@@ -6,10 +6,11 @@ from datetime import datetime
 
 def get_fig(data, year):
     x_count = list(range(1, len(data.date) + 1))
-    y_range = [0, 2.2 * max(max(data.count_outlookdatum[data.count_outlookdatum < 20000]),
-                            max(data.count_opleverdatum[data.count_opleverdatum < 20000]),
-                            max(data.count_hasdatum[data.count_hasdatum < 20000]),
-                            max(data.count_voorspellingdatum[data.count_voorspellingdatum < 20000]))]
+    y_range = [0, 1.5 * max(max(data.count_outlookdatum),
+                            max(data.count_opleverdatum),
+                            max(data.count_hasdatum),
+                            max(data.count_voorspellingdatum)
+                            )]
     date_list = data.date.dt.strftime("%Y-%m-%d")
     dutch_month_list = ['jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
 
