@@ -1184,12 +1184,17 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
     :return: a dictionary with the first day of the period as key, and the clusters with their occurence counts
              as value.
     """
+    if freq == 'W-MON':
+        interval_label = 'left'
+    if freq == 'M' or freq == 'Y':
+        interval_label = 'right'
+
     redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
         .groupby(by=[pd.Grouper(key=date_column,
                                 freq=freq,
                                 closed='left',  # closed end of the interval, see:
                                 # (https://en.wikipedia.org/wiki/Interval_(mathematics)#Terminology)
-                                label="right"  # label specifies whether the result is labeled
+                                label=interval_label  # label specifies whether the result is labeled
                                 # with the beginning or the end of the interval.
                                 ),
                      "cluster_redenna",
@@ -1510,16 +1515,16 @@ def get_database_engine():
     return create_engine(SACN, pool_recycle=3600)
 
 
-def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.Series:
+def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
     We commonly use:
-        'W-MON' for weeks starting on Monday.
-        'M' for the end of the month
-        'Y' for a year
+        'W-MON' for weeks starting on Monday. (label = monday)
+        'M' for month (label is the last day of the period)
+        'Y' for year (label is the last day of the period)
 
     :param data: A pd.Series to sum over
-    :param freq: Either 'W-MON', 'M' or 'Y'
+    :param freq: The period to use in resample
     :param period: ???
     :param offset: ???
     :return: A pd.Series object
@@ -1528,7 +1533,9 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
         data = pd.Series()
 
     if freq == 'W-MON':
-        offset = '-1W-MON'
+        interval_label = 'left'
+    if freq == 'M' or freq == 'Y':
+        interval_label = 'right'
 
     if not data[~data.isna()].empty:
         if not isinstance(data.index[0], pd.Timestamp):
@@ -1537,12 +1544,13 @@ def sum_over_period(data: pd.Series, freq: str, period=None, offset=None) -> pd.
     if period:
         data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
         if not data[~data.isna()].empty:
-            data_counted = (data_filler + data.resample(freq, closed='left', loffset=offset).sum()[period[0]:period[1]]).fillna(0)
+            data_counted = (data_filler + data.resample(freq, closed='left', label=interval_label).sum()[
+                                          period[0]:period[1]]).fillna(0)
         else:
             data_counted = data_filler
     else:
         if not data[~data.isna()].empty:
-            data_counted = data.resample(freq, closed='left', loffset=offset).sum()
+            data_counted = data.resample(freq, closed='left', label=interval_label).sum()
         else:
             data_counted = pd.Series()
 
@@ -1584,7 +1592,8 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     return record
 
 
-def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str, year: str):
+def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str,
+                                                                 year: str):
     '''
     Similar to sum_over_period_to_record, but it takes two timeseries and subtracts one from the other
     before returning the record. This allows for calculation of voorspelling minus HPend and planning minus HPend
