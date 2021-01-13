@@ -181,3 +181,13 @@ def hpend_year(df, year=None):
     end_year = pd.to_datetime(year + '-12-31')
     return df.opleverdatum.apply(
         lambda x: (x >= start_year) and (x <= end_year))
+
+
+def target_tmobile(df):
+    return (
+            (~df.creation.isna())
+            &
+            (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
+            &
+            (df.type == 'AANLEG')
+    )

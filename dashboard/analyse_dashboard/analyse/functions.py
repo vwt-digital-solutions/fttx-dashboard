@@ -1484,10 +1484,7 @@ def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
 
 
 def extract_target_dates_tmobile(df):
-    return df[(~df.creation.isna())
-              & ~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED'])
-              & (df.type == 'AANLEG')] \
-              .creation
+    return df[br.target_tmobile(df)].creation
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
