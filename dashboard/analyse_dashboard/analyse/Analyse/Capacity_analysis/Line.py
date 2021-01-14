@@ -215,15 +215,52 @@ class LinearLine(FunctionLine):
 
 class PointLine(Line):
     """
-    A point line is defined a :pd.Series: `Series` of points. The index is used for the y-axis and the values for the x-axis.
+    A point line is defined a :pd.Series: `Series` of points.
+    The index is used for the y-axis and the values for the x-axis.
 
     Args:
-        data:
+        data (pd.Series): A series of points that represent a line.
+
+    Examples
+    -------
+
+    >>> line = PointLine(pd.Series([1,2,3,4,5]))
+    >>> line * 2
+    0     2
+    1     4
+    2     6
+    3     8
+    4    10
+    dtype: int64
+
+    >>> line = PointLine(pd.Series([1,2,3,4,5]))
+    >>> line / 2
+    0    0.5
+    1    1.0
+    2    1.5
+    3    2.0
+    4    2.5
+    dtype: float64
     """
 
-    def __init__(self, data: pd.Series, *args, **kwargs):
+    def __init__(self, data:  pd.Series, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.data = data
+
+    def __mul__(self, other):
+        if isinstance(other, FunctionLine):
+            other = PointLine(other.make_series())
+
+        if isinstance(other, PointLine):
+            return self.__class__(data=self.make_series() * other.make_series())
+        else:
+            try:
+                return self.__class__(data=self.make_series()*other)
+            except TypeError as e:
+                raise e
+
+    def __imul__(self, other):
+        self = self.__mul__(other)
 
     def __truediv__(self, other):
         if isinstance(other, FunctionLine):
@@ -239,6 +276,9 @@ class PointLine(Line):
 
     def __idiv__(self, other):
         self = self.__truediv__(other)
+
+    def __repr__(self):
+        return repr(self.data)
 
     def make_series(self) -> pd.Series:
         return self.data
