@@ -58,6 +58,38 @@ def on_time_opgeleverd(df):
     return (df['opleverdatum'] - df['toestemming_datum']).dt.days <= 56
 
 
+def on_time_openstaand(df):
+    # Used to calculate the orders for homes that are openstaand within 8 weeks (56 days)
+    # TODO: change toestemming_datum to creation
+    return (
+            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days <= 56)
+            &
+            (df.opleverdatum.isna() | (df.opleverdatum > pd.Timestamp.today()))
+    )
+
+
+def nog_beperkte_tijd_openstaand(df):
+    # Used to calculate the orders for homes that are openstaand between 8 and 12 weeks (56 and 84 days)
+    # TODO: change toestemming_datum to creation
+    return (
+            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days > 56)
+            &
+            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days <= 84)
+            &
+            (df.opleverdatum.isna() | (df.opleverdatum > pd.Timestamp.today()))
+    )
+
+
+def te_laat_openstaand(df):
+    # Used to calculate the orders for homes that are openstaand above 12 weeks (84 days)
+    # TODO: change toestemming_datum to creation
+    return (
+            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days > 84)
+            &
+            (df.opleverdatum.isna() | (df.opleverdatum > pd.Timestamp.today()))
+    )
+
+
 def toestemming_bekend(df):
     return ~df['toestemming'].isna()
 
