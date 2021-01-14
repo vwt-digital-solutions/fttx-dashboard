@@ -54,3 +54,13 @@ class DateDomain(Domain):
 
     def get_intersect_index(self, value):
         return (value - self.begin).days
+
+
+class DateDomainRange(DateDomain):
+    def __init__(self, begin, n_days):
+        self.begin = pd.to_datetime(begin)
+        self.end = pd.to_datetime(begin) + timedelta(days=n_days)
+        self.domain = pd.date_range(start=begin,
+                                    end=self.end,
+                                    freq='D'
+                                    )

@@ -1,17 +1,24 @@
 import pandas as pd
 
-from Analyse.Capacity_analysis.Line import TimeseriesLine
+from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
+from Analyse.Capacity_analysis.Domain import DateDomainRange
 
 
 class PhaseCapacity:
 
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict):
         self.production_by_day = TimeseriesLine(df.groupby([df.index]).count())
         self.capacity_by_day = None
         self.target_by_day = None
+        self.phases_config = phases_config
+        self.phases_projectspecific = phases_projectspecific
 
     def algorithm(self):
         self.production_over_time = self.production_by_day.integrate()
+        self.target_over_time = LinearLine(slope=self.phases_projectspecific['performance_norm_unit'],
+                                           intercept=0,
+                                           domain=DateDomainRange(begin=self.phases_projectspecific['start_date'],
+                                           n_days=self.phases_config['n_days']))
         return self
 
     def get_record(self):
