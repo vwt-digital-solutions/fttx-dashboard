@@ -18,29 +18,34 @@ class Line:
     """
     This is the base class for all `Line` objects.
 
-    :arg name: optional, a name for the line
+    Args:
+        name (str):  optional, a name for the line
+        label (str): optional
     """
 
     def __init__(self, name="", label=None):
         self.name = name
-        pass
+        self.label = label
 
     def make_series(self) -> pd.Series:
         """
-        Given attributes of the line,
-        return a series with x-values as index, and y-value as values.
+        Given attributes of the line, return a series with x-values as index, and y-value as values.
+
+        Returns:
+            pd.Series: A pandas Series of the function within the defined domain
         """
         raise NotImplementedError
 
     def make_normalised_series(self, maximum=None) -> pd.Series:
         """
-        A function to return a normalized series of the line.
+         A function to return a normalized series of the line.
 
-        :arg maximum: optional, if maximum is not given, use maximum x-value of series. Otherwise use the provided
+        Args:
+            maximum (float, int): optional, if maximum is not given, use maximum x-value of series. Otherwise use the provided
                       maximum
 
-        :returns: a `pd.Series` with x-values as index, and normalised y-values as values.
-        :rtype: pd.Series
+        Returns:
+            pd.Series: A pandas Series of the function within the defined domain where the values are normalized
         """
         series = self.make_series()
         if not maximum:
@@ -57,9 +62,15 @@ class Line:
         raise NotImplementedError
 
     def translate_x(self, delta):
-        '''
+        """
         Given a delta, shift the line object and return a new line object
-        '''
+
+        Args:
+            delta:
+
+        Returns:
+
+        """
         raise NotImplementedError
 
     def __add__(self, other):
@@ -120,14 +131,13 @@ class LinearLine(FunctionLine):
 
     https://en.wikipedia.org/wiki/Linear_equation#Slope%E2%80%93intercept_form
 
-    :param slope: The slope of line
-    :param intercept: The y coordinate of the lines intersection with the y-axis
-    :param domain: :class: `Domain`, The domain for which the line is defined.
-    :type slope: float
+    Args:
+        slope (float, int): The slope of line
+        intercept (float, int): The y coordinate of the lines intersection with the y-axis
+        domain (Domain): The domain for which the line is defined.
     """
 
     def __init__(self, slope: float, intercept: float, domain: Domain = None, *args, **kwargs):
-
         self.slope = slope
         self.intercept = intercept
         self.domain = domain
@@ -140,23 +150,41 @@ class LinearLine(FunctionLine):
     def __str__(self):
         return f"f(x) = {self.slope} * x + {self.intercept}"
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(slope={self.slope}, intercept={self.intercept}, domain={self.domain}," \
+               f" name='{self.name}')"
+
     def make_series(self) -> pd.Series:
         """
-        Given attributes of the line,
-        return a series with x-values as index, and y-value as values.
+        Given attributes of the line, return a series with x-values as index, and y-values as values.
+
+        Returns:
+            pd.Series: A pandas Series of the function within the defined domain
+
+        Example
+        --------
+        >>> line = LinearLine(slope=3, intercept=1, domain=Domain(0,10))
+        >>> line.make_series()
+        0     1
+        1     4
+        2     7
+        3    10
+        4    13
+        5    16
+        6    19
+        7    22
+        8    25
+        9    28
+        dtype: int64
         """
         if not self.domain:
-            raise NotImplementedError
+            raise NotImplementedError(f"Can not create a series for a {self.__class__.__name__} when no domain is "
+                                      f"specified")
         values = self.slope * self.domain.get_range() + self.intercept
         series = pd.Series(index=self.domain.domain, data=values)
         return series
 
     def translate_x(self, delta):
-        """
-        Given a delta, shift the line object and return a new line object
-
-        :arg delta:
-        """
         translated_intersect = self.intercept - delta * self.slope
         new_domain = self.domain.shift(delta)
         translated_line = LinearLine(slope=self.slope,
@@ -189,7 +217,8 @@ class PointLine(Line):
     """
     A point line is defined a :pd.Series: `Series` of points. The index is used for the y-axis and the values for the x-axis.
 
-    :param data:
+    Args:
+        data:
     """
 
     def __init__(self, data: pd.Series, *args, **kwargs):
@@ -216,7 +245,12 @@ class PointLine(Line):
 
     def translate_x(self, delta):
         """
-        Given a delta, shift the line object and return a new line object
+
+        Args:
+            delta: Given a delta, shift the line object and return a new line object
+
+        Returns:
+
         """
         raise NotImplementedError
 
