@@ -572,8 +572,9 @@ class FttXAnalyse(FttXBase):
                              document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_under_8weeks_for_dashboard_values(self):
-        logger.info("Making records of ratio under 8 weeks/HPend for dashboard overview  values")
+        logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
+        # TODO: replace under_8weeks_dates by more general realisatie_hpend_dates_in_timewindow function
         realisatie_under_8weeks = extract_realisatie_under_8weeks_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']

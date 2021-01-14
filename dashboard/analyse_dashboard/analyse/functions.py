@@ -1378,20 +1378,38 @@ def extract_realisatie_bis_dates(df: pd.DataFrame) -> pd.Series:
     return df[br.bis_opgeleverd_new(df)].status_civiel_datum
 
 
-def extract_werkvoorraad_has_dates(df):
+def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = False):
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
     has_werkvoorraad_new (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
 
     Args:
         df: The transformed dataframe
+        add_project_column: Optional argument to return project column in addition to datecolumn
 
-    Returns: A pd.Series object
+    Returns: A pd.Series object or pd.DataFrame
 
     """
-    ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
-    ds.name = 'werkvoorraad_has_datum'
-    return ds
+    if toggles.new_projectspecific_views:
+        if add_project_column is False:
+            dataseries = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']]\
+                .max(axis=1)
+            dataseries.name = 'werkvoorraad_has_datum'
+            return dataseries
+        else:
+            date_dataseries = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(
+                axis=1)  # TODO: add project column to the dataseries that is returned here
+            date_dataseries.name = 'werkvoorraad_has_datum'
+            project_dataseries = df[br.has_werkvoorraad_new(df)].project
+            project_dataseries.name = 'project'
+            df = pd.merge(date_dataseries, project_dataseries, left_index=True, right_index=True)
+            return df
+
+    else:
+        ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+
+        ds.name = 'werkvoorraad_has_datum'
+        return ds
 
 
 def extract_realisatie_under_8weeks_dates(df: pd.DataFrame) -> pd.Series:
@@ -1408,7 +1426,30 @@ def extract_realisatie_under_8weeks_dates(df: pd.DataFrame) -> pd.Series:
     return df[br.on_time_opgeleverd(df)].opleverdatum
 
 
-def extract_realisatie_hpend_dates(df):
+def extract_realisatie_hpend_dates_in_timewindow(df: pd.DataFrame,
+                                                 timewindow: str = '<8 weeks opgeleverd') -> pd.Series:
+    """
+    This function extracts the realisatie HPend under 8 weeks dates per client from their transformed dataframes,
+    based on the BR: on_time_opgeleverd ((opleverdatum - toestemming_datum) < 56 days) and the date: opleverdatum.
+
+    Args:
+        df: The transformed dataframe
+        timewindow: The timewindow to calculate the hpend for
+
+    Returns: A pd.Series object
+
+    """
+    if timewindow == '<8 weeks opgeleverd':
+        return df[br.on_time_opgeleverd(df)].opleverdatum
+    elif timewindow == '<8 weeks openstaand':
+        return df[br.on_time_openstaand(df)][['opleverdatum', 'project']]
+    elif timewindow == '>8 <12 weeks openstaand':
+        return df[br.nog_beperkte_tijd_openstaand(df)][['opleverdatum', 'project']]
+    elif timewindow == '>12 weeks openstaand':
+        return df[br.te_laat_openstaand(df)][['opleverdatum', 'project']]
+
+
+def extract_realisatie_hpend_dates(df: pd.DataFrame) -> pd.Series:
     """
     This function extracts the realisatie HPend dates per client from their transformed dataframes, based on the BR:
     hpend_opgeleverd (opleverdatum has been set) and the date: opleverdatum.
