@@ -10,14 +10,28 @@ class Validation(Enum):
 
 
 class Record:
-    def __init__(self, record, collection, validation=Validation.FAIL_AT_FIRST):
+    """
+    Record class manages data that will be written to the firestore.
+    :param record: data object
+    :param collection: Firestore collection the data will be written to.
+    :param client: (FttX) client the record contains data of.
+    :param graph_name: The unique identifier of the data in the firestore. Not used for filtering
+    :param validation: Type of validation to be used.
+    """
+    def __init__(self, record, collection, client, graph_name, validation=Validation.FAIL_AT_FIRST):
         self._record = None
         self._validation = validation
+        self.client = client
+        self.graph_name = graph_name
         self.record = record
         self.collection = collection
 
     @property
     def record(self):
+        """
+        Used to retrieve the data of the record object
+        :return: record property of Record object.
+        """
         return self._record
 
     @record.setter
@@ -38,20 +52,28 @@ class Record:
                     client=client,
                     graph_name=graph_name)
 
-    def to_firestore(self, graph_name, client):
-        document_name = self.document_name(graph_name=graph_name, client=client)
+    def to_firestore(self):
+        """
+        Writes data of the record object into a collection of the firestore,
+        including a client field.
+        """
+        document_name = self.document_name()
         document = firestore.Client().collection(self.collection).document(document_name)
         logging.info(f"Set document {document_name}")
-        document.set(self._to_document(graph_name, client))
+        document.set(self._to_document(self.graph_name, self.client))
 
-    def document_name(self, **kwargs):
-        return f"{kwargs['client']}_{kwargs['graph_name']}"
+    def document_name(self):
+        """
+
+        :return: Document name, made up of client and graph_name
+        """
+        return f"{self.client}_{self.graph_name}"
 
     def __repr__(self):
         return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection='{self.collection}')"
 
     def to_table_part(self, graph_name="", client=""):
-        document_name = self.document_name(graph_name=graph_name, client=client)
+        document_name = self.document_name()
         return f"""<tr>
           <td>{document_name}</td>
           <td>{self.collection}</td>
