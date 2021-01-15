@@ -232,15 +232,6 @@ class PointLine(Line):
     3     8
     4    10
     dtype: int64
-
-    >>> line = PointLine(pd.Series([1,2,3,4,5]))
-    >>> line / 2
-    0    0.5
-    1    1.0
-    2    1.5
-    3    2.0
-    4    2.5
-    dtype: float64
     """
 
     def __init__(self, data, *args, **kwargs):
@@ -250,25 +241,27 @@ class PointLine(Line):
         self.data = data
 
     def __add__(self, other):
-        pass
+        if isinstance(other, FunctionLine):
+            other = PointLine(other.make_series())
+        return self.__class__(data=self.make_series() + other)
 
     def __iadd__(self, other):
-        pass
+        self = (self + other)
+        return self
 
     def __sub__(self, other):
-        pass
+        if isinstance(other, FunctionLine):
+            other = PointLine(other.make_series())
+        return self.__class__(data=self.make_series() - other)
 
     def __isub__(self, other):
-        pass
+        self = (self - other)
+        return self
 
     def __mul__(self, other):
         if isinstance(other, FunctionLine):
             other = PointLine(other.make_series())
-
-        if isinstance(other, PointLine):
-            return self.__class__(data=self.make_series() * other.make_series())
-        else:
-            return self.__class__(data=self.make_series() * other)
+        return self.__class__(data=self.make_series() * other)
 
     def __imul__(self, other):
         self = (self * other)
@@ -277,7 +270,6 @@ class PointLine(Line):
     def __truediv__(self, other):
         if isinstance(other, FunctionLine):
             other = other.make_series()
-
         return self.__class__(data=self.make_series() / other)
 
     def __idiv__(self, other):
