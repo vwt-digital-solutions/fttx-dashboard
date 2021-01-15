@@ -1,7 +1,37 @@
 """
 Line.py
 =====================
-A module to work and calculate with Lines
+A module to work and calculate with Lines.
+
+This module can be used to perform calculations with lines such as calculating integrals, derivatives.
+Add, subtract, mulitply and divide lines. These operations can be perfomed between lines, or with a line and a number.
+
+Examples
+========
+
+>>> line = PointLine([1,2,3,4])
+>>> line
+0    1
+1    2
+2    3
+3    4
+dtype: int64
+
+
+>>> line.integrate()
+0     1
+1     3
+2     6
+3    10
+dtype: int64
+
+>>> line + 1
+0    2
+1    3
+2    4
+3    5
+dtype: int64
+
 """
 
 import base64
@@ -316,7 +346,6 @@ class PointLine(Line):
             end = self.data.index[-1]
             data = self.data[start:end]
             index = list(range(shift, len(data) + shift))
-
         else:
             index = list(range(0, len(self.data)))
             data = self.data
