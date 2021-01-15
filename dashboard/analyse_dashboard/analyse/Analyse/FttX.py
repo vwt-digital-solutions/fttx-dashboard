@@ -14,9 +14,9 @@ from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentL
 import business_rules as br
 from functions import extract_realisatie_hpend_dates, get_data_targets_init, cluster_reden_na, \
     set_filters, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
-    extract_werkvoorraad_has_dates, extract_realisatie_bis_dates, calculate_redenna_per_period, \
+    extract_werkvoorraad_has_dates, calculate_redenna_per_period, \
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
-    ratio_sum_over_periods_to_record, get_database_engine, extract_realisatie_under_8weeks_dates, \
+    ratio_sum_over_periods_to_record, get_database_engine, \
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_minus_HPend_sum_over_periods_to_record, \
     extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
 from pandas.api.types import CategoricalDtype
@@ -486,18 +486,19 @@ class FttXAnalyse(FttXBase):
     def _make_records_for_dashboard_values(self):
         logger.info("Making records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
-        function_dict = {'realisatie_bis': extract_realisatie_bis_dates(self.transformed_data.df),
-                         'werkvoorraad_has': extract_werkvoorraad_has_dates(self.transformed_data.df),
-                         'realisatie_hpend': extract_realisatie_hpend_dates(self.transformed_data.df),
-                         'target': extract_target_dates(df=self.transformed_data.df,
+        df = self.transformed_data.df
+        function_dict = {'realisatie_bis': df[br.bis_opgeleverd_new(df)].status_civiel_datum,
+                         'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
+                         'realisatie_hpend': extract_realisatie_hpend_dates(df),
+                         'target': extract_target_dates(df=df,
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
                                                         ),
                          'voorspelling': extract_voorspelling_dates(
-                             df=self.transformed_data.df,
+                             df=df,
                              ftu=self.extracted_data.get("ftu"),
                              totals=self.transformed_data.get("totals")),
-                         'planning': extract_planning_dates(df=self.transformed_data.df,
+                         'planning': extract_planning_dates(df=df,
                                                             planning=self.transformed_data.get("planning"),
                                                             client=self.client)
                          }
@@ -555,7 +556,6 @@ class FttXAnalyse(FttXBase):
 
     def _make_records_ratio_hc_hpend_for_dashboard_values(self):
         logger.info("Making record of ratio HC/HPend for dashboard overview  values")
-        # Create a dictionary that contains the functions and the output name
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
@@ -579,9 +579,7 @@ class FttXAnalyse(FttXBase):
 
     def _make_records_ratio_under_8weeks_for_dashboard_values(self):
         logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
-        # Create a dictionary that contains the functions and the output name
-        # TODO: replace under_8weeks_dates by more general realisatie_hpend_dates_in_timewindow function
-        realisatie_under_8weeks = extract_realisatie_under_8weeks_dates(self.transformed_data.df)
+        realisatie_under_8weeks = self.transformed_data.df[br.on_time_opgeleverd(self.transformed_data.df)].opleverdatum
         realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []

@@ -1364,20 +1364,6 @@ def multi_index_to_dict(df):
 #     return sum(br.bis_opgeleverd(df_copy))
 
 
-def extract_realisatie_bis_dates(df: pd.DataFrame) -> pd.Series:
-    '''
-    This function extracts the realisatie BIS dates per client from their transformed dataframes, based on the BR:
-    bis_opgeleverd_new (opleverstatus != 0, 90, 99) and the date: status_civiel_datum.
-
-    Args:
-        df: The transformed dataframe
-
-    Returns: A pd.Series object
-
-    '''
-    return df[br.bis_opgeleverd_new(df)].status_civiel_datum
-
-
 def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = False):
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
@@ -1412,20 +1398,6 @@ def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = 
 
         ds.name = 'werkvoorraad_has_datum'
         return ds
-
-
-def extract_realisatie_under_8weeks_dates(df: pd.DataFrame) -> pd.Series:
-    """
-    This function extracts the realisatie HPend under 8 weeks dates per client from their transformed dataframes,
-    based on the BR: on_time_opgeleverd ((opleverdatum - toestemming_datum) < 56 days) and the date: opleverdatum.
-
-    Args:
-        df: The transformed dataframe
-
-    Returns: A pd.Series object
-
-    """
-    return df[br.on_time_opgeleverd(df)].opleverdatum
 
 
 def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = False):
