@@ -5,15 +5,30 @@ from Analyse.Capacity_analysis.Domain import DateDomainRange
 
 
 class PhaseCapacity:
+    """
+        :param df: One-column dataframe, should have a datetime-index
+    """
 
     def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict):
         self.production_by_day = TimeseriesLine(df.groupby([df.index]).count())
         self.capacity_by_day = None
         self.target_by_day = None
+        self.client = None
+        self.record_dict = RecordListWrapper(client=self.client)
+        self.phase = None
         self.phases_config = phases_config
         self.phases_projectspecific = phases_projectspecific
 
     def algorithm(self):
+        """
+        Algorithm to be ran, will contain all logic related to capacity Lines per Phase.
+        :return: PhaseCapacity object, used for Method chaining.
+        """
+        production_over_time = self.production_by_day.integrate()
+        self._to_record(production_by_day=self.production_by_day,
+                        production_over_time=production_over_time,
+                        )
+        self.capacity_by_day_indicator()
         self.production_over_time = self.production_by_day.integrate()
         self.target_over_time = LinearLine(slope=self.phases_projectspecific['performance_norm_unit'],
                                            intercept=0,
@@ -21,8 +36,20 @@ class PhaseCapacity:
                                            n_days=self.phases_config['n_days']))
         return self
 
-    def get_record(self):
-        return self.__dict__
+    def capacity_by_day_indicator(self):
+        """
+        Example Function
+        :return:
+        """
+        capacity_by_day_indicator = self.capacity_by_day.integrate()
+        return capacity_by_day_indicator
+
+    def _to_record(self, **kwargs):
+        self.record = Record(kwargs)
+
+    # def get_record(self):
+    #     record_dict.add(self.capacity_by_day_indicator(), LineRecord, phase=self.phase)
+    #     return record_dict
 
     # def get_project_lines(self, fase_delta, project_df, geulen_line=None):
     #     print('getting production per day')

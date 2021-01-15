@@ -2,7 +2,11 @@ from google.cloud import firestore
 
 from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad, FttXLocalETL
-from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
+from Analyse.Record.DictRecord import DictRecord
+from Analyse.Record.IntRecord import IntRecord
+from Analyse.Record.StringRecord import StringRecord
+from Analyse.Record.ListRecord import ListRecord
+from Analyse.Record.Record import Record
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, \
     get_project_dates, calculate_weektarget, calculate_lastweekrealisatie, \

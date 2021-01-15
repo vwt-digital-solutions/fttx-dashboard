@@ -6,6 +6,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCap
 from Analyse.ETL import Extract, Transform, Load
 from Analyse.FttX import FttXTestLoad, FttXETL, PickleExtract
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
+from Analyse.Record import RecordListWrapper
 from datetime import timedelta
 import pandas as pd
 

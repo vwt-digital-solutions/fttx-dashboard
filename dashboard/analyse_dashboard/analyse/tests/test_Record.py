@@ -1,4 +1,5 @@
-from Analyse.Record import Record, IntRecord, DateRecord, ListRecord, StringRecord, DocumentListRecord
+from Analyse.Record import IntRecord, DateRecord, ListRecord, StringRecord, DocumentListRecord
+from Analyse.Record.Record import Record
 import logging
 
 

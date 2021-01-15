@@ -10,8 +10,12 @@ import pickle  # nosec
 
 import logging
 
-from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
+from Analyse.Record.DictRecord import DictRecord
+from Analyse.Record.DocumentListRecord import DocumentListRecord
+from Analyse.Record.ListRecord import ListRecord
+from Analyse.Record.Record import Record
 import business_rules as br
+from Analyse.Record.RecordListWrapper import RecordListWrapper
 from functions import extract_realisatie_hpend_dates, get_data_targets_init, cluster_reden_na, \
     set_filters, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
     extract_werkvoorraad_has_dates, calculate_redenna_per_period, \
@@ -35,7 +39,7 @@ class FttXBase(ETLBase):
         if not hasattr(self, 'config'):
             self.config = kwargs.get("config")
         self.client = kwargs.get("client", "client_unknown")
-        self.record_dict = RecordDict()
+        self.record_dict = RecordListWrapper(client=self.client)
         self.intermediate_results = Data()
 
 
@@ -308,7 +312,7 @@ class FttXAnalyse(FttXBase):
         super().__init__(**kwargs)
         if not hasattr(self, 'config'):
             self.config = kwargs.get("config")
-        self.record_dict = RecordDict()
+        self.record_dict = RecordListWrapper(self.client)
         self.intermediate_results = Data()
 
     def analyse(self):
@@ -752,7 +756,7 @@ class FttXLoad(Load, FttXBase):
 
     def load(self):
         logger.info("Loading documents...")
-        self.record_dict.to_firestore(self.client)
+        self.record_dict.to_firestore()
 
     def load_enriched(self):
         pass
@@ -766,9 +770,7 @@ class FttXTestLoad(FttXLoad):
         logger.info("Nothing is loaded to the firestore as this is a test")
         logger.info("The following documents would have been updated/set:")
         for document in self.record_dict:
-            logger.info(self.record_dict[document].document_name(client=self.client,
-                                                                 graph_name=document,
-                                                                 document=None))
+            logger.info(document.document_name())
 
 
 class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):

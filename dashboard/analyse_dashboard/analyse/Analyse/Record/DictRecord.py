@@ -9,19 +9,19 @@ class DictRecord(Record):
     """DictRecord writes all items in the dictionary as a separate document to the collection.
     The key for the dict is used to fill the project field in the document."""
 
-    def to_firestore(self, graph_name, client):
-        logging.info(f"Creating documents for {graph_name} in DictRecord")
+    def to_firestore(self):
+        logging.info(f"Creating documents for {self.graph_name} in DictRecord")
         for k, v in self.record.items():
-            document_name = f"{client}_{graph_name}_{k}"
+            document_name = f"{self.client}_{self.graph_name}_{k}"
             document = firestore.Client().collection(self.collection).document(document_name)
             logging.info(f"Set document {document_name}")
-            document.set(self._to_document(graph_name=graph_name, client=client, record=v, project=k))
+            document.set(self._to_document(graph_name=self.graph_name, client=self.client, record=v, project=k))
 
-    def to_table_part(self, graph_name="", client=""):
+    def to_table_part(self):
         table_part = ""
         for k, v in self.record.items():
-            document_name = f"{client}_{graph_name}_{k}"
-            document = self._to_document(graph_name=graph_name, client=client, record=v, project=k)
+            document_name = f"{self.client}_{self.graph_name}_{k}"
+            document = self._to_document(graph_name=self.graph_name, client=self.client, record=v, project=k)
             table_part += f"""<tr>
               <td>{document_name}</td>
               <td>{self.collection}</td>
