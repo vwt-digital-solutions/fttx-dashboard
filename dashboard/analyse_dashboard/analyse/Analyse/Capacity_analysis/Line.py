@@ -219,7 +219,7 @@ class PointLine(Line):
     The index is used for the y-axis and the values for the x-axis.
 
     Args:
-        data (pd.Series): A series of points that represent a line.
+        data (pd.Series, array-like, Iterable, dict, or scalar value): A series of points that represent a line.
 
     Examples
     -------
@@ -243,9 +243,23 @@ class PointLine(Line):
     dtype: float64
     """
 
-    def __init__(self, data:  pd.Series, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if not isinstance(data, pd.Series):
+            data = pd.Series(data)
         self.data = data
+
+    def __add__(self, other):
+        pass
+
+    def __iadd__(self, other):
+        pass
+
+    def __sub__(self, other):
+        pass
+
+    def __isub__(self, other):
+        pass
 
     def __mul__(self, other):
         if isinstance(other, FunctionLine):
@@ -254,31 +268,29 @@ class PointLine(Line):
         if isinstance(other, PointLine):
             return self.__class__(data=self.make_series() * other.make_series())
         else:
-            try:
-                return self.__class__(data=self.make_series()*other)
-            except TypeError as e:
-                raise e
+            return self.__class__(data=self.make_series() * other)
 
     def __imul__(self, other):
-        self = self.__mul__(other)
+        self = (self * other)
+        return self
 
     def __truediv__(self, other):
         if isinstance(other, FunctionLine):
-            other = PointLine(other.make_series())
+            other = other.make_series()
 
-        if isinstance(other, PointLine):
-            return self.__class__(data=self.make_series() / other.make_series())
-        else:
-            try:
-                return self.__class__(data=self.make_series().divide(other))
-            except TypeError as e:
-                raise e
+        return self.__class__(data=self.make_series() / other)
 
     def __idiv__(self, other):
-        self = self.__truediv__(other)
+        self = self / other
+        return self
 
     def __repr__(self):
         return repr(self.data)
+
+    def __eq__(self, other):
+        if not isinstance(other, PointLine):
+            return False
+        return self.data.equals(other.data)
 
     def make_series(self) -> pd.Series:
         return self.data
