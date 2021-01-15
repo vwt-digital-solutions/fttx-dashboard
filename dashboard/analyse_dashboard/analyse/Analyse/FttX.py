@@ -691,7 +691,7 @@ class FttXAnalyse(FttXBase):
             list_of_projects = self.transformed_data.df.project.unique().tolist()
         elif self.client == 'dfn':
             list_of_projects = self.transformed_data.df.project.unique().tolist()
-        # list_of_freq = ['W-MON', 'M', 'Y']
+
         document_list = []
         for project in list_of_projects:
             project_dates_numerator = realisatie_hc[realisatie_hc.project == project].drop(labels='project', axis=1)
@@ -724,7 +724,7 @@ class FttXAnalyse(FttXBase):
             list_of_projects = df.project.unique().tolist()
         elif self.client == 'dfn':
             list_of_projects = df.project.unique().tolist()
-        # list_of_freq = ['W-MON', 'M', 'Y']
+
         document_list = []
         for project in list_of_projects:
             project_dates_numerator = realisatie_under_8weeks[realisatie_under_8weeks.project == project]\
