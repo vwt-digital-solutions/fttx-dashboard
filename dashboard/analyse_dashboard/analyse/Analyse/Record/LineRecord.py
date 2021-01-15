@@ -2,7 +2,11 @@ from Analyse.Record.Record import Record
 
 
 class LineRecord(Record):
+    """
+    Record type that deals specifically with lines.
+    Should be able to write different attributes of lines to firestore, given flags in init.
 
+    """
     def __init__(self, phase, **kwargs):
         super().__init__(**kwargs)
         self.phase = phase
@@ -15,6 +19,14 @@ class LineRecord(Record):
                     phase=self.phase)
 
     def document_name(self, **kwargs):
+        """
+        Make document name based on client, phase and graph name.
+        Args:
+            **kwargs:
+
+        Returns: Document name as string.
+
+        """
         graph_name = kwargs.get('graph_name')
         client = kwargs.get('client')
         return f'{client}_{self.phase}_{graph_name}'

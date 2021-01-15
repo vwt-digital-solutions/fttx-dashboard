@@ -68,6 +68,9 @@ class CapacityAnalyse():
         self.get_lines_per_phase()
 
     def get_lines_per_phase(self):
+        """
+        Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
+        """
         for project, project_df in self.df.groupby(by="project"):
             GeulenCapacity(df=self.df[self.phases_config['geulen']['phase_column']],
                            phases_config=self.phases_config['geulen'],
@@ -87,8 +90,14 @@ class CapacityAnalyse():
 
 
 class CapacityETL(FttXETL, KPNDFNExtract, KPNDFNTransform, CapacityAnalyse):
+    """
+    Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
+    """
     ...
 
 
 class CapacityTestETL(PickleExtract, FttXTestLoad, CapacityETL):
+    """
+    Test class to perform the ETL and analysis for capacity analysis for FttX. Will not write records to the firestore.
+    """
     ...

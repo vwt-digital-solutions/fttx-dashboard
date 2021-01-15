@@ -4,7 +4,10 @@ from Analyse.Record.Record import Record, Validation
 
 
 class IntRecord(Record):
-
+    """
+    Extension of record class that can handle integer data,
+    and validate that record indeed consists of integers.
+    """
     def _validate(self, value):
         validated = super()._validate(value)
         for i, el in enumerate(value):
