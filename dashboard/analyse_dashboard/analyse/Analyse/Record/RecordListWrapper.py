@@ -34,8 +34,22 @@ class RecordListWrapper(MutableMapping):
                                      f"{key} contains an object of type: {type(record)}")
 
     def add(self, key, record, record_type, collection, **kwargs):
+        """
+        Function to add data to the RecordListWrapper. Will create a record of given type
+        and add it to the collection.
+        Args:
+            key: Name of Record
+            record: Data that will be made into a record
+            record_type: type of Record that the data will be turned into.
+            collection: Collection the record should be part of.
+            **kwargs:
+        """
         record = record_type(record, collection, self.client_name, key, **kwargs)
         self.record_list.append(record)
 
     def to_firestore(self):
+        """
+        Calls the to_firestore function of all objects in its collection, writing the
+        entire collection to the firestore.
+        """
         self.record_list.to_firestore()

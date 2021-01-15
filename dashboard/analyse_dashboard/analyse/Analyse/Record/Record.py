@@ -73,6 +73,15 @@ class Record:
         return f"{str(type(self)).rsplit('.')[-1][:-2]}(record={self.record}, collection='{self.collection}')"
 
     def to_table_part(self, graph_name="", client=""):
+        """
+        Returns part of the HTML representation, function is called in _repr_html_
+        Args:
+            graph_name: graph name the table part needs to be made for
+            client: Client of this particular graph
+
+        Returns: part of the html representation of the record
+
+        """
         document_name = self.document_name()
         return f"""<tr>
           <td>{document_name}</td>
