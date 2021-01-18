@@ -4,9 +4,8 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
 from Analyse.ETL import Extract, Transform, Load
-from Analyse.FttX import FttXTestLoad, FttXETL, PickleExtract
+from Analyse.FttX import FttXTestLoad, PickleExtract
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
-from Analyse.Record import RecordListWrapper
 from datetime import timedelta
 import pandas as pd
 
@@ -89,7 +88,7 @@ class CapacityAnalyse():
                             phases_projectspecific=self.phases_projectspecific['oplever']).algorithm().get_record()
 
 
-class CapacityETL(FttXETL, KPNDFNExtract, KPNDFNTransform, CapacityAnalyse):
+class CapacityETL(KPNDFNExtract, KPNDFNTransform, CapacityAnalyse):
     """
     Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
     """
