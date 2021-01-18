@@ -98,16 +98,14 @@ def FTU_table_editable(ww):
     ],
 )
 def FTU_update(data):
-
+    print('start updating FTU tabel')
     record = dict(graph_name='project_dates', client=client)
-    FTU0 = {}
-    FTU1 = {}
-    for el in data:
-        FTU0[el['Project']] = el['Eerste HAS aansluiting (FTU0)']
-        FTU1[el['Project']] = el['Laatste HAS aansluiting (FTU1)']
-    record['record'] = {}
-    record['record']['FTU0'] = FTU0
-    record['record']['FTU1'] = FTU1
+    df = pd.DataFrame(data)
+    updated_dict = {}
+    for col in df:
+        if col != "Project":
+            updated_dict[col] = dict(zip(df['Project'], df[col]))
+    record['record'] = updated_dict
     print(record)
     firestore.Client().collection('Data').document(f'{client}_project_dates').set(record)
     output = collection.get_graph(client=client, graph_name='project_performance')
