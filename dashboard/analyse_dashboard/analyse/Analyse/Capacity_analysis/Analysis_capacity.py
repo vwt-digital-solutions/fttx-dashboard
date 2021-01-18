@@ -4,9 +4,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
 from Analyse.ETL import Extract, Transform, Load
-from Analyse.FttX import FttXTestLoad, FttXETL, PickleExtract
-from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
-from Analyse.Record import RecordListWrapper
+from Analyse.FttX import FttXTestLoad, PickleExtract, FttXExtract, FttXTransform
 from datetime import timedelta
 import pandas as pd
 
@@ -24,10 +22,9 @@ class CapacityLoad(Load):
 
 
 class CapacityAnalyse():
-    def __init__(self, df=None):
-        self.df = df
+    def __init__(self):
         # the parameters below need to come from config and transform
-        self.performance_norm_config = 5
+        self.performance_norm_config = 1  # % per day
         self.n_days_config = 100 / self.performance_norm_config
         self.phases_config = dict(geulen=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config),
                                   schieten=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config),
@@ -41,27 +38,27 @@ class CapacityAnalyse():
         self.phases_projectspecific = dict(geulen=dict(start_date=self.civil_date['project1'] +
                                                        timedelta(days=self.phases_config['geulen']['phase_delta']),
                                                        total_units=self.total_units['project1']['geulen'],
-                                                       performance_norm_unit=self.performance_norm_config *
+                                                       performance_norm_unit=self.performance_norm_config / 100 *
                                                        self.total_units['project1']['geulen']),
                                            schieten=dict(start_date=self.civil_date['project1'] +
                                                          timedelta(days=self.phases_config['schieten']['phase_delta']),
                                                          total_units=self.total_units['project1']['schieten'],
-                                                         performance_norm_unit=self.performance_norm_config *
+                                                         performance_norm_unit=self.performance_norm_config / 100 *
                                                          self.total_units['project1']['schieten']),
                                            lasap=dict(start_date=self.civil_date['project1'] +
                                                       timedelta(days=self.phases_config['lasap']['phase_delta']),
                                                       total_units=self.total_units['project1']['lasap'],
-                                                      performance_norm_unit=self.performance_norm_config *
+                                                      performance_norm_unit=self.performance_norm_config / 100 *
                                                       self.total_units['project1']['lasap']),
                                            lasdp=dict(start_date=self.civil_date['project1'] +
                                                       timedelta(days=self.phases_config['lasdp']['phase_delta']),
                                                       total_units=self.total_units['project1']['lasdp'],
-                                                      performance_norm_unit=self.performance_norm_config *
+                                                      performance_norm_unit=self.performance_norm_config / 100 *
                                                       self.total_units['project1']['lasdp']),
                                            oplever=dict(start_date=self.civil_date['project1'] +
                                                         timedelta(days=self.phases_config['oplever']['phase_delta']),
                                                         total_units=self.total_units['project1']['oplever'],
-                                                        performance_norm_unit=self.performance_norm_config *
+                                                        performance_norm_unit=self.performance_norm_config / 100 *
                                                         self.total_units['project1']['oplever']))
 
     def analyse(self):
@@ -71,25 +68,25 @@ class CapacityAnalyse():
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
-        for project, project_df in self.df.groupby(by="project"):
-            GeulenCapacity(df=self.df[self.phases_config['geulen']['phase_column']],
-                           phases_config=self.phases_config['geulen'],
-                           phases_projectspecific=self.phases_projectspecific['geulen']).algorithm().get_record()
-            SchietenCapacity(df=self.df[self.phases_config['schieten']['phase_column']],
-                             phases_config=self.phases_config['schieten'],
-                             phases_projectspecific=self.phases_projectspecific['schieten']).algorithm().get_record()
-            LasAPCapacity(df=self.df[self.phases_config['lasap']['phase_column']],
-                          phases_config=self.phases_config['lasap'],
-                          phases_projectspecific=self.phases_projectspecific['lasap']).algorithm().get_record()
-            LasDPCapacity(df=self.df[self.phases_config['lasdp']['phase_column']],
-                          phases_config=self.phases_config['lasdp'],
-                          phases_projectspecific=self.phases_projectspecific['lasdp']).algorithm().get_record()
-            OpleverCapacity(df=self.df[self.phases_config['oplever']['phase_column']],
-                            phases_config=self.phases_config['oplever'],
-                            phases_projectspecific=self.phases_projectspecific['oplever']).algorithm().get_record()
+        for project, project_df in self.transformed_data.df.groupby(by="project"):
+            self.geulen = GeulenCapacity(df=self.transformed_data.df[self.phases_config['geulen']['phase_column']],
+                                         phases_config=self.phases_config['geulen'],
+                                         phases_projectspecific=self.phases_projectspecific['geulen']).algorithm()
+            self.schieten = SchietenCapacity(df=self.transformed_data.df[self.phases_config['schieten']['phase_column']],
+                                             phases_config=self.phases_config['schieten'],
+                                             phases_projectspecific=self.phases_projectspecific['schieten']).algorithm()
+            self.lasap = LasAPCapacity(df=self.transformed_data.df[self.phases_config['lasap']['phase_column']],
+                                       phases_config=self.phases_config['lasap'],
+                                       phases_projectspecific=self.phases_projectspecific['lasap']).algorithm()
+            self.lasdp = LasDPCapacity(df=self.transformed_data.df[self.phases_config['lasdp']['phase_column']],
+                                       phases_config=self.phases_config['lasdp'],
+                                       phases_projectspecific=self.phases_projectspecific['lasdp']).algorithm()
+            self.oplever = OpleverCapacity(df=self.transformed_data.df[self.phases_config['oplever']['phase_column']],
+                                           phases_config=self.phases_config['oplever'],
+                                           phases_projectspecific=self.phases_projectspecific['oplever']).algorithm()
 
 
-class CapacityETL(FttXETL, KPNDFNExtract, KPNDFNTransform, CapacityAnalyse):
+class CapacityETL(FttXExtract, FttXTransform, CapacityAnalyse):
     """
     Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
     """

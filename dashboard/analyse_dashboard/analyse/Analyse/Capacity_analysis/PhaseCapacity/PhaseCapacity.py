@@ -2,6 +2,8 @@ import pandas as pd
 
 from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange
+from Analyse.Record.RecordListWrapper import RecordListWrapper
+# from Analyse.Record.Record import Record
 
 
 class PhaseCapacity:
@@ -24,12 +26,12 @@ class PhaseCapacity:
         Algorithm to be ran, will contain all logic related to capacity Lines per Phase.
         :return: PhaseCapacity object, used for Method chaining.
         """
-        production_over_time = self.production_by_day.integrate()
-        self._to_record(production_by_day=self.production_by_day,
-                        production_over_time=production_over_time,
-                        )
-        self.capacity_by_day_indicator()
-        self.production_over_time = self.production_by_day.integrate()
+        # production_over_time = self.production_by_day.integrate()
+        # self._to_record(production_by_day=self.production_by_day,
+        #                 production_over_time=production_over_time,
+        #                 )
+        # self.capacity_by_day_indicator()
+        # self.production_over_time = self.production_by_day.integrate()
         self.target_over_time = LinearLine(slope=self.phases_projectspecific['performance_norm_unit'],
                                            intercept=0,
                                            domain=DateDomainRange(begin=self.phases_projectspecific['start_date'],
@@ -44,8 +46,8 @@ class PhaseCapacity:
         capacity_by_day_indicator = self.capacity_by_day.integrate()
         return capacity_by_day_indicator
 
-    def _to_record(self, **kwargs):
-        self.record = Record(kwargs)
+    # def _to_record(self, **kwargs):
+    #     self.record = Record(kwargs)
 
     # def get_record(self):
     #     record_dict.add(self.capacity_by_day_indicator(), LineRecord, phase=self.phase)
