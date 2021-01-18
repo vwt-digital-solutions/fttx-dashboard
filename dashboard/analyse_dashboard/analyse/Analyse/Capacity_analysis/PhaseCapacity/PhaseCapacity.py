@@ -2,6 +2,7 @@ import pandas as pd
 
 from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange
+from Analyse.Record.RecordList import RecordList
 
 
 class PhaseCapacity:
@@ -14,10 +15,10 @@ class PhaseCapacity:
         self.capacity_by_day = None
         self.target_by_day = None
         self.client = None
-        self.record_dict = RecordListWrapper(client=self.client)
         self.phase = None
         self.phases_config = phases_config
         self.phases_projectspecific = phases_projectspecific
+        self.record_list = RecordList()
 
     def algorithm(self):
         """
@@ -44,8 +45,8 @@ class PhaseCapacity:
         capacity_by_day_indicator = self.capacity_by_day.integrate()
         return capacity_by_day_indicator
 
-    def _to_record(self, **kwargs):
-        self.record = Record(kwargs)
+    def get_record(self, **kwargs):
+        return self.record_list
 
     # def get_record(self):
     #     record_dict.add(self.capacity_by_day_indicator(), LineRecord, phase=self.phase)
