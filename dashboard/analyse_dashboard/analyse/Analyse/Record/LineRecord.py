@@ -7,8 +7,8 @@ class LineRecord(Record):
     Should be able to write different attributes of lines to firestore, given flags in init.
 
     """
-    def __init__(self, phase, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, record, collection, client, graph_name, phase, **kwargs):
+        super().__init__(record, collection, client, graph_name, **kwargs)
         self.phase = phase
 
     def _to_document(self, graph_name, client):
