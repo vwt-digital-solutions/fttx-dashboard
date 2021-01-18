@@ -158,10 +158,11 @@ def update_date():
 
 def ftu_table(data, client):
     if data:
-        df = pd.DataFrame(columns=['Project', 'Eerste HAS aansluiting (FTU0)', 'Laatste HAS aansluiting (FTU1)'])
+        df = pd.DataFrame()
         df['Project'] = data['FTU0'].keys()
-        df['Eerste HAS aansluiting (FTU0)'] = data['FTU0'].values()
-        df['Laatste HAS aansluiting (FTU1)'] = data['FTU1'].values()
+        for key, value in data.items():
+            df[key] = value.values()
+        df.replace('None', '', inplace=True)
         fig = dash_table.DataTable(
             id=f'table_FTU_{client}',
             columns=[{"name": i, "id": i} for i in df.columns],
