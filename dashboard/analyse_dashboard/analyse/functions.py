@@ -821,7 +821,7 @@ def create_bullet_chart_realisatie(value,
                 id=None)
 
 
-def calculate_lastweekrealisatie(project_df, weektarget):
+def calculate_lastweek_realisatie_hpend_and_return_graphics(project_df, weektarget):
     weekday = datetime.datetime.now().weekday()
     realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
@@ -838,7 +838,7 @@ def calculate_lastweekrealisatie(project_df, weektarget):
                                           subtitle=f"Target: {weektarget}")
 
 
-def calculate_weekrealisatie(project_df, weektarget, delta=0):
+def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarget, delta=0):
     weekday = datetime.datetime.now().weekday()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
 
@@ -861,7 +861,8 @@ def calculate_weekrealisatie(project_df, weektarget, delta=0):
 def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
                         timeline, client):  # berekent voor de week t/m de huidige dag
     target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
-    record = calculate_weekrealisatie(project, d_real_l, total_objects, timeline, client, delay=0)
+    record = calculate_thisweek_realisatie_hpend_and_return_graphics(project, d_real_l, total_objects,
+                                                                     timeline, client, delay=0)
     delta = record['counts'] - target
     # delta_min1W = record['counts_prev'] - target
     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
@@ -895,8 +896,12 @@ def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_pe
                 id=None)
 
 
-def calculate_weeknerr(project, n_err):
-    return dict(counts=n_err[project], counts_prev=None, title='Errors FC- BC', subtitle='', font_color='green',
+def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors_per_project: dict):
+    return dict(counts=number_errors_per_project[project],
+                counts_prev=None,
+                title='Errors FC- BC',
+                subtitle='',
+                font_color='green',
                 id=None)
 
 

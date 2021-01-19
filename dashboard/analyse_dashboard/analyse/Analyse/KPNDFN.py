@@ -9,8 +9,9 @@ from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, \
-    get_project_dates, calculate_weektarget, calculate_lastweekrealisatie, \
-    calculate_weekrealisatie, make_graphics_for_ratio_hc_hpend_per_project, calculate_weeknerr, multi_index_to_dict
+    get_project_dates, calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
+    calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
+    make_graphics_for_number_errors_fcbc_per_project, multi_index_to_dict
 import pandas as pd
 from Analyse.Timeseries import Timeseries_collection
 
@@ -299,15 +300,17 @@ class KPNAnalyse(FttXAnalyse):
                                                   self.intermediate_results.timeline)
                 project_df = df[df.project == project]
 
-                project_indicators['weekrealisatie'] = calculate_weekrealisatie(project_df, weektarget)
+                project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
+                    project_df, weektarget)
 
-                project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(project_df, weektarget)
+                project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
+                    project_df, weektarget)
 
                 project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
-                    project,
-                    self.intermediate_results.ratio_HC_HPend_per_project)
+                    project=project, ratio_HC_HPend_per_project=self.intermediate_results.ratio_HC_HPend_per_project)
 
-                project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
+                project_indicators['weeknerr'] = make_graphics_for_number_errors_fcbc_per_project(
+                    project=project, number_errors_per_project=self.intermediate_results.n_err)
 
                 record[project] = project_indicators
 
@@ -327,15 +330,17 @@ class KPNAnalyse(FttXAnalyse):
                                                   self.intermediate_results.timeline)
                 project_df = df[df.project == project]
 
-                project_indicators['weekrealisatie'] = calculate_weekrealisatie(project_df, weektarget)
+                project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
+                    project_df, weektarget)
 
-                project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(project_df, weektarget)
+                project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
+                    project_df, weektarget)
 
                 project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
-                    project,
-                    self.intermediate_results.HC_HPend_l)
+                    project, self.intermediate_results.HC_HPend_l)
 
-                project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
+                project_indicators['weeknerr'] = make_graphics_for_number_errors_fcbc_per_project(
+                    project, self.intermediate_results.n_err)
 
                 record[project] = project_indicators
 
