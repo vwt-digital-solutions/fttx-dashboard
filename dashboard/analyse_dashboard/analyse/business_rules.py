@@ -88,7 +88,18 @@ def on_time_opgeleverd(df):
 
 
 def on_time_openstaand(df):
-    # Used to calculate the orders for homes that are openstaand within 8 weeks (56 days)
+    """
+    Used to calculate the homes that are still to be completed, and which are still within 8 weeks (56 days) after
+    providing permission.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
+        dates.
+
+    Returns:
+         pd.Series: A series of truth values.
+
+    """
     # TODO: change toestemming_datum to creation
     return (
             ((pd.Timestamp.today() - df['toestemming_datum']).dt.days <= 56)
@@ -98,7 +109,18 @@ def on_time_openstaand(df):
 
 
 def nog_beperkte_tijd_openstaand(df):
-    # Used to calculate the orders for homes that are openstaand between 8 and 12 weeks (56 and 84 days)
+    """
+    Used to calculate the homes that are still to be completed, and which are between 8 and 12 weeks (56 and 84 days)
+    after providing permission.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
+        dates.
+
+    Returns:
+         pd.Series: A series of truth values.
+
+    """
     # TODO: change toestemming_datum to creation
     return (
             ((pd.Timestamp.today() - df['toestemming_datum']).dt.days > 56)
@@ -110,7 +132,18 @@ def nog_beperkte_tijd_openstaand(df):
 
 
 def te_laat_openstaand(df):
-    # Used to calculate the orders for homes that are openstaand above 12 weeks (84 days)
+    """
+    Used to calculate the homes that are still to be completed, which are above 12 weeks (84 days) after
+    providing permission (and therefore considered "te laat").
+
+    Args:
+        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
+        dates.
+
+    Returns:
+         pd.Series: A series of truth values.
+
+    """
     # TODO: change toestemming_datum to creation
     return (
             ((pd.Timestamp.today() - df['toestemming_datum']).dt.days > 84)
