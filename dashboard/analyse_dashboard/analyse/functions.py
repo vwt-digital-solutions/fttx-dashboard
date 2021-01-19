@@ -1367,7 +1367,7 @@ def multi_index_to_dict(df):
 def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = False):
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
-    has_werkvoorraad_new (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
+    has_werkvoorraad (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
 
     Args:
         df: The transformed dataframe
@@ -1379,22 +1379,22 @@ def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = 
     """
     if toggles.new_projectspecific_views:
         if add_project_column:
-            date_dataseries = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(
+            date_dataseries = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(
                 axis=1)
             date_dataseries.name = 'werkvoorraad_has_datum'
-            project_dataseries = df[br.has_werkvoorraad_new(df)].project
+            project_dataseries = df[br.has_werkvoorraad(df)].project
             project_dataseries.name = 'project'
             df = pd.merge(date_dataseries, project_dataseries, left_index=True, right_index=True)
             return df
 
         else:
-            dataseries = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']]\
+            dataseries = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']]\
                 .max(axis=1)
             dataseries.name = 'werkvoorraad_has_datum'
             return dataseries
 
     else:
-        ds = df[br.has_werkvoorraad_new(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+        ds = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
 
         ds.name = 'werkvoorraad_has_datum'
         return ds
