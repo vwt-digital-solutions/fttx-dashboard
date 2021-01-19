@@ -327,35 +327,7 @@ def opgeleverd(df, time_delta_days=0):
     return is_date_set(df.opleverdatum, time_delta_days=time_delta_days)
 
 
-# TODO: remove when removing toggle new_structure_overviews
-def has_werkvoorraad(schouw_df, time_delta_days=0):
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    return (
-            (
-                (
-                        ~schouw_df.schouwdatum.isna() &
-                        (
-                                schouw_df.schouwdatum <= time_point
-                        )
-                )
-            ) &
-            (
-                    schouw_df.opleverdatum.isna() |
-                    (
-                            schouw_df.opleverdatum >= time_point
-                    )
-            ) &
-            (
-                ~schouw_df.toestemming_datum.isna()
-            ) &
-            (
-                    schouw_df.opleverstatus != '0'
-            )
-    )
-
-
-# TODO: refactor this function name. it should not contain _new
-def has_werkvoorraad_new(df, time_delta_days=0):
+def has_werkvoorraad(df, time_delta_days=0):
     """
     This BR determines the werkvoorraad HAS by checking each row of a DataFrame for:
 
@@ -376,7 +348,7 @@ def has_werkvoorraad_new(df, time_delta_days=0):
     return (
             (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
             &
-            (df.opleverdatum.isna() | (df.opleverdatum >= time_point))
+            (df.opleverdatum.isna() | (df.opleverdatum > time_point))
             &
             ~df.toestemming_datum.isna()
             &
