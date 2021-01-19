@@ -23,6 +23,13 @@ class CapacityLoad(Load):
 
 class CapacityAnalyse():
     def __init__(self):
+        """
+        Main class for the analyses required for the capacity planning algorithm. Per project and phase,
+        required indicators are calculated and stored in dedicated phase objects. At the moment,
+        the parameters performance_norm_config, n_days_config, phases_config, civil_date, total_units and
+        phases_projectspecific are defined here but will be moved to config or transform in the following ticket.
+
+        """
         # the parameters below need to come from config and transform
         self.performance_norm_config = 1  # % per day
         self.n_days_config = 100 / self.performance_norm_config

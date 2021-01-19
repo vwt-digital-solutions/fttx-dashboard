@@ -23,6 +23,10 @@ class PhaseCapacity:
     def algorithm(self):
         """
         Algorithm to be ran, will contain all logic related to capacity Lines per Phase.
+        The following indicators are made:
+        - a target line that indicates the number of units per day that need to be produced
+          in the specific period over the duration of the project.
+
         :return: PhaseCapacity object, used for Method chaining.
         """
         # production_over_time = self.production_by_day.integrate()
