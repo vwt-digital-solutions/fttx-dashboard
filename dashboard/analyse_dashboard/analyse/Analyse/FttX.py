@@ -24,7 +24,6 @@ from functions import extract_realisatie_hpend_dates, get_data_targets_init, clu
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_minus_HPend_sum_over_periods_to_record, \
     extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
 from pandas.api.types import CategoricalDtype
-from datetime import datetime
 
 from toggles import ReleaseToggles
 
@@ -325,8 +324,7 @@ class FttXAnalyse(FttXBase):
         if toggles.new_projectspecific_views:
             self._make_records_for_project_specific_values()
             self._make_records_for_weekly_project_specific_values()
-            self._make_records_ratio_hc_hpend_project_specific_values()
-            self._make_records_ratio_under_8weeks_specific_values()
+            self._make_records_ratios_project_specific_values()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
@@ -617,16 +615,9 @@ class FttXAnalyse(FttXBase):
                          # OPTIONAL: 'errors_FCBC': add_function_here,
                          }
 
-        if self.client == 'kpn':
-            list_of_projects = df.project.unique().tolist()
-        elif self.client == 'tmobile':
-            list_of_projects = df.project.unique().tolist()
-        elif self.client == 'dfn':
-            list_of_projects = df.project.unique().tolist()
-
         document_list = []
         for key, values in function_dict.items():
-            for project in list_of_projects:
+            for project in df.project.unique().tolist():
                 project_dates_dataseries = values[values.project == project].drop(labels='project', axis=1)
                 record = len(project_dates_dataseries)
 
@@ -639,114 +630,46 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Overzicht_per_project", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "project_name"])
 
-    def _make_records_for_weekly_project_specific_values(self):
-        logger.info("Making records for week-based project specific values")
-        # Create a dictionary that contains the functions and the output name
-        df = self.transformed_data.df
-        function_dict = {'realisatie_hpend_per_project': extract_realisatie_hpend_dates(df=df,
-                                                                                        add_project_column=True),
-                         'target_per_project': extract_target_dates(df=df,
-                                                                    totals=self.transformed_data.get("totals"),
-                                                                    ftu=self.extracted_data.get("ftu"),
-                                                                    add_project_column=True
-                                                                    )
-                         }
-
-        if self.client == 'kpn':
-            list_of_projects = df.project.unique().tolist()
-        elif self.client == 'tmobile':
-            list_of_projects = df.project.unique().tolist()
-        elif self.client == 'dfn':
-            list_of_projects = df.project.unique().tolist()
-
-        # We need weekly data of current & past year: when current week = week 1, previous week = week 52 previous year
-        freq = 'W-MON'
-        list_of_years = [str(datetime.now().year-1), str(datetime.now().year)]
-        document_list = []
-        for key, values in function_dict.items():
-            for year in list_of_years:
-                for project in list_of_projects:
-                    project_dates_dataseries = values[values.project == project]\
-                        .drop(labels='project', axis=1)\
-                        .squeeze()
-                    record = sum_over_period_to_record(timeseries=project_dates_dataseries, freq=freq, year=year)
-
-                    document_list.append(dict(
-                        client=self.client,
-                        graph_name=key,
-                        project_name=project,
-                        year=year,
-                        record=record
-                    ))
-        self.record_dict.add("Overzicht_per_project_weekly", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "project_name", "year"])
-
-    def _make_records_ratio_hc_hpend_project_specific_values(self):
+    def _make_records_ratios_project_specific_values(self):
         logger.info("Making record of ratio HC/HPend for project specific values")
         # Create a dictionary that contains the functions and the output name
-        realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df,
-                                                    add_project_column=True)
-        realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df,
-                                                          add_project_column=True)
+        df = self.transformed_data.df
+        realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
+        realisatie_hpend = extract_realisatie_hpend_dates(df=df, add_project_column=True)
 
-        if self.client == 'kpn':
-            list_of_projects = self.transformed_data.df.project.unique().tolist()
-        elif self.client == 'tmobile':
-            list_of_projects = self.transformed_data.df.project.unique().tolist()
-        elif self.client == 'dfn':
-            list_of_projects = self.transformed_data.df.project.unique().tolist()
+        realisatie_under_8weeks = df[br.on_time_opgeleverd(df)][['opleverdatum', 'project']]
+        realisatie_hpend_and_ordered = extract_realisatie_hpend_and_ordered_dates(df=df, add_project_column=True)
 
         document_list = []
-        for project in list_of_projects:
-            project_dates_numerator = realisatie_hc[realisatie_hc.project == project].drop(labels='project', axis=1)
-            project_dates_divider = realisatie_hpend[realisatie_hpend.project == project].drop(labels='project', axis=1)
-            if len(project_dates_divider) == 0:
-                record = 0
-            else:
-                record = len(project_dates_numerator)/len(project_dates_divider)
-
+        for project in df.project.unique().tolist():
+            record_hchp = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
             document_list.append(dict(
                 client=self.client,
                 graph_name='ratio_hc_hpend_per_project',
                 project_name=project,
-                record=record
+                record=record_hchp
             ))
-        self.record_dict.add("Ratios_hc_hpend_per_project", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "project_name"])
 
-    def _make_records_ratio_under_8weeks_specific_values(self):
-        logger.info("Making record of ratio HC/HPend for project specific values")
-        # Create a dictionary that contains the functions and the output name
-        df = self.transformed_data.df
-        realisatie_under_8weeks = df[br.on_time_opgeleverd(df)][['opleverdatum', 'project']]
-        realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(df=df,
-                                                                      add_project_column=True)
-
-        if self.client == 'kpn':
-            list_of_projects = df.project.unique().tolist()
-        elif self.client == 'tmobile':
-            list_of_projects = df.project.unique().tolist()
-        elif self.client == 'dfn':
-            list_of_projects = df.project.unique().tolist()
-
-        document_list = []
-        for project in list_of_projects:
-            project_dates_numerator = realisatie_under_8weeks[realisatie_under_8weeks.project == project]\
-                .drop(labels='project', axis=1)
-            project_dates_divider = realisatie_hpend[realisatie_hpend.project == project].drop(labels='project', axis=1)
-            if len(project_dates_divider) == 0:
-                record = 0
-            else:
-                record = len(project_dates_numerator)/len(project_dates_divider)
-
+            record_8wks = self.calculate_ratio(project, realisatie_under_8weeks, realisatie_hpend_and_ordered)
             document_list.append(dict(
                 client=self.client,
                 graph_name='ratio_under_8weeks_per_project',
                 project_name=project,
-                record=record
+                record=record_8wks
             ))
-        self.record_dict.add("Ratios_under_8weeks_per_project", document_list, DocumentListRecord, "Data",
+
+        self.record_dict.add("Ratios_per_project", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "project_name"])
+
+    def calculate_ratio(self, project, numerator, divider):
+        project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)
+        project_dates_divider = divider[divider.project == project].drop(labels='project', axis=1)
+
+        if len(project_dates_divider) == 0:
+            record = 0
+        else:
+            record = len(project_dates_numerator) / len(project_dates_divider)
+        return record
 
 
 class FttXLoad(Load, FttXBase):
