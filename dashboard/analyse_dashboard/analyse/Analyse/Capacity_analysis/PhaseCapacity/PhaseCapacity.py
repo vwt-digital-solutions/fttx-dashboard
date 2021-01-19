@@ -2,6 +2,7 @@ import pandas as pd
 
 from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange
+from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 
 
@@ -39,6 +40,12 @@ class PhaseCapacity:
                                            intercept=0,
                                            domain=DateDomainRange(begin=self.phases_projectspecific['start_date'],
                                            n_days=self.phases_config['n_days']))
+
+        target_over_time_record = LineRecord(record=self.target_over_time,
+                                             collection='Lines',
+                                             graph_name=f'{self.client}+{self.phase}+{self.line.name}',
+                                             phase=self.phase)
+        self.record_list.append(target_over_time_record)
         return self
 
     def capacity_by_day_indicator(self):

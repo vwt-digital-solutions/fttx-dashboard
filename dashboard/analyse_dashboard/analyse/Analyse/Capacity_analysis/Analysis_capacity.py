@@ -8,6 +8,8 @@ from Analyse.FttX import FttXTestLoad, PickleExtract, FttXExtract, FttXTransform
 from datetime import timedelta
 import pandas as pd
 
+from Analyse.Record.RecordList import RecordList
+
 
 class CapacityExtract(Extract):
     ...
@@ -75,22 +77,26 @@ class CapacityAnalyse():
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
-        for project, project_df in self.transformed_data.df.groupby(by="project"):
-            self.geulen = GeulenCapacity(df=self.transformed_data.df[self.phases_config['geulen']['phase_column']],
-                                         phases_config=self.phases_config['geulen'],
-                                         phases_projectspecific=self.phases_projectspecific['geulen']).algorithm()
-            self.schieten = SchietenCapacity(df=self.transformed_data.df[self.phases_config['schieten']['phase_column']],
-                                             phases_config=self.phases_config['schieten'],
-                                             phases_projectspecific=self.phases_projectspecific['schieten']).algorithm()
-            self.lasap = LasAPCapacity(df=self.transformed_data.df[self.phases_config['lasap']['phase_column']],
-                                       phases_config=self.phases_config['lasap'],
-                                       phases_projectspecific=self.phases_projectspecific['lasap']).algorithm()
-            self.lasdp = LasDPCapacity(df=self.transformed_data.df[self.phases_config['lasdp']['phase_column']],
-                                       phases_config=self.phases_config['lasdp'],
-                                       phases_projectspecific=self.phases_projectspecific['lasdp']).algorithm()
-            self.oplever = OpleverCapacity(df=self.transformed_data.df[self.phases_config['oplever']['phase_column']],
-                                           phases_config=self.phases_config['oplever'],
-                                           phases_projectspecific=self.phases_projectspecific['oplever']).algorithm()
+        line_record_list = RecordList()
+        for project, project_df in self.df.groupby(by="project"):
+            line_record_list += GeulenCapacity(df=self.df[self.phases_config['geulen']['phase_column']],
+                                               phases_config=self.phases_config['geulen'],
+                                               phases_projectspecific=self.phases_projectspecific['geulen']).algorithm().get_record()
+            line_record_list += SchietenCapacity(df=self.df[self.phases_config['schieten']['phase_column']],
+                                                 phases_config=self.phases_config['schieten'],
+                                                 phases_projectspecific=self.phases_projectspecific['schieten']
+                                                 ).algorithm().get_record()
+            line_record_list += LasAPCapacity(df=self.df[self.phases_config['lasap']['phase_column']],
+                                              phases_config=self.phases_config['lasap'],
+                                              phases_projectspecific=self.phases_projectspecific['lasap']
+                                              ).algorithm().get_record()
+            line_record_list += LasDPCapacity(df=self.df[self.phases_config['lasdp']['phase_column']],
+                                              phases_config=self.phases_config['lasdp'],
+                                              phases_projectspecific=self.phases_projectspecific['lasdp']
+                                              ).algorithm().get_record()
+            line_record_list += OpleverCapacity(df=self.df[self.phases_config['oplever']['phase_column']],
+                                                phases_config=self.phases_config['oplever'],
+                                                phases_projectspecific=self.phases_projectspecific['oplever']).algorithm().get_record()
 
 
 class CapacityETL(FttXExtract, FttXTransform, CapacityAnalyse):
