@@ -32,6 +32,13 @@ dtype: int64
 3    5
 dtype: int64
 
+>>> line + line
+0    2
+1    4
+2    6
+3    8
+dtype: int64
+
 """
 
 import base64
@@ -271,8 +278,8 @@ class PointLine(Line):
         self.data = data
 
     def __add__(self, other):
-        if isinstance(other, FunctionLine):
-            other = PointLine(other.make_series())
+        if isinstance(other, Line):
+            other = other.make_series()
         return self.__class__(data=self.make_series() + other)
 
     def __iadd__(self, other):
@@ -280,8 +287,8 @@ class PointLine(Line):
         return self
 
     def __sub__(self, other):
-        if isinstance(other, FunctionLine):
-            other = PointLine(other.make_series())
+        if isinstance(other, Line):
+            other = other.make_series()
         return self.__class__(data=self.make_series() - other)
 
     def __isub__(self, other):
@@ -289,8 +296,8 @@ class PointLine(Line):
         return self
 
     def __mul__(self, other):
-        if isinstance(other, FunctionLine):
-            other = PointLine(other.make_series())
+        if isinstance(other, Line):
+            other = other.make_series()
         return self.__class__(data=self.make_series() * other)
 
     def __imul__(self, other):
@@ -298,7 +305,7 @@ class PointLine(Line):
         return self
 
     def __truediv__(self, other):
-        if isinstance(other, FunctionLine):
+        if isinstance(other, Line):
             other = other.make_series()
         return self.__class__(data=self.make_series() / other)
 
