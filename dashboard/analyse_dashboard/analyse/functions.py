@@ -821,10 +821,7 @@ def create_bullet_chart_realisatie(value,
                 id=None)
 
 
-def calculate_lastweekrealisatie(
-        project_df,
-        weektarget
-):
+def calculate_lastweekrealisatie(project_df, weektarget):
     weekday = datetime.datetime.now().weekday()
     realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
@@ -841,14 +838,14 @@ def calculate_lastweekrealisatie(
                                           subtitle=f"Target: {weektarget}")
 
 
-def calculate_weekrealisatie(project_df,
-                             weektarget, delta=0):
+def calculate_weekrealisatie(project_df, weektarget, delta=0):
     weekday = datetime.datetime.now().weekday()
-    realisatie_today = br.opgeleverd(project_df, 0 + delta).sum()
-    realisatie_yesterday = br.opgeleverd(project_df, 1 + delta).sum()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
 
+    realisatie_today = br.opgeleverd(project_df, 0 + delta).sum()
     realisatie_this_week = int(realisatie_today - realisatie_beginning_week)
+
+    realisatie_yesterday = br.opgeleverd(project_df, 1 + delta).sum()
     realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
 
     max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
