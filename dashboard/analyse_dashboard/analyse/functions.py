@@ -867,10 +867,15 @@ def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
 
 
-def calculate_weekHCHPend(project, HC_HPend_l):
+def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_per_project: dict):
+    if toggles.new_projectspecific_views:
+        counts = round(ratio_HC_HPend_per_project[project], 2)
+    else:
+        counts = round(ratio_HC_HPend_per_project[project]) / 100
+
     return dict(title='HC / HPend',
                 subtitle='',
-                counts=round(HC_HPend_l[project]) / 100,
+                counts=counts,
                 counts_prev=None,
                 font_color='green',
                 gauge={

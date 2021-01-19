@@ -324,7 +324,8 @@ class FttXAnalyse(FttXBase):
         if toggles.new_projectspecific_views:
             self._make_records_for_project_specific_values()
             self._make_records_ratios_project_specific_values()
-        self._calculate_projectspecs()
+        else:
+            self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -415,7 +416,6 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
 
-        # TODO: cleanup of this function
         # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
         self.record_dict.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
         # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')

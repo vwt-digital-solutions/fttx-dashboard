@@ -10,7 +10,7 @@ from Analyse.Record.Record import Record
 from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, \
     get_project_dates, calculate_weektarget, calculate_lastweekrealisatie, \
-    calculate_weekrealisatie, calculate_weekHCHPend, calculate_weeknerr, multi_index_to_dict
+    calculate_weekrealisatie, make_graphics_for_ratio_hc_hpend_per_project, calculate_weeknerr, multi_index_to_dict
 import pandas as pd
 from Analyse.Timeseries import Timeseries_collection
 
@@ -285,30 +285,61 @@ class KPNAnalyse(FttXAnalyse):
     #         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_project_indicators(self):
-        logger.info("Calculating project indicators")
-        df = self.transformed_data.df
-        list_of_projects = df.project.unique().to_list()
-        record = {}
+        if toggles.new_projectspecific_views:
+            logger.info("Calculating project indicators v2")
+            df = self.transformed_data.df
+            list_of_projects = df.project.unique().to_list()
+            record = {}
 
-        for project in list_of_projects:
-            project_indicators = {}
-            weektarget = calculate_weektarget(project,
-                                              self.intermediate_results.y_target_l_old,
-                                              self.intermediate_results.total_objects,
-                                              self.intermediate_results.timeline)
-            project_df = df[df.project == project]
+            for project in list_of_projects:
+                project_indicators = {}
+                weektarget = calculate_weektarget(project,
+                                                  self.intermediate_results.y_target_l_old,
+                                                  self.intermediate_results.total_objects,
+                                                  self.intermediate_results.timeline)
+                project_df = df[df.project == project]
 
-            project_indicators['weekrealisatie'] = calculate_weekrealisatie(project_df, weektarget)
+                project_indicators['weekrealisatie'] = calculate_weekrealisatie(project_df, weektarget)
 
-            project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(project_df, weektarget)
+                project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(project_df, weektarget)
 
-            project_indicators['weekHCHPend'] = calculate_weekHCHPend(project, self.intermediate_results.HC_HPend_l)
+                project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
+                    project,
+                    self.intermediate_results.ratio_HC_HPend_per_project)
 
-            project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
+                project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
 
-            record[project] = project_indicators
+                record[project] = project_indicators
 
-        self.record_dict.add('project_indicators', record, DictRecord, 'Data')
+            self.record_dict.add('project_indicators', record, DictRecord, 'Data')
+
+        else:
+            logger.info("Calculating project indicators")
+            df = self.transformed_data.df
+            list_of_projects = df.project.unique().to_list()
+            record = {}
+
+            for project in list_of_projects:
+                project_indicators = {}
+                weektarget = calculate_weektarget(project,
+                                                  self.intermediate_results.y_target_l_old,
+                                                  self.intermediate_results.total_objects,
+                                                  self.intermediate_results.timeline)
+                project_df = df[df.project == project]
+
+                project_indicators['weekrealisatie'] = calculate_weekrealisatie(project_df, weektarget)
+
+                project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(project_df, weektarget)
+
+                project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
+                    project,
+                    self.intermediate_results.HC_HPend_l)
+
+                project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
+
+                record[project] = project_indicators
+
+            self.record_dict.add('project_indicators', record, DictRecord, 'Data')
 
     def _calculate_project_dates(self):
         project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
