@@ -109,7 +109,8 @@ class KPNAnalyse(FttXAnalyse):
         self._targets()
         self._performance_matrix()
         self._prognose_graph()
-        self._overview()
+        if not toggles.new_projectspecific_views:
+            self._overview()
         self._calculate_project_indicators()
         self._calculate_project_dates()
         self._set_filters()
@@ -287,7 +288,7 @@ class KPNAnalyse(FttXAnalyse):
 
     def _calculate_project_indicators(self):
         if toggles.new_projectspecific_views:
-            logger.info("Calculating project indicators v2")
+            logger.info("Calculating project indicators and making graphic boxes for dashboard")
             df = self.transformed_data.df
             list_of_projects = df.project.unique().to_list()
             record = {}
