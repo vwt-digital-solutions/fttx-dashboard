@@ -318,12 +318,12 @@ class FttXAnalyse(FttXBase):
         logger.info("Analysing using the FttX protocol")
         self._calculate_list_of_years()
         self._make_records_for_dashboard_values()
-        self._make_voorspelling_and_planning_for_dashboard_values()
+        self._make_records_of_voorspelling_and_planning_for_dashboard_values()
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
         if toggles.new_projectspecific_views:
             self._make_records_for_project_specific_values()
-            self._make_records_ratios_project_specific_values()
+            self._make_intermediate_results_ratios_project_specific_values()
         else:
             self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
@@ -522,7 +522,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
-    def _make_voorspelling_and_planning_for_dashboard_values(self):
+    def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
         logger.info("Making voorspelling and planning records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         function_dict = {'voorspelling_minus_HPend': extract_voorspelling_dates(
@@ -629,8 +629,8 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Overzicht_per_project", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "project_name"])
 
-    def _make_records_ratios_project_specific_values(self):
-        logger.info("Making record of ratio HC/HPend for project specific values")
+    def _make_intermediate_results_ratios_project_specific_values(self):
+        logger.info("Making intermediate results of ratios for project specific values")
         # Create a dictionary that contains the functions and the output name
         df = self.transformed_data.df
         realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
