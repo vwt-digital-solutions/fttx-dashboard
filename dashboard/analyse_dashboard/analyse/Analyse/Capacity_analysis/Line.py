@@ -390,3 +390,7 @@ class TimeseriesLine(PointLine):
         # Temporarily use old cumsum method to mimic old implementation
         integral = self.make_series().cumsum()
         return TimeseriesLine(data=integral)
+
+    def differentiate(self):
+        difference = self.make_series().diff()[1:]
+        return TimeseriesLine(data=difference)
