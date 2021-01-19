@@ -639,26 +639,19 @@ class FttXAnalyse(FttXBase):
         realisatie_under_8weeks = df[br.on_time_opgeleverd(df)][['opleverdatum', 'project']]
         realisatie_hpend_and_ordered = extract_realisatie_hpend_and_ordered_dates(df=df, add_project_column=True)
 
-        document_list = []
+        project_dict = {}
         for project in df.project.unique().tolist():
-            record_hchp = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
-            document_list.append(dict(
-                client=self.client,
-                graph_name='ratio_hc_hpend_per_project',
-                project_name=project,
-                record=record_hchp
-            ))
+            record = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
+            project_dict[project] = record
 
-            record_8wks = self.calculate_ratio(project, realisatie_under_8weeks, realisatie_hpend_and_ordered)
-            document_list.append(dict(
-                client=self.client,
-                graph_name='ratio_under_8weeks_per_project',
-                project_name=project,
-                record=record_8wks
-            ))
+        self.intermediate_results.ratio_HC_HPend_per_project = project_dict
 
-        self.record_dict.add("Ratios_per_project", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "project_name"])
+        project_dict = {}
+        for project in df.project.unique().tolist():
+            record = self.calculate_ratio(project, realisatie_under_8weeks, realisatie_hpend_and_ordered)
+            project_dict[project] = record
+
+        self.intermediate_results.ratio_under_8weeks_per_project = project_dict
 
     def calculate_ratio(self, project, numerator, divider):
         project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)
