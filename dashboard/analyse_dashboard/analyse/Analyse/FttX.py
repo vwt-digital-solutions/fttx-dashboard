@@ -604,6 +604,7 @@ class FttXAnalyse(FttXBase):
     def _make_records_for_project_specific_values(self):
         logger.info("Making records for project specific values")
         # Create a dictionary that contains the functions and the output name
+        # TODO: if this functions is used for tmobile analysis, add calculations for the previous week!
         df = self.transformed_data.df
         function_dict = {'aantal_<8weeks_hpend': df[br.on_time_openstaand(df)][['toestemming_datum', 'project']],
                          'aantal_8-12weeks_hpend': df[br.nog_beperkte_tijd_openstaand(df)][['toestemming_datum',
@@ -611,7 +612,6 @@ class FttXAnalyse(FttXBase):
                          'aantal_>12weeks_hpend': df[br.te_laat_openstaand(df)][['toestemming_datum', 'project']],
                          'werkvoorraad_has_per_project': extract_werkvoorraad_has_dates(df=df,
                                                                                         add_project_column=True)
-                         # OPTIONAL: 'errors_FCBC': add_function_here,
                          }
 
         document_list = []

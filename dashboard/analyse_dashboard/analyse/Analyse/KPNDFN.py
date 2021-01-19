@@ -295,6 +295,7 @@ class KPNAnalyse(FttXAnalyse):
 
             for project in list_of_projects:
                 project_indicators = {}
+                # TODO: check if calculate_weektarget is working correctly with Andre
                 weektarget = calculate_weektarget(project,
                                                   self.intermediate_results.y_target_l_old,
                                                   self.intermediate_results.total_objects,
