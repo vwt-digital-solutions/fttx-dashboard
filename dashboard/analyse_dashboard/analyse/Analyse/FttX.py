@@ -323,7 +323,6 @@ class FttXAnalyse(FttXBase):
         self._make_records_ratio_under_8weeks_for_dashboard_values()
         if toggles.new_projectspecific_views:
             self._make_records_for_project_specific_values()
-            self._make_records_for_weekly_project_specific_values()
             self._make_records_ratios_project_specific_values()
         self._calculate_projectspecs()
         self._calculate_y_voorraad_act()

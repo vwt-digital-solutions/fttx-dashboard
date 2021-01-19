@@ -359,6 +359,14 @@ class PointLine(Line):
         slope, intersect = np.polyfit(index, data, 1)
         return slope, intersect
 
+    def differentiate(self):
+        """
+        Calculates difference between previous datapoint on line.
+        Returns: New Line object (of same type) with difference values per index. NaN on first index.
+        """
+        difference = self.make_series().diff()
+        return self.__class__(data=difference)
+
 
 class TimeseriesLine(PointLine):
     """

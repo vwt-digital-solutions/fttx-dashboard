@@ -286,32 +286,29 @@ class KPNAnalyse(FttXAnalyse):
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")
-        projects = self.transformed_data.df.project.unique().to_list()
+        df = self.transformed_data.df
+        list_of_projects = df.project.unique().to_list()
         record = {}
-        for project in projects:
+
+        for project in list_of_projects:
             project_indicators = {}
-            weektarget = calculate_weektarget(
-                project,
-                self.intermediate_results.y_target_l_old,
-                self.intermediate_results.total_objects,
-                self.intermediate_results.timeline)
-            project_df = self.transformed_data.df[self.transformed_data.df.project == project]
-            project_indicators['weekrealisatie'] = calculate_weekrealisatie(
-                project_df,
-                weektarget)
-            project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(
-                project_df,
-                weektarget
-            )
-            project_indicators['weekHCHPend'] = calculate_weekHCHPend(
-                project,
-                self.intermediate_results.HC_HPend_l)
-            project_indicators['weeknerr'] = calculate_weeknerr(
-                project,
-                self.intermediate_results.n_err)
+            weektarget = calculate_weektarget(project,
+                                              self.intermediate_results.y_target_l_old,
+                                              self.intermediate_results.total_objects,
+                                              self.intermediate_results.timeline)
+            project_df = df[df.project == project]
+
+            project_indicators['weekrealisatie'] = calculate_weekrealisatie(project_df, weektarget)
+
+            project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(project_df, weektarget)
+
+            project_indicators['weekHCHPend'] = calculate_weekHCHPend(project, self.intermediate_results.HC_HPend_l)
+
+            project_indicators['weeknerr'] = calculate_weeknerr(project, self.intermediate_results.n_err)
+
             record[project] = project_indicators
-        graph_name = 'project_indicators'
-        self.record_dict.add(graph_name, record, DictRecord, 'Data')
+
+        self.record_dict.add('project_indicators', record, DictRecord, 'Data')
 
     def _calculate_project_dates(self):
         project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
