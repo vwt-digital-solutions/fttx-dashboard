@@ -11,12 +11,12 @@ class PhaseCapacity:
         :param df: One-column dataframe, should have a datetime-index
     """
 
-    def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict):
+    def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict, phase=None, client=None):
         self.production_by_day = TimeseriesLine(df.groupby([df.index]).count())
         self.capacity_by_day = None
         self.target_by_day = None
-        self.client = None
-        self.phase = None
+        self.phase = phase
+        self.client = client
         self.phases_config = phases_config
         self.phases_projectspecific = phases_projectspecific
         self.record_list = RecordList()
@@ -39,12 +39,14 @@ class PhaseCapacity:
         self.target_over_time = LinearLine(slope=self.phases_projectspecific['performance_norm_unit'],
                                            intercept=0,
                                            domain=DateDomainRange(begin=self.phases_projectspecific['start_date'],
-                                           n_days=self.phases_config['n_days']))
+                                           n_days=self.phases_config['n_days']),
+                                           name='target_indicator')
 
         target_over_time_record = LineRecord(record=self.target_over_time,
                                              collection='Lines',
-                                             graph_name=f'{self.client}+{self.phase}+{self.line.name}',
-                                             phase=self.phase)
+                                             graph_name=f'{self.client}+{self.phase}+{self.target_over_time.name}',
+                                             phase=self.phase,
+                                             client=self.client)
         self.record_list.append(target_over_time_record)
         return self
 
