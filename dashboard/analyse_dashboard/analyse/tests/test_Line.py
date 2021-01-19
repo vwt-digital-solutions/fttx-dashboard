@@ -1,7 +1,7 @@
 from Analyse.Capacity_analysis.Domain import Domain
 from Analyse.Capacity_analysis.Line import PointLine, LinearLine
 import pandas as pd
-import numpy as np
+# import numpy as np
 
 
 class TestPointLine:
@@ -93,4 +93,4 @@ class TestPointLine:
 
     def test_diff_pointline(self):
         line1 = PointLine([1, 3, 5, 3, 6])
-        assert line1.differentiate() == PointLine([np.nan, 2, 2, -2, 3])
+        assert line1.differentiate() == PointLine([1, 2, 2, -2, 3])

@@ -365,6 +365,7 @@ class PointLine(Line):
         Returns: New Line object (of same type) with difference values per index. NaN on first index.
         """
         difference = self.make_series().diff()
+        difference[0] = self.make_series()[0]
         return self.__class__(data=difference)
 
 
