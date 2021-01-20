@@ -17,9 +17,6 @@ class Domain:
         new_end = self.end + integer
         return Domain(new_begin, new_end)
 
-    def __call__(self):
-        return self.domain
-
     def __len__(self):
         return len(self.domain)
 
