@@ -1409,17 +1409,16 @@ def multi_index_to_dict(df):
 #     return sum(br.bis_opgeleverd(df_copy))
 
 
-def extract_werkvoorraad_has_dates(df: pd.DataFrame):
+def extract_werkvoorraad_has_dates(df: pd.DataFrame) -> pd.Series:
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
     has_werkvoorraad (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
 
     Args:
         df: The transformed dataframe
-        add_project_column: Optional argument to return project column in addition to datecolumn
 
     Returns:
-        pd.Series, pd.DataFrame: A pd.Series or pd.DataFrame dependent on state of add_project_column
+        pd.Series
 
     """
     ds = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
@@ -1458,10 +1457,9 @@ def extract_realisatie_hpend_and_ordered_dates(df: pd.DataFrame) -> pd.Series:
 
     Args:
         df (pd.DataFrame): The transformed dataframe
-        add_project_column (bool): Optional argument to return project column in addition to datecolumn
 
     Returns:
-        pd.Series, pd.DataFrame: A pd.Series or pd.DataFrame dependent on state of add_project_column
+        pd.Series
 
     """
     if 'ordered' in df.columns:
@@ -1581,7 +1579,7 @@ def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     return df.planning_kpn
 
 
-def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None, add_project_column: bool = False):
+def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None):
     """
     This function extracts the target dates per client from their transformed dataframes. The target is calculated
     differently for KPN/DFN than for tmobile: when a ftu and totals column is declared in addition to the DataFrame,
@@ -1591,10 +1589,9 @@ def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None, add_project_co
         df: The transformed dataframe
         ftu: Andre
         totals: Andre
-        add_project_column: Optional argument to return project column in addition to datecolumn
 
     Returns:
-        pd.Series, pd.DataFrame: A pd.Series or pd.DataFrame dependent on state of add_project_column
+        pd.Series
 
     """
     if ftu and any(ftu.get('date_FTU0', {}).values()):
@@ -1608,7 +1605,7 @@ def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None, add_project_co
         return df[br.target_tmobile(df)].creation
 
 
-def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1, add_project_column: bool = False):
+def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
     """
     Andre
 
@@ -1618,7 +1615,6 @@ def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1, add_pro
         project_list:
         ftu0:
         ftu1:
-        add_project_column: Optional argument to return project column in addition to datecolumn
 
     Returns:
 
