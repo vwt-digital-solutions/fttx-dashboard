@@ -362,7 +362,9 @@ def opgeleverd(df, time_delta_days=0):
 
 def has_werkvoorraad(df, time_delta_days=0):
     """
-    This BR determines the werkvoorraad HAS by checking each row of a DataFrame for:
+    A house is in the HAS werkvoorraad when a permission has been determined and BIS infrastructure is in place.
+
+    This function determines the werkvoorraad HAS by checking each row of a DataFrame for:
 
     - Does the df row have a schouwdatum AND is the schouwdatum earlier than today?
     - Does the df row not have a opleverdatum OR is the opleverdatum later than today?
