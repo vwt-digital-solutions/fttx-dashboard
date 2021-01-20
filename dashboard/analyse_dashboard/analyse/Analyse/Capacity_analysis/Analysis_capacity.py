@@ -11,27 +11,36 @@ import pandas as pd
 from Analyse.Record.RecordList import RecordList
 
 
+# TODO: Documentation by Casper van Houten
 class CapacityExtract(Extract):
     ...
 
 
+# TODO: Documentation by Casper van Houten
 class CapacityTransform(Transform):
     ...
 
 
+# TODO: Documentation by Casper van Houten
 class CapacityLoad(Load):
     ...
 
 
-class CapacityAnalyse():
-    def __init__(self):
-        """
-        Main class for the analyses required for the capacity planning algorithm. Per project and phase,
-        required indicators are calculated and stored in dedicated phase objects. At the moment,
-        the parameters performance_norm_config, n_days_config, phases_config, civil_date, total_units and
-        phases_projectspecific are defined here but will be moved to config or transform in the following ticket.
+# TODO: Casper van Houten, add some simple examples
+class CapacityAnalyse:
+    """
+    Main class for the analyses required for the capacity planning algorithm. Per project and phase,
+    required indicators are calculated and stored in dedicated phase objects. At the moment,
+    the parameters performance_norm_config, n_days_config, phases_config, civil_date, total_units and
+    phases_projectspecific are defined here but will be moved to config or transform in the following ticket.
 
-        """
+    Example:
+    ========
+    >>> pass
+
+    """
+
+    def __init__(self):
         # the parameters below need to come from config and transform
         self.performance_norm_config = 1  # % per day
         self.n_days_config = 100 / self.performance_norm_config
@@ -73,6 +82,8 @@ class CapacityAnalyse():
     def analyse(self):
         self.get_lines_per_phase()
 
+    # TODO: Capser van Houten, refactor this method. The name starts with get, this suggests that the method returns
+    #  something.
     def get_lines_per_phase(self):
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.

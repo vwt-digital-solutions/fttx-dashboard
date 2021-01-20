@@ -221,6 +221,7 @@ class LinearLine(FunctionLine):
         series = pd.Series(index=self.domain.domain, data=values)
         return series
 
+    # TODO: Documentation by Casper van Houten
     def translate_x(self, delta):
         translated_intersect = self.intercept - delta * self.slope
         new_domain = self.domain.shift(delta)
@@ -231,6 +232,7 @@ class LinearLine(FunctionLine):
 
         return translated_line
 
+    # TODO: Documentation by Casper van Houten
     def get_most_recent_point(self, total=None):
         if total:
             recent_point = self.make_normalised_series(total)[-1:]
@@ -238,6 +240,7 @@ class LinearLine(FunctionLine):
             recent_point = self.make_series()[-1:]
         return recent_point
 
+    # TODO: Documentation by Casper van Houten
     def focus_domain(self, lower_treshold=None, upper_treshold=np.Inf):
         if lower_treshold is not None:
             intersect = lower_treshold
@@ -343,6 +346,7 @@ class PointLine(Line):
         integral = self.make_series().cumsum()
         return PointLine(data=integral)
 
+    # TODO: Documentation by Casper van Houten
     def linear_regression(self, data_partition=None):
         """
         Given a set of points, do a linear regression to extrapolate future data
@@ -362,7 +366,9 @@ class PointLine(Line):
     def differentiate(self):
         """
         Calculates difference between previous datapoint on line.
-        Returns: New Line object (of same type) with difference values per index. NaN on first index.
+
+        Returns:
+            Instance of PointLine: New Line object (of same type) with difference values per index. NaN on first index.
         """
         difference = self.make_series().diff()
         difference[0] = self.make_series()[0]
@@ -381,10 +387,12 @@ class TimeseriesLine(PointLine):
         else:
             self.domain = DateDomain(data.index[0], data.index[-1])
 
+    # TODO: Documentation by Casper van Houten
     def make_series(self):
         filled_data = self.data.reindex(self.domain.domain, fill_value=0)
         return filled_data
 
+    # TODO: Documentation by Casper van Houten
     def extrapolate(self, data_partition=None):
         slope, intercept = self.linear_regression(data_partition)
         domain = DateDomain(self.data.index[0], self.data.index[-1])

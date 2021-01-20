@@ -6,9 +6,15 @@ from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 
 
+# TODO: Documentation by Casper van Houten
+# TODO: Remove commented code
 class PhaseCapacity:
     """
-        :param df: One-column dataframe, should have a datetime-index
+
+    Args:
+        df (pd.DataFrame): One-column dataframe, should have a datetime-index
+        phases_config:
+        phases_projectspecific:
     """
 
     def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict, phase=None, client=None):
@@ -25,10 +31,13 @@ class PhaseCapacity:
         """
         Algorithm to be ran, will contain all logic related to capacity Lines per Phase.
         The following indicators are made:
+
         - a target line that indicates the number of units per day that need to be produced
           in the specific period over the duration of the project.
 
-        :return: PhaseCapacity object, used for Method chaining.
+        Returns:
+             PhaseCapacity: used for Method chaining.
+
         """
         # production_over_time = self.production_by_day.integrate()
         # self._to_record(production_by_day=self.production_by_day,
@@ -51,13 +60,10 @@ class PhaseCapacity:
         return self
 
     def capacity_by_day_indicator(self):
-        """
-        Example Function
-        :return:
-        """
         capacity_by_day_indicator = self.capacity_by_day.integrate()
         return capacity_by_day_indicator
 
+    # TODO: Documentation by Casper van Houten
     def get_record(self, **kwargs):
         return self.record_list
 
