@@ -24,7 +24,8 @@ class Domain:
         return len(self.domain)
 
     def __iter__(self):
-        return range(self.begin, self.end)
+        for i in range(self.begin, self.end):
+            yield i
 
     # TODO: Documentation by Casper van Houten
     def get_range(self):
