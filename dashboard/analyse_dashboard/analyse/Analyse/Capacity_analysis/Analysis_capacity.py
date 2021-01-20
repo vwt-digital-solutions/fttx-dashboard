@@ -53,31 +53,12 @@ class CapacityAnalyse:
         # project specific
         self.civil_date = dict(project1=pd.to_datetime('2021-01-01'))
         self.total_units = dict(project1=dict(geulen=1000, schieten=500, lasap=200, lasdp=200, oplever=5000))
-        self.phases_projectspecific = dict(geulen=dict(start_date=self.civil_date['project1'] +
-                                                       timedelta(days=self.phases_config['geulen']['phase_delta']),
-                                                       total_units=self.total_units['project1']['geulen'],
-                                                       performance_norm_unit=self.performance_norm_config / 100 *
-                                                       self.total_units['project1']['geulen']),
-                                           schieten=dict(start_date=self.civil_date['project1'] +
-                                                         timedelta(days=self.phases_config['schieten']['phase_delta']),
-                                                         total_units=self.total_units['project1']['schieten'],
-                                                         performance_norm_unit=self.performance_norm_config / 100 *
-                                                         self.total_units['project1']['schieten']),
-                                           lasap=dict(start_date=self.civil_date['project1'] +
-                                                      timedelta(days=self.phases_config['lasap']['phase_delta']),
-                                                      total_units=self.total_units['project1']['lasap'],
-                                                      performance_norm_unit=self.performance_norm_config / 100 *
-                                                      self.total_units['project1']['lasap']),
-                                           lasdp=dict(start_date=self.civil_date['project1'] +
-                                                      timedelta(days=self.phases_config['lasdp']['phase_delta']),
-                                                      total_units=self.total_units['project1']['lasdp'],
-                                                      performance_norm_unit=self.performance_norm_config / 100 *
-                                                      self.total_units['project1']['lasdp']),
-                                           oplever=dict(start_date=self.civil_date['project1'] +
-                                                        timedelta(days=self.phases_config['oplever']['phase_delta']),
-                                                        total_units=self.total_units['project1']['oplever'],
-                                                        performance_norm_unit=self.performance_norm_config / 100 *
-                                                        self.total_units['project1']['oplever']))
+        phases_projectspecific = {}
+        for phase in ['geulen', 'schieten', 'lasap', 'lasdp', 'oplever']:
+            phases_projectspecific[phase] = \
+                dict(start_date=self.civil_date['project1'] + timedelta(days=self.phases_config[phase]['phase_delta']),
+                     total_units=self.total_units['project1'][phase],
+                     performance_norm_unit=self.performance_norm_config / 100 * self.total_units['project1'][phase])
 
     def analyse(self):
         self.get_lines_per_phase()

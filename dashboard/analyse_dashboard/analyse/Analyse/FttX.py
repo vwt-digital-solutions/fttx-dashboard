@@ -77,10 +77,9 @@ class FttXExtract(Extract):
     def _extract_from_sql(self):
         logger.info("Extracting from the sql database")
         sql = f"""
-select fca.*
+select *
 from fc_aansluitingen fca
-inner join fc_client_project_map cpm on fca.project = cpm.project
-where cpm.client = '{self.config.get("name")}'
+where project in {tuple(self.projects)}
 """  # nosec
         df = pd.read_sql(sql, get_database_engine())
         projects_category = pd.CategoricalDtype(categories=self.projects)

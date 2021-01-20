@@ -1,7 +1,7 @@
 import pandas as pd
 
 from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
-from Analyse.Capacity_analysis.Domain import DateDomainRange
+from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 
@@ -18,9 +18,7 @@ class PhaseCapacity:
     """
 
     def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict, phase=None, client=None):
-        self.production_by_day = TimeseriesLine(df.groupby([df.index]).count())
-        self.capacity_by_day = None
-        self.target_by_day = None
+        self.df = df
         self.phase = phase
         self.client = client
         self.phases_config = phases_config
@@ -39,23 +37,33 @@ class PhaseCapacity:
              PhaseCapacity: used for Method chaining.
 
         """
-        # production_over_time = self.production_by_day.integrate()
-        # self._to_record(production_by_day=self.production_by_day,
-        #                 production_over_time=production_over_time,
-        #                 )
-        # self.capacity_by_day_indicator()
-        # self.production_over_time = self.production_by_day.integrate()
+        # calculate target indicator
         self.target_over_time = LinearLine(slope=self.phases_projectspecific['performance_norm_unit'],
                                            intercept=0,
                                            domain=DateDomainRange(begin=self.phases_projectspecific['start_date'],
-                                           n_days=self.phases_config['n_days']),
+                                                                  n_days=self.phases_config['n_days']),
                                            name='target_indicator')
-
         target_over_time_record = LineRecord(record=self.target_over_time,
                                              collection='Lines',
                                              graph_name=f'{self.client}+{self.phase}+{self.target_over_time.name}',
                                              phase=self.phase,
                                              client=self.client)
+        # calculate realised production over time
+        ds = self.df[(~self.df.isna()) & (self.df <= pd.Timestamp.now())]
+        self.production_over_time_realised = TimeseriesLine(ds.groupby(ds).count(),
+                                                            domain=DateDomain(begin=ds.index[0],
+                                                                              end=ds.index[-1]))
+        # # calculate ideal production over time
+        # slope = (self.target_over_time.integrate().make_series().max()
+        #          - self.production_over_time_realised.integrate().make_series().max()) / \
+        #         (self.target_over_time.make_series().index[-1] - self.production_over_time_realised.make_series().index[-1]).days
+        # production_over_time_extrapolated_ideal = LinearLine(slope=slope,
+        #                                                      intercept=self.production_over_time_realised.integrate().make_series().max(),
+        #                                                      domain=DateDomain(begin=str(self.production_over_time_realised.make_series().index[-1]),
+        #                                                      end=str(self.target_over_time.make_series().index[-1])))
+        # production_over_time_ideal = TimeseriesLine(pocideal_real.make_series().iloc[:-1].add(pocideal_extrap.make_series(),
+        #                                             fill_value=0))
+
         self.record_list.append(target_over_time_record)
         return self
 
