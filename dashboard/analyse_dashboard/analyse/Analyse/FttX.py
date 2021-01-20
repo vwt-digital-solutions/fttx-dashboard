@@ -322,7 +322,6 @@ class FttXAnalyse(FttXBase):
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
         if toggles.new_projectspecific_views:
-            self._make_records_for_project_specific_values()
             self._make_intermediate_results_ratios_project_specific_values()
         else:
             self._calculate_projectspecs()
@@ -601,34 +600,6 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
-    def _make_records_for_project_specific_values(self):
-        logger.info("Making records for project specific values")
-        # Create a dictionary that contains the functions and the output name
-        # TODO: if this functions is used for tmobile analysis, add calculations for the previous week!
-        df = self.transformed_data.df
-        function_dict = {'aantal_<8weeks_hpend': df[br.on_time_openstaand(df)][['toestemming_datum', 'project']],
-                         'aantal_8-12weeks_hpend': df[br.nog_beperkte_tijd_openstaand(df)][['toestemming_datum',
-                                                                                            'project']],
-                         'aantal_>12weeks_hpend': df[br.te_laat_openstaand(df)][['toestemming_datum', 'project']],
-                         'werkvoorraad_has_per_project': extract_werkvoorraad_has_dates(df=df,
-                                                                                        add_project_column=True)
-                         }
-
-        document_list = []
-        for key, values in function_dict.items():
-            for project in df.project.unique().tolist():
-                project_dates_dataseries = values[values.project == project].drop(labels='project', axis=1)
-                record = len(project_dates_dataseries)
-
-                document_list.append(dict(
-                    client=self.client,
-                    graph_name=key,
-                    project_name=project,
-                    record=record
-                ))
-        self.record_dict.add("Overzicht_per_project", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "project_name"])
-
     def _make_intermediate_results_ratios_project_specific_values(self):
         logger.info("Making intermediate results of ratios for project specific values")
         # Create a dictionary that contains the functions and the output name
@@ -636,22 +607,12 @@ class FttXAnalyse(FttXBase):
         realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
         realisatie_hpend = extract_realisatie_hpend_dates(df=df, add_project_column=True)
 
-        realisatie_under_8weeks = df[br.on_time_opgeleverd(df)][['opleverdatum', 'project']]
-        realisatie_hpend_and_ordered = extract_realisatie_hpend_and_ordered_dates(df=df, add_project_column=True)
-
         project_dict = {}
         for project in df.project.unique().tolist():
             record = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
             project_dict[project] = record
 
         self.intermediate_results.ratio_HC_HPend_per_project = project_dict
-
-        project_dict = {}
-        for project in df.project.unique().tolist():
-            record = self.calculate_ratio(project, realisatie_under_8weeks, realisatie_hpend_and_ordered)
-            project_dict[project] = record
-
-        self.intermediate_results.ratio_under_8weeks_per_project = project_dict
 
     def calculate_ratio(self, project, numerator, divider):
         project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)

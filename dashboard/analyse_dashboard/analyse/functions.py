@@ -1409,7 +1409,7 @@ def multi_index_to_dict(df):
 #     return sum(br.bis_opgeleverd(df_copy))
 
 
-def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = False):
+def extract_werkvoorraad_has_dates(df: pd.DataFrame):
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
     has_werkvoorraad (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
@@ -1422,27 +1422,9 @@ def extract_werkvoorraad_has_dates(df: pd.DataFrame, add_project_column: bool = 
         pd.Series, pd.DataFrame: A pd.Series or pd.DataFrame dependent on state of add_project_column
 
     """
-    if toggles.new_projectspecific_views:
-        if add_project_column:
-            date_dataseries = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(
-                axis=1)
-            date_dataseries.name = 'werkvoorraad_has_datum'
-            project_dataseries = df[br.has_werkvoorraad(df)].project
-            project_dataseries.name = 'project'
-            df = pd.merge(date_dataseries, project_dataseries, left_index=True, right_index=True)
-            return df
-
-        else:
-            dataseries = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']]\
-                .max(axis=1)
-            dataseries.name = 'werkvoorraad_has_datum'
-            return dataseries
-
-    else:
-        ds = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
-
-        ds.name = 'werkvoorraad_has_datum'
-        return ds
+    ds = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+    ds.name = 'werkvoorraad_has_datum'
+    return ds
 
 
 def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = False):
@@ -1467,7 +1449,7 @@ def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = 
         return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
-def extract_realisatie_hpend_and_ordered_dates(df: pd.DataFrame, add_project_column: bool = False):
+def extract_realisatie_hpend_and_ordered_dates(df: pd.DataFrame) -> pd.Series:
     """
     This function extracts the realisatie HPend dates that have been ordered per client from their transformed
     dataframes, based on the BR: hpend_opgeleverd_and_ordered (opleverdatum and ordered are present) and the date:
@@ -1482,24 +1464,10 @@ def extract_realisatie_hpend_and_ordered_dates(df: pd.DataFrame, add_project_col
         pd.Series, pd.DataFrame: A pd.Series or pd.DataFrame dependent on state of add_project_column
 
     """
-    if toggles.new_projectspecific_views:
-        if add_project_column:
-            if 'ordered' in df.columns:
-                return df[br.hpend_opgeleverd_and_ordered(df)][['opleverdatum', 'project']]
-            else:
-                return df[br.hpend_opgeleverd(df)][['opleverdatum', 'project']]
-
-        else:
-            if 'ordered' in df.columns:
-                return df[br.hpend_opgeleverd_and_ordered(df)].opleverdatum
-            else:
-                return df[br.hpend_opgeleverd(df)].opleverdatum
-
+    if 'ordered' in df.columns:
+        return df[br.hpend_opgeleverd_and_ordered(df)].opleverdatum
     else:
-        if 'ordered' in df.columns:
-            return df[br.hpend_opgeleverd_and_ordered(df)].opleverdatum
-        else:
-            return df[br.hpend_opgeleverd(df)].opleverdatum
+        return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
 def extract_realisatie_hc_dates(df: pd.DataFrame, add_project_column: bool = False):
@@ -1629,40 +1597,15 @@ def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None, add_project_co
         pd.Series, pd.DataFrame: A pd.Series or pd.DataFrame dependent on state of add_project_column
 
     """
-    if toggles.new_projectspecific_views:
-        if add_project_column:
-            if ftu and any(ftu.get('date_FTU0', {}).values()):
-                return extract_target_dates_kpn(
-                    timeline=get_timeline(get_start_time(df)),
-                    totals=totals,
-                    project_list=df.project.unique().tolist(),
-                    ftu0=ftu['date_FTU0'],
-                    ftu1=ftu['date_FTU1'],
-                    add_project_column=True)
-            else:
-                return df[br.target_tmobile(df)][['creation', 'project']]
-
-        else:
-            if ftu and any(ftu.get('date_FTU0', {}).values()):
-                return extract_target_dates_kpn(
-                    timeline=get_timeline(get_start_time(df)),
-                    totals=totals,
-                    project_list=df.project.unique().tolist(),
-                    ftu0=ftu['date_FTU0'],
-                    ftu1=ftu['date_FTU1'])
-            else:
-                return df[br.target_tmobile(df)].creation
-
+    if ftu and any(ftu.get('date_FTU0', {}).values()):
+        return extract_target_dates_kpn(
+            timeline=get_timeline(get_start_time(df)),
+            totals=totals,
+            project_list=df.project.unique().tolist(),
+            ftu0=ftu['date_FTU0'],
+            ftu1=ftu['date_FTU1'])
     else:
-        if ftu and any(ftu.get('date_FTU0', {}).values()):
-            return extract_target_dates_kpn(
-                timeline=get_timeline(get_start_time(df)),
-                totals=totals,
-                project_list=df.project.unique().tolist(),
-                ftu0=ftu['date_FTU0'],
-                ftu1=ftu['date_FTU1'])
-        else:
-            return extract_target_dates_tmobile(df)
+        return df[br.target_tmobile(df)].creation
 
 
 def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1, add_project_column: bool = False):
@@ -1680,49 +1623,12 @@ def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1, add_pro
     Returns:
 
     """
-    if toggles.new_projectspecific_views:
-        if add_project_column:
-            y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
-            df_projects_target_timeline = pd.DataFrame()
-            for key in y_target_l:
-                df_single_project_targets = pd.DataFrame(index=timeline, columns=['target'], data=0)
-                amounts = y_target_l[key] / 100 * totals[key]
-                df_single_project_targets = pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
-                df_single_project_targets = df_single_project_targets[df_single_project_targets.target != 0]
-                df_single_project_targets['project'] = key
-                df_projects_target_timeline = pd.concat([df_projects_target_timeline, df_single_project_targets])
-            return df_projects_target_timeline
-
-        else:
-            y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
-            df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
-            for key in y_target_l:
-                amounts = y_target_l[key] / 100 * totals[key]
-                df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
-            return df_target.target
-
-    else:
-        y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
-        df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
-        for key in y_target_l:
-            amounts = y_target_l[key] / 100 * totals[key]
-            df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
-        return df_target.target
-
-
-# TODO: remove when removing toggle new_projectspecific_views
-def extract_target_dates_tmobile(df: pd.DataFrame) -> pd.Series:
-    """
-    This function extracts the target dates for tmobile from its transformed dataframe, based on the BR:
-    target_tmobile (see BR) and the date: creation.
-
-    Args:
-        df: The transformed dataframe
-
-    Returns: A pd.Series object
-
-    """
-    return df[br.target_tmobile(df)].creation
+    y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
+    df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
+    for key in y_target_l:
+        amounts = y_target_l[key] / 100 * totals[key]
+        df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
+    return df_target.target
 
 
 def get_secret(project_id, secret_id, version_id='latest'):
