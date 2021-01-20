@@ -17,7 +17,7 @@ from Analyse.Record.Record import Record
 import business_rules as br
 from Analyse.Record.RecordListWrapper import RecordListWrapper
 from functions import extract_realisatie_hpend_dates, get_data_targets_init, cluster_reden_na, \
-    set_filters, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
+    create_project_filter, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
     extract_werkvoorraad_has_dates, calculate_redenna_per_period, \
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, \
@@ -440,7 +440,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
     def _set_filters(self):
-        self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
+        self.record_dict.add("project_names", create_project_filter(self.transformed_data.df), ListRecord, "Data")
 
     # def _jaaroverzicht(self):
     #     # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
