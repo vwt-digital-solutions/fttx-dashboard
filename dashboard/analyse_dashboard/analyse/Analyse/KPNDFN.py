@@ -11,7 +11,7 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     prognose, targets, performance_matrix, prognose_graph, overview, \
     get_project_dates, calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
     calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
-    make_graphics_for_number_errors_fcbc_per_project, multi_index_to_dict
+    make_graphics_for_number_errors_fcbc_per_project, multi_index_to_dict, calculate_week_target
 import pandas as pd
 from Analyse.Timeseries import Timeseries_collection
 
@@ -184,14 +184,28 @@ class KPNAnalyse(FttXAnalyse):
 
     def _targets(self):
         logger.info("Calculating targets for KPN")
-        y_target_l, t_diff = targets(self.intermediate_results.x_prog,
-                                     self.intermediate_results.timeline,
-                                     self.intermediate_results.t_shift,
-                                     self.extracted_data.ftu['date_FTU0'],
-                                     self.extracted_data.ftu['date_FTU1'],
-                                     self.intermediate_results.rc1,
-                                     self.intermediate_results.d_real_l_old)
-        self.intermediate_results.y_target_l_old = y_target_l
+        if toggles.new_projectspecific_views:
+            y_target_l, t_diff, target_per_week_dict = targets(self.intermediate_results.x_prog,
+                                                               self.intermediate_results.timeline,
+                                                               self.intermediate_results.t_shift,
+                                                               self.extracted_data.ftu['date_FTU0'],
+                                                               self.extracted_data.ftu['date_FTU1'],
+                                                               self.intermediate_results.rc1,
+                                                               self.intermediate_results.d_real_l_old,
+                                                               self.intermediate_results.total_objects)
+            self.intermediate_results.y_target_l_old = y_target_l
+            self.intermediate_results.target_per_week = target_per_week_dict
+        else:
+            y_target_l, t_diff = targets(self.intermediate_results.x_prog,
+                                         self.intermediate_results.timeline,
+                                         self.intermediate_results.t_shift,
+                                         self.extracted_data.ftu['date_FTU0'],
+                                         self.extracted_data.ftu['date_FTU1'],
+                                         self.intermediate_results.rc1,
+                                         self.intermediate_results.d_real_l_old,
+                                         self.intermediate_results.total_objects)
+            self.intermediate_results.y_target_l_old = y_target_l
+
         if not toggles.timeseries:
             self.intermediate_results.y_target_l = y_target_l
         self.intermediate_results.t_diff = t_diff
@@ -295,18 +309,24 @@ class KPNAnalyse(FttXAnalyse):
 
             for project in list_of_projects:
                 project_indicators = {}
-                # TODO: check if calculate_weektarget is working correctly with Andre
-                weektarget = calculate_weektarget(project,
-                                                  self.intermediate_results.y_target_l_old,
-                                                  self.intermediate_results.total_objects,
-                                                  self.intermediate_results.timeline)
+                week_target = calculate_week_target(project=project,
+                                                    target_per_week=self.intermediate_results.target_per_week,
+                                                    FTU0=self.transformed_data.ftu['date_FTU0'],
+                                                    FTU1=self.transformed_data.ftu['date_FTU1'],
+                                                    time_delta_days=0)
+                lastweek_target = calculate_week_target(project=project,
+                                                        target_per_week=self.intermediate_results.target_per_week,
+                                                        FTU0=self.transformed_data.ftu['date_FTU0'],
+                                                        FTU1=self.transformed_data.ftu['date_FTU1'],
+                                                        time_delta_days=7)
+
                 project_df = df[df.project == project]
 
                 project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
-                    project_df, weektarget)
+                    project_df, week_target)
 
                 project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
-                    project_df, weektarget)
+                    project_df, lastweek_target)
 
                 project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
                     project=project, ratio_HC_HPend_per_project=self.intermediate_results.ratio_HC_HPend_per_project)

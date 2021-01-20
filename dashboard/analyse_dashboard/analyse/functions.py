@@ -153,37 +153,45 @@ def calculate_projectspecs(df: pd.DataFrame) -> ProjectSpecs:
     return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended_in_2020, werkvoorraad)
 
 
-def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l):
+def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l, total_objects):
     # to add target info KPN in days uitgaande van FTU0 en FTU1
     y_target_l = {}
     t_diff = {}
+    target_per_week_dict = {}
     for key in t_shift:
         if (key in date_FTU0) & (key in date_FTU1):
             t_start = x_prog[x_d == date_FTU0[key]][0]
             t_max = x_prog[x_d == date_FTU1[key]][0]
             t_diff[key] = t_max - t_start - 14  # two weeks round up
-            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
+            richtings_coefficient = 100 / t_diff[key]  # target naar KPN is 100% HPend
         if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
             t_start = x_prog[x_d == date_FTU0[key]][0]
             t_diff[key] = (100 / (sum(rc1.values()) / len(rc1.values())) - 14)[0]  # two weeks round up
-            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
+            richtings_coefficient = 100 / t_diff[key]  # target naar KPN is 100% HPend
         if (key not in date_FTU0):  # project has finished, estimate target on what has been done
             t_start = d_real_l[key].index.min()
             t_max = d_real_l[key].index.max()
             t_diff[key] = t_max - t_start - 14  # two weeks round up
-            rc = 100 / t_diff[key]  # target naar KPN is 100% HPend
+            richtings_coefficient = 100 / t_diff[key]  # target naar KPN is 100% HPend
 
-        b = -(rc * (t_start + 14))  # two weeks startup
-        y_target = b + rc * x_prog
+        b = -(richtings_coefficient * (t_start + 14))  # two weeks startup
+        y_target = b + richtings_coefficient * x_prog
         y_target[y_target > 100] = 100
         y_target_l[key] = y_target
+        if toggles.new_projectspecific_views:
+            # richtings_coefficient is the percentage of homes to be completed in a day (basically the target per day)
+            target_per_week_dict[key] = richtings_coefficient / 100 * total_objects[key] * 7
 
     for key in y_target_l:
         y_target_l[key][y_target_l[key] > 100] = 100
         y_target_l[key][y_target_l[key] < 0] = 0
 
-    TargetResults = namedtuple("TargetResults", ['y_target_l', 't_diff'])
-    return TargetResults(y_target_l, t_diff)
+    if toggles.new_projectspecific_views:
+        TargetResults = namedtuple("TargetResults", ['y_target_l', 't_diff', "target_per_week_dict"])
+        return TargetResults(y_target_l, t_diff, target_per_week_dict)
+    else:
+        TargetResults = namedtuple("TargetResults", ['y_target_l', 't_diff'])
+        return TargetResults(y_target_l, t_diff)
 
 
 def targets_new(x_d, p_list, date_FTU0, date_FTU1):
@@ -785,6 +793,7 @@ def days_in_2019(timeline):
     return len(timeline[timeline < pd.to_datetime('2020-01-01')])
 
 
+# TODO: remove when removing toggle new_projectspecific_views
 def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
     index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
     if project in y_target_l:
@@ -793,6 +802,35 @@ def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berek
         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
     else:
         target = 0
+    return target
+
+
+def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1: dict, time_delta_days: int = 0) -> int:
+    """
+    Calculates the target per week for a project. Based on the richtings_coefficient and total_objects calculated
+    in functions.py: targets().
+
+    Args:
+        project: project
+        target_per_week: target per week per project
+        FTU0: startdate per project
+        FTU1: enddate per project
+        time_delta_days: optional argument to calculate the target for last week
+
+    Returns:
+        The target per week for a project
+
+    """
+    if FTU0[project]:
+        if (pd.to_datetime(FTU0[project]) < (pd.Timestamp.now() - pd.Timedelta(days=time_delta_days))) \
+                & \
+                ((pd.Timestamp.now() - pd.Timedelta(days=time_delta_days)) < pd.to_datetime(FTU1[project])):
+            target = int(round(target_per_week[project]))
+        else:
+            target = 0
+    else:
+        target = 0
+
     return target
 
 
