@@ -43,12 +43,12 @@ class CapacityAnalyse:
     def __init__(self):
         # the parameters below need to come from config and transform
         self.performance_norm_config = 1  # % per day
-        self.n_days_config = 100 / self.performance_norm_config
-        self.phases_config = dict(geulen=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config),
-                                  schieten=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config),
-                                  lasap=dict(phase_column='opleverdatum', phase_delta=10, n_days=self.n_days_config),
-                                  lasdp=dict(phase_column='opleverdatum', phase_delta=10, n_days=self.n_days_config),
-                                  oplever=dict(phase_column='opleverdatum', phase_delta=20, n_days=self.n_days_config)
+        self.n_days_config = 100 / self.performance_norm_config - 1
+        self.phases_config = dict(geulen=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config, norm=200),
+                                  schieten=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config, norm=200),
+                                  lasap=dict(phase_column='opleverdatum', phase_delta=10, n_days=self.n_days_config, norm=200),
+                                  lasdp=dict(phase_column='opleverdatum', phase_delta=10, n_days=self.n_days_config, norm=200),
+                                  oplever=dict(phase_column='opleverdatum', phase_delta=20, n_days=self.n_days_config, norm=200)
                                   )
         # project specific
         self.civil_date = dict(project1=pd.to_datetime('2021-01-01'))
@@ -59,6 +59,7 @@ class CapacityAnalyse:
                 dict(start_date=self.civil_date['project1'] + timedelta(days=self.phases_config[phase]['phase_delta']),
                      total_units=self.total_units['project1'][phase],
                      performance_norm_unit=self.performance_norm_config / 100 * self.total_units['project1'][phase])
+        self.phases_projectspecific = phases_projectspecific
 
     def analyse(self):
         self.get_lines_per_phase()
