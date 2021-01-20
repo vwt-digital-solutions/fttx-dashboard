@@ -7,7 +7,7 @@ from Analyse.Record.IntRecord import IntRecord
 from Analyse.Record.StringRecord import StringRecord
 from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
-from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
+from functions import error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, \
     get_project_dates, calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
     calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
@@ -30,26 +30,29 @@ class KPNDFNExtract(FttXExtract):
         self.client_name = kwargs['config'].get('name')
 
     def extract(self):
-        self._extract_ftu()
+        self._extract_project_info()
         super().extract()
 
-    def _extract_ftu(self):
+    def _extract_project_info(self):
         logger.info(f"Extracting FTU {self.client_name}")
         doc = next(
             firestore.Client().collection('Data')
             .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
             .stream(), None).get('record')
         if doc is not None:
-            if doc['FTU0']:
-                date_FTU0 = doc['FTU0']
-                date_FTU1 = doc['FTU1']
-            else:
-                logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
-                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
-        else:
-            logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
-            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
+            date_FTU0 = {key: value.strip() for key, value in doc['FTU0'].items()}
+            date_FTU1 = {key: value.strip() for key, value in doc['FTU1'].items()}
         self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
+        self.extracted_data.civiel_startdatum = doc.get('Civiel startdatum')
+        self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
+        self.extracted_data.total_meters_bis = doc.get('meters BIS')
+        self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
+
+        df = pd.DataFrame(doc)
+        info_per_project = {}
+        for project in df.index:
+            info_per_project[project] = df.loc[project].to_dict()
+        self.extracted_data.project_info = info_per_project
 
     # def _extract_planning(self):
     #     logger.info("Extracting Planning")
