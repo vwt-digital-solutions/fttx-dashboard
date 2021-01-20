@@ -231,30 +231,36 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l, total_obj
 
 
 # TODO: Documentation by Andre van Turnhout
-def targets_new(x_d, p_list, date_FTU0, date_FTU1):
+def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     # to add target info KPN in days uitgaande van FTU0 en FTU1
     x_prog = np.array(list(range(0, len(x_d))))
     y_target_l = {}
-    for key in p_list:
-        if date_FTU0[key] != ' ':
+    t_diff = {}
+    target_per_week_dict = {}
+    for key in list_of_projects:
+        if date_FTU0[key] != '':
             t_start = x_prog[x_d == date_FTU0[key]][0]
             t_max = x_prog[x_d == date_FTU1[key]][0]
-            t_diff = t_max - t_start - 14  # two weeks round up
-            rc = 100 / t_diff  # target naar KPN is 100% HPend
+            t_diff[key] = t_max - t_start - 14  # two weeks round up
+            slope_of_line = 100 / t_diff[key]  # target naar KPN is 100% HPend
         else:  # incomplete information on FTU dates
             t_start = 0
-            rc = 0  # target naar KPN is 100% HPend
+            slope_of_line = 0  # target naar KPN is 100% HPend
+            t_diff[key] = 0
 
-        b = -(rc * (t_start + 14))  # two weeks startup
-        y_target = b + rc * x_prog
+        b = -(slope_of_line * (t_start + 14))  # two weeks startup
+        y_target = b + slope_of_line * x_prog
         y_target[y_target > 100] = 100
         y_target_l[key] = y_target
+
+        # slope_of_line is the percentage of homes to be completed in a day (basically the target per day)
+        target_per_week_dict[key] = slope_of_line / 100 * total_objects[key] * 7
 
     for key in y_target_l:
         y_target_l[key][y_target_l[key] > 100] = 100
         y_target_l[key][y_target_l[key] < 0] = 0
 
-    return y_target_l
+    return y_target_l, t_diff, target_per_week_dict
 
 
 # TODO: check if this can be removed. It does not seem to be used.
@@ -1737,7 +1743,7 @@ def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
     Returns:
 
     """
-    y_target_l = targets_new(timeline, project_list, ftu0, ftu1)
+    y_target_l, _, _ = targets_new(timeline, project_list, ftu0, ftu1, totals)
     df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
     for key in y_target_l:
         amounts = y_target_l[key] / 100 * totals[key]

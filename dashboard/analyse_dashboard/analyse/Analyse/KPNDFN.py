@@ -11,7 +11,7 @@ from functions import get_data_targets_init, error_check_FCBC, get_start_time, g
     prognose, targets, performance_matrix, prognose_graph, overview, \
     get_project_dates, calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
     calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
-    make_graphics_for_number_errors_fcbc_per_project, multi_index_to_dict, calculate_week_target
+    make_graphics_for_number_errors_fcbc_per_project, multi_index_to_dict, calculate_week_target, targets_new
 import pandas as pd
 from Analyse.Timeseries import Timeseries_collection
 
@@ -185,14 +185,11 @@ class KPNAnalyse(FttXAnalyse):
     def _targets(self):
         logger.info("Calculating targets for KPN")
         if toggles.new_projectspecific_views:
-            y_target_l, t_diff, target_per_week_dict = targets(self.intermediate_results.x_prog,
-                                                               self.intermediate_results.timeline,
-                                                               self.intermediate_results.t_shift,
-                                                               self.extracted_data.ftu['date_FTU0'],
-                                                               self.extracted_data.ftu['date_FTU1'],
-                                                               self.intermediate_results.rc1,
-                                                               self.intermediate_results.d_real_l_old,
-                                                               self.intermediate_results.total_objects)
+            y_target_l, t_diff, target_per_week_dict = targets_new(self.intermediate_results.timeline,
+                                                                   self.transformed_data.df.project.unique(),
+                                                                   self.extracted_data.ftu['date_FTU0'],
+                                                                   self.extracted_data.ftu['date_FTU1'],
+                                                                   self.intermediate_results.total_objects)
             self.intermediate_results.y_target_l_old = y_target_l
             self.intermediate_results.target_per_week = target_per_week_dict
         else:
