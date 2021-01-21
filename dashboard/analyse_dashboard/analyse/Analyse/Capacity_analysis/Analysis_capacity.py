@@ -23,7 +23,8 @@ class CapacityTransform(Transform):
 
 # TODO: Documentation by Casper van Houten
 class CapacityLoad(Load):
-    ...
+    def load(self):
+        self.record_list.to_firestore()
 
 
 # TODO: Casper van Houten, add some simple examples
