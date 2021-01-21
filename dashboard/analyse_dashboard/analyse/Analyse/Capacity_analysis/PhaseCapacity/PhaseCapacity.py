@@ -1,5 +1,5 @@
 import pandas as pd
-
+from datetime import timedelta
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
@@ -14,15 +14,13 @@ class PhaseCapacity:
     Args:
         df (pd.DataFrame): One-column dataframe, should have a datetime-index
         phases_config:
-        phases_projectspecific:
     """
 
-    def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projectspecific: dict, phase=None, client=None):
+    def __init__(self, df: pd.DataFrame, phases_config: dict, phase=None, client=None):
         self.df = df
         self.phase = phase
         self.client = client
         self.phases_config = phases_config
-        self.phases_projectspecific = phases_projectspecific
         self.record_list = RecordList()
 
     def algorithm(self):
@@ -38,23 +36,29 @@ class PhaseCapacity:
 
         """
         # calculate target indicator
-        self.target_over_time = TimeseriesLine(data=pd.Series(data=self.phases_projectspecific['performance_norm_unit'],
-                                                              index=DateDomainRange(begin=self.phases_projectspecific['start_date'],
+        self.target_over_time = TimeseriesLine(data=pd.Series(data=self.phases_config['performance_norm_unit'],
+                                                              index=DateDomainRange(begin=self.phases_config['start_date'],
                                                                                     n_days=self.phases_config['n_days']).domain),
                                                name='target_indicator')
         # calculate realised production over time
-        ds = self.df[(~self.df.isna()) & (self.df <= pd.Timestamp.now())]
+        if not isinstance(self.df.index[0], pd.Timestamp):
+            ds = self.df[(~self.df.isna()) & (self.df <= pd.Timestamp.now())]
+            ds = ds.groupby(ds).count()
+        else:
+            ds = self.df
         self.pocideal_real = TimeseriesLine(ds, domain=DateDomain(begin=ds.index[0], end=ds.index[-1]), name='poc_real_indicator')
         # calculate ideal production over time
-        slope = (self.phases_projectspecific['total_units'] - self.pocideal_real.integrate().make_series().max()) / \
+        slope = (self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / \
                 (self.target_over_time.make_series().index[-1] - self.pocideal_real.make_series().index[-1]).days
-        pocideal_extrap = TimeseriesLine(data=pd.Series(data=slope,
-                                                        index=DateDomain(begin=str(self.pocideal_real.make_series().index[-1]),
-                                                                         end=str(self.target_over_time.make_series().index[-1])).domain))
+        begin = self.pocideal_real.make_series().index[-1]
+        end = self.target_over_time.make_series().index[-1]
+        if end <= begin:
+            end = begin + timedelta(7)
+        pocideal_extrap = TimeseriesLine(data=pd.Series(data=slope, index=DateDomain(begin=str(begin), end=str(end)).domain))
         self.poc_ideal = TimeseriesLine(self.pocideal_real.make_series().add(pocideal_extrap.make_series().iloc[1:], fill_value=0),
                                         name='poc_ideal_indicator')
         # calculate ideal capacity over time
-        self.capacity_ideal = self.poc_ideal / self.phase_config['norm']
+        self.capacity_ideal = self.poc_ideal / self.phases_config['phase_norm']
 
         # write indicators to records
         target_over_time_record = LineRecord(record=self.target_over_time,

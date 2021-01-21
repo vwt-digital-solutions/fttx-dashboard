@@ -5,6 +5,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapac
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
 from Analyse.ETL import Extract, Load
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXExtract, FttXTransform
+from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
 import pandas as pd
 
@@ -29,27 +30,39 @@ class CapacityTransform(FttXTransform):
         super().transform()
         self.fill_projectspecific_phase_config()
 
+    def get_civiel_start_date(self, start_date):
+        default_start_date = '2021-01-01'
+        if start_date == 'None':
+            start_date = default_start_date
+        return pd.to_datetime(start_date)
+
+    def get_total_units(self, total_units, type_total):
+        default_total_unit_dict = {'meters BIS': 100000, 'meters tuinschieten': 50000, 'huisaansluitingen': 10000}
+        if total_units == 'None':
+            total_units = default_total_unit_dict[type_total]
+        return float(total_units)
+
     def fill_projectspecific_phase_config(self):
         phases_projectspecific = {}
         # Temporarily hard-coded values
         performance_norm_config = 1
-        default_total_unit_dict = dict(total_meters_bis=1000, total_meters_tuinschieten=500, total_number_huisaansluitingen=5000)
-        default_start_date = pd.to_datetime('2021-01-01')
+        # values for Spijkernisse for the moment
+
         for project in self.transformed_data.df.project.unique():
             phases_projectspecific[project] = {}
             for phase, phase_config in self.config['capacity_phases'].items():
                 project_info = self.extracted_data.project_info[project]
-
                 # Temporary default value getters as data are incomplete for now.
-                civiel_startdatum = project_info.get('civiel_startdatum', default_start_date)
-                total_units = project_info.get(phase_config['units_key'],
-                                               default_total_unit_dict[phase_config['units_key']])
+                civiel_startdatum = self.get_civiel_start_date(project_info.get('Civiel startdatum'))
+                total_units = self.get_total_units(project_info.get(phase_config['units_key']), phase_config['units_key'])
                 phases_projectspecific[project][phase] = \
                     dict(start_date=civiel_startdatum + timedelta(days=phase_config['phase_delta']),
                          total_units=total_units,
                          performance_norm_unit=self.performance_norm_config / 100 * total_units,
                          phase_column=phase_config['phase_column'],
-                         n_days=(100 / performance_norm_config - 1)
+                         n_days=(100 / performance_norm_config - 1),
+                         master_phase=phase_config['master_phase'],
+                         phase_norm=phase_config['phase_norm']
                          )
         self.transformed_data.project_phase_data = phases_projectspecific
 
@@ -82,36 +95,40 @@ class CapacityAnalyse:
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
+        bis_etl = BISETL(client=self.client,
+                         excel_path='C:/Users/agvanturnhout/Documents/ProjectenVWT/FTTX/B6074' +
+                                    ' Spijkenisse Invulformulier Schade Registratie.xlsx')
+        bis_etl.extract()
+        bis_etl.transform()
+        dft = bis_etl.transformed_data.df
+        df_geul = dft[~dft.meters_bis_geul.isna()]
+        df_schieten = dft[~dft.meters_tuinboring.isna()]
+
         line_record_list = RecordList()
         for project, project_df in self.transformed_data.df.groupby(by="project"):
             phase_data = self.transformed_data.project_phase_data[project]
-            line_record_list += GeulenCapacity(df=self.transformed_data.df[self.phases_config['geulen']['phase_column']],
+            line_record_list += GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
                                                phases_config=phase_data['geulen'],  # Example phase_data.
-                                               phases_projectspecific=self.phases_projectspecific['geulen'],
                                                phase='geulen',
                                                client=self.client
                                                ).algorithm().get_record()
-            line_record_list += SchietenCapacity(df=self.transformed_data.df[self.phases_config['schieten']['phase_column']],
-                                                 phases_config=self.phases_config['schieten'],
-                                                 phases_projectspecific=self.phases_projectspecific['schieten'],
+            line_record_list += SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
+                                                 phases_config=phase_data['schieten'],
                                                  phase='schieten',
                                                  client=self.client
                                                  ).algorithm().get_record()
-            line_record_list += LasAPCapacity(df=self.transformed_data.df[self.phases_config['lasap']['phase_column']],
-                                              phases_config=self.phases_config['lasap'],
-                                              phases_projectspecific=self.phases_projectspecific['lasap'],
+            line_record_list += LasAPCapacity(df=self.transformed_data.df[phase_data['lasap']['phase_column']],
+                                              phases_config=phase_data['lasap'],
                                               phase='lasap',
                                               client=self.client
                                               ).algorithm().get_record()
-            line_record_list += LasDPCapacity(df=self.transformed_data.df[self.phases_config['lasdp']['phase_column']],
-                                              phases_config=self.phases_config['lasdp'],
-                                              phases_projectspecific=self.phases_projectspecific['lasdp'],
+            line_record_list += LasDPCapacity(df=self.transformed_data.df[phase_data['lasdp']['phase_column']],
+                                              phases_config=phase_data['lasdp'],
                                               phase='lasdp',
                                               client=self.client
                                               ).algorithm().get_record()
-            line_record_list += OpleverCapacity(df=self.transformed_data.df[self.phases_config['oplever']['phase_column']],
-                                                phases_config=self.phases_config['oplever'],
-                                                phases_projectspecific=self.phases_projectspecific['oplever'],
+            line_record_list += OpleverCapacity(df=self.transformed_data.df[phase_data['oplever']['phase_column']],
+                                                phases_config=phase_data['oplever'],
                                                 phase='oplever',
                                                 client=self.client
                                                 ).algorithm().get_record()
