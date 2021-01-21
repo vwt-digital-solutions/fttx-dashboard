@@ -66,17 +66,18 @@ class PhaseCapacity:
                                              graph_name=f'{self.client}+{self.phase}+{self.target_over_time.name}',
                                              phase=self.phase,
                                              client=self.client)
-        poc_ideal_over_time_record = LineRecord(record=self.poc_ideal,
-                                                collection='Lines',
-                                                graph_name=f'{self.client}+{self.phase}+{self.poc_ideal.name}',
-                                                phase=self.phase,
-                                                client=self.client)
-        capacity_over_time_record = LineRecord(record=self.capacity_ideal,
-                                               collection='Lines',
-                                               graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
-                                               phase=self.phase,
-                                               client=self.client)
-        self.record_list.append(target_over_time_record).append(poc_ideal_over_time_record).append(capacity_over_time_record)
+        # poc_ideal_over_time_record = LineRecord(record=self.poc_ideal,
+        #                                         collection='Lines',
+        #                                         graph_name=f'{self.client}+{self.phase}+{self.poc_ideal.name}',
+        #                                         phase=self.phase,
+        #                                         client=self.client)
+        # capacity_over_time_record = LineRecord(record=self.capacity_ideal,
+        #                                        collection='Lines',
+        #                                        graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
+        #                                        phase=self.phase,
+        #                                        client=self.client)
+        # self.record_list.append(target_over_time_record).append(poc_ideal_over_time_record).append(capacity_over_time_record)
+        self.record_list.append(target_over_time_record)
         return self
 
     # TODO: Documentation by Casper van Houten
