@@ -1,7 +1,8 @@
 from Analyse.Capacity_analysis.Domain import Domain
-from Analyse.Capacity_analysis.Line import PointLine, LinearLine
+from Analyse.Capacity_analysis.Line import PointLine, LinearLine, TimeseriesLine
 import pandas as pd
-# import numpy as np
+import numpy as np
+import pytest
 
 
 class TestPointLine:
@@ -94,3 +95,30 @@ class TestPointLine:
     def test_diff_pointline(self):
         line1 = PointLine([1, 3, 5, 3, 6])
         assert line1.differentiate() == PointLine([1, 2, 2, -2, 3])
+
+    def test_append_timeseries(self):
+        timeseries1 = TimeseriesLine(pd.Series(index=['2021-01-01', '2021-01-02', '2021-01-03'], data=[1, 2, 3]))
+        timeseries2 = TimeseriesLine(pd.Series(index=['2021-01-04', '2021-01-05', '2021-01-06'], data=[3, 4, 5]))
+        timeseries_result = TimeseriesLine(pd.Series(index=['2021-01-01',
+                                                            '2021-01-02',
+                                                            '2021-01-03',
+                                                            '2021-01-04',
+                                                            '2021-01-05',
+                                                            '2021-01-06'],
+                                                     data=[1, 2, 3, 3, 4, 5]
+                                                     )
+                                           )
+        pd.testing.assert_series_equal(timeseries1.append(timeseries2), timeseries_result)
+
+        timeseries1 = TimeseriesLine(pd.Series(index=['2021-01-01', '2021-01-02', '2021-01-03'], data=[1, 2, 3]))
+        timeseries2 = TimeseriesLine(pd.Series(index=['2021-01-03', '2021-01-04', '2021-01-05'], data=[3, 4, 5]))
+        timeseries_result = TimeseriesLine(pd.Series(index=['2021-01-01',
+                                                            '2021-01-02',
+                                                            '2021-01-03',
+                                                            '2021-01-04',
+                                                            '2021-01-05'],
+                                                     data=[1, 2, 3, 4, 5]
+                                                     )
+                                           )
+        assert pytest.raises(ValueError, timeseries1.append(timeseries2, skip=0))
+        pd.testing.assert_series_equal(timeseries1.append(timeseries2, skip=1), timeseries_result)

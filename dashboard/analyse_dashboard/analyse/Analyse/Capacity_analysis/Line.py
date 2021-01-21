@@ -407,3 +407,28 @@ class TimeseriesLine(PointLine):
         # Temporarily use old cumsum method to mimic old implementation
         integral = self.make_series().cumsum()
         return TimeseriesLine(data=integral)
+
+    def append(self, other, skip=0):
+        """
+
+        Args:
+            other: Instance of timeseries line of which the values will be added to the end of the current line.
+            skip: keyword argument to skip start of index of input line, to be able to append lines that have partially
+            overlapping indices.
+
+        Returns:
+            A new timeseries line
+        """
+        if not isinstance(other, TimeseriesLine):
+            raise NotImplementedError
+
+        if self.domain.end > other.domain.begin:
+            raise NotImplementedError("You can only add lines that have a higher index than the line in the object")
+
+        series = self.make_series()
+        other_series = other.make_series()[skip:]
+        intersect = series.index.intersection(other_series.index)
+        if len(intersect):
+            raise ValueError(f"Cannot append Lines that have overlapping indices: {intersect}")
+
+        return TimeseriesLine(series.add(other_series, fill_value=0))
