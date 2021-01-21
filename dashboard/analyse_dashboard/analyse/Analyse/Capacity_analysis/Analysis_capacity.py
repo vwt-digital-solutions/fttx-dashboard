@@ -3,7 +3,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasAPCapacity import LasAPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
-from Analyse.ETL import Extract, Transform, Load
+from Analyse.ETL import Extract, Load
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXExtract, FttXTransform
 from datetime import timedelta
 import pandas as pd
@@ -17,8 +17,41 @@ class CapacityExtract(Extract):
 
 
 # TODO: Documentation by Casper van Houten
-class CapacityTransform(Transform):
-    ...
+class CapacityTransform(FttXTransform):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not hasattr(self, 'config'):
+            self.config = kwargs.get("config")
+        self.performance_norm_config = 1
+
+    def transform(self):
+        super().transform()
+        self.fill_projectspecific_phase_config()
+
+    def fill_projectspecific_phase_config(self):
+        phases_projectspecific = {}
+        # Temporarily hard-coded values
+        performance_norm_config = 1
+        default_total_unit_dict = dict(total_meters_bis=1000, total_meters_tuinschieten=500, total_number_huisaansluitingen=5000)
+        default_start_date = pd.to_datetime('2021-01-01')
+        for project in self.transformed_data.df.project.unique():
+            phases_projectspecific[project] = {}
+            for phase, phase_config in self.config['capacity_phases'].items():
+                project_info = self.extracted_data.project_info[project]
+
+                # Temporary default value getters as data are incomplete for now.
+                civiel_startdatum = project_info.get('civiel_startdatum', default_start_date)
+                total_units = project_info.get(phase_config['units_key'],
+                                               default_total_unit_dict[phase_config['units_key']])
+                phases_projectspecific[project][phase] = \
+                    dict(start_date=civiel_startdatum + timedelta(days=phase_config['phase_delta']),
+                         total_units=total_units,
+                         performance_norm_unit=self.performance_norm_config / 100 * total_units,
+                         phase_column=phase_config['phase_column'],
+                         n_days=(100 / performance_norm_config - 1)
+                         )
+        self.transformed_data.project_phase_data = phases_projectspecific
 
 
 # TODO: Documentation by Casper van Houten
@@ -40,28 +73,6 @@ class CapacityAnalyse:
     >>> pass
 
     """
-
-    def __init__(self):
-        # the parameters below need to come from config and transform
-        self.performance_norm_config = 1  # % per day
-        self.n_days_config = 100 / self.performance_norm_config - 1
-        self.phases_config = dict(geulen=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config, norm=200),
-                                  schieten=dict(phase_column='opleverdatum', phase_delta=0, n_days=self.n_days_config, norm=200),
-                                  lasap=dict(phase_column='opleverdatum', phase_delta=10, n_days=self.n_days_config, norm=200),
-                                  lasdp=dict(phase_column='opleverdatum', phase_delta=10, n_days=self.n_days_config, norm=200),
-                                  oplever=dict(phase_column='opleverdatum', phase_delta=20, n_days=self.n_days_config, norm=200)
-                                  )
-        # project specific
-        self.civil_date = dict(project1=pd.to_datetime('2021-01-01'))
-        self.total_units = dict(project1=dict(geulen=1000, schieten=500, lasap=200, lasdp=200, oplever=5000))
-        phases_projectspecific = {}
-        for phase in ['geulen', 'schieten', 'lasap', 'lasdp', 'oplever']:
-            phases_projectspecific[phase] = \
-                dict(start_date=self.civil_date['project1'] + timedelta(days=self.phases_config[phase]['phase_delta']),
-                     total_units=self.total_units['project1'][phase],
-                     performance_norm_unit=self.performance_norm_config / 100 * self.total_units['project1'][phase])
-        self.phases_projectspecific = phases_projectspecific
-
     def analyse(self):
         self.get_lines_per_phase()
 
@@ -73,8 +84,9 @@ class CapacityAnalyse:
         """
         line_record_list = RecordList()
         for project, project_df in self.transformed_data.df.groupby(by="project"):
+            phase_data = self.transformed_data.project_phase_data[project]
             line_record_list += GeulenCapacity(df=self.transformed_data.df[self.phases_config['geulen']['phase_column']],
-                                               phases_config=self.phases_config['geulen'],
+                                               phases_config=phase_data['geulen'],  # Example phase_data.
                                                phases_projectspecific=self.phases_projectspecific['geulen'],
                                                phase='geulen',
                                                client=self.client
@@ -105,7 +117,7 @@ class CapacityAnalyse:
                                                 ).algorithm().get_record()
 
 
-class CapacityETL(FttXExtract, FttXTransform, CapacityAnalyse):
+class CapacityETL(FttXExtract, CapacityTransform, CapacityAnalyse):
     """
     Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
     """
