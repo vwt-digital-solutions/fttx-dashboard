@@ -50,7 +50,7 @@ def get_search_bar(client, project):
         html.Div(
             [dcc.Dropdown(id=f'project-dropdown-{client}',
                           options=collection.get_document(collection="Data", client=client,
-                                                          graph_name="project_names")['filters'],
+                                                          graph_name="project_names").get("filters"),
                           value=project if project else None,
                           placeholder="Select a project")],
             className="two-third column",
