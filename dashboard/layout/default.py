@@ -29,14 +29,16 @@ def client_tabbed_view(views):
                 ]
 
     Returns:
-
+        dash_bootstrap_components._components.Tabs.Tabs:
     """
     tabs = dbc.Tabs(
         [
-            dbc.Tab(view['view'], label=view['tab_name'])
+            dbc.Tab(view['view'], label=view['tab_name'], tab_id=f"tab-{view['tab_name'].lower().replace(' ', '-')}")
             for view in views
         ],
-        className=" mt-5 mb-3"
+        className="mt-5 mb-3",
+        id="project-tabs",
+        active_tab=f"tab-{views[0]['tab_name'].lower().replace(' ', '-')}"
     )
 
     return tabs
