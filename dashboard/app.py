@@ -15,7 +15,6 @@ from sqlalchemy import create_engine
 
 import config
 import utils
-from authentication.azure_auth import AzureOAuth
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -54,27 +53,7 @@ toggles = ReleaseToggles('toggles.yaml')
 logging.info("supressing call back exceptions")
 app.config.suppress_callback_exceptions = True
 
-app.title = "FttX operationeel"
-
-# Azure AD authentication
-if config.authentication:
-    session_secret = utils.get_secret(
-        config.authentication['gcp_project'],
-        config.authentication['secret_name'])
-
-    auth = AzureOAuth(
-        app,
-        config.authentication['client_id'],
-        config.authentication['client_secret'],
-        config.authentication['expected_issuer'],
-        config.authentication['expected_audience'],
-        config.authentication['jwks_url'],
-        config.authentication['tenant'],
-        session_secret,
-        config.authentication['role'],
-        config.authentication['required_scopes']
-    )
-    logging.info("Authorization is set up")
+app.title = "FttX"
 
 
 def get_database_engine():
