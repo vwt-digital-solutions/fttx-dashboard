@@ -1,7 +1,6 @@
 from Analyse.Capacity_analysis.Domain import Domain
 from Analyse.Capacity_analysis.Line import PointLine, LinearLine, TimeseriesLine
 import pandas as pd
-import numpy as np
 import pytest
 
 
