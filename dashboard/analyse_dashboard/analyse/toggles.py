@@ -7,6 +7,7 @@ class ReleaseToggles(TogglesList):
     upload: bool
     fc_sql: bool
     new_projectspecific_views: bool
+    capacity_view: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')

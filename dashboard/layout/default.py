@@ -62,7 +62,9 @@ def client_project_view(client) -> dash.development.base_component.Component:
 
     views = []
     for tab in tabs:
-        views.append(get_tab_view(client, tab))
+        view = get_tab_view(client, tab)
+        if view:
+            views.append(view)
 
     views = sorted(views, key=lambda view_data: int(view_data.get("tab_order", 100)))
 
@@ -85,7 +87,10 @@ def get_tab_view(client: str, tab: str) -> dict:
         dict: A dictionary with the following keys: view, tab_name and tab_order.
     """
     module = importlib.import_module(tab)
-    view = module.get_html(client)
+    try:
+        view = module.get_html(client)
+    except AttributeError:
+        return {}
 
     view_dict = dict(
         view=view,
