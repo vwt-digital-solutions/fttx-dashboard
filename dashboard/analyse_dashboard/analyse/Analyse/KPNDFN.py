@@ -25,7 +25,6 @@ class KPNDFNExtract(FttXExtract):
         super().__init__(**kwargs)
         self.planning_location = kwargs['config'].get("planning_location")
         self.target_location = kwargs['config'].get("target_location")
-        self.map_key = kwargs['config'].get('map_key')
         self.client_name = kwargs['config'].get('name')
 
     def extract(self):

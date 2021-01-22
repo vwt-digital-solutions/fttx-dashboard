@@ -17,23 +17,6 @@ from toggles import toggles
 colors = config.colors_vwt
 
 
-# Function to use only when data_targets in database need to be reset.
-# TODO: Create function structure that can reinitialise the database, partially as well as completely.
-# TODO: Documentation by Andre van Turnhout
-def get_data_targets_init(path_data, map_key):
-    df_targets = pd.read_excel(path_data, sheet_name='KPN')
-    date_FTU0 = {}
-    date_FTU1 = {}
-    for i, key in enumerate(df_targets['d.d. 01-05-2020 v11']):
-        if key in map_key:
-            if not pd.isnull(df_targets.loc[i, '1e FTU']):
-                date_FTU0[map_key[key]] = df_targets.loc[i, '1e FTU'].strftime('%Y-%m-%d').strip()
-            if (not pd.isnull(df_targets.loc[i, 'Laatste FTU'])) & (df_targets.loc[i, 'Laatste FTU'] != '?'):
-                date_FTU1[map_key[key]] = df_targets.loc[i, 'Laatste FTU'].strftime('%Y-%m-%d').strip()
-
-    return date_FTU0, date_FTU1
-
-
 def get_start_time(df: pd.DataFrame) -> dict:
     """
     The start time of a project is determined by the first `opleverdatum`, therefore an opleverdatum column must be
