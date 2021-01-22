@@ -1,6 +1,7 @@
 import os
 import time
 from google.cloud import firestore
+from sqlalchemy import text, bindparam
 
 from Analyse.Data import Data
 from Analyse.ETL import Extract, ETL, Transform, ETLBase, Load
@@ -76,12 +77,12 @@ class FttXExtract(Extract):
 
     def _extract_from_sql(self):
         logger.info("Extracting from the sql database")
-        sql = f"""
+        sql = text("""
 select *
 from fc_aansluitingen fca
-where project in {tuple(self.projects)}
-"""  # nosec
-        df = pd.read_sql(sql, get_database_engine())
+where project in :projects
+""").bindparams(bindparam('projects', expanding=True))  # nosec
+        df = pd.read_sql(sql, get_database_engine(), params={'projects': tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
         self.extracted_data.df = df
@@ -116,14 +117,11 @@ where project in {tuple(self.projects)}
 
     def _extract_project_info(self):
         logger.info(f"Extracting FTU {self.client_name}")
-        doc = next(
-            firestore.Client().collection('Data')
-            .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
-            .stream(), None).get('record')
-        if doc is not None:
-            date_FTU0 = {key: value.strip() for key, value in doc['FTU0'].items()}
-            date_FTU1 = {key: value.strip() for key, value in doc['FTU1'].items()}
-        self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
+        doc = firestore.Client().collection('Data') \
+            .document(f'{self.client_name}_project_dates') \
+            .get().to_dict().get('record')
+
+        self.extracted_data.ftu = Data({'date_FTU0': doc['FTU0'], 'date_FTU1': doc['FTU1']})
         self.extracted_data.civiel_startdatum = doc.get('Civiel startdatum')
         self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
         self.extracted_data.total_meters_bis = doc.get('meters BIS')
@@ -181,9 +179,8 @@ class FttXTransform(Transform):
 
     def _set_totals(self):
         self.transformed_data.totals = {}
-        for project in self.transformed_data.df.project.unique():
-            self.transformed_data.totals[project] = len(
-                self.transformed_data.df[self.transformed_data.df['project'] == project])
+        for project, project_df in self.transformed_data.df.groupby('project'):
+            self.transformed_data.totals[project] = len(project_df)
 
     def _fix_dates(self):
         logger.info("Changing columns to datetime column if there is 'datum' in column name.")

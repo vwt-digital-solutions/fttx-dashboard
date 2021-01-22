@@ -35,14 +35,11 @@ class KPNDFNExtract(FttXExtract):
 
     def _extract_project_info(self):
         logger.info(f"Extracting FTU {self.client_name}")
-        doc = next(
-            firestore.Client().collection('Data')
-            .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
-            .stream(), None).get('record')
-        if doc is not None:
-            date_FTU0 = {key: value.strip() for key, value in doc['FTU0'].items()}
-            date_FTU1 = {key: value.strip() for key, value in doc['FTU1'].items()}
-        self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
+        doc = firestore.Client().collection('Data')\
+            .document(f'{self.client_name}_project_dates')\
+            .get().to_dict().get('record')
+
+        self.extracted_data.ftu = Data({'date_FTU0': doc['FTU0'], 'date_FTU1': doc['FTU1']})
         self.extracted_data.civiel_startdatum = doc.get('Civiel startdatum')
         self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
         self.extracted_data.total_meters_bis = doc.get('meters BIS')
