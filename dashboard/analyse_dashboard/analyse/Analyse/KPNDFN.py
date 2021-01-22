@@ -11,9 +11,8 @@ from functions import error_check_FCBC, get_start_time, get_timeline, get_total_
     prognose, targets, performance_matrix, prognose_graph, overview, \
     get_project_dates, calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
     calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
-    make_graphics_for_number_errors_fcbc_per_project, multi_index_to_dict, calculate_week_target, targets_new
+    make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new
 import pandas as pd
-from Analyse.Timeseries import Timeseries_collection
 
 import logging
 from toggles import toggles
@@ -104,7 +103,6 @@ class KPNAnalyse(FttXAnalyse):
         super().analyse()
         logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
-        self._make_timeseries()
         self._prognose()
         self._targets()
         self._performance_matrix()
@@ -122,26 +120,6 @@ class KPNAnalyse(FttXAnalyse):
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
 
         self.intermediate_results.n_err = n_err
-
-    def _make_timeseries(self):
-        idx = pd.IndexSlice
-        logger.info(f"Generating timeseries for all projects for {self.client_name}")
-        target_slope = 0.51
-        opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
-                                                        column='opleverdatum',
-                                                        agg_column='sleutel',
-                                                        totals=self.transformed_data.totals,
-                                                        cutoff=85,
-                                                        ftu_dates=self.extracted_data.ftu,
-                                                        agg_column_func='count',
-                                                        teams=None,
-                                                        norm=None,
-                                                        target_slope=target_slope)
-
-        self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
-        self.intermediate_results.d_real_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'cumsum_percentage']])
-        self.intermediate_results.y_target_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'y_target_percentage']])
-        self.intermediate_results.y_prog_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'extrapolation_percentage']])
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
@@ -161,23 +139,19 @@ class KPNAnalyse(FttXAnalyse):
 
         self.intermediate_results.rc1 = results.rc1
         self.intermediate_results.rc2 = results.rc2
-        self.intermediate_results.d_real_l_old = results.d_real_l
-        if not toggles.timeseries:
-            self.intermediate_results.d_real_l = results.d_real_l
+        self.intermediate_results.d_real_l = results.d_real_l
         self.intermediate_results.x_prog = results.x_prog
-        self.intermediate_results.y_prog_l_old = results.y_prog_l
-        if not toggles.timeseries:
-            self.intermediate_results.y_prog_l = results.y_prog_l
+        self.intermediate_results.y_prog_l = results.y_prog_l
         self.intermediate_results.t_shift = results.t_shift
         self.intermediate_results.cutoff = results.cutoff
 
         self.record_dict.add('rc1', results.rc1, ListRecord, 'Data')
         self.record_dict.add('rc2', results.rc2, ListRecord, 'Data')
-        d_real_l_r = {k: v["Aantal"] for k, v in self.intermediate_results.d_real_l_old.items()}
+        d_real_l_r = {k: v["Aantal"] for k, v in self.intermediate_results.d_real_l.items()}
         self.record_dict.add('d_real_l_r', d_real_l_r, ListRecord, 'Data')
-        d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l_old.items()}
+        d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l.items()}
         self.record_dict.add('d_real_l_ri', d_real_l_ri, ListRecord, 'Data')
-        self.record_dict.add('y_prog_l', self.intermediate_results.y_prog_l_old, ListRecord, 'Data')
+        self.record_dict.add('y_prog_l', self.intermediate_results.y_prog_l, ListRecord, 'Data')
         self.record_dict.add('x_prog', results.x_prog, IntRecord, 'Data')
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
@@ -190,7 +164,7 @@ class KPNAnalyse(FttXAnalyse):
                                                                    self.extracted_data.ftu['date_FTU0'],
                                                                    self.extracted_data.ftu['date_FTU1'],
                                                                    self.intermediate_results.total_objects)
-            self.intermediate_results.y_target_l_old = y_target_l
+            self.intermediate_results.y_target_l = y_target_l
             self.intermediate_results.target_per_week = target_per_week_dict
         else:
             y_target_l, t_diff = targets(self.intermediate_results.x_prog,
@@ -199,21 +173,19 @@ class KPNAnalyse(FttXAnalyse):
                                          self.extracted_data.ftu['date_FTU0'],
                                          self.extracted_data.ftu['date_FTU1'],
                                          self.intermediate_results.rc1,
-                                         self.intermediate_results.d_real_l_old,
+                                         self.intermediate_results.d_real_l,
                                          self.intermediate_results.total_objects)
-            self.intermediate_results.y_target_l_old = y_target_l
-
-        if not toggles.timeseries:
             self.intermediate_results.y_target_l = y_target_l
+
         self.intermediate_results.t_diff = t_diff
-        self.record_dict.add('y_target_l', self.intermediate_results.y_target_l_old, ListRecord, 'Data')
+        self.record_dict.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
 
     def _performance_matrix(self):
         logger.info("Calculating performance matrix for KPN")
         graph = performance_matrix(
             self.intermediate_results.timeline,
-            self.intermediate_results.y_target_l_old,
-            self.intermediate_results.d_real_l_old,
+            self.intermediate_results.y_target_l,
+            self.intermediate_results.d_real_l,
             self.intermediate_results.total_objects,
             self.intermediate_results.t_diff,
             self.intermediate_results.y_voorraad_act
@@ -231,11 +203,11 @@ class KPNAnalyse(FttXAnalyse):
 
     def _overview(self):
         result = overview(self.intermediate_results.timeline,
-                          self.intermediate_results.y_prog_l_old,
+                          self.intermediate_results.y_prog_l,
                           self.intermediate_results.total_objects,
-                          self.intermediate_results.d_real_l_old,
+                          self.intermediate_results.d_real_l,
                           self.transformed_data.planning,
-                          self.intermediate_results.y_target_l_old)
+                          self.intermediate_results.y_target_l)
         self.intermediate_results.df_prog = result.df_prog
         self.intermediate_results.df_target = result.df_target
         self.intermediate_results.df_real = result.df_real
@@ -344,7 +316,7 @@ class KPNAnalyse(FttXAnalyse):
             for project in list_of_projects:
                 project_indicators = {}
                 weektarget = calculate_weektarget(project,
-                                                  self.intermediate_results.y_target_l_old,
+                                                  self.intermediate_results.y_target_l,
                                                   self.intermediate_results.total_objects,
                                                   self.intermediate_results.timeline)
                 project_df = df[df.project == project]
@@ -368,11 +340,11 @@ class KPNAnalyse(FttXAnalyse):
     def _calculate_project_dates(self):
         project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
                                           self.transformed_data.ftu['date_FTU1'],
-                                          self.intermediate_results.y_target_l_old,
+                                          self.intermediate_results.y_target_l,
                                           self.intermediate_results.x_prog,
                                           self.intermediate_results.timeline,
                                           self.intermediate_results.rc1,
-                                          self.intermediate_results.d_real_l_old
+                                          self.intermediate_results.d_real_l
                                           )
         self.record_dict.add("project_dates", project_dates, Record, "Data")
 
