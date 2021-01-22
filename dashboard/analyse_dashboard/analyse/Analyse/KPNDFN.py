@@ -186,7 +186,7 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Calculating targets for KPN")
         if toggles.new_projectspecific_views:
             y_target_l, t_diff, target_per_week_dict = targets_new(self.intermediate_results.timeline,
-                                                                   self.transformed_data.df.project.unique(),
+                                                                   self.project_list,
                                                                    self.extracted_data.ftu['date_FTU0'],
                                                                    self.extracted_data.ftu['date_FTU1'],
                                                                    self.intermediate_results.total_objects)
@@ -301,7 +301,7 @@ class KPNAnalyse(FttXAnalyse):
         if toggles.new_projectspecific_views:
             logger.info("Calculating project indicators and making graphic boxes for dashboard")
             df = self.transformed_data.df
-            list_of_projects = df.project.unique().to_list()
+            list_of_projects = self.project_list
             record = {}
 
             for project in list_of_projects:
@@ -338,7 +338,7 @@ class KPNAnalyse(FttXAnalyse):
         else:
             logger.info("Calculating project indicators")
             df = self.transformed_data.df
-            list_of_projects = df.project.unique().to_list()
+            list_of_projects = self.project_list
             record = {}
 
             for project in list_of_projects:

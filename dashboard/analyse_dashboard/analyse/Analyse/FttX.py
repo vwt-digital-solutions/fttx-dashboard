@@ -176,6 +176,38 @@ class FttXTransform(Transform):
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
+        self._clean_ftu_data()
+        self._make_project_list()
+
+    def _clean_ftu_data(self):
+        for key in ['date_FTU0', 'date_FTU1']:
+            for project, date in self.extracted_data.ftu[key].items():
+                if date == '' or date == 'None':
+                    date = None
+                self.transformed_data.ftu[key][project] = date
+
+    def _is_ftu_available(self, project):
+        available = False
+        ftu0 = self.transformed_data.ftu['date_FTU0'].get(project)
+        ftu1 = self.transformed_data.ftu['date_FTU1'].get(project)
+        if ftu0 and ftu1:
+            available = True
+        return available
+
+    def _is_data_available(self, project):
+        available = False
+        if project in self.transformed_data.df.project.unique():
+            available = True
+        return available
+
+    def _make_project_list(self):
+        project_list = []
+        for project in self.config['projects']:
+            ftu_avaiable = self._is_ftu_available(project)
+            data_available = self._is_data_available(project)
+            if ftu_avaiable and data_available:
+                project_list.append(project)
+        self.project_list = project_list
 
     def _set_totals(self):
         self.transformed_data.totals = {}
@@ -316,7 +348,7 @@ class FttXAnalyse(FttXBase):
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
         self._calculate_list_of_years()
-        self._make_records_for_dashboard_values()
+        self._make_records_for_dashboard_values(self.project_list)
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
@@ -336,34 +368,35 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating project progress per phase over time")
         document_list = []
         for project, df in self.transformed_data.df.groupby("project"):
-            columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
-                       'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
-            date_df = df.loc[:, columns]
+            if project in self.project_list:
+                columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
+                           'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
+                date_df = df.loc[:, columns]
 
-            mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
-            date_df['montage'] = np.datetime64("NaT")
-            date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
-            date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
-            progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
-                df)
-            progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
-            progress_over_time.rename(columns={'opleverdatum': 'has',
-                                               'schouwdatum': 'schouwen',
-                                               'laswerkapgereed_datum': 'montage ap',
-                                               'laswerkdpgereed_datum': 'montage dp',
-                                               'status_civiel_datum': 'civiel',
-                                               },
-                                      inplace=True
-                                      )
-            record = progress_over_time.to_dict()
-            document_list.append(dict(
-                client=self.client,
-                project=project,
-                data_set="progress_over_time",
-                record=record
-            ))
-        self.record_dict.add("Progress_over_time", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "project", 'data_set'])
+                mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
+                date_df['montage'] = np.datetime64("NaT")
+                date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
+                date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
+                progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
+                    df)
+                progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
+                progress_over_time.rename(columns={'opleverdatum': 'has',
+                                                   'schouwdatum': 'schouwen',
+                                                   'laswerkapgereed_datum': 'montage ap',
+                                                   'laswerkdpgereed_datum': 'montage dp',
+                                                   'status_civiel_datum': 'civiel',
+                                                   },
+                                          inplace=True
+                                          )
+                record = progress_over_time.to_dict()
+                document_list.append(dict(
+                    client=self.client,
+                    project=project,
+                    data_set="progress_over_time",
+                    record=record
+                ))
+            self.record_dict.add("Progress_over_time", document_list, DocumentListRecord, "Data",
+                                 document_key=["client", "project", 'data_set'])
 
     def _progress_per_phase(self):
         logger.info("Calculating project progress per phase")
@@ -482,7 +515,7 @@ class FttXAnalyse(FttXBase):
                                                freq="Y")
         self.record_dict.add('redenna_by_year', by_year, Record, 'Data')
 
-    def _make_records_for_dashboard_values(self):
+    def _make_records_for_dashboard_values(self, project_list):
         logger.info("Making records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         df = self.transformed_data.df
@@ -490,6 +523,7 @@ class FttXAnalyse(FttXBase):
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
                          'target': extract_target_dates(df=df,
+                                                        project_list=project_list,
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
                                                         ),

@@ -1702,7 +1702,7 @@ def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     return df.planning_kpn
 
 
-def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None):
+def extract_target_dates(df: pd.DataFrame, project_list, ftu=None, totals=None):
     """
     This function extracts the target dates per client from their transformed dataframes. The target is calculated
     differently for KPN/DFN than for tmobile: when a ftu and totals column is declared in addition to the DataFrame,
@@ -1721,7 +1721,7 @@ def extract_target_dates(df: pd.DataFrame, ftu=None, totals=None):
         return extract_target_dates_kpn(
             timeline=get_timeline(get_start_time(df)),
             totals=totals,
-            project_list=df.project.unique().tolist(),
+            project_list=project_list,
             ftu0=ftu['date_FTU0'],
             ftu1=ftu['date_FTU1'])
     else:
