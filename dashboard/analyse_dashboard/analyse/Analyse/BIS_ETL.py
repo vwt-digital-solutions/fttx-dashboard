@@ -1,6 +1,9 @@
+import os
+
 from Analyse.ETL import Extract, ETL, Transform
 
 import pandas as pd
+import re
 
 
 class BISExtract(Extract):
@@ -17,7 +20,18 @@ class BISExtract(Extract):
         Extract all data from BIS Excel
         '''
         print("Extracting data from Excel")
-        df = pd.read_excel(self.excel_path, sheet_name='Productie', skiprows=list(range(0, 12)))
+        df_list = []
+        for filename in os.listdir(self.excel_path):
+            if filename[-5:] == '.xlsx':
+                df = pd.read_excel(os.path.join(self.excel_path, filename),
+                                   sheet_name='Productie',
+                                   skiprows=list(range(0, 12)))
+                project = re.findall(r"B\d{4} (.*) (?=Invulformulier|invulformulier)",
+                                     filename)[0]
+                df['project'] = project
+                df_list.append(df)
+
+        df = pd.concat(df_list)
 
         self.extracted_data.df = df
 
@@ -32,7 +46,6 @@ class BISTransform(Transform):
         print("Transforming the data to create workable pd DataFrame")
         self._rename_columns()
         self._expand_dates()
-        self._set_projects()
         self._set_totals()
 
     def _rename_columns(self):
@@ -50,10 +63,6 @@ class BISTransform(Transform):
 
         self.transformed_data.df = df_renamed
 
-    # TODO generalise to actually retrieve project from Excel
-    def _set_projects(self):
-        self.transformed_data.df['project'] = 'KPN Spijkernisse'
-
     def _set_totals(self):
         self.transformed_data.totals = {}
         self.transformed_data.totals['BIS geul'] = {'KPN Spijkernisse': 70166}
@@ -69,12 +78,13 @@ class BISTransform(Transform):
                 return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
 
         self.transformed_data.df['date'] = self.transformed_data.df['date'].apply(transform_weeknumbers)
-        self.transformed_data.df = self.transformed_data.df.set_index('date')
+        self.transformed_data.df = self.transformed_data.df.set_index(['project', 'date'])
 
-        df_Date = pd.date_range(start=self.transformed_data.df.index.min(),
-                                end=(self.transformed_data.df.index.max() + pd.to_timedelta(6, unit='d')),
+        df_date = pd.date_range(start=self.transformed_data.df.index.get_level_values(1).min(),
+                                end=(self.transformed_data.df.index.get_level_values(1).max() +
+                                     pd.to_timedelta(6, unit='d')),
                                 freq='D')
-        self.transformed_data.df = self.transformed_data.df.reindex(df_Date, fill_value=None)
+        self.transformed_data.df = self.transformed_data.df.reindex(df_date, fill_value=None, level=1)
 
 
 class BISETL(ETL, BISExtract, BISTransform):

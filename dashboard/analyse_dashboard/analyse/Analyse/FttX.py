@@ -1,6 +1,7 @@
 import os
 import time
 from google.cloud import firestore
+from sqlalchemy import text, bindparam
 
 from Analyse.Data import Data
 from Analyse.ETL import Extract, ETL, Transform, ETLBase, Load
@@ -10,13 +11,17 @@ import pickle  # nosec
 
 import logging
 
-from Analyse.Record import RecordDict, Record, DictRecord, ListRecord, DocumentListRecord
+from Analyse.Record.DictRecord import DictRecord
+from Analyse.Record.DocumentListRecord import DocumentListRecord
+from Analyse.Record.ListRecord import ListRecord
+from Analyse.Record.Record import Record
 import business_rules as br
-from functions import extract_realisatie_hpend_dates, get_data_targets_init, cluster_reden_na, \
-    set_filters, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
-    extract_werkvoorraad_has_dates, extract_realisatie_bis_dates, calculate_redenna_per_period, \
+from Analyse.Record.RecordListWrapper import RecordListWrapper
+from functions import extract_realisatie_hpend_dates, cluster_reden_na, \
+    create_project_filter, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
+    extract_werkvoorraad_has_dates, calculate_redenna_per_period, \
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
-    ratio_sum_over_periods_to_record, get_database_engine, extract_realisatie_under_8weeks_dates, \
+    ratio_sum_over_periods_to_record, get_database_engine, \
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_minus_HPend_sum_over_periods_to_record, \
     extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
 from pandas.api.types import CategoricalDtype
@@ -34,7 +39,7 @@ class FttXBase(ETLBase):
         if not hasattr(self, 'config'):
             self.config = kwargs.get("config")
         self.client = kwargs.get("client", "client_unknown")
-        self.record_dict = RecordDict()
+        self.record_dict = RecordListWrapper(client=self.client)
         self.intermediate_results = Data()
 
 
@@ -58,7 +63,7 @@ class FttXExtract(Extract):
             self._extract_from_sql()
         else:
             self._extract_from_firestore()
-        self._extract_ftu()
+        self._extract_project_info()
         self._extract_planning()
 
     def _extract_from_firestore(self):
@@ -72,13 +77,12 @@ class FttXExtract(Extract):
 
     def _extract_from_sql(self):
         logger.info("Extracting from the sql database")
-        sql = f"""
-select fca.*
+        sql = text("""
+select *
 from fc_aansluitingen fca
-inner join fc_client_project_map cpm on fca.project = cpm.project
-where cpm.client = '{self.config.get("name")}'
-"""  # nosec
-        df = pd.read_sql(sql, get_database_engine())
+where project in :projects
+""").bindparams(bindparam('projects', expanding=True))  # nosec
+        df = pd.read_sql(sql, get_database_engine(), params={'projects': tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df['project'] = df.project.astype(projects_category)
         self.extracted_data.df = df
@@ -111,23 +115,23 @@ where cpm.client = '{self.config.get("name")}'
         logger.info(f"Extracted {len(df)} records in {time.time() - start_time} seconds")
         return df
 
-    def _extract_ftu(self):
+    def _extract_project_info(self):
         logger.info(f"Extracting FTU {self.client_name}")
-        doc = next(
-            firestore.Client().collection('Data')
-            .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
-            .stream(), None).get('record')
-        if doc is not None:
-            if doc['FTU0']:
-                date_FTU0 = {key: value.strip() for key, value in doc['FTU0'].items()}
-                date_FTU1 = {key: value.strip() for key, value in doc['FTU1'].items()}
-            else:
-                logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
-                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
-        else:
-            logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
-            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
-        self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
+        doc = firestore.Client().collection('Data') \
+            .document(f'{self.client_name}_project_dates') \
+            .get().to_dict().get('record')
+
+        self.extracted_data.ftu = Data({'date_FTU0': doc['FTU0'], 'date_FTU1': doc['FTU1']})
+        self.extracted_data.civiel_startdatum = doc.get('Civiel startdatum')
+        self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
+        self.extracted_data.total_meters_bis = doc.get('meters BIS')
+        self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
+
+        df = pd.DataFrame(doc)
+        info_per_project = {}
+        for project in df.index:
+            info_per_project[project] = df.loc[project].to_dict()
+        self.extracted_data.project_info = info_per_project
 
     def _extract_planning(self):
         logger.info("Extracting Planning")
@@ -172,12 +176,43 @@ class FttXTransform(Transform):
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
+        self._clean_ftu_data()
+        self._make_project_list()
+
+    def _clean_ftu_data(self):
+        for key in ['date_FTU0', 'date_FTU1']:
+            for project, date in self.extracted_data.ftu[key].items():
+                if date == '' or date == 'None':
+                    date = None
+                self.transformed_data.ftu[key][project] = date
+
+    def _is_ftu_available(self, project):
+        available = False
+        ftu0 = self.transformed_data.ftu['date_FTU0'].get(project)
+        ftu1 = self.transformed_data.ftu['date_FTU1'].get(project)
+        if ftu0 and ftu1:
+            available = True
+        return available
+
+    def _is_data_available(self, project):
+        available = False
+        if project in self.transformed_data.df.project.unique():
+            available = True
+        return available
+
+    def _make_project_list(self):
+        project_list = []
+        for project in self.config['projects']:
+            ftu_avaiable = self._is_ftu_available(project)
+            data_available = self._is_data_available(project)
+            if ftu_avaiable and data_available:
+                project_list.append(project)
+        self.project_list = project_list
 
     def _set_totals(self):
         self.transformed_data.totals = {}
-        for project in self.transformed_data.df.project.unique():
-            self.transformed_data.totals[project] = len(
-                self.transformed_data.df[self.transformed_data.df['project'] == project])
+        for project, project_df in self.transformed_data.df.groupby('project'):
+            self.transformed_data.totals[project] = len(project_df)
 
     def _fix_dates(self):
         logger.info("Changing columns to datetime column if there is 'datum' in column name.")
@@ -307,17 +342,20 @@ class FttXAnalyse(FttXBase):
         super().__init__(**kwargs)
         if not hasattr(self, 'config'):
             self.config = kwargs.get("config")
-        self.record_dict = RecordDict()
+        self.record_dict = RecordListWrapper(self.client)
         self.intermediate_results = Data()
 
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
         self._calculate_list_of_years()
-        self._make_records_for_dashboard_values()
-        self._make_voorspelling_and_planning_for_dashboard_values()
+        self._make_records_for_dashboard_values(self.project_list)
+        self._make_records_of_voorspelling_and_planning_for_dashboard_values()
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
-        self._calculate_projectspecs()
+        if toggles.new_projectspecific_views:
+            self._make_intermediate_results_ratios_project_specific_values()
+        else:
+            self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -330,34 +368,35 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating project progress per phase over time")
         document_list = []
         for project, df in self.transformed_data.df.groupby("project"):
-            columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
-                       'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
-            date_df = df.loc[:, columns]
+            if project in self.project_list:
+                columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
+                           'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
+                date_df = df.loc[:, columns]
 
-            mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
-            date_df['montage'] = np.datetime64("NaT")
-            date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
-            date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
-            progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
-                df)
-            progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
-            progress_over_time.rename(columns={'opleverdatum': 'has',
-                                               'schouwdatum': 'schouwen',
-                                               'laswerkapgereed_datum': 'montage ap',
-                                               'laswerkdpgereed_datum': 'montage dp',
-                                               'status_civiel_datum': 'civiel',
-                                               },
-                                      inplace=True
-                                      )
-            record = progress_over_time.to_dict()
-            document_list.append(dict(
-                client=self.client,
-                project=project,
-                data_set="progress_over_time",
-                record=record
-            ))
-        self.record_dict.add("Progress_over_time", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "project", 'data_set'])
+                mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
+                date_df['montage'] = np.datetime64("NaT")
+                date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
+                date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
+                progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
+                    df)
+                progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
+                progress_over_time.rename(columns={'opleverdatum': 'has',
+                                                   'schouwdatum': 'schouwen',
+                                                   'laswerkapgereed_datum': 'montage ap',
+                                                   'laswerkdpgereed_datum': 'montage dp',
+                                                   'status_civiel_datum': 'civiel',
+                                                   },
+                                          inplace=True
+                                          )
+                record = progress_over_time.to_dict()
+                document_list.append(dict(
+                    client=self.client,
+                    project=project,
+                    data_set="progress_over_time",
+                    record=record
+                ))
+            self.record_dict.add("Progress_over_time", document_list, DocumentListRecord, "Data",
+                                 document_key=["client", "project", 'data_set'])
 
     def _progress_per_phase(self):
         logger.info("Calculating project progress per phase")
@@ -408,7 +447,6 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating project specs")
         results = calculate_projectspecs(self.transformed_data.df)
 
-        # TODO: cleanup of this function
         # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
         self.record_dict.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
         # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
@@ -435,7 +473,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
     def _set_filters(self):
-        self.record_dict.add("project_names", set_filters(self.transformed_data.df), ListRecord, "Data")
+        self.record_dict.add("project_names", create_project_filter(self.transformed_data.df), ListRecord, "Data")
 
     # def _jaaroverzicht(self):
     #     # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
@@ -477,21 +515,23 @@ class FttXAnalyse(FttXBase):
                                                freq="Y")
         self.record_dict.add('redenna_by_year', by_year, Record, 'Data')
 
-    def _make_records_for_dashboard_values(self):
+    def _make_records_for_dashboard_values(self, project_list):
         logger.info("Making records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
-        function_dict = {'realisatie_bis': extract_realisatie_bis_dates(self.transformed_data.df),
-                         'werkvoorraad_has': extract_werkvoorraad_has_dates(self.transformed_data.df),
-                         'realisatie_hpend': extract_realisatie_hpend_dates(self.transformed_data.df),
-                         'target': extract_target_dates(df=self.transformed_data.df,
+        df = self.transformed_data.df
+        function_dict = {'realisatie_bis': df[br.bis_opgeleverd_new(df)].status_civiel_datum,
+                         'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
+                         'realisatie_hpend': extract_realisatie_hpend_dates(df),
+                         'target': extract_target_dates(df=df,
+                                                        project_list=project_list,
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")
                                                         ),
                          'voorspelling': extract_voorspelling_dates(
-                             df=self.transformed_data.df,
+                             df=df,
                              ftu=self.extracted_data.get("ftu"),
                              totals=self.transformed_data.get("totals")),
-                         'planning': extract_planning_dates(df=self.transformed_data.df,
+                         'planning': extract_planning_dates(df=df,
                                                             planning=self.transformed_data.get("planning"),
                                                             client=self.client)
                          }
@@ -514,7 +554,7 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
-    def _make_voorspelling_and_planning_for_dashboard_values(self):
+    def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
         logger.info("Making voorspelling and planning records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         function_dict = {'voorspelling_minus_HPend': extract_voorspelling_dates(
@@ -549,7 +589,6 @@ class FttXAnalyse(FttXBase):
 
     def _make_records_ratio_hc_hpend_for_dashboard_values(self):
         logger.info("Making record of ratio HC/HPend for dashboard overview  values")
-        # Create a dictionary that contains the functions and the output name
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
@@ -572,9 +611,8 @@ class FttXAnalyse(FttXBase):
                              document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_under_8weeks_for_dashboard_values(self):
-        logger.info("Making records of ratio under 8 weeks/HPend for dashboard overview  values")
-        # Create a dictionary that contains the functions and the output name
-        realisatie_under_8weeks = extract_realisatie_under_8weeks_dates(self.transformed_data.df)
+        logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
+        realisatie_under_8weeks = self.transformed_data.df[br.on_time_opgeleverd(self.transformed_data.df)].opleverdatum
         realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
@@ -595,6 +633,30 @@ class FttXAnalyse(FttXBase):
         self.record_dict.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
+    def _make_intermediate_results_ratios_project_specific_values(self):
+        logger.info("Making intermediate results of ratios for project specific values")
+        # Create a dictionary that contains the functions and the output name
+        df = self.transformed_data.df
+        realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
+        realisatie_hpend = extract_realisatie_hpend_dates(df=df, add_project_column=True)
+
+        project_dict = {}
+        for project in df.project.unique().tolist():
+            record = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
+            project_dict[project] = record
+
+        self.intermediate_results.ratio_HC_HPend_per_project = project_dict
+
+    def calculate_ratio(self, project, numerator, divider):
+        project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)
+        project_dates_divider = divider[divider.project == project].drop(labels='project', axis=1)
+
+        if len(project_dates_divider) == 0:
+            record = 0
+        else:
+            record = len(project_dates_numerator) / len(project_dates_divider)
+        return record
+
 
 class FttXLoad(Load, FttXBase):
 
@@ -603,7 +665,7 @@ class FttXLoad(Load, FttXBase):
 
     def load(self):
         logger.info("Loading documents...")
-        self.record_dict.to_firestore(self.client)
+        self.record_dict.to_firestore()
 
     def load_enriched(self):
         pass
@@ -617,9 +679,7 @@ class FttXTestLoad(FttXLoad):
         logger.info("Nothing is loaded to the firestore as this is a test")
         logger.info("The following documents would have been updated/set:")
         for document in self.record_dict:
-            logger.info(self.record_dict[document].document_name(client=self.client,
-                                                                 graph_name=document,
-                                                                 document=None))
+            logger.info(document.document_name())
 
 
 class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):

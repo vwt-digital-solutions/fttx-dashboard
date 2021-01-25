@@ -516,14 +516,14 @@ class Timeseries():
     def get_graph(self):
         frame = self.get_timeseries_frame()
         plt.figure(figsize=(20, 10))
-        plt.plot(frame['y_target_percentage'], '-b', label='Ideaal verloop proces')
-        plt.plot(frame['cumsum_percentage'], 'xg', label='Gerealiseerd verloop proces')
+        plt.plot(frame['y_target_percentage'], '-b')
+        plt.plot(frame['cumsum_percentage'], 'xg')
         try:
-            plt.plot(frame['forecast_percentage'], '-y', label='Voorspelling')
+            plt.plot(frame['forecast_percentage'], '-y')
         except KeyError:
             pass
         try:
-            plt.plot(frame['planning_percentage'], '-r', label='Geplande werkzaamheden voor ideaal verloop')
+            plt.plot(frame['planning_percentage'], '-r')
         except KeyError:
             pass
 

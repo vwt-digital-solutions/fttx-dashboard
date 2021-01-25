@@ -6,6 +6,17 @@ import pandas as pd
 
 
 def no_graph(title="", text="No Data"):
+    """
+    Creates a figure with no data. It accepts a title and a text. The text will be displayed in a large font in place of
+    of the graph.
+
+    Args:
+        title (str): optional title
+        text (str): optional, default: "No Data"
+
+    Returns:
+        dict: A dictionary in the plotly figure format.
+    """
     return {
         "layout": {
             "paper_bgcolor": config.colors_vwt['paper_bgcolor'],

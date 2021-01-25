@@ -1,3 +1,10 @@
+"""
+Operational view
+==========
+tab_name: Operationeel
+tab_order: 1
+"""
+
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 

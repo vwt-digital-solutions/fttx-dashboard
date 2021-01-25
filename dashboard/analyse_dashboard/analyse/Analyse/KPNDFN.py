@@ -2,13 +2,17 @@ from google.cloud import firestore
 
 from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad, FttXLocalETL
-from Analyse.Record import ListRecord, IntRecord, StringRecord, Record, DictRecord
-from functions import get_data_targets_init, error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
+from Analyse.Record.DictRecord import DictRecord
+from Analyse.Record.IntRecord import IntRecord
+from Analyse.Record.StringRecord import StringRecord
+from Analyse.Record.ListRecord import ListRecord
+from Analyse.Record.Record import Record
+from functions import error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, \
-    get_project_dates, calculate_weektarget, calculate_lastweekrealisatie, \
-    calculate_weekrealisatie, calculate_weekHCHPend, calculate_weeknerr, multi_index_to_dict
+    calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
+    calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
+    make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new
 import pandas as pd
-from Analyse.Timeseries import Timeseries_collection
 
 import logging
 from toggles import toggles
@@ -21,30 +25,29 @@ class KPNDFNExtract(FttXExtract):
         super().__init__(**kwargs)
         self.planning_location = kwargs['config'].get("planning_location")
         self.target_location = kwargs['config'].get("target_location")
-        self.map_key = kwargs['config'].get('map_key')
         self.client_name = kwargs['config'].get('name')
 
     def extract(self):
-        self._extract_ftu()
+        self._extract_project_info()
         super().extract()
 
-    def _extract_ftu(self):
+    def _extract_project_info(self):
         logger.info(f"Extracting FTU {self.client_name}")
-        doc = next(
-            firestore.Client().collection('Data')
-            .where('graph_name', '==', 'project_dates').where('client', '==', self.client_name)
-            .stream(), None).get('record')
-        if doc is not None:
-            if doc['FTU0']:
-                date_FTU0 = doc['FTU0']
-                date_FTU1 = doc['FTU1']
-            else:
-                logger.warning("FTU0 and FTU1 in firestore are empty, getting from local file")
-                date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
-        else:
-            logger.warning("Could not retrieve FTU0 and FTU1 from firestore, getting from local file")
-            date_FTU0, date_FTU1 = get_data_targets_init(self.target_location, self.map_key)
-        self.extracted_data.ftu = Data({'date_FTU0': date_FTU0, 'date_FTU1': date_FTU1})
+        doc = firestore.Client().collection('Data')\
+            .document(f'{self.client_name}_project_dates')\
+            .get().to_dict().get('record')
+
+        self.extracted_data.ftu = Data({'date_FTU0': doc['FTU0'], 'date_FTU1': doc['FTU1']})
+        self.extracted_data.civiel_startdatum = doc.get('Civiel startdatum')
+        self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
+        self.extracted_data.total_meters_bis = doc.get('meters BIS')
+        self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
+
+        df = pd.DataFrame(doc)
+        info_per_project = {}
+        for project in df.index:
+            info_per_project[project] = df.loc[project].to_dict()
+        self.extracted_data.project_info = info_per_project
 
     # def _extract_planning(self):
     #     logger.info("Extracting Planning")
@@ -99,14 +102,13 @@ class KPNAnalyse(FttXAnalyse):
         super().analyse()
         logger.info("Analysing using the KPN protocol")
         self._error_check_FCBC()
-        self._make_timeseries()
         self._prognose()
         self._targets()
         self._performance_matrix()
         self._prognose_graph()
-        self._overview()
+        if not toggles.new_projectspecific_views:
+            self._overview()
         self._calculate_project_indicators()
-        self._calculate_project_dates()
         self._set_filters()
 
     def _error_check_FCBC(self):
@@ -116,26 +118,6 @@ class KPNAnalyse(FttXAnalyse):
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
 
         self.intermediate_results.n_err = n_err
-
-    def _make_timeseries(self):
-        idx = pd.IndexSlice
-        logger.info(f"Generating timeseries for all projects for {self.client_name}")
-        target_slope = 0.51
-        opleverdatum_timeseries = Timeseries_collection(self.transformed_data.df,
-                                                        column='opleverdatum',
-                                                        agg_column='sleutel',
-                                                        totals=self.transformed_data.totals,
-                                                        cutoff=85,
-                                                        ftu_dates=self.extracted_data.ftu,
-                                                        agg_column_func='count',
-                                                        teams=None,
-                                                        norm=None,
-                                                        target_slope=target_slope)
-
-        self.timeseries_frame = opleverdatum_timeseries.get_timeseries_frame()
-        self.intermediate_results.d_real_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'cumsum_percentage']])
-        self.intermediate_results.y_target_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'y_target_percentage']])
-        self.intermediate_results.y_prog_l = multi_index_to_dict(self.timeseries_frame.loc[idx[:], idx[:, 'extrapolation_percentage']])
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
@@ -155,48 +137,53 @@ class KPNAnalyse(FttXAnalyse):
 
         self.intermediate_results.rc1 = results.rc1
         self.intermediate_results.rc2 = results.rc2
-        self.intermediate_results.d_real_l_old = results.d_real_l
-        if not toggles.timeseries:
-            self.intermediate_results.d_real_l = results.d_real_l
+        self.intermediate_results.d_real_l = results.d_real_l
         self.intermediate_results.x_prog = results.x_prog
-        self.intermediate_results.y_prog_l_old = results.y_prog_l
-        if not toggles.timeseries:
-            self.intermediate_results.y_prog_l = results.y_prog_l
+        self.intermediate_results.y_prog_l = results.y_prog_l
         self.intermediate_results.t_shift = results.t_shift
         self.intermediate_results.cutoff = results.cutoff
 
         self.record_dict.add('rc1', results.rc1, ListRecord, 'Data')
         self.record_dict.add('rc2', results.rc2, ListRecord, 'Data')
-        d_real_l_r = {k: v["Aantal"] for k, v in self.intermediate_results.d_real_l_old.items()}
+        d_real_l_r = {k: v["Aantal"] for k, v in self.intermediate_results.d_real_l.items()}
         self.record_dict.add('d_real_l_r', d_real_l_r, ListRecord, 'Data')
-        d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l_old.items()}
+        d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l.items()}
         self.record_dict.add('d_real_l_ri', d_real_l_ri, ListRecord, 'Data')
-        self.record_dict.add('y_prog_l', self.intermediate_results.y_prog_l_old, ListRecord, 'Data')
+        self.record_dict.add('y_prog_l', self.intermediate_results.y_prog_l, ListRecord, 'Data')
         self.record_dict.add('x_prog', results.x_prog, IntRecord, 'Data')
         self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
 
     def _targets(self):
         logger.info("Calculating targets for KPN")
-        y_target_l, t_diff = targets(self.intermediate_results.x_prog,
-                                     self.intermediate_results.timeline,
-                                     self.intermediate_results.t_shift,
-                                     self.extracted_data.ftu['date_FTU0'],
-                                     self.extracted_data.ftu['date_FTU1'],
-                                     self.intermediate_results.rc1,
-                                     self.intermediate_results.d_real_l_old)
-        self.intermediate_results.y_target_l_old = y_target_l
-        if not toggles.timeseries:
+        if toggles.new_projectspecific_views:
+            y_target_l, t_diff, target_per_week_dict = targets_new(self.intermediate_results.timeline,
+                                                                   self.project_list,
+                                                                   self.extracted_data.ftu['date_FTU0'],
+                                                                   self.extracted_data.ftu['date_FTU1'],
+                                                                   self.intermediate_results.total_objects)
             self.intermediate_results.y_target_l = y_target_l
+            self.intermediate_results.target_per_week = target_per_week_dict
+        else:
+            y_target_l, t_diff = targets(self.intermediate_results.x_prog,
+                                         self.intermediate_results.timeline,
+                                         self.intermediate_results.t_shift,
+                                         self.extracted_data.ftu['date_FTU0'],
+                                         self.extracted_data.ftu['date_FTU1'],
+                                         self.intermediate_results.rc1,
+                                         self.intermediate_results.d_real_l,
+                                         self.intermediate_results.total_objects)
+            self.intermediate_results.y_target_l = y_target_l
+
         self.intermediate_results.t_diff = t_diff
-        self.record_dict.add('y_target_l', self.intermediate_results.y_target_l_old, ListRecord, 'Data')
+        self.record_dict.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
 
     def _performance_matrix(self):
         logger.info("Calculating performance matrix for KPN")
         graph = performance_matrix(
             self.intermediate_results.timeline,
-            self.intermediate_results.y_target_l_old,
-            self.intermediate_results.d_real_l_old,
+            self.intermediate_results.y_target_l,
+            self.intermediate_results.d_real_l,
             self.intermediate_results.total_objects,
             self.intermediate_results.t_diff,
             self.intermediate_results.y_voorraad_act
@@ -214,11 +201,11 @@ class KPNAnalyse(FttXAnalyse):
 
     def _overview(self):
         result = overview(self.intermediate_results.timeline,
-                          self.intermediate_results.y_prog_l_old,
+                          self.intermediate_results.y_prog_l,
                           self.intermediate_results.total_objects,
-                          self.intermediate_results.d_real_l_old,
+                          self.intermediate_results.d_real_l,
                           self.transformed_data.planning,
-                          self.intermediate_results.y_target_l_old)
+                          self.intermediate_results.y_target_l)
         self.intermediate_results.df_prog = result.df_prog
         self.intermediate_results.df_target = result.df_target
         self.intermediate_results.df_real = result.df_real
@@ -281,44 +268,72 @@ class KPNAnalyse(FttXAnalyse):
     #         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_project_indicators(self):
-        logger.info("Calculating project indicators")
-        projects = self.transformed_data.df.project.unique().to_list()
-        record = {}
-        for project in projects:
-            project_indicators = {}
-            weektarget = calculate_weektarget(
-                project,
-                self.intermediate_results.y_target_l_old,
-                self.intermediate_results.total_objects,
-                self.intermediate_results.timeline)
-            project_df = self.transformed_data.df[self.transformed_data.df.project == project]
-            project_indicators['weekrealisatie'] = calculate_weekrealisatie(
-                project_df,
-                weektarget)
-            project_indicators['lastweek_realisatie'] = calculate_lastweekrealisatie(
-                project_df,
-                weektarget
-            )
-            project_indicators['weekHCHPend'] = calculate_weekHCHPend(
-                project,
-                self.intermediate_results.HC_HPend_l)
-            project_indicators['weeknerr'] = calculate_weeknerr(
-                project,
-                self.intermediate_results.n_err)
-            record[project] = project_indicators
-        graph_name = 'project_indicators'
-        self.record_dict.add(graph_name, record, DictRecord, 'Data')
+        if toggles.new_projectspecific_views:
+            logger.info("Calculating project indicators and making graphic boxes for dashboard")
+            df = self.transformed_data.df
+            list_of_projects = self.project_list
+            record = {}
 
-    def _calculate_project_dates(self):
-        project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
-                                          self.transformed_data.ftu['date_FTU1'],
-                                          self.intermediate_results.y_target_l_old,
-                                          self.intermediate_results.x_prog,
-                                          self.intermediate_results.timeline,
-                                          self.intermediate_results.rc1,
-                                          self.intermediate_results.d_real_l_old
-                                          )
-        self.record_dict.add("project_dates", project_dates, Record, "Data")
+            for project in list_of_projects:
+                project_indicators = {}
+                week_target = calculate_week_target(project=project,
+                                                    target_per_week=self.intermediate_results.target_per_week,
+                                                    FTU0=self.transformed_data.ftu['date_FTU0'],
+                                                    FTU1=self.transformed_data.ftu['date_FTU1'],
+                                                    time_delta_days=0)
+                lastweek_target = calculate_week_target(project=project,
+                                                        target_per_week=self.intermediate_results.target_per_week,
+                                                        FTU0=self.transformed_data.ftu['date_FTU0'],
+                                                        FTU1=self.transformed_data.ftu['date_FTU1'],
+                                                        time_delta_days=7)
+
+                project_df = df[df.project == project]
+
+                project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
+                    project_df, week_target)
+
+                project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
+                    project_df, lastweek_target)
+
+                project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
+                    project=project, ratio_HC_HPend_per_project=self.intermediate_results.ratio_HC_HPend_per_project)
+
+                project_indicators['weeknerr'] = make_graphics_for_number_errors_fcbc_per_project(
+                    project=project, number_errors_per_project=self.intermediate_results.n_err)
+
+                record[project] = project_indicators
+
+            self.record_dict.add('project_indicators', record, DictRecord, 'Data')
+
+        else:
+            logger.info("Calculating project indicators")
+            df = self.transformed_data.df
+            list_of_projects = self.project_list
+            record = {}
+
+            for project in list_of_projects:
+                project_indicators = {}
+                weektarget = calculate_weektarget(project,
+                                                  self.intermediate_results.y_target_l,
+                                                  self.intermediate_results.total_objects,
+                                                  self.intermediate_results.timeline)
+                project_df = df[df.project == project]
+
+                project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
+                    project_df, weektarget)
+
+                project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
+                    project_df, weektarget)
+
+                project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
+                    project, self.intermediate_results.HC_HPend_l)
+
+                project_indicators['weeknerr'] = make_graphics_for_number_errors_fcbc_per_project(
+                    project, self.intermediate_results.n_err)
+
+                record[project] = project_indicators
+
+            self.record_dict.add('project_indicators', record, DictRecord, 'Data')
 
     # def _analysis_documents(self):
     #     doc2, doc3 = analyse_documents(

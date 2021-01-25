@@ -23,6 +23,7 @@ if toggles.upload:
 logging.info("Importing the rest")
 from layout import default  # noqa: E402
 import importlib  # noqa: E402
+logging.info("Importing Done")
 
 logging.info("Setting base layout")
 app.layout = html.Div([

@@ -38,4 +38,4 @@ def validate_laswerk_ap_gereed(df):
 
 
 def validate_geschouwed(df):
-    br.geschouwed()
+    br.geschouwed(df)

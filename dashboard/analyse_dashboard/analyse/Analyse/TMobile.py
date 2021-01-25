@@ -1,6 +1,8 @@
 from google.cloud import firestore
 from Analyse.FttX import FttXETL, FttXAnalyse, FttXTransform, PickleExtract, FttXTestLoad, FttXLocalETL
-from Analyse.Record import Record, DocumentListRecord, DictRecord
+from Analyse.Record.Record import Record
+from Analyse.Record.DocumentListRecord import DocumentListRecord
+from Analyse.Record.DictRecord import DictRecord
 import business_rules as br
 from functions import calculate_projectindicators_tmobile, calculate_oplevertijd, wait_bins
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
@@ -107,7 +109,7 @@ class TMobileAnalyse(FttXAnalyse):
         counts_by_project = calculate_projectindicators_tmobile(self.transformed_data.df)
         self.record_dict.add(key="project_indicators",
                              collection="Data",
-                             RecordType=DictRecord,
+                             record_type=DictRecord,
                              record=counts_by_project)
 
     def _endriched_data(self):
