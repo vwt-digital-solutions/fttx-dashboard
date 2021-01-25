@@ -1,9 +1,11 @@
+import os
+
 from Analyse.Capacity_analysis.PhaseCapacity.GeulenCapacity import GeulenCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.LasAPCapacity import LasAPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
-from Analyse.ETL import Extract, Load
+from Analyse.ETL import Extract, Load, logger
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXExtract, FttXTransform
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
@@ -96,7 +98,7 @@ class CapacityAnalyse:
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
         bis_etl = BISETL(client=self.client,
-                         excel_path='C:/Users/agvanturnhout/Documents/ProjectenVWT/Git_repos/data/DataSchaderapportage2')
+                         excel_path='/Users/caspervanhouten/Clients/VWT/data/schaderapportages')
         bis_etl.extract()
         bis_etl.transform()
         dft = bis_etl.transformed_data.df
@@ -106,6 +108,7 @@ class CapacityAnalyse:
                            }
 
         line_record_list = RecordList()
+
         for project, project_df in self.transformed_data.df.groupby(by="project"):
             if project in project_mapping:
                 project_t = project_mapping[project]
@@ -151,7 +154,20 @@ class CapacityETL(FttXExtract, CapacityTransform, CapacityAnalyse, CapacityLoad)
     """
     Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
     """
-    ...
+    def __init__(self, **kwargs):
+        self.client = kwargs.get("client", "client_unknown")
+        super().__init__(**kwargs)
+
+
+class CapacityLocalETL(CapacityETL):
+
+    def load(self):
+        if 'FIRESTORE_EMULATOR_HOST' in os.environ:
+            logger.info("Loading into emulated firestore")
+            super().load()
+        else:
+            logger.warning(
+                "Attempting to load with a local ETL process but no emulator is configured. Loading aborted.")
 
 
 class CapacityTestETL(PickleExtract, FttXTestLoad, CapacityETL):

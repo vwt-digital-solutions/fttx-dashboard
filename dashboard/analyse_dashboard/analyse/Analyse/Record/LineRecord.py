@@ -29,7 +29,9 @@ class LineRecord(Record):
                     phase=self.phase)
 
     def _transform(self, record):
-        return record
+        record = record.make_series()
+        record.index = record.index.format()
+        return record.to_dict()
 
     def document_name(self, **kwargs):
         """
@@ -41,6 +43,5 @@ class LineRecord(Record):
             str: Document name as string.
 
         """
-        graph_name = kwargs.get('graph_name')
-        client = kwargs.get('client')
-        return f'{client}_{self.phase}_{graph_name}'
+
+        return f'{self.client}_{self.phase}_{self.graph_name}'
