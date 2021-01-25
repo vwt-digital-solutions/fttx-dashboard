@@ -6,6 +6,18 @@ from layout.components.figure import figure
 
 
 def capacity_template(client):
+    """
+    The template for the capacity view.
+
+    The phase selector is shown at the top, followed by the summarized data that answers the most important questions.
+    Lastly there is a button that lets you open the more information panel.
+
+    Args:
+        client:
+
+    Returns:
+        html.Div: The capacity view.
+    """
     return html.Div(
         id=f'cookie-factory-{client}',
         children=[
