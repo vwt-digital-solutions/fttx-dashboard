@@ -4,21 +4,20 @@ from dash.exceptions import PreventUpdate
 
 import config
 
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 from app import app
 from layout.components.indicator import indicator
 
 for client in config.client_config.keys():
     @app.callback(
-        Output(f'capacity-phase-schouwen-{client}', 'n_clicks'),
+        Output(f'capacity-phase-Schouwen-{client}', 'n_clicks'),
         [
             Input("project-tabs", "active_tab")
         ]
     )
     def switch_tab(active_tab):
         if active_tab == "tab-capaciteit":
-            print(active_tab)
             return 1
         return [None]
 
@@ -57,3 +56,13 @@ for client in config.client_config.keys():
                 ]
             )
         ]
+
+    @app.callback(
+        Output(f"more-info-collapse-{client}", "is_open"),
+        [Input(f"collapse-button-{client}", "n_clicks")],
+        [State(f"more-info-collapse-{client}", "is_open")],
+    )
+    def toggle_collapse(n, is_open):
+        if n:
+            return not is_open
+        return is_open

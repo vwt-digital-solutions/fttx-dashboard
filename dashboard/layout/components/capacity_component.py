@@ -1,6 +1,9 @@
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 
+from data.data import no_graph
+from layout.components.figure import figure
+
 
 def capacity_template(client):
     return html.Div(
@@ -18,11 +21,26 @@ def capacity_template(client):
             ),
             html.Div(
                 id=f"capacity-indicators-{client}",
-
             ),
-            html.Div(
-                id=f"capacity-test-{client}",
-                className="container-display",
+            dbc.Row(
+                id=f"capacity-info-{client}",
+                children=dbc.Col(
+                    [
+                        dbc.Button(
+                            "Meer informatie",
+                            id=f"collapse-button-{client}",
+                            className="mb-3",
+                            color="primary",
+                        ),
+                        dbc.Collapse(
+                            figure(
+                                figure=no_graph(title="Verdieping Capaciteit", text='Geen data...')
+                            ),
+                            id=f"more-info-collapse-{client}",
+                        ),
+                    ],
+                    width=12
+                )
 
             )
         ]
