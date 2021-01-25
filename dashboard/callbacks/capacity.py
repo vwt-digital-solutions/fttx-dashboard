@@ -1,5 +1,4 @@
 from dash import callback_context
-import dash_html_components as html
 from dash.exceptions import PreventUpdate
 
 import config
@@ -7,7 +6,7 @@ import config
 from dash.dependencies import Input, Output, State
 
 from app import app
-from layout.components.indicator import indicator
+from layout.components.capacity.capacity_summary import capacity_summary
 
 for client in config.client_config.keys():
     @app.callback(
@@ -56,31 +55,8 @@ for client in config.client_config.keys():
         """
         if not callback_context.triggered:
             raise PreventUpdate
-        trigger = callback_context.triggered[0]['prop_id'].split("-")[2]
-        return [
-            html.Div(
-                className="container-display",
-                children=html.H2(f"Capaciteit voor {trigger}"),
-            ),
-            html.Div(
-                className="container-display",
-                children=[
-                    indicator(value=500,
-                              previous_value=480,
-                              title="Wat ga ik doen?"),
-                    indicator(value=500,
-                              previous_value=480,
-                              title="Wat heb ik afgesproken?"),
-                    indicator(value=500,
-                              previous_value=480,
-                              title="Wat kan ik doen?"),
-                    indicator(value=500,
-                              previous_value=480,
-                              title="Wat moet ik doen?")
-
-                ]
-            )
-        ]
+        phase = callback_context.triggered[0]['prop_id'].split("-")[2]
+        return capacity_summary(phase)
 
     @app.callback(
         Output(f"more-info-collapse-{client}", "is_open"),
@@ -89,7 +65,7 @@ for client in config.client_config.keys():
     )
     def toggle_collapse(n, is_open):
         """
-        This callback opens and collapes the more info panel.
+        This callback opens and collapses the more info panel.
 
         Args:
             n:
