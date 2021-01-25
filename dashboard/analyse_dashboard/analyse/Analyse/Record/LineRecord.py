@@ -28,6 +28,9 @@ class LineRecord(Record):
                     project=self.project,
                     phase=self.phase)
 
+    def _transform(self, record):
+        return record
+
     def document_name(self, **kwargs):
         """
         Make document name based on client, phase and graph name.

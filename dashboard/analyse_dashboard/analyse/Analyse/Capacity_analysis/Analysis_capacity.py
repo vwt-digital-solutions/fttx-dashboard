@@ -96,41 +96,53 @@ class CapacityAnalyse:
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
         bis_etl = BISETL(client=self.client,
-                         excel_path='C:/Users/agvanturnhout/Documents/ProjectenVWT/FTTX/B6074' +
-                                    ' Spijkenisse Invulformulier Schade Registratie.xlsx')
+                         excel_path='C:/Users/agvanturnhout/Documents/ProjectenVWT/Git_repos/data/DataSchaderapportage2')
         bis_etl.extract()
         bis_etl.transform()
         dft = bis_etl.transformed_data.df
-        df_geul = dft[~dft.meters_bis_geul.isna()]
-        df_schieten = dft[~dft.meters_tuinboring.isna()]
+        project_mapping = {'KPN Spijkernisse': 'Spijkenisse',
+                           'KPN Gouda Kort Haarlem en Noord': 'Gouda Kort-Haarlem',
+                           'Nijmegen Dukenburg': 'Dukenburg Schade'
+                           }
 
         line_record_list = RecordList()
         for project, project_df in self.transformed_data.df.groupby(by="project"):
+            if project in project_mapping:
+                project_t = project_mapping[project]
+            else:
+                project_t = project_mapping['KPN Spijkernisse']
+            df_geul = dft[(~dft.meters_bis_geul.isna())].loc[project_t]
+            df_schieten = dft[(~dft.meters_tuinboring.isna())].loc[project_t]
             phase_data = self.transformed_data.project_phase_data[project]
             line_record_list += GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
                                                phases_config=phase_data['geulen'],  # Example phase_data.
                                                phase='geulen',
-                                               client=self.client
+                                               client=self.client,
+                                               project=project
                                                ).algorithm().get_record()
             line_record_list += SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
                                                  phases_config=phase_data['schieten'],
                                                  phase='schieten',
-                                                 client=self.client
+                                                 client=self.client,
+                                                 project=project
                                                  ).algorithm().get_record()
             line_record_list += LasAPCapacity(df=self.transformed_data.df[phase_data['lasap']['phase_column']],
                                               phases_config=phase_data['lasap'],
                                               phase='lasap',
-                                              client=self.client
+                                              client=self.client,
+                                              project=project
                                               ).algorithm().get_record()
             line_record_list += LasDPCapacity(df=self.transformed_data.df[phase_data['lasdp']['phase_column']],
                                               phases_config=phase_data['lasdp'],
                                               phase='lasdp',
-                                              client=self.client
+                                              client=self.client,
+                                              project=project
                                               ).algorithm().get_record()
             line_record_list += OpleverCapacity(df=self.transformed_data.df[phase_data['oplever']['phase_column']],
                                                 phases_config=phase_data['oplever'],
                                                 phase='oplever',
-                                                client=self.client
+                                                client=self.client,
+                                                project=project
                                                 ).algorithm().get_record()
         self.records = line_record_list
 

@@ -16,10 +16,11 @@ class PhaseCapacity:
         phases_config:
     """
 
-    def __init__(self, df: pd.DataFrame, phases_config: dict, phase=None, client=None):
+    def __init__(self, df: pd.DataFrame, phases_config: dict, phase=None, client=None, project=None):
         self.df = df
         self.phase = phase
         self.client = client
+        self.project = project
         self.phases_config = phases_config
         self.record_list = RecordList()
 
@@ -65,19 +66,23 @@ class PhaseCapacity:
                                              collection='Lines',
                                              graph_name=f'{self.client}+{self.phase}+{self.target_over_time.name}',
                                              phase=self.phase,
-                                             client=self.client)
-        # poc_ideal_over_time_record = LineRecord(record=self.poc_ideal,
-        #                                         collection='Lines',
-        #                                         graph_name=f'{self.client}+{self.phase}+{self.poc_ideal.name}',
-        #                                         phase=self.phase,
-        #                                         client=self.client)
-        # capacity_over_time_record = LineRecord(record=self.capacity_ideal,
-        #                                        collection='Lines',
-        #                                        graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
-        #                                        phase=self.phase,
-        #                                        client=self.client)
-        # self.record_list.append(target_over_time_record).append(poc_ideal_over_time_record).append(capacity_over_time_record)
+                                             client=self.client,
+                                             project=self.project)
+        poc_ideal_over_time_record = LineRecord(record=self.poc_ideal,
+                                                collection='Lines',
+                                                graph_name=f'{self.client}+{self.phase}+{self.poc_ideal.name}',
+                                                phase=self.phase,
+                                                client=self.client,
+                                                project=self.project)
+        capacity_over_time_record = LineRecord(record=self.capacity_ideal,
+                                               collection='Lines',
+                                               graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
+                                               phase=self.phase,
+                                               client=self.client,
+                                               project=self.project)
         self.record_list.append(target_over_time_record)
+        self.record_list.append(poc_ideal_over_time_record)
+        self.record_list.append(capacity_over_time_record)
         return self
 
     # TODO: Documentation by Casper van Houten
