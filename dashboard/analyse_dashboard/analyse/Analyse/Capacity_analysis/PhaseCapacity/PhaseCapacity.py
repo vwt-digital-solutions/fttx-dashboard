@@ -16,13 +16,15 @@ class PhaseCapacity:
         phases_config:
     """
 
-    def __init__(self, df: pd.DataFrame, phases_config: dict, phase=None, client=None, project=None):
+    def __init__(self, df: pd.DataFrame, phases_config: dict, phase=None, client=None, project=None, werkvoorraad=None):
         self.df = df
         self.phase = phase
         self.client = client
         self.project = project
+        self.werkvoorraad = werkvoorraad
         self.phases_config = phases_config
         self.record_list = RecordList()
+        self.werkvoorraad = werkvoorraad
 
     def algorithm(self):
         """
@@ -60,6 +62,12 @@ class PhaseCapacity:
                                         name='poc_ideal_indicator')
         # calculate ideal capacity over time
         self.capacity_ideal = self.poc_ideal / self.phases_config['phase_norm']
+        self.capacity_ideal.name = 'capacity_ideal_indicator'
+
+        # calculate werkvoorraad
+        if self.phase == 'geulen':
+            self.werkvoorraad = self.poc_ideal
+        self.werkvoorraad.name = 'werkvoorraad_indicator'
 
         # write indicators to records
         target_over_time_record = LineRecord(record=self.target_over_time,
@@ -80,9 +88,16 @@ class PhaseCapacity:
                                                phase=self.phase,
                                                client=self.client,
                                                project=self.project)
+        werkvoorraad_over_time_record = LineRecord(record=self.capacity_ideal,
+                                                   collection='Lines',
+                                                   graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
+                                                   phase=self.phase,
+                                                   client=self.client,
+                                                   project=self.project)
         self.record_list.append(target_over_time_record)
         self.record_list.append(poc_ideal_over_time_record)
         self.record_list.append(capacity_over_time_record)
+        self.record_list.append(werkvoorraad_over_time_record)
         return self
 
     # TODO: Documentation by Casper van Houten

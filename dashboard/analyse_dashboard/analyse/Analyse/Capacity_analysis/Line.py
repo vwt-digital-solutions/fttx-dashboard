@@ -432,3 +432,8 @@ class TimeseriesLine(PointLine):
             raise ValueError(f"Cannot append Lines that have overlapping indices: {intersect}")
 
         return TimeseriesLine(series.add(other_series, fill_value=0))
+
+    def translate_x(self, delta=0):
+        data = self.data
+        domain = self.domain.shift(delta)
+        return TimeseriesLine(data=data, domain=domain)
