@@ -16,14 +16,16 @@ class LineRecord(Record):
         **kwargs:
     """
 
-    def __init__(self, record, collection, client, graph_name, phase, **kwargs):
+    def __init__(self, record, collection, client, graph_name, phase, project, **kwargs):
         super().__init__(record, collection, client, graph_name, **kwargs)
         self.phase = phase
+        self.project = project
 
-    def _to_document(self, graph_name, client):
+    def _to_document(self):
         return dict(record=self.record,
-                    client=client,
-                    line=graph_name,
+                    client=self.client,
+                    line=self.graph_name,
+                    project=self.project,
                     phase=self.phase)
 
     def document_name(self, **kwargs):
