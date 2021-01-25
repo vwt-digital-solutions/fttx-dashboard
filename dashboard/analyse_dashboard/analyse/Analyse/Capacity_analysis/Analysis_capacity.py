@@ -32,13 +32,13 @@ class CapacityTransform(FttXTransform):
 
     def get_civiel_start_date(self, start_date):
         default_start_date = '2021-01-01'
-        if start_date == 'None':
+        if start_date == 'None' or start_date is None:
             start_date = default_start_date
         return pd.to_datetime(start_date)
 
     def get_total_units(self, total_units, type_total):
         default_total_unit_dict = {'meters BIS': 100000, 'meters tuinschieten': 50000, 'huisaansluitingen': 10000}
-        if total_units == 'None':
+        if total_units == 'None' or total_units is None:
             total_units = default_total_unit_dict[type_total]
         return float(total_units)
 
@@ -48,7 +48,7 @@ class CapacityTransform(FttXTransform):
         performance_norm_config = 1
         # values for Spijkernisse for the moment
 
-        for project in self.transformed_data.df.project.unique():
+        for project in self.project_list:
             phases_projectspecific[project] = {}
             for phase, phase_config in self.config['capacity_phases'].items():
                 project_info = self.extracted_data.project_info[project]

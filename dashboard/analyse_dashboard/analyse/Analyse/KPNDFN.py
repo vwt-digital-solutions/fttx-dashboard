@@ -143,16 +143,16 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.t_shift = results.t_shift
         self.intermediate_results.cutoff = results.cutoff
 
-        self.record_dict.add('rc1', results.rc1, ListRecord, 'Data')
-        self.record_dict.add('rc2', results.rc2, ListRecord, 'Data')
+        self.records.add('rc1', results.rc1, ListRecord, 'Data')
+        self.records.add('rc2', results.rc2, ListRecord, 'Data')
         d_real_l_r = {k: v["Aantal"] for k, v in self.intermediate_results.d_real_l.items()}
-        self.record_dict.add('d_real_l_r', d_real_l_r, ListRecord, 'Data')
+        self.records.add('d_real_l_r', d_real_l_r, ListRecord, 'Data')
         d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l.items()}
-        self.record_dict.add('d_real_l_ri', d_real_l_ri, ListRecord, 'Data')
-        self.record_dict.add('y_prog_l', self.intermediate_results.y_prog_l, ListRecord, 'Data')
-        self.record_dict.add('x_prog', results.x_prog, IntRecord, 'Data')
-        self.record_dict.add('t_shift', results.t_shift, StringRecord, 'Data')
-        self.record_dict.add('cutoff', results.cutoff, Record, 'Data')
+        self.records.add('d_real_l_ri', d_real_l_ri, ListRecord, 'Data')
+        self.records.add('y_prog_l', self.intermediate_results.y_prog_l, ListRecord, 'Data')
+        self.records.add('x_prog', results.x_prog, IntRecord, 'Data')
+        self.records.add('t_shift', results.t_shift, StringRecord, 'Data')
+        self.records.add('cutoff', results.cutoff, Record, 'Data')
 
     def _targets(self):
         logger.info("Calculating targets for KPN")
@@ -176,7 +176,7 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.y_target_l = y_target_l
 
         self.intermediate_results.t_diff = t_diff
-        self.record_dict.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
+        self.records.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
 
     def _performance_matrix(self):
         logger.info("Calculating performance matrix for KPN")
@@ -188,7 +188,7 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.t_diff,
             self.intermediate_results.y_voorraad_act
         )
-        self.record_dict.add('project_performance', graph, Record, 'Graphs')
+        self.records.add('project_performance', graph, Record, 'Graphs')
 
     def _prognose_graph(self):
         logger.info("Calculating prognose graph for KPN")
@@ -197,7 +197,7 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.y_prog_l,
             self.intermediate_results.d_real_l,
             self.intermediate_results.y_target_l)
-        self.record_dict.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
+        self.records.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
 
     def _overview(self):
         result = overview(self.intermediate_results.timeline,
@@ -303,7 +303,7 @@ class KPNAnalyse(FttXAnalyse):
 
                 record[project] = project_indicators
 
-            self.record_dict.add('project_indicators', record, DictRecord, 'Data')
+            self.records.add('project_indicators', record, DictRecord, 'Data')
 
         else:
             logger.info("Calculating project indicators")
@@ -333,7 +333,7 @@ class KPNAnalyse(FttXAnalyse):
 
                 record[project] = project_indicators
 
-            self.record_dict.add('project_indicators', record, DictRecord, 'Data')
+            self.records.add('project_indicators', record, DictRecord, 'Data')
 
     # def _analysis_documents(self):
     #     doc2, doc3 = analyse_documents(

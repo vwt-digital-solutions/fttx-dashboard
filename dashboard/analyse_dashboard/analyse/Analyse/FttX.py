@@ -342,7 +342,7 @@ class FttXAnalyse(FttXBase):
         super().__init__(**kwargs)
         if not hasattr(self, 'config'):
             self.config = kwargs.get("config")
-        self.record_dict = RecordListWrapper(self.client)
+        self.records = RecordListWrapper(self.client)
         self.intermediate_results = Data()
 
     def analyse(self):
@@ -395,8 +395,8 @@ class FttXAnalyse(FttXBase):
                     data_set="progress_over_time",
                     record=record
                 ))
-            self.record_dict.add("Progress_over_time", document_list, DocumentListRecord, "Data",
-                                 document_key=["client", "project", 'data_set'])
+            self.records.add("Progress_over_time", document_list, DocumentListRecord, "Data",
+                             document_key=["client", "project", 'data_set'])
 
     def _progress_per_phase(self):
         logger.info("Calculating project progress per phase")
@@ -428,8 +428,8 @@ class FttXAnalyse(FttXBase):
                      in
                      progress_df.groupby('project').sum().to_dict(orient="index").items()]
 
-        self.record_dict.add("Progress", documents, DocumentListRecord, "Data",
-                             document_key=["client", "project", 'data_set'])
+        self.records.add("Progress", documents, DocumentListRecord, "Data",
+                         document_key=["client", "project", 'data_set'])
 
     def _calculate_list_of_years(self):
         logger.info("Calculating list of years")
@@ -440,7 +440,7 @@ class FttXAnalyse(FttXBase):
             list_of_years += list(dc_data[col].dropna().dt.year.unique().astype(str))
         list_of_years = sorted(list(set(list_of_years)))
 
-        self.record_dict.add('List_of_years', list_of_years, Record, 'Data')
+        self.records.add('List_of_years', list_of_years, Record, 'Data')
         self.intermediate_results.List_of_years = list_of_years
 
     def _calculate_projectspecs(self):
@@ -448,7 +448,7 @@ class FttXAnalyse(FttXBase):
         results = calculate_projectspecs(self.transformed_data.df)
 
         # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
-        self.record_dict.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
+        self.records.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
         # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
         # self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
         # self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
@@ -463,17 +463,17 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating y voorraad act for KPN")
         y_voorraad_act = calculate_y_voorraad_act(self.transformed_data.df)
         self.intermediate_results.y_voorraad_act = y_voorraad_act
-        self.record_dict.add('y_voorraad_act', y_voorraad_act, Record, 'Data')
+        self.records.add('y_voorraad_act', y_voorraad_act, Record, 'Data')
 
     def _reden_na(self):
         logger.info("Calculating reden na graphs")
         overview_record = overview_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
         record_dict = individual_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
-        self.record_dict.add('reden_na_overview', overview_record, Record, 'Data')
-        self.record_dict.add('reden_na_projects', record_dict, DictRecord, 'Data')
+        self.records.add('reden_na_overview', overview_record, Record, 'Data')
+        self.records.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
     def _set_filters(self):
-        self.record_dict.add("project_names", create_project_filter(self.transformed_data.df), ListRecord, "Data")
+        self.records.add("project_names", create_project_filter(self.transformed_data.df), ListRecord, "Data")
 
     # def _jaaroverzicht(self):
     #     # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
@@ -496,24 +496,24 @@ class FttXAnalyse(FttXBase):
                 .reset_index() \
                 .dropna() \
                 .to_dict(orient='records')
-        self.record_dict.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
+        self.records.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
 
     def _calculate_redenna_per_period(self):
         logger.info("Calculating redenna per period (week & month)")
         by_week = calculate_redenna_per_period(df=self.transformed_data.df,
                                                date_column="hasdatum",
                                                freq="W-MON")
-        self.record_dict.add('redenna_by_week', by_week, Record, 'Data')
+        self.records.add('redenna_by_week', by_week, Record, 'Data')
 
         by_month = calculate_redenna_per_period(df=self.transformed_data.df,
                                                 date_column="hasdatum",
                                                 freq="M")
-        self.record_dict.add('redenna_by_month', by_month, Record, 'Data')
+        self.records.add('redenna_by_month', by_month, Record, 'Data')
 
         by_year = calculate_redenna_per_period(df=self.transformed_data.df,
                                                date_column="hasdatum",
                                                freq="Y")
-        self.record_dict.add('redenna_by_year', by_year, Record, 'Data')
+        self.records.add('redenna_by_year', by_year, Record, 'Data')
 
     def _make_records_for_dashboard_values(self, project_list):
         logger.info("Making records for dashboard overview  values")
@@ -551,8 +551,8 @@ class FttXAnalyse(FttXBase):
                         year=year,
                         record=record
                     ))
-        self.record_dict.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "frequency", "year"])
+        self.records.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
         logger.info("Making voorspelling and planning records for dashboard overview  values")
@@ -584,8 +584,8 @@ class FttXAnalyse(FttXBase):
                         year=year,
                         record=record
                     ))
-        self.record_dict.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "frequency", "year"])
+        self.records.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_hc_hpend_for_dashboard_values(self):
         logger.info("Making record of ratio HC/HPend for dashboard overview  values")
@@ -607,8 +607,8 @@ class FttXAnalyse(FttXBase):
                     year=year,
                     record=record
                 ))
-        self.record_dict.add("Ratios_hc_hpend_per_jaar", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "frequency", "year"])
+        self.records.add("Ratios_hc_hpend_per_jaar", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_under_8weeks_for_dashboard_values(self):
         logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
@@ -630,8 +630,8 @@ class FttXAnalyse(FttXBase):
                     year=year,
                     record=record
                 ))
-        self.record_dict.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "graph_name", "frequency", "year"])
+        self.records.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_intermediate_results_ratios_project_specific_values(self):
         logger.info("Making intermediate results of ratios for project specific values")
@@ -693,19 +693,19 @@ class FttXETL(ETL, FttXExtract, FttXAnalyse, FttXTransform, FttXLoad):
         self.load()
 
     def document_names(self):
-        return [value.document_name(client=self.client, graph_name=key) for key, value in self.record_dict.items()]
+        return [value.document_name(client=self.client, graph_name=key) for key, value in self.records.items()]
 
     def __repr__(self):
         return f"Analysis(client={self.client})"
 
     def __str__(self):
-        fields = [field_name for field_name, data in self.record_dict.items()]
+        fields = [field_name for field_name, data in self.records.items()]
         return f"Analysis(client={self.client}) containing: {fields}"
 
     def _repr_html_(self):
         rows = "\n".join(
             [data.to_table_part(field_name, self.client)
-             for field_name, data in self.record_dict.items()
+             for field_name, data in self.records.items()
              ])
 
         table = f"""<table>
