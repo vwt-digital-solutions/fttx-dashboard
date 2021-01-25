@@ -9,7 +9,7 @@ from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
 from functions import error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     prognose, targets, performance_matrix, prognose_graph, overview, \
-    get_project_dates, calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
+    calculate_weektarget, calculate_lastweek_realisatie_hpend_and_return_graphics, \
     calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
     make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new
 import pandas as pd
@@ -109,7 +109,6 @@ class KPNAnalyse(FttXAnalyse):
         if not toggles.new_projectspecific_views:
             self._overview()
         self._calculate_project_indicators()
-        self._calculate_project_dates()
         self._set_filters()
 
     def _error_check_FCBC(self):
@@ -335,17 +334,6 @@ class KPNAnalyse(FttXAnalyse):
                 record[project] = project_indicators
 
             self.record_dict.add('project_indicators', record, DictRecord, 'Data')
-
-    def _calculate_project_dates(self):
-        project_dates = get_project_dates(self.transformed_data.ftu['date_FTU0'],
-                                          self.transformed_data.ftu['date_FTU1'],
-                                          self.intermediate_results.y_target_l,
-                                          self.intermediate_results.x_prog,
-                                          self.intermediate_results.timeline,
-                                          self.intermediate_results.rc1,
-                                          self.intermediate_results.d_real_l
-                                          )
-        self.record_dict.add("project_dates", project_dates, Record, "Data")
 
     # def _analysis_documents(self):
     #     doc2, doc3 = analyse_documents(

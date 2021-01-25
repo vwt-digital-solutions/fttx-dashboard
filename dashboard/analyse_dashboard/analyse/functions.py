@@ -1187,20 +1187,6 @@ def get_pie_layout():
     return layout
 
 
-# TODO: Documentation by Andre van Turnhout
-def get_project_dates(date_FTU0, date_FTU1, y_target_l, x_prog, x_d, rc1, d_real_l):
-    for key in y_target_l:
-        if (key in date_FTU0) & (key not in date_FTU1):  # estimate target based on average projectspeed
-            date_FTU1[key] = x_d[int(round(x_prog[x_d == date_FTU0[key]][0] +
-                                           (100 / (sum(rc1.values()) / len(rc1.values())))[0]))].strftime('%Y-%m-%d')
-        if (key not in date_FTU0):  # project has finished, estimate target on what has been done
-            date_FTU0[key] = x_d[d_real_l[key].index.min()].strftime('%Y-%m-%d')
-            date_FTU1[key] = x_d[d_real_l[key].index.max()].strftime('%Y-%m-%d')
-
-    analysis = dict(FTU0=date_FTU0, FTU1=date_FTU1)
-    return analysis
-
-
 # def analyse_documents(y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
 #                       df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
 #                       Schouw_BIS, HPend_l, n_err, Schouw, BIS):
