@@ -22,6 +22,7 @@ from callbacks import *  # noqa: F403, F401, E402
 logging.info("Importing the rest")
 from layout import default  # noqa: E402
 import importlib  # noqa: E402
+logging.info("Importing Done")
 
 
 def get_page(page):
