@@ -39,7 +39,7 @@ class FttXBase(ETLBase):
         if not hasattr(self, 'config'):
             self.config = kwargs.get("config")
         self.client = kwargs.get("client", "client_unknown")
-        self.record_dict = RecordListWrapper(client=self.client)
+        self.records = RecordListWrapper(client=self.client)
         self.intermediate_results = Data()
 
 
@@ -665,7 +665,7 @@ class FttXLoad(Load, FttXBase):
 
     def load(self):
         logger.info("Loading documents...")
-        self.record_dict.to_firestore()
+        self.records.to_firestore()
 
     def load_enriched(self):
         pass
@@ -678,7 +678,7 @@ class FttXTestLoad(FttXLoad):
     def load(self):
         logger.info("Nothing is loaded to the firestore as this is a test")
         logger.info("The following documents would have been updated/set:")
-        for document in self.record_dict:
+        for document in self.records:
             logger.info(document.document_name())
 
 

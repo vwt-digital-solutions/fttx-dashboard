@@ -70,7 +70,7 @@ class CapacityTransform(FttXTransform):
 # TODO: Documentation by Casper van Houten
 class CapacityLoad(Load):
     def load(self):
-        self.record_list.to_firestore()
+        self.records.to_firestore()
 
 
 # TODO: Casper van Houten, add some simple examples
@@ -132,9 +132,10 @@ class CapacityAnalyse:
                                                 phase='oplever',
                                                 client=self.client
                                                 ).algorithm().get_record()
+        self.records = line_record_list
 
 
-class CapacityETL(FttXExtract, CapacityTransform, CapacityAnalyse):
+class CapacityETL(FttXExtract, CapacityTransform, CapacityAnalyse, CapacityLoad):
     """
     Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
     """
