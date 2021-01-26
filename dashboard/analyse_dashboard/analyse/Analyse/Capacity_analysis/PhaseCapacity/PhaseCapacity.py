@@ -72,25 +72,25 @@ class PhaseCapacity:
         # write indicators to records
         target_over_time_record = LineRecord(record=self.target_over_time,
                                              collection='Lines',
-                                             graph_name=f'{self.client}+{self.phase}+{self.target_over_time.name}',
+                                             graph_name=f'{self.target_over_time.name}',
                                              phase=self.phase,
                                              client=self.client,
                                              project=self.project)
         poc_ideal_over_time_record = LineRecord(record=self.poc_ideal,
                                                 collection='Lines',
-                                                graph_name=f'{self.client}+{self.phase}+{self.poc_ideal.name}',
+                                                graph_name=f'{self.poc_ideal.name}',
                                                 phase=self.phase,
                                                 client=self.client,
                                                 project=self.project)
         capacity_over_time_record = LineRecord(record=self.capacity_ideal,
                                                collection='Lines',
-                                               graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
+                                               graph_name=f'{self.capacity_ideal.name}',
                                                phase=self.phase,
                                                client=self.client,
                                                project=self.project)
         werkvoorraad_over_time_record = LineRecord(record=self.capacity_ideal,
                                                    collection='Lines',
-                                                   graph_name=f'{self.client}+{self.phase}+{self.capacity_ideal.name}',
+                                                   graph_name=f'{self.capacity_ideal.name}',
                                                    phase=self.phase,
                                                    client=self.client,
                                                    project=self.project)
