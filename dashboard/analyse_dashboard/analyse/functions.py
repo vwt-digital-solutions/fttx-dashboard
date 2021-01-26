@@ -1459,21 +1459,39 @@ def multi_index_to_dict(df):
 #     return sum(br.bis_opgeleverd(df_copy))
 
 
-def extract_werkvoorraad_has_dates(df: pd.DataFrame) -> pd.Series:
+def extract_werkvoorraad_has_dates(df: pd.DataFrame, time_delta_days: int = 0, add_project_column: bool = False):
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
     has_werkvoorraad (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
 
     Args:
         df: The transformed dataframe
+        time_delta_days (int): optional, the number of days before today.
+        add_project_column (bool): Optional argument to return project column in addition to datecolumn
 
     Returns:
         pd.Series
 
     """
-    ds = df[br.has_werkvoorraad(df)][['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
-    ds.name = 'werkvoorraad_has_datum'
-    return ds
+    if toggles.new_projectspecific_views:
+        if add_project_column:
+            time_dataseries = df[br.has_werkvoorraad(df, time_delta_days)][
+                ['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+            time_dataseries.name = 'werkvoorraad_has_datum'
+            project_dataseries = df[br.has_werkvoorraad(df, time_delta_days)].project
+            df = pd.concat([time_dataseries, project_dataseries], axis=1)
+            return df
+        else:
+            ds = df[br.has_werkvoorraad(df, time_delta_days)][
+                ['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+            ds.name = 'werkvoorraad_has_datum'
+            return ds
+
+    else:
+        ds = df[br.has_werkvoorraad(df, time_delta_days)][
+            ['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
+        ds.name = 'werkvoorraad_has_datum'
+        return ds
 
 
 def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = False):
