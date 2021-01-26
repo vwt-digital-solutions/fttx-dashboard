@@ -4,6 +4,7 @@ from Analyse.ETL import Extract, ETL, Transform
 
 import pandas as pd
 import re
+import config
 
 
 class BISExtract(Extract):
@@ -18,8 +19,8 @@ class BISExtract(Extract):
         print("Extracting data from Excel")
         df_list = []
         client = storage.Client()
-        bucket = 'vwt-d-gew1-fttx-dashboard-data-stg'
-        folder = self.config.folder_data_schaderapportages
+        bucket = config.data_bucket
+        folder = config.folder_data_schaderapportages
         for file in client.list_blobs(bucket, prefix=folder):
             filename = file.name
             if filename[-5:] == '.xlsx':
