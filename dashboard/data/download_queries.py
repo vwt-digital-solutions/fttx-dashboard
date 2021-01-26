@@ -17,7 +17,7 @@ def validate_project(func):
         # Gets a dictionary of all supplied arguments and their values
         all_args = {**dict(zip(inspect.getfullargspec(func).args, args)), **kwargs}
 
-        projects = config.projects_dfn + config.projects_tmobile + config.subset_KPN_2020
+        projects = config.projects_dfn + config.projects_tmobile + config.subset_KPN_2021
 
         project = all_args.get("project")
         if project not in projects:
