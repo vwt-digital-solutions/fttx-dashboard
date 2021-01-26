@@ -146,7 +146,7 @@ for client in config.client_config.keys():
         redenna_by_period = collection.get_document(collection="Data",
                                                     client=client,
                                                     graph_name=f"redenna_by_{period}")
-
+        # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
         redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
 
         if redenna_dict:

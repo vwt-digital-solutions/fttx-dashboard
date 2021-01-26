@@ -66,7 +66,7 @@ def geschouwed(df, time_delta_days=0):
     return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
 
 
-# TODO: remove when removing toggle new_structure_overviews
+# TODO: remove when removing new_projectspecific_views
 def ordered(df, time_delta_days=0):
     return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
 
@@ -165,11 +165,6 @@ def toestemming_bekend(df):
     return ~df['toestemming'].isna()
 
 
-# TODO: Tjeerd Pols, remove this function.
-def toestemming_gegeven(df):
-    return ~df['toestemming_datum'].isna()
-
-
 def laswerk_ap_gereed(df):
     """
     Laswerk AP is done when `laswerkapgereed` is set to 1.
@@ -222,7 +217,6 @@ def laswerk_dp_niet_gereed(df):
     return df['laswerkdpgereed'] != '1'
 
 
-# TODO: remove when removing toggle new_structure_overviews
 def bis_opgeleverd(df):
     """
     BIS is done when `opleverstatus` is **not** set to 1.
@@ -233,7 +227,7 @@ def bis_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'] != '0'
+    return ~df['opleverstatus'].isin(['0', '90', '99'])
 
 
 def bis_niet_opgeleverd(df):
@@ -385,9 +379,9 @@ def has_werkvoorraad(df, time_delta_days=0):
             &
             (df.opleverdatum.isna() | (df.opleverdatum > time_point))
             &
-            ~df.toestemming_datum.isna()
+            (df.toestemming == 'Ja')
             &
-            ~df.opleverstatus.isin(['0', '90', '99'])
+            (~df.opleverstatus.isin(['0', '90', '99']))
     )
 
 
@@ -420,5 +414,5 @@ def target_tmobile(df):
             &
             (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
             &
-            (df.type == 'AANLEG')
+            (df.type.isin(['AANLEG', 'Aanleg']))
     )

@@ -1536,6 +1536,7 @@ def extract_realisatie_hc_dates(df: pd.DataFrame, add_project_column: bool = Fal
             return df[br.hc_opgeleverd(df)][['opleverdatum', 'project']]
         else:
             return df[br.hc_opgeleverd(df)].opleverdatum
+
     else:
         return df[br.hc_opgeleverd(df)].opleverdatum
 
