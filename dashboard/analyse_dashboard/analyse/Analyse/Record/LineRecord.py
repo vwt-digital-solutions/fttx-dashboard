@@ -1,4 +1,6 @@
 from Analyse.Record.Record import Record
+import pandas as pd
+from datetime import datetime, timedelta
 
 
 # TODO: Documentation by Casper van Houten
@@ -29,9 +31,22 @@ class LineRecord(Record):
                     phase=self.phase)
 
     def _transform(self, record):
-        record = record.make_series()
-        record.index = record.index.format()
-        return record.to_dict()
+        series = record.make_series().resample('W-MON').sum()
+        series.index = series.index.format()
+        record_to_write = {}
+        record_to_write['series'] = series.to_dict()
+        record_to_write['this_week'] = self.get_this_week_value(series)
+        return record_to_write
+
+    def get_this_week_value(self, series):
+        first_day_this_week = pd.to_datetime(datetime.now() -
+                                             timedelta(days=datetime.now().isoweekday() % 7 - 1)
+                                             ).strftime('%Y-%m-%d')
+        if first_day_this_week in series.index:
+            value = series[first_day_this_week]
+        else:
+            value = 0
+        return value
 
     def document_name(self, **kwargs):
         """

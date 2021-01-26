@@ -130,55 +130,57 @@ class CapacityAnalyse:
         line_record_list = RecordList()
 
         for project, project_df in self.transformed_data.df.groupby(by="project"):
-            if project in project_mapping:
-                project_t = project_mapping[project]
-            else:
-                project_t = project_mapping['KPN Spijkernisse']
-            dft = self.transformed_data.bis.df
-            df_geul = dft[(~dft.meters_bis_geul.isna())].loc[project_t]
-            df_schieten = dft[(~dft.meters_tuinboring.isna())].loc[project_t]
-            phase_data = self.transformed_data.project_phase_data[project]
-            fase_geulen = GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
-                                         phases_config=phase_data['geulen'],  # Example phase_data.
-                                         phase='geulen',
-                                         client=self.client,
-                                         project=project
-                                         ).algorithm()
-            line_record_list += fase_geulen.get_record()
-            fase_schieten = SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
-                                             phases_config=phase_data['schieten'],
-                                             phase='schieten',
+            if not self.transformed_data.df[self.transformed_data.df.project == project].empty:
+                if project in project_mapping:
+                    project_t = project_mapping[project]
+                else:
+                    project_t = project_mapping['KPN Spijkernisse']
+                dft = self.transformed_data.bis.df
+                df_geul = dft[(~dft.meters_bis_geul.isna())].loc[project_t]
+                df_schieten = dft[(~dft.meters_tuinboring.isna())].loc[project_t]
+                phase_data = self.transformed_data.project_phase_data[project]
+                fase_geulen = GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
+                                             phases_config=phase_data['geulen'],  # Example phase_data.
+                                             phase='geulen',
                                              client=self.client,
-                                             project=project,
-                                             werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['schieten']['phase_delta'])
+                                             project=project
                                              ).algorithm()
-            line_record_list += fase_schieten.get_record()
-            fase_lasap = LasAPCapacity(df=self.transformed_data.df[phase_data['lasap']['phase_column']],
-                                       phases_config=phase_data['lasap'],
-                                       phase='lasap',
-                                       client=self.client,
-                                       project=project,
-                                       werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasap']['phase_delta'])
-                                       ).algorithm()
-            line_record_list += fase_lasap.get_record()
-            fase_lasdp = LasDPCapacity(df=self.transformed_data.df[phase_data['lasdp']['phase_column']],
-                                       phases_config=phase_data['lasdp'],
-                                       phase='lasdp',
-                                       client=self.client,
-                                       project=project,
-                                       werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasdp']['phase_delta'])
-                                       ).algorithm()
-            line_record_list += fase_lasdp.get_record()
-            fase_oplever = OpleverCapacity(df=self.transformed_data.df[phase_data['oplever']['phase_column']],
-                                           phases_config=phase_data['oplever'],
-                                           phase='oplever',
+                line_record_list += fase_geulen.get_record()
+                fase_schieten = SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
+                                                 phases_config=phase_data['schieten'],
+                                                 phase='schieten',
+                                                 client=self.client,
+                                                 project=project,
+                                                 werkvoorraad=fase_geulen.poc_ideal.translate_x(
+                                                    delta=phase_data['schieten']['phase_delta'])
+                                                 ).algorithm()
+                line_record_list += fase_schieten.get_record()
+                fase_lasap = LasAPCapacity(df=self.transformed_data.df[phase_data['lasap']['phase_column']],
+                                           phases_config=phase_data['lasap'],
+                                           phase='lasap',
                                            client=self.client,
                                            project=project,
-                                           werkvoorraad=fase_lasdp.poc_ideal.translate_x(delta=phase_data['oplever']['phase_delta'] -
-                                                                                         phase_data['lasdp']['phase_delta'])
+                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasap']['phase_delta'])
                                            ).algorithm()
-            line_record_list += fase_oplever.get_record()
-        self.records = line_record_list
+                line_record_list += fase_lasap.get_record()
+                fase_lasdp = LasDPCapacity(df=self.transformed_data.df[phase_data['lasdp']['phase_column']],
+                                           phases_config=phase_data['lasdp'],
+                                           phase='lasdp',
+                                           client=self.client,
+                                           project=project,
+                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasdp']['phase_delta'])
+                                           ).algorithm()
+                line_record_list += fase_lasdp.get_record()
+                fase_oplever = OpleverCapacity(df=self.transformed_data.df[phase_data['oplever']['phase_column']],
+                                               phases_config=phase_data['oplever'],
+                                               phase='oplever',
+                                               client=self.client,
+                                               project=project,
+                                               werkvoorraad=fase_lasdp.poc_ideal.translate_x(delta=phase_data['oplever']['phase_delta'] -
+                                                                                             phase_data['lasdp']['phase_delta'])
+                                               ).algorithm()
+                line_record_list += fase_oplever.get_record()
+            self.records = line_record_list
 
 
 class CapacityETL(CapacityExtract, CapacityTransform, CapacityAnalyse, CapacityLoad):
