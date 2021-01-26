@@ -145,8 +145,8 @@ class CapacityAnalyse:
             else:
                 project_t = project_mapping['KPN Spijkernisse']
             dft = self.transformed_data.bis.df
-            df_geul = dft.bis.df[(~dft.meters_bis_geul.isna())].loc[project_t]
-            df_schieten = dft.bis.df[(~dft.meters_tuinboring.isna())].loc[project_t]
+            df_geul = dft[(~dft.meters_bis_geul.isna())].loc[project_t]
+            df_schieten = dft[(~dft.meters_tuinboring.isna())].loc[project_t]
             phase_data = self.transformed_data.project_phase_data[project]
             fase_geulen = GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
                                          phases_config=phase_data['geulen'],  # Example phase_data.
