@@ -5,8 +5,8 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasAPCapacity import LasAPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
-from Analyse.ETL import Extract, Load, logger
-from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform
+from Analyse.ETL import Load, logger
+from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform, FttXExtract
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
 import pandas as pd
@@ -15,7 +15,7 @@ from Analyse.Record.RecordList import RecordList
 
 
 # TODO: Documentation by Casper van Houten
-class CapacityExtract(Extract):
+class CapacityExtract(FttXExtract):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -30,7 +30,7 @@ class CapacityExtract(Extract):
         self.bis_etl.extract()
 
 
-class CapacityPickleExtract(PickleExtract):
+class CapacityPickleExtract(CapacityExtract, PickleExtract):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -83,7 +83,7 @@ class CapacityTransform(FttXTransform):
         performance_norm_config = 1
         # values for Spijkernisse for the moment
 
-        for project in self.project_list:
+        for project in self.transformed_data.df.project.unique():
             phases_projectspecific[project] = {}
             for phase, phase_config in self.config['capacity_phases'].items():
                 project_info = self.extracted_data.project_info[project]
