@@ -546,12 +546,10 @@ class FttXAnalyse(FttXBase):
                          'target': extract_target_dates(df=df,
                                                         project_list=project_list,
                                                         totals=self.transformed_data.get("totals"),
-                                                        ftu=self.extracted_data.get("ftu")
-                                                        ),
-                         'voorspelling': extract_voorspelling_dates(
-                             df=df,
-                             ftu=self.extracted_data.get("ftu"),
-                             totals=self.transformed_data.get("totals")),
+                                                        ftu=self.extracted_data.get("ftu")),
+                         'voorspelling': extract_voorspelling_dates(df=df,
+                                                                    ftu=self.extracted_data.get("ftu"),
+                                                                    totals=self.transformed_data.get("totals")),
                          'planning': extract_planning_dates(df=df,
                                                             planning=self.transformed_data.get("planning"),
                                                             client=self.client)
@@ -565,13 +563,11 @@ class FttXAnalyse(FttXBase):
                     # To remove the date when there is only one period (when summing over a year):
                     if len(record) == 1:
                         record = list(record.values())[0]
-                    document_list.append(dict(
-                        client=self.client,
-                        graph_name=key,
-                        frequency=freq,
-                        year=year,
-                        record=record
-                    ))
+                    document_list.append(dict(client=self.client,
+                                              graph_name=key,
+                                              frequency=freq,
+                                              year=year,
+                                              record=record))
         self.records.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
@@ -598,13 +594,11 @@ class FttXAnalyse(FttXBase):
                     # To remove the date when there is only one period (when summing over a year):
                     if len(record) == 1:
                         record = list(record.values())[0]
-                    document_list.append(dict(
-                        client=self.client,
-                        graph_name=key,
-                        frequency=freq,
-                        year=year,
-                        record=record
-                    ))
+                    document_list.append(dict(client=self.client,
+                                              graph_name=key,
+                                              frequency=freq,
+                                              year=year,
+                                              record=record))
         self.records.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
@@ -621,13 +615,11 @@ class FttXAnalyse(FttXBase):
                 # To remove the date when there is only one period (when summing over a year):
                 if len(record) == 1:
                     record = list(record.values())[0]
-                document_list.append(dict(
-                    client=self.client,
-                    graph_name='ratio_hc_hpend',
-                    frequency=freq,
-                    year=year,
-                    record=record
-                ))
+                document_list.append(dict(client=self.client,
+                                          graph_name='ratio_hc_hpend',
+                                          frequency=freq,
+                                          year=year,
+                                          record=record))
         self.records.add("Ratios_hc_hpend_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
@@ -647,13 +639,11 @@ class FttXAnalyse(FttXBase):
                 # To remove the date when there is only one period (when summing over a year):
                 if len(record) == 1:
                     record = list(record.values())[0]
-                document_list.append(dict(
-                    client=self.client,
-                    graph_name='ratio_8weeks_hpend',
-                    frequency=freq,
-                    year=year,
-                    record=record
-                ))
+                document_list.append(dict(client=self.client,
+                                          graph_name='ratio_8weeks_hpend',
+                                          frequency=freq,
+                                          year=year,
+                                          record=record))
         self.records.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
