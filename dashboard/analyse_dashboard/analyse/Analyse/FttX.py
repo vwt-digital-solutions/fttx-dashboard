@@ -362,6 +362,7 @@ class FttXAnalyse(FttXBase):
         self._make_records_ratio_under_8weeks_for_dashboard_values()
         if toggles.new_projectspecific_views:
             self._make_intermediate_results_ratios_project_specific_values()
+            self._make_intermediate_results_tmobile_project_specific_values()
         else:
             self._calculate_projectspecs()
         self._calculate_y_voorraad_act()
@@ -657,18 +658,36 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_intermediate_results_ratios_project_specific_values(self):
-        logger.info("Making intermediate results of ratios for project specific values")
-        # Create a dictionary that contains the functions and the output name
+        logger.info("Making intermediate results of ratios and HAS werkvoorraad for project specific values")
         df = self.transformed_data.df
         realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
         realisatie_hpend = extract_realisatie_hpend_dates(df=df, add_project_column=True)
 
-        project_dict = {}
-        for project, df in df.groupby('project'):
-            record = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
-            project_dict[project] = record
+        aangesloten_under_8weeks = df[br.aangesloten_orders_tmobile(df=df, time_window='on time')][['creation',
+                                                                                                    'project']]
+        aangesloten_totaal = df[br.aangesloten_orders_tmobile(df=df)][['creation', 'project']]
 
-        self.intermediate_results.ratio_HC_HPend_per_project = project_dict
+        has_werkvoorraad_this_week = extract_werkvoorraad_has_dates(df, add_project_column=True)
+        has_werkvoorraad_last_week = extract_werkvoorraad_has_dates(df, time_delta_days=7, add_project_column=True)
+
+        project_dict_hc_hpend = {}
+        project_dict_under_8weeks = {}
+        project_dict_has_werkvoorraad = {}
+        for project, df in df.groupby('project'):
+            record_hc_hpend = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
+            project_dict_hc_hpend[project] = record_hc_hpend
+
+            record_under_8weeks = self.calculate_ratio(project, aangesloten_under_8weeks, aangesloten_totaal)
+            project_dict_under_8weeks[project] = record_under_8weeks
+
+            # The following is to add the values for HAS werkvoorraad in the "old tmobile way" -> should be updated !!
+            project_dict_has_werkvoorraad[project] = {
+                'counts': len(has_werkvoorraad_this_week[has_werkvoorraad_this_week['project'] == project]),
+                'counts_prev': len(has_werkvoorraad_last_week[has_werkvoorraad_last_week['project'] == project])}
+
+        self.intermediate_results.ratio_HC_HPend_per_project = project_dict_hc_hpend
+        self.intermediate_results.ratio_under_8weeks_per_project = project_dict_under_8weeks
+        self.intermediate_results.has_werkvoorraad_per_project = project_dict_has_werkvoorraad
 
     def calculate_ratio(self, project, numerator, divider):
         project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)
@@ -679,6 +698,40 @@ class FttXAnalyse(FttXBase):
         else:
             record = len(project_dates_numerator) / len(project_dates_divider)
         return record
+
+    def _make_intermediate_results_tmobile_project_specific_values(self):
+        logger.info("Making intermediate results for tmobile project specific values")
+        df = self.transformed_data.df
+        function_dict = {'openstaand_on_time': [
+            df[br.openstaande_orders_tmobile(df=df, time_window='on time')][['creation', 'project', 'cluster_redenna']],
+            df[br.openstaande_orders_tmobile(df=df, time_window='on time', time_delta_days=7)][['creation', 'project']]
+                                                ],
+                         'openstaand_limited': [
+            df[br.openstaande_orders_tmobile(df=df, time_window='limited')][['creation', 'project', 'cluster_redenna']],
+            df[br.openstaande_orders_tmobile(df=df, time_window='limited', time_delta_days=7)][['creation', 'project']]
+                                                ],
+                         'openstaand_late': [
+            df[br.openstaande_orders_tmobile(df=df, time_window='late')][['creation', 'project', 'cluster_redenna']],
+            df[br.openstaande_orders_tmobile(df=df, time_window='late', time_delta_days=7)][['creation', 'project']]
+                                             ]
+                        }
+
+        order_time_windows_per_project_dict = {}
+        for project in df.project.unique().tolist():
+            order_time_windows_dict = {}
+            for key, values in function_dict.items():
+                value_this_week = len(values[0][values[0].project == project])
+                value_last_week = len(values[1][values[1].project == project])
+                redenna_this_week = values[0][values[0].project == project].drop(labels=['project'], axis=1)\
+                    .groupby(by='cluster_redenna').count()\
+                    .rename({'creation': 'cluster_redenna'}, axis=1)\
+                    .to_dict()['cluster_redenna']
+                order_time_windows_dict[key] = {'counts': value_this_week,
+                                                'counts_prev': value_last_week,
+                                                'cluster_redenna': redenna_this_week}
+            order_time_windows_per_project_dict[project] = order_time_windows_dict
+
+        self.intermediate_results.orders_time_windows_per_project = order_time_windows_per_project_dict
 
 
 class FttXLoad(Load, FttXBase):
