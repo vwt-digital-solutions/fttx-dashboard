@@ -1,6 +1,7 @@
 import dash_html_components as html
 import dash_bootstrap_components as dbc
 
+import config
 from data.data import no_graph
 from layout.components.figure import figure
 
@@ -26,8 +27,8 @@ def capacity_template(client):
                 id=f"capacity-phase-{client}",
                 children=dbc.ButtonGroup(
                     [
-                        dbc.Button(phase, id=f"capacity-phase-{phase}-{client}")
-                        for i, phase in enumerate(['Schouwen', 'Lassen', 'Graven', 'HASsen'])
+                        dbc.Button(phase_data.get("name"), id=f"capacity-phase-{phase}-{client}")
+                        for phase, phase_data in config.capacity_phases.items()
                     ]
                 )
             ),
@@ -46,6 +47,7 @@ def capacity_template(client):
                         ),
                         dbc.Collapse(
                             figure(
+                                graph_id=f"more-info-graph-{client}",
                                 figure=no_graph(title="Verdieping Capaciteit", text='Geen data...')
                             ),
                             id=f"more-info-collapse-{client}",
