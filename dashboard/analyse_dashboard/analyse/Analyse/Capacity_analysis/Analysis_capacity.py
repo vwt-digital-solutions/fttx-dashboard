@@ -31,17 +31,7 @@ class CapacityExtract(FttXExtract):
 
 
 class CapacityPickleExtract(CapacityExtract, PickleExtract):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.bis_etl = BISETL(client=self.client)
-
-    def extract(self):
-        super().extract()
-        self.extract_BIS()
-
-    def extract_BIS(self):
-        self.bis_etl.extract()
+    ...
 
 
 # TODO: Documentation by Casper van Houten
