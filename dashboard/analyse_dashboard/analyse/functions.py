@@ -1498,7 +1498,7 @@ def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = 
         return df[br.hpend_opgeleverd(df)].opleverdatum
 
 
-def extract_realisatie_hpend_and_ordered_dates(df: pd.DataFrame) -> pd.Series:
+def extract_aangesloten_orders_dates(df: pd.DataFrame) -> pd.Series:
     """
     This function extracts the realisatie HPend dates that have been ordered per client from their transformed
     dataframes, based on the BR: hpend_opgeleverd_and_ordered (opleverdatum and ordered are present) and the date:
@@ -1513,7 +1513,7 @@ def extract_realisatie_hpend_and_ordered_dates(df: pd.DataFrame) -> pd.Series:
 
     """
     if 'ordered' in df.columns:
-        return df[br.hpend_opgeleverd_and_ordered(df)].opleverdatum
+        return df[br.aangesloten_orders_tmobile(df)].opleverdatum
     else:
         return df[br.hpend_opgeleverd(df)].opleverdatum
 

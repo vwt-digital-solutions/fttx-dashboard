@@ -23,7 +23,7 @@ from functions import extract_realisatie_hpend_dates, cluster_reden_na, \
     calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, \
     overview_reden_na, sum_over_period_to_record, voorspel_and_planning_minus_HPend_sum_over_periods_to_record, \
-    extract_planning_dates, extract_target_dates, extract_realisatie_hpend_and_ordered_dates
+    extract_planning_dates, extract_target_dates, extract_aangesloten_orders_dates
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -632,13 +632,16 @@ class FttXAnalyse(FttXBase):
 
     def _make_records_ratio_under_8weeks_for_dashboard_values(self):
         logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
-        realisatie_under_8weeks = self.transformed_data.df[br.on_time_opgeleverd(self.transformed_data.df)].opleverdatum
-        realisatie_hpend = extract_realisatie_hpend_and_ordered_dates(self.transformed_data.df)
+        df = self.transformed_data.df
+        aangesloten_orders_under_8weeks = df[br.aangesloten_orders_tmobile(df=df,
+                                                                           time_window="on time")].opleverdatum
+        aangesloten_orders = extract_aangesloten_orders_dates(df)
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
         for year in self.intermediate_results.List_of_years:
             for freq in list_of_freq:
-                record = ratio_sum_over_periods_to_record(numerator=realisatie_under_8weeks, divider=realisatie_hpend,
+                record = ratio_sum_over_periods_to_record(numerator=aangesloten_orders_under_8weeks,
+                                                          divider=aangesloten_orders,
                                                           freq=freq, year=year)
                 # To remove the date when there is only one period (when summing over a year):
                 if len(record) == 1:
