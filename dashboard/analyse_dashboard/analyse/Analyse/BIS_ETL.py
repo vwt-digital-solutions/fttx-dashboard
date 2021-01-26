@@ -1,4 +1,4 @@
-import os
+from google.cloud import storage
 
 from Analyse.ETL import Extract, ETL, Transform
 
@@ -9,10 +9,6 @@ import re
 class BISExtract(Extract):
 
     def __init__(self, **kwargs):
-        if not hasattr(self, 'excel_path'):
-            self.excel_path = kwargs.get('excel_path')
-        if not self.excel_path:
-            raise ValueError('No excel_path provided in init')
         super().__init__(**kwargs)
 
     def extract(self):
@@ -21,12 +17,19 @@ class BISExtract(Extract):
         '''
         print("Extracting data from Excel")
         df_list = []
-        for filename in os.listdir(self.excel_path):
+        client = storage.Client()
+        bucket = 'vwt-d-gew1-fttx-dashboard-data-stg'
+        folder = self.config.folder_data_schaderapportages
+        for file in client.list_blobs(bucket, prefix=folder):
+            filename = file.name
             if filename[-5:] == '.xlsx':
-                df = pd.read_excel(os.path.join(self.excel_path, filename),
+                file_path = f'gs://{bucket}/{file.name}'
+                df = pd.read_excel(file_path,
                                    sheet_name='Productie',
                                    skiprows=list(range(0, 12)))
-                project = re.findall(r"B\d{4} (.*) (?=Invulformulier|invulformulier)",
+                # Dirty regex to find project from filename. Should enforce standardises names when files will be
+                # updated.
+                project = re.findall(r"schaderapportages/B\d{4} (.*) (?=Invulformulier|invulformulier)",
                                      filename)[0]
                 df['project'] = project
                 df_list.append(df)

@@ -16,7 +16,17 @@ from Analyse.Record.RecordList import RecordList
 
 # TODO: Documentation by Casper van Houten
 class CapacityExtract(Extract):
-    ...
+
+    def __init__(self):
+        super().__init__()
+        self.bis_etl = BISETL(client=self.client)
+
+    def extract(self):
+        super().extract()
+        self.extract_BIS()
+
+    def extract_BIS(self):
+        self.bis_etl.extract()
 
 
 # TODO: Documentation by Casper van Houten
@@ -31,6 +41,14 @@ class CapacityTransform(FttXTransform):
     def transform(self):
         super().transform()
         self.fill_projectspecific_phase_config()
+        self.transform_bis_etl()
+        self.add_bis_etl_to_transformed_data()
+
+    def transform_bis_etl(self):
+        self.bis_etl.transform()
+
+    def add_bis_etl_to_transformed_data(self):
+        self.transformed_data.bis = self.bis_etl.transformed_data
 
     def get_civiel_start_date(self, start_date):
         default_start_date = '2021-01-01'
@@ -98,11 +116,7 @@ class CapacityAnalyse:
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
-        bis_etl = BISETL(client=self.client,
-                         excel_path='C:/Users/agvanturnhout/Documents/ProjectenVWT/Git_repos/data/DataSchaderapportage2')
-        bis_etl.extract()
-        bis_etl.transform()
-        dft = bis_etl.transformed_data.df
+
         project_mapping = {'KPN Spijkernisse': 'Spijkenisse',
                            'KPN Gouda Kort Haarlem en Noord': 'Gouda Kort-Haarlem',
                            'Nijmegen Dukenburg': 'Dukenburg Schade'
@@ -115,8 +129,9 @@ class CapacityAnalyse:
                 project_t = project_mapping[project]
             else:
                 project_t = project_mapping['KPN Spijkernisse']
-            df_geul = dft[(~dft.meters_bis_geul.isna())].loc[project_t]
-            df_schieten = dft[(~dft.meters_tuinboring.isna())].loc[project_t]
+            dft = self.transformed_data.bis.df
+            df_geul = dft.bis.df[(~dft.meters_bis_geul.isna())].loc[project_t]
+            df_schieten = dft.bis.df[(~dft.meters_tuinboring.isna())].loc[project_t]
             phase_data = self.transformed_data.project_phase_data[project]
             fase_geulen = GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
                                          phases_config=phase_data['geulen'],  # Example phase_data.

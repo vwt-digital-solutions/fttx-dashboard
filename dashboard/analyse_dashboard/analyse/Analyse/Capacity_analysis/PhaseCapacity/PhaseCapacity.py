@@ -24,7 +24,6 @@ class PhaseCapacity:
         self.werkvoorraad = werkvoorraad
         self.phases_config = phases_config
         self.record_list = RecordList()
-        self.werkvoorraad = werkvoorraad
 
     def algorithm(self):
         """
