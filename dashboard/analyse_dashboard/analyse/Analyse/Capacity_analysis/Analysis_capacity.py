@@ -6,7 +6,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
 from Analyse.ETL import Extract, Load, logger
-from Analyse.FttX import FttXTestLoad, PickleExtract, FttXExtract, FttXTransform
+from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
 import pandas as pd
@@ -17,8 +17,23 @@ from Analyse.Record.RecordList import RecordList
 # TODO: Documentation by Casper van Houten
 class CapacityExtract(Extract):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.client = kwargs.get('client')
+        self.bis_etl = BISETL(client=self.client)
+
+    def extract(self):
+        super().extract()
+        self.extract_BIS()
+
+    def extract_BIS(self):
+        self.bis_etl.extract()
+
+
+class CapacityPickleExtract(PickleExtract):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.bis_etl = BISETL(client=self.client)
 
     def extract(self):
@@ -176,7 +191,7 @@ class CapacityAnalyse:
         self.records = line_record_list
 
 
-class CapacityETL(FttXExtract, CapacityTransform, CapacityAnalyse, CapacityLoad):
+class CapacityETL(CapacityExtract, CapacityTransform, CapacityAnalyse, CapacityLoad):
     """
     Main class to perform the ETL and analysis for capacity analysis for FttX. Will write records to the firestore.
     """
@@ -200,4 +215,8 @@ class CapacityTestETL(PickleExtract, FttXTestLoad, CapacityETL):
     """
     Test class to perform the ETL and analysis for capacity analysis for FttX. Will not write records to the firestore.
     """
+    ...
+
+
+class CapacityPickleETL(CapacityPickleExtract, CapacityETL):
     ...
