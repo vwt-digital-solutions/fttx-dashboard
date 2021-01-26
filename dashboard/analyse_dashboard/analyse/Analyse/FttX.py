@@ -187,27 +187,35 @@ class FttXTransform(Transform):
                 self.transformed_data.ftu[key][project] = date
 
     def _is_ftu_available(self, project):
+        """
+        This functions checks whether a FTU0 date is available
+        Args:
+            project: the project name
+
+        Returns: boolean if ftu0 is available or not
+
+        """
         available = False
         ftu0 = self.transformed_data.ftu['date_FTU0'].get(project)
-        ftu1 = self.transformed_data.ftu['date_FTU1'].get(project)
-        if ftu0 and ftu1:
-            available = True
-        return available
-
-    def _is_data_available(self, project):
-        available = False
-        if project in self.transformed_data.df.project.unique():
+        if ftu0:
             available = True
         return available
 
     def _make_project_list(self):
+        """
+        This functions returns a list of projects that have at least a FTU0 date.
+        All the projects in this list will be evaluated in the analysis.
+
+        Returns: returns a list of projects names
+        """
         project_list = []
-        for project in self.config['projects']:
-            ftu_avaiable = self._is_ftu_available(project)
-            data_available = self._is_data_available(project)
-            if ftu_avaiable and data_available:
-                project_list.append(project)
-        self.project_list = project_list
+        if self.client == 'tmobile':
+            self.project_list = self.config['projects']
+        else:
+            for project in self.config['projects']:
+                if self._is_ftu_available(project):
+                    project_list.append(project)
+            self.project_list = project_list
 
     def _set_totals(self):
         self.transformed_data.totals = {}
@@ -365,38 +373,50 @@ class FttXAnalyse(FttXBase):
         self._progress_per_phase_over_time()
 
     def _progress_per_phase_over_time(self):
+        """
+        This function calculates the progress per phase over time base on the specified columns
+        per phase:
+            'opleverdatum': 'has',
+            'schouwdatum': 'schouwen',
+            'laswerkapgereed_datum': 'montage ap',
+            'laswerkdpgereed_datum': 'montage dp',
+            'status_civiel_datum': 'civiel'
+
+        Returns: record consisting of dict per project holding a timeindex with progress per phase
+
+        """
         logger.info("Calculating project progress per phase over time")
         document_list = []
         for project, df in self.transformed_data.df.groupby("project"):
-            if project in self.project_list:
-                columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
-                           'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
-                date_df = df.loc[:, columns]
-
-                mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
-                date_df['montage'] = np.datetime64("NaT")
-                date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
-                date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
-                progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
-                    df)
-                progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
-                progress_over_time.rename(columns={'opleverdatum': 'has',
-                                                   'schouwdatum': 'schouwen',
-                                                   'laswerkapgereed_datum': 'montage ap',
-                                                   'laswerkdpgereed_datum': 'montage dp',
-                                                   'status_civiel_datum': 'civiel',
-                                                   },
-                                          inplace=True
-                                          )
-                record = progress_over_time.to_dict()
-                document_list.append(dict(
-                    client=self.client,
-                    project=project,
-                    data_set="progress_over_time",
-                    record=record
-                ))
-            self.records.add("Progress_over_time", document_list, DocumentListRecord, "Data",
-                             document_key=["client", "project", 'data_set'])
+            if df.empty:
+                continue
+            columns = ['opleverdatum', 'schouwdatum', 'laswerkapgereed_datum', 'laswerkdpgereed_datum',
+                       'status_civiel_datum', 'laswerkapgereed', 'laswerkdpgereed']
+            date_df = df.loc[:, columns]
+            mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
+            date_df['montage'] = np.datetime64("NaT")
+            date_df.loc[mask, 'montage'] = date_df[['laswerkapgereed_datum', 'laswerkdpgereed_datum']][mask].max(axis=1)
+            date_df = date_df.drop(columns=['laswerkapgereed', 'laswerkdpgereed'])
+            progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample("D").sum().cumsum() / len(
+                df)
+            progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
+            progress_over_time.rename(columns={'opleverdatum': 'has',
+                                               'schouwdatum': 'schouwen',
+                                               'laswerkapgereed_datum': 'montage ap',
+                                               'laswerkdpgereed_datum': 'montage dp',
+                                               'status_civiel_datum': 'civiel',
+                                               },
+                                      inplace=True
+                                      )
+            record = progress_over_time.to_dict()
+            document_list.append(dict(
+                client=self.client,
+                project=project,
+                data_set="progress_over_time",
+                record=record
+            ))
+        self.records.add("Progress_over_time", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "project", 'data_set'])
 
     def _progress_per_phase(self):
         logger.info("Calculating project progress per phase")
@@ -641,7 +661,7 @@ class FttXAnalyse(FttXBase):
         realisatie_hpend = extract_realisatie_hpend_dates(df=df, add_project_column=True)
 
         project_dict = {}
-        for project in df.project.unique().tolist():
+        for project, df in df.groupby('project'):
             record = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
             project_dict[project] = record
 

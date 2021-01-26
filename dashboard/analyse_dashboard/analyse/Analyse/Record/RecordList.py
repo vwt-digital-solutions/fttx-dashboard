@@ -4,4 +4,5 @@ class RecordList(list):
     Can loop over all objects in the collection and write them to the firestore.
     """
     def to_firestore(self):
-        [record.to_firestore() for record in self]
+        for record in self:
+            record.to_firestore()

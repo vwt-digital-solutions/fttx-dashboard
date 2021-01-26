@@ -40,7 +40,7 @@ def get_start_time(df: pd.DataFrame) -> dict:
 
 # TODO: Documentation by Casper van Houten
 def get_timeline(t_s) -> pd.DatetimeIndex:
-    x_axis = pd.date_range(min(t_s.values()), periods=1000 + 1, freq='D')
+    x_axis = pd.date_range(min(t_s.values()), periods=2000 + 1, freq='D')
     return x_axis
 
 
@@ -215,15 +215,32 @@ def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l, total_obj
 
 # TODO: Documentation by Andre van Turnhout
 def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
+    """
+
+    This function calculates the target
+
+    Args:
+        x_d: datetimeindex (timeline) where all projects can be mapped on
+        list_of_projects: projects to loop over
+        date_FTU0: FTU0 date per project
+        date_FTU1: FTU1 date per project
+        total_objects: total objects per project
+
+    Returns: target information for KPN per weeks
+
+    """
     # to add target info KPN in days uitgaande van FTU0 en FTU1
     x_prog = np.array(list(range(0, len(x_d))))
     y_target_l = {}
     t_diff = {}
     target_per_week_dict = {}
     for key in list_of_projects:
-        if date_FTU0[key] != '':
+        if date_FTU0[key]:
             t_start = x_prog[x_d == date_FTU0[key]][0]
-            t_max = x_prog[x_d == date_FTU1[key]][0]
+            if date_FTU1[key]:
+                t_max = x_prog[x_d == date_FTU1[key]][0]
+            else:
+                t_max = t_start + 100  # TODO: this is the ideal norm of 1%, we need to get this from the config
             t_diff[key] = t_max - t_start - 14  # two weeks round up
             slope_of_line = 100 / t_diff[key]  # target naar KPN is 100% HPend
         else:  # incomplete information on FTU dates
@@ -820,7 +837,12 @@ def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1:
         The target per week for a project
 
     """
+    # TODO this target information (pd.Timedelta(days=100) must be stored in the config
     if FTU0[project]:
+        if not FTU1[project]:
+            FTU1[project] = pd.Timestamp(FTU0[project]) + pd.Timedelta(days=100)
+            FTU1[project] = FTU1[project].strftime("%Y-%m-%d")
+
         if (pd.to_datetime(FTU0[project]) < (pd.Timestamp.now() - pd.Timedelta(days=time_delta_days))) \
                 & \
                 ((pd.Timestamp.now() - pd.Timedelta(days=time_delta_days)) < pd.to_datetime(FTU1[project])):
@@ -829,7 +851,6 @@ def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1:
             target = 0
     else:
         target = 0
-
     return target
 
 
