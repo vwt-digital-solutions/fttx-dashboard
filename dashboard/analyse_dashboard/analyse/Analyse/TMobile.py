@@ -7,7 +7,6 @@ import business_rules as br
 from functions import calculate_projectindicators_tmobile, calculate_oplevertijd, wait_bins
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
 import logging
-from toggles import toggles
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -58,8 +57,6 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_week()
         self._get_voorraadvormend()
         self._calculate_project_indicators()
-        if toggles.download_indicators:
-            self._endriched_data()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
@@ -111,17 +108,6 @@ class TMobileAnalyse(FttXAnalyse):
                          collection="Data",
                          record_type=DictRecord,
                          record=counts_by_project)
-
-    def _endriched_data(self):
-        logger.info("Storing data to Houses")
-        self._delete_collection(u'Houses')
-        df_copy = self.transformed_data.df.copy()
-        df_copy = df_copy[df_copy['wait_category'].notna()]
-        datums = [col for col in df_copy.columns if "datum" in col or 'date' in col or "creation" in col]
-        df_copy.loc[:, datums] = df_copy[datums].apply(lambda x: x.dt.strftime("%Y-%m-%d"))
-        df_copy.astype(str, inplace=True)
-        doc_list = [{'record': x, 'sleutel': x['sleutel']} for x in df_copy.to_dict(orient='rows')]
-        self.records.add('enriched_data', doc_list, DocumentListRecord, 'Houses', document_key=['sleutel'])
 
     def _delete_collection(self, collection_name, batch_size=500, count=0):
         logger.info("Deleting collection Houses")

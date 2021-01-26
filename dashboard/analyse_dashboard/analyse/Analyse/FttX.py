@@ -687,9 +687,6 @@ class FttXLoad(Load, FttXBase):
         logger.info("Loading documents...")
         self.records.to_firestore()
 
-    def load_enriched(self):
-        pass
-
 
 class FttXTestLoad(FttXLoad):
     def __init__(self, **kwargs):
