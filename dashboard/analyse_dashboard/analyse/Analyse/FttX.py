@@ -707,7 +707,7 @@ class FttXAnalyse(FttXBase):
                         }
 
         order_time_windows_per_project_dict = {}
-        for project in df.project.unique().tolist():
+        for project, df in df.groupby('project'):
             order_time_windows_dict = {}
             for key, values in function_dict.items():
                 value_this_week = len(values[0][values[0].project == project])
