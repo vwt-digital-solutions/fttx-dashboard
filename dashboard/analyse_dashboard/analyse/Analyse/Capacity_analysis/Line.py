@@ -47,6 +47,7 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from datetime import timedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
@@ -435,5 +436,15 @@ class TimeseriesLine(PointLine):
 
     def translate_x(self, delta=0):
         data = self.data
+        data.index = data.index + timedelta(delta)
         domain = self.domain.shift(delta)
         return TimeseriesLine(data=data, domain=domain)
+
+    def slice(self, begin=None, end=None):
+        if begin is None:
+            begin = self.domain.begin
+        if end is None:
+            end = self.domain.end
+        data = self.make_series()[begin:end]
+        domain = DateDomain(begin, end)
+        return TimeseriesLine(data, domain)
