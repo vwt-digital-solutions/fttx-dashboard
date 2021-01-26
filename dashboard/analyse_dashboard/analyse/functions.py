@@ -1373,8 +1373,9 @@ def calculate_wait_indicators(project_df):
     return result_dict
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_projectindicators_tmobile(df: pd.DataFrame):
+# TODO: Documentation by Tjeerd Pols - remove old functions called here when removing toggle new_projectspecific_views
+def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_project: dict,
+                                        time_windows_per_project: dict, ratio_under_8weeks_per_project: dict):
     markup_dict = {
         'on_time': {'title': 'Openstaande orders op tijd',
                     'subtitle': '< 8 weken',
@@ -1399,15 +1400,29 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame):
     for project, project_df in df.groupby(by='project'):
         counts_by_project[project] = {}
 
-        counts_by_project[project].update(
-            calculate_ready_for_has_indicator(project_df=project_df)
-        )
-        counts_by_project[project].update(
-            calculate_wait_indicators(project_df=project_df)
-        )
-        counts_by_project[project].update(
-            {'ratio': {'counts': calculate_on_time_ratio(project_df)}}
-        )
+        if toggles.new_projectspecific_views:
+            counts_by_project[project].update({'ready_for_has': has_werkvoorraad_per_project[project]})
+            counts_by_project[project].update({'late': time_windows_per_project[project]['openstaand_late']})
+            counts_by_project[project].update({'on_time': time_windows_per_project[project]['openstaand_on_time']})
+            counts_by_project[project].update({'limited_time': time_windows_per_project[project]['openstaand_limited']})
+            counts_by_project[project].update({'before_order': {'counts': 0,
+                                                                'counts_prev': 0,
+                                                                'cluster_redenna': {'HC': 0,
+                                                                                    'geplande aansluiting': 0,
+                                                                                    'permissieobstructies': 0,
+                                                                                    'technische obstructies': 0}}})
+            counts_by_project[project].update({'ratio': {'counts': ratio_under_8weeks_per_project[project]}})
+
+        else:
+            counts_by_project[project].update(
+                calculate_ready_for_has_indicator(project_df=project_df)
+            )
+            counts_by_project[project].update(
+                calculate_wait_indicators(project_df=project_df)
+            )
+            counts_by_project[project].update(
+                {'ratio': {'counts': calculate_on_time_ratio(project_df)}}
+            )
         for indicator, markup in markup_dict.items():
             counts_by_project[project][indicator].update(markup)
     return counts_by_project

@@ -103,7 +103,10 @@ class TMobileAnalyse(FttXAnalyse):
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")
-        counts_by_project = calculate_projectindicators_tmobile(self.transformed_data.df)
+        counts_by_project = calculate_projectindicators_tmobile(self.transformed_data.df,
+                                                                self.intermediate_results.has_werkvoorraad_per_project,
+                                                                self.intermediate_results.orders_time_windows_per_project,
+                                                                self.intermediate_results.ratio_under_8weeks_per_project)
         self.records.add(key="project_indicators",
                          collection="Data",
                          record_type=DictRecord,
