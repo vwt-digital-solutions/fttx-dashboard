@@ -259,24 +259,7 @@ def bis_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'] == '0'
-
-
-# Todo: Andre van Turnhout: Document/remove this function. It should not be named something_new.
-def bis_opgeleverd_new(df):
-    return ~df['opleverstatus'].isin(['0', '90', '99'])
-
-
-# TODO: Andre van Turnhout. You should probably have used the hpend() function. If so: refactor the code that uses this
-#  function, otherwise document this function
-def hpend_opgeleverd(df):
-    return ~df['opleverdatum'].isna()
-
-
-# TODO: Tjeerd Pols Document this function. Reuse other business rules when applicable.
-#  Here you need to use the opgeleverd and orderd rules.
-def hpend_opgeleverd_and_ordered(df):
-    return (~df['opleverdatum'].isna()) & (~df['ordered'].isna())
+    return df['opleverstatus'].isin(['0', '90', '99'])
 
 
 def hc_opgeleverd(df):

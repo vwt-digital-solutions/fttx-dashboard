@@ -1491,11 +1491,12 @@ def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = 
     """
     if toggles.new_projectspecific_views:
         if add_project_column:
-            return df[br.hpend_opgeleverd(df)][['opleverdatum', 'project']]
+            return df[br.hpend(df)][['opleverdatum', 'project']]
         else:
-            return df[br.hpend_opgeleverd(df)].opleverdatum
+            return df[br.hpend(df)].opleverdatum
+
     else:
-        return df[br.hpend_opgeleverd(df)].opleverdatum
+        return df[br.hpend(df)].opleverdatum
 
 
 def extract_aangesloten_orders_dates(df: pd.DataFrame) -> pd.Series:
@@ -1515,7 +1516,7 @@ def extract_aangesloten_orders_dates(df: pd.DataFrame) -> pd.Series:
     if 'ordered' in df.columns:
         return df[br.aangesloten_orders_tmobile(df)].opleverdatum
     else:
-        return df[br.hpend_opgeleverd(df)].opleverdatum
+        return df[br.hpend(df)].opleverdatum
 
 
 def extract_realisatie_hc_dates(df: pd.DataFrame, add_project_column: bool = False):

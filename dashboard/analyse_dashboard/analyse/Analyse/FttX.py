@@ -539,7 +539,7 @@ class FttXAnalyse(FttXBase):
         logger.info("Making records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         df = self.transformed_data.df
-        function_dict = {'realisatie_bis': df[br.bis_opgeleverd_new(df)].status_civiel_datum,
+        function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
                          'target': extract_target_dates(df=df,
