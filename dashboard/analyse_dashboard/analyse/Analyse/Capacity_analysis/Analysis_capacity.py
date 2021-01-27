@@ -195,7 +195,7 @@ class CapacityETL(CapacityExtract, CapacityTransform, CapacityAnalyse, CapacityL
         super().__init__(**kwargs)
 
 
-class CapacityLocalETL(CapacityETL):
+class CapacityLocalETL(CapacityPickleExtract, CapacityETL):
 
     def load(self):
         if 'FIRESTORE_EMULATOR_HOST' in os.environ:
