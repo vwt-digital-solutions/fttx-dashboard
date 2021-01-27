@@ -136,7 +136,7 @@ class CapacityAnalyse:
                            }
 
         line_record_list = RecordList()
-
+        rest_dates = self.get_rest_dates_as_list_of_series()
         for project, project_df in self.transformed_data.df.groupby(by="project"):
             if not self.transformed_data.df[self.transformed_data.df.project == project].empty:
                 if project in project_mapping:
@@ -151,7 +151,8 @@ class CapacityAnalyse:
                                              phases_config=phase_data['geulen'],  # Example phase_data.
                                              phase='geulen',
                                              client=self.client,
-                                             project=project
+                                             project=project,
+                                             rest_dates=rest_dates
                                              ).algorithm()
                 line_record_list += fase_geulen.get_record()
                 fase_schieten = SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
@@ -160,7 +161,8 @@ class CapacityAnalyse:
                                                  client=self.client,
                                                  project=project,
                                                  werkvoorraad=fase_geulen.poc_ideal.translate_x(
-                                                    delta=phase_data['schieten']['phase_delta'])
+                                                    delta=phase_data['schieten']['phase_delta']),
+                                                 rest_dates=rest_dates
                                                  ).algorithm()
                 line_record_list += fase_schieten.get_record()
                 fase_lasap = LasAPCapacity(df=self.transformed_data.df[phase_data['lasap']['phase_column']],
@@ -168,7 +170,8 @@ class CapacityAnalyse:
                                            phase='lasap',
                                            client=self.client,
                                            project=project,
-                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasap']['phase_delta'])
+                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasap']['phase_delta']),
+                                           rest_dates=rest_dates
                                            ).algorithm()
                 line_record_list += fase_lasap.get_record()
                 fase_lasdp = LasDPCapacity(df=self.transformed_data.df[phase_data['lasdp']['phase_column']],
@@ -176,7 +179,8 @@ class CapacityAnalyse:
                                            phase='lasdp',
                                            client=self.client,
                                            project=project,
-                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasdp']['phase_delta'])
+                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasdp']['phase_delta']),
+                                           rest_dates=rest_dates
                                            ).algorithm()
                 line_record_list += fase_lasdp.get_record()
                 fase_oplever = OpleverCapacity(df=self.transformed_data.df[phase_data['oplever']['phase_column']],
@@ -185,10 +189,17 @@ class CapacityAnalyse:
                                                client=self.client,
                                                project=project,
                                                werkvoorraad=fase_lasdp.poc_ideal.translate_x(delta=phase_data['oplever']['phase_delta'] -
-                                                                                             phase_data['lasdp']['phase_delta'])
+                                                                                             phase_data['lasdp']['phase_delta']),
+                                               rest_dates=rest_dates
                                                ).algorithm()
                 line_record_list += fase_oplever.get_record()
             self.records = line_record_list
+
+    def get_rest_dates_as_list_of_series(self):
+        rest_dates = []
+        for rest_date in self.config['rest_periods']:
+            rest_dates.append(pd.date_range(start=rest_date[0], end=rest_date[1], freq='D'))
+        return rest_dates
 
 
 class CapacityETL(CapacityExtract, CapacityTransform, CapacityAnalyse, CapacityLoad):
@@ -198,6 +209,12 @@ class CapacityETL(CapacityExtract, CapacityTransform, CapacityAnalyse, CapacityL
     def __init__(self, **kwargs):
         self.client = kwargs.get("client", "client_unknown")
         super().__init__(**kwargs)
+
+    def perform(self):
+        self.extract()
+        self.transform()
+        self.analyse()
+        self.load()
 
 
 class CapacityLocalETL(CapacityPickleExtract, CapacityETL):
