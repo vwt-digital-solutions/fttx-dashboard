@@ -41,7 +41,8 @@ class LineRecord(Record):
         return record_to_write
 
     def _make_series_from_record(self, record, sample):
-        series = record.integrate().make_series().resample(sample).sum()
+        series = record.make_series().resample(sample).sum().cumsum()
+        series = series / series.max() * 100
         series.index = series.index.format()
         return series
 
