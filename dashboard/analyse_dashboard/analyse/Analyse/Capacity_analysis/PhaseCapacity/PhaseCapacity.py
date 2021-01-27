@@ -87,9 +87,9 @@ class PhaseCapacity:
                                                phase=self.phase,
                                                client=self.client,
                                                project=self.project)
-        werkvoorraad_over_time_record = LineRecord(record=self.capacity_ideal,
+        werkvoorraad_over_time_record = LineRecord(record=self.werkvoorraad,
                                                    collection='Lines',
-                                                   graph_name=f'{self.capacity_ideal.name}',
+                                                   graph_name=f'{self.werkvoorraad.name}',
                                                    phase=self.phase,
                                                    client=self.client,
                                                    project=self.project)

@@ -73,7 +73,7 @@ class CapacityTransform(FttXTransform):
     def fill_projectspecific_phase_config(self):
         phases_projectspecific = {}
         # Temporarily hard-coded values
-        performance_norm_config = 1
+        performance_norm_config = 0.38  # based on dates Nijmegen Dukenburg
         # values for Spijkernisse for the moment
 
         for project in self.transformed_data.df.project.unique():

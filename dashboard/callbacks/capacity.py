@@ -77,8 +77,8 @@ for client in config.client_config.keys():
 
         freq = 'week'  # hier moet zometeen de keuze week of month gemaakt worden via filter oid
 
-        indicator_values = dict(target=0, werkvoorraad=0, capacity=0, poc_ideal=0)
-        timeseries = dict(target=pd.Series(), werkvoorraad=pd.Series(), capacity=pd.Series(), poc_ideal=pd.Series())
+        indicator_values = dict(target=0, werkvoorraad=0, capacity_ideal=0, poc_ideal=0)
+        timeseries = dict(target=pd.Series(), werkvoorraad=pd.Series(), capacity_ideal=pd.Series(), poc_ideal=pd.Series())
         for key in indicator_values:
             indicator_dict = get_document("Lines", line=key + '_indicator', **selection_settings)
             if indicator_dict:
@@ -91,7 +91,7 @@ for client in config.client_config.keys():
         return [capacity_summary(phase_name=phase_name,
                                  target=indicator_values['target'],
                                  werkvoorraad=indicator_values['werkvoorraad'],
-                                 capacity=indicator_values['capacity'],
+                                 capacity=indicator_values['capacity_ideal'],
                                  poc=indicator_values['poc_ideal']),
                 # px.line(df, height=400)
                 ]
