@@ -9,9 +9,9 @@ from app import app
 from data.collection import get_document
 from layout.components.capacity.capacity_summary import capacity_summary
 
-import plotly.express as px
+# import plotly.express as px
 
-import pandas as pd
+# import pandas as pd
 
 for client in config.client_config.keys():
     @app.callback(
@@ -38,7 +38,7 @@ for client in config.client_config.keys():
     @app.callback(
         [
             Output(f"capacity-indicators-{client}", "children"),
-            Output(f"more-info-graph-{client}", "figure"),
+            # Output(f"more-info-graph-{client}", "figure"),
         ],
         [
             Input(f'capacity-phase-{phase}-{client}', 'n_clicks') for phase in
@@ -75,34 +75,38 @@ for client in config.client_config.keys():
             client=client, project=project, phase=phase
         )
 
-        target = pd.Series(get_document("Lines", line='target_indicator', **selection_settings))
-        target = target[target != 0].sort_index()
+        target_number = get_document("Lines", line='target_indicator', **selection_settings)
+        if target_number:
+            target_number = target_number['this_week']
+        else:
+            target_number = 0
 
-        werkvoorraad = pd.Series(get_document("Lines", line='werkvoorraad_indicator', **selection_settings))
-        werkvoorraad = werkvoorraad[werkvoorraad != 0].sort_index()
+        # werkvoorraad = pd.Series(get_document("Lines", line='werkvoorraad_indicator', **selection_settings))
+        # werkvoorraad = werkvoorraad[werkvoorraad != 0].sort_index()
 
-        capacity = pd.Series(get_document("Lines", line='capacity_ideal_indicator', **selection_settings))
-        capacity = capacity[capacity != 0].sort_index()
+        # capacity = pd.Series(get_document("Lines", line='capacity_ideal_indicator', **selection_settings))
+        # capacity = capacity[capacity != 0].sort_index()
 
-        poc = pd.Series(get_document("Lines", line='poc_ideal_indicator', **selection_settings))
-        poc = poc[poc != 0].sort_index()
+        # poc = pd.Series(get_document("Lines", line='poc_ideal_indicator', **selection_settings))
+        # poc = poc[poc != 0].sort_index()
 
         phase_name = config.capacity_phases[phase].get('name')
 
-        target_number = round(target.tail(1).item()) if not target.empty else 0
-        werkvoorraad_number = round(werkvoorraad.tail(1).item()) if not werkvoorraad.empty else 0
-        capacity_number = round(capacity.tail(1).item()) if not capacity.empty else 0
-        poc_number = round(poc.tail(1).item()) if not poc.empty else 0
+        # target_number = round(target.tail(1).item()) if not target.empty else 0
+        # werkvoorraad_number = round(werkvoorraad.tail(1).item()) if not werkvoorraad.empty else 0
+        # capacity_number = round(capacity.tail(1).item()) if not capacity.empty else 0
+        # poc_number = round(poc.tail(1).item()) if not poc.empty else 0
 
-        df = pd.DataFrame([target, werkvoorraad, capacity, poc]).transpose()
-        df.columns = ['target', 'werkvoorraad', 'capacity', 'poc']
+        # df = pd.DataFrame([pd.Series(), pd.Series(), pd.Series(), pd.Series()])
+        # df.columns = ['target', 'werkvoorraad', 'capacity', 'poc']
 
         return [capacity_summary(phase_name=phase_name,
                                  target=target_number,
-                                 werkvoorraad=werkvoorraad_number,
-                                 capacity=capacity_number,
-                                 poc=poc_number),
-                px.line(df, height=400)]
+                                 werkvoorraad=target_number,
+                                 capacity=target_number,
+                                 poc=target_number),
+                # px.line(df, height=400)
+                ]
 
     @app.callback(
         Output(f"more-info-collapse-{client}", "is_open"),
