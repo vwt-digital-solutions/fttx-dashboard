@@ -7,9 +7,10 @@ from dash.dependencies import Input, Output, State
 
 from app import app
 from data.collection import get_document
+from data.data import no_graph
 from layout.components.capacity.capacity_summary import capacity_summary
 
-# import plotly.express as px
+import plotly.express as px
 
 import pandas as pd
 
@@ -38,7 +39,7 @@ for client in config.client_config.keys():
     @app.callback(
         [
             Output(f"capacity-indicators-{client}", "children"),
-            # Output(f"more-info-graph-{client}", "figure"),
+            Output(f"more-info-graph-{client}", "figure"),
         ],
         [
             Input(f'capacity-phase-{phase}-{client}', 'n_clicks') for phase in
@@ -83,17 +84,25 @@ for client in config.client_config.keys():
             indicator_dict = get_document("Lines", line=key + '_indicator', **selection_settings)
             if indicator_dict:
                 indicator_values[key] = int(indicator_dict['this_' + freq])
-                timeseries = pd.Series(indicator_dict['series_' + freq])
+                timeseries[key] = pd.Series(indicator_dict['series_' + freq])
 
-        print(timeseries)
         phase_name = config.capacity_phases[phase].get('name')
 
+        if all([True for k, v in timeseries.items() if v is not None]):
+            line_graph = px.line(timeseries)
+            line_graph.update_layout(
+                height=500,
+                paper_bgcolor=config.colors_vwt['paper_bgcolor'],
+                plot_bgcolor=config.colors_vwt['plot_bgcolor'],
+            )
+        else:
+            line_graph = no_graph("No data")
         return [capacity_summary(phase_name=phase_name,
                                  target=indicator_values['target'],
                                  werkvoorraad=indicator_values['werkvoorraad'],
                                  capacity=indicator_values['capacity_ideal'],
                                  poc=indicator_values['poc_ideal']),
-                # px.line(df, height=400)
+                line_graph
                 ]
 
     @app.callback(
