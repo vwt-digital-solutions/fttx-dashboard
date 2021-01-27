@@ -31,14 +31,20 @@ class LineRecord(Record):
                     phase=self.phase)
 
     def _transform(self, record):
-        series = record.make_series().resample('W-MON').sum()
-        series.index = series.index.format()
-        record_to_write = {}
-        record_to_write['series'] = series.to_dict()
-        record_to_write['this_week'] = self.get_this_week_value(series)
+        record_to_write = dict()
+        series_week = self._make_series_from_record(record, 'W-MON')
+        series_month = self._make_series_from_record(record, 'M')
+        record_to_write['series_week'] = series_week.to_dict()
+        record_to_write['series_month'] = series_month.to_dict()
+        record_to_write['this_week'] = self._get_this_week_value(series_week)
         return record_to_write
 
-    def get_this_week_value(self, series):
+    def _make_series_from_record(self, record, sample):
+        series = record.make_series().resample(sample).sum()
+        series.index = series.index.format()
+        return series
+
+    def _get_this_week_value(self, series):
         first_day_this_week = pd.to_datetime(datetime.now() -
                                              timedelta(days=datetime.now().isoweekday() % 7 - 1)
                                              ).strftime('%Y-%m-%d')
@@ -59,4 +65,4 @@ class LineRecord(Record):
 
         """
 
-        return f'{self.client}_{self.phase}_{self.graph_name}'
+        return f'{self.client}_{self.project}_{self.phase}_{self.graph_name}'
