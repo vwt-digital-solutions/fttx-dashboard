@@ -52,7 +52,7 @@ class LineRecord(Record):
 
         if sample == 'W-MON':
             date_index = pd.to_datetime(datetime.now() -
-                                        timedelta(days=datetime.now().isoweekday() % 7 - 1)
+                                        timedelta(days=datetime.now().isoweekday() % 7 - 1 - 7)
                                         ).strftime('%Y-%m-%d')
         if sample == 'MS':
             date_index = pd.Timestamp.now().strftime('%Y-%m-%d')[0:8] + '01'

@@ -16,7 +16,7 @@ class PhaseCapacity:
         phases_config:
     """
 
-    def __init__(self, df: pd.DataFrame, phases_config: dict, phase=None,
+    def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projects=None, phase=None,
                  client=None, project=None, werkvoorraad=None, rest_dates=None):
         self.df = df
         self.phase = phase
@@ -24,6 +24,7 @@ class PhaseCapacity:
         self.project = project
         self.werkvoorraad = werkvoorraad
         self.phases_config = phases_config
+        self.phases_projects = phases_projects
         self.record_list = RecordList()
         self.rest_dates = rest_dates
 
@@ -47,10 +48,13 @@ class PhaseCapacity:
         # calculate realised production over time
         if not isinstance(self.df.index[0], pd.Timestamp):
             ds = self.df[(~self.df.isna()) & (self.df <= pd.Timestamp.now())]
-            ds = ds.groupby(ds).count()
+            ds = ds.groupby(ds.dt.date).count()
         else:
             ds = self.df
-        self.pocideal_real = TimeseriesLine(ds, domain=DateDomain(begin=ds.index[0], end=ds.index[-1]), name='poc_real_indicator')
+        if not ds.empty:
+            self.pocideal_real = TimeseriesLine(ds, domain=DateDomain(begin=ds.index[0], end=ds.index[-1]), name='poc_real_indicator')
+        else:
+            self.pocideal_real = TimeseriesLine(pd.Series(data=0), domain=DateDomainRange(begin=self.phases_config['start_date'], n_days=1), name='poc_real_indicator')            
         # calculate ideal production over time
         slope = (self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / \
                 (self.target_over_time.make_series().index[-1] - self.pocideal_real.make_series().index[-1]).days
@@ -61,17 +65,24 @@ class PhaseCapacity:
         pocideal_extrap = TimeseriesLine(data=pd.Series(data=slope, index=DateDomain(begin=str(begin), end=str(end)).domain))
         self.poc_ideal = TimeseriesLine(self.pocideal_real.make_series().add(pocideal_extrap.make_series().iloc[1:], fill_value=0),
                                         name='poc_ideal_indicator')
-        # calculate ideal capacity over time
-        self.capacity_ideal = self.poc_ideal / self.phases_config['phase_norm']
-        self.capacity_ideal.name = 'capacity_ideal_indicator'
+        # # calculate ideal capacity over time
+        # self.capacity_ideal = self.poc_ideal / self.phases_config['phase_norm']
+        # self.capacity_ideal.name = 'capacity_ideal_indicator'
 
         # calculate werkvoorraad
         if self.phase == 'geulen':
-            self.werkvoorraad = TimeseriesLine(self.pocideal_real.make_series().add(pocideal_extrap.make_series().iloc[1:], fill_value=0),
-                                               name='werkvoorraad_indicator')
+            self.werkvoorraad = TimeseriesLine(data=self.poc_ideal.make_series(), name='werkvoorraad_indicator')
+        else:
+            shift = self.phases_config['phase_delta'] - self.phases_projects[self.phases_config['master_phase']]['phase_delta']
+            ratio = self.phases_config['total_units'] / self.phases_projects[self.phases_config['master_phase']]['total_units']
+            self.werkvoorraad = TimeseriesLine(data=self.werkvoorraad,
+                                               name='werkvoorraad_indicator').translate_x(shift) * ratio
 
         # calculate poc verwacht
-        slope2 = int(self.pocideal_real.integrate().extrapolate(data_partition=0.5).slope)
+        if len(self.pocideal_real.make_series()) > 2:
+            slope2 = int(self.pocideal_real.integrate().extrapolate(data_partition=0.5).slope)
+        else:
+            slope2 = 0
         if (slope2 > 0) & (self.phases_config['total_units'] > 0):
             n_days2 = int(round((self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / slope2))
         else:
@@ -84,7 +95,7 @@ class PhaseCapacity:
         self.poc_verwacht = TimeseriesLine(self.pocideal_real.make_series().add(poc_extrap.make_series().iloc[1:], fill_value=0),
                                            name='poc_verwacht_indicator')
 
-        self.add_rest_periods_to_line(self.poc_ideal, self.rest_dates)
+        # self.add_rest_periods_to_line(self.poc_ideal, self.rest_dates)
 
         # write indicators to records
         target_over_time_record = LineRecord(record=self.target_over_time,
@@ -99,12 +110,12 @@ class PhaseCapacity:
                                                 phase=self.phase,
                                                 client=self.client,
                                                 project=self.project)
-        capacity_over_time_record = LineRecord(record=self.capacity_ideal,
-                                               collection='Lines',
-                                               graph_name=f'{self.capacity_ideal.name}',
-                                               phase=self.phase,
-                                               client=self.client,
-                                               project=self.project)
+        # capacity_over_time_record = LineRecord(record=self.capacity_ideal,
+        #                                        collection='Lines',
+        #                                        graph_name=f'{self.capacity_ideal.name}',
+        #                                        phase=self.phase,
+        #                                        client=self.client,
+        #                                        project=self.project)
         werkvoorraad_over_time_record = LineRecord(record=self.werkvoorraad,
                                                    collection='Lines',
                                                    graph_name=f'{self.werkvoorraad.name}',
@@ -119,7 +130,7 @@ class PhaseCapacity:
                                                    project=self.project)
         self.record_list.append(target_over_time_record)
         self.record_list.append(poc_ideal_over_time_record)
-        self.record_list.append(capacity_over_time_record)
+        # self.record_list.append(capacity_over_time_record)
         self.record_list.append(werkvoorraad_over_time_record)
         self.record_list.append(poc_verwacht_over_time_record)
         return self

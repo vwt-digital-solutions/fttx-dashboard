@@ -9,6 +9,7 @@ from Analyse.ETL import Load, logger
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform, FttXExtract
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
+from Analyse.Capacity_analysis.Line import TimeseriesLine
 import pandas as pd
 
 from Analyse.Record.RecordList import RecordList
@@ -84,11 +85,11 @@ class CapacityTransform(FttXTransform):
                 civiel_startdatum = self.get_civiel_start_date(project_info.get('Civiel startdatum'))
                 total_units = self.get_total_units(project_info.get(phase_config['units_key']), phase_config['units_key'])
                 if pd.isnull(total_units):
-                    total_units = 0
+                    total_units = 1000
                 phases_projectspecific[project][phase] = \
                     dict(start_date=civiel_startdatum + timedelta(days=phase_config['phase_delta']),
                          total_units=total_units,
-                         performance_norm_unit=self.performance_norm_config / 100 * total_units,
+                         performance_norm_unit=performance_norm_config / 100 * total_units,
                          phase_column=phase_config['phase_column'],
                          n_days=(100 / performance_norm_config - 1),
                          master_phase=phase_config['master_phase'],
@@ -149,47 +150,51 @@ class CapacityAnalyse:
                 phase_data = self.transformed_data.project_phase_data[project]
                 fase_geulen = GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
                                              phases_config=phase_data['geulen'],  # Example phase_data.
+                                             phases_projects=phase_data,
                                              phase='geulen',
                                              client=self.client,
                                              project=project,
+                                             werkvoorraad=None,
                                              rest_dates=rest_dates
                                              ).algorithm()
                 line_record_list += fase_geulen.get_record()
                 fase_schieten = SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
                                                  phases_config=phase_data['schieten'],
+                                                 phases_projects=phase_data,
                                                  phase='schieten',
                                                  client=self.client,
                                                  project=project,
-                                                 werkvoorraad=fase_geulen.poc_ideal.translate_x(
-                                                    delta=phase_data['schieten']['phase_delta']),
+                                                 werkvoorraad=fase_geulen.poc_ideal.make_series(),
                                                  rest_dates=rest_dates
                                                  ).algorithm()
                 line_record_list += fase_schieten.get_record()
-                fase_lasap = LasAPCapacity(df=self.transformed_data.df[phase_data['lasap']['phase_column']],
+                fase_lasap = LasAPCapacity(df=project_df[phase_data['lasap']['phase_column']],
                                            phases_config=phase_data['lasap'],
+                                           phases_projects=phase_data,
                                            phase='lasap',
                                            client=self.client,
                                            project=project,
-                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasap']['phase_delta']),
+                                           werkvoorraad=fase_geulen.poc_ideal.make_series(),
                                            rest_dates=rest_dates
                                            ).algorithm()
                 line_record_list += fase_lasap.get_record()
-                fase_lasdp = LasDPCapacity(df=self.transformed_data.df[phase_data['lasdp']['phase_column']],
+                fase_lasdp = LasDPCapacity(df=project_df[phase_data['lasdp']['phase_column']],
                                            phases_config=phase_data['lasdp'],
+                                           phases_projects=phase_data,
                                            phase='lasdp',
                                            client=self.client,
                                            project=project,
-                                           werkvoorraad=fase_geulen.poc_ideal.translate_x(delta=phase_data['lasdp']['phase_delta']),
+                                           werkvoorraad=fase_geulen.poc_ideal.make_series(),
                                            rest_dates=rest_dates
                                            ).algorithm()
                 line_record_list += fase_lasdp.get_record()
-                fase_oplever = OpleverCapacity(df=self.transformed_data.df[phase_data['oplever']['phase_column']],
+                fase_oplever = OpleverCapacity(df=project_df[phase_data['oplever']['phase_column']],
                                                phases_config=phase_data['oplever'],
+                                               phases_projects=phase_data,
                                                phase='oplever',
                                                client=self.client,
                                                project=project,
-                                               werkvoorraad=fase_lasdp.poc_ideal.translate_x(delta=phase_data['oplever']['phase_delta'] -
-                                                                                             phase_data['lasdp']['phase_delta']),
+                                               werkvoorraad=fase_lasdp.poc_ideal.make_series(),
                                                rest_dates=rest_dates
                                                ).algorithm()
                 line_record_list += fase_oplever.get_record()
