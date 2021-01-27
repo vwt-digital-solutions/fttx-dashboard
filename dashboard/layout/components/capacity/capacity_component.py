@@ -1,5 +1,6 @@
 import dash_html_components as html
 import dash_bootstrap_components as dbc
+import dash_core_components as dcc
 
 import config
 from data.data import no_graph
@@ -22,15 +23,32 @@ def capacity_template(client):
     return html.Div(
         id=f'cookie-factory-{client}',
         children=[
-            html.Div(
-                className="container-display",
-                id=f"capacity-phase-{client}",
-                children=dbc.ButtonGroup(
-                    [
-                        dbc.Button(phase_data.get("name"), id=f"capacity-phase-{phase}-{client}")
-                        for phase, phase_data in config.capacity_phases.items()
-                    ]
-                )
+            dbc.Row(
+                id=f"selection-menu-{client}",
+                children=[
+                    html.Div(
+                        className=f"container-display-{client}",
+                        id=f"capacity-phase-{client}",
+                        children=dbc.ButtonGroup(
+                            [
+                                dbc.Button(phase_data.get("name"), id=f"capacity-phase-{phase}-{client}")
+                                for phase, phase_data in config.capacity_phases.items()
+                            ]
+                        )
+                    ),
+                    html.Div(
+                        className="container-display",
+                        children=dcc.Dropdown(
+                            id=f"frequency-selector-{client}",
+                            options=[{'label': 'week', 'value': 'week'}, {'label': 'month', 'value': 'month'}],
+                            value='week',
+                            style={'color': config.colors_vwt.get('darkgray'),
+                                   "margin-left": "10px",
+                                   "width": "150%"
+                                   }
+                        )
+                    )
+                ]
             ),
             html.Div(
                 id=f"capacity-indicators-{client}",
