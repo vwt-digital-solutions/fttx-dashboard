@@ -80,15 +80,18 @@ for client in config.client_config.keys():
 
         indicator_values = dict(target=0, werkvoorraad=0, capacity_ideal=0, poc_ideal=0)
         timeseries = dict(target=pd.Series(), werkvoorraad=pd.Series(), capacity_ideal=pd.Series(), poc_ideal=pd.Series())
+        line_graph_bool = False
         for key in indicator_values:
             indicator_dict = get_document("Lines", line=key + '_indicator', **selection_settings)
             if indicator_dict:
+                line_graph_bool = True
                 indicator_values[key] = int(indicator_dict['this_' + freq])
                 timeseries[key] = pd.Series(indicator_dict['series_' + freq])
 
         phase_name = config.capacity_phases[phase].get('name')
 
-        if all([True for k, v in timeseries.items() if v is not None]):
+        if line_graph_bool:
+            print(timeseries)
             line_graph = px.line(timeseries)
             line_graph.update_layout(
                 height=500,
