@@ -30,8 +30,11 @@ class CapacityExtract(FttXExtract):
         self.bis_etl.extract()
 
 
-class CapacityPickleExtract(CapacityExtract, PickleExtract):
-    ...
+class CapacityPickleExtract(PickleExtract, CapacityExtract):
+
+    def extract(self):
+        super().extract()
+        self.extract_BIS()
 
 
 # TODO: Documentation by Casper van Houten
@@ -203,7 +206,7 @@ class CapacityLocalETL(CapacityETL):
                 "Attempting to load with a local ETL process but no emulator is configured. Loading aborted.")
 
 
-class CapacityTestETL(PickleExtract, FttXTestLoad, CapacityETL):
+class CapacityTestETL(CapacityPickleExtract, FttXTestLoad, CapacityETL):
     """
     Test class to perform the ETL and analysis for capacity analysis for FttX. Will not write records to the firestore.
     """
