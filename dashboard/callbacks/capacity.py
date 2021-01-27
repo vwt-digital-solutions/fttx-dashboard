@@ -11,7 +11,7 @@ from layout.components.capacity.capacity_summary import capacity_summary
 
 # import plotly.express as px
 
-# import pandas as pd
+import pandas as pd
 
 for client in config.client_config.keys():
     @app.callback(
@@ -75,36 +75,24 @@ for client in config.client_config.keys():
             client=client, project=project, phase=phase
         )
 
-        target_number = get_document("Lines", line='target_indicator', **selection_settings)
-        if target_number:
-            target_number = target_number['this_week']
-        else:
-            target_number = 0
+        freq = 'week'  # hier moet zometeen de keuze week of month gemaakt worden via filter oid
 
-        # werkvoorraad = pd.Series(get_document("Lines", line='werkvoorraad_indicator', **selection_settings))
-        # werkvoorraad = werkvoorraad[werkvoorraad != 0].sort_index()
+        indicator_values = dict(target=0, werkvoorraad=0, capacity=0, poc_ideal=0)
+        timeseries = dict(target=pd.Series(), werkvoorraad=pd.Series(), capacity=pd.Series(), poc_ideal=pd.Series())
+        for key in indicator_values:
+            indicator_dict = get_document("Lines", line=key + '_indicator', **selection_settings)
+            if indicator_dict:
+                indicator_values[key] = int(indicator_dict['this_' + freq])
+                timeseries = pd.Series(indicator_dict['series_' + freq])
 
-        # capacity = pd.Series(get_document("Lines", line='capacity_ideal_indicator', **selection_settings))
-        # capacity = capacity[capacity != 0].sort_index()
-
-        # poc = pd.Series(get_document("Lines", line='poc_ideal_indicator', **selection_settings))
-        # poc = poc[poc != 0].sort_index()
-
+        print(timeseries)
         phase_name = config.capacity_phases[phase].get('name')
 
-        # target_number = round(target.tail(1).item()) if not target.empty else 0
-        # werkvoorraad_number = round(werkvoorraad.tail(1).item()) if not werkvoorraad.empty else 0
-        # capacity_number = round(capacity.tail(1).item()) if not capacity.empty else 0
-        # poc_number = round(poc.tail(1).item()) if not poc.empty else 0
-
-        # df = pd.DataFrame([pd.Series(), pd.Series(), pd.Series(), pd.Series()])
-        # df.columns = ['target', 'werkvoorraad', 'capacity', 'poc']
-
         return [capacity_summary(phase_name=phase_name,
-                                 target=target_number,
-                                 werkvoorraad=target_number,
-                                 capacity=target_number,
-                                 poc=target_number),
+                                 target=indicator_values['target'],
+                                 werkvoorraad=indicator_values['werkvoorraad'],
+                                 capacity=indicator_values['capacity'],
+                                 poc=indicator_values['poc_ideal']),
                 # px.line(df, height=400)
                 ]
 
