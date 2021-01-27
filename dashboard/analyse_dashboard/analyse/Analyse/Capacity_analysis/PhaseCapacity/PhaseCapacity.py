@@ -54,7 +54,8 @@ class PhaseCapacity:
         if not ds.empty:
             self.pocideal_real = TimeseriesLine(ds, domain=DateDomain(begin=ds.index[0], end=ds.index[-1]), name='poc_real_indicator')
         else:
-            self.pocideal_real = TimeseriesLine(pd.Series(data=0), domain=DateDomainRange(begin=self.phases_config['start_date'], n_days=1), name='poc_real_indicator')            
+            self.pocideal_real = TimeseriesLine(pd.Series(data=0), domain=DateDomainRange(
+                begin=self.phases_config['start_date'], n_days=1), name='poc_real_indicator')
         # calculate ideal production over time
         slope = (self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / \
                 (self.target_over_time.make_series().index[-1] - self.pocideal_real.make_series().index[-1]).days
@@ -66,7 +67,7 @@ class PhaseCapacity:
         self.poc_ideal = TimeseriesLine(self.pocideal_real.make_series().add(pocideal_extrap.make_series().iloc[1:], fill_value=0),
                                         name='poc_ideal_indicator')
         # # calculate ideal capacity over time
-        # self.capacity_ideal = self.poc_ideal / self.phases_config['phase_norm']
+        # self.capacity_ideal = self.poc_ideal /  self.phases_config['phase_norm']
         # self.capacity_ideal.name = 'capacity_ideal_indicator'
 
         # calculate werkvoorraad

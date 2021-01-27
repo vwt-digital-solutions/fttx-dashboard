@@ -9,7 +9,6 @@ from Analyse.ETL import Load, logger
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform, FttXExtract
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
-from Analyse.Capacity_analysis.Line import TimeseriesLine
 import pandas as pd
 
 from Analyse.Record.RecordList import RecordList
@@ -74,7 +73,7 @@ class CapacityTransform(FttXTransform):
     def fill_projectspecific_phase_config(self):
         phases_projectspecific = {}
         # Temporarily hard-coded values
-        performance_norm_config = 0.38  # based on dates Nijmegen Dukenburg
+        performance_norm_config = 0.38  # based  on dates Nijmegen Dukenburg
         # values for Spijkernisse for the moment
 
         for project in self.transformed_data.df.project.unique():
