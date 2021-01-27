@@ -40,14 +40,18 @@ for client in config.client_config.keys():
         [
             Output(f"capacity-indicators-{client}", "children"),
             Output(f"more-info-graph-{client}", "figure"),
+            Output(f"memory_phase_{client}", "data")
         ],
         [
             Input(f'capacity-phase-{phase}-{client}', 'n_clicks') for phase in
             config.capacity_phases.keys()
-
+        ] +
+        [
+            Input(f"frequency-selector-{client}", 'value'),
+            Input(f'project-dropdown-{client}', 'value')
         ],
         [
-            State(f'project-dropdown-{client}', 'value')
+            State(f"memory_phase_{client}", "data")
         ]
     )
     def phase_buttons(*args, client=client):
@@ -68,15 +72,23 @@ for client in config.client_config.keys():
         """
         if not callback_context.triggered:
             raise PreventUpdate
+
         phase = callback_context.triggered[0]['prop_id'].split("-")[2]
 
-        project = callback_context.states[f'project-dropdown-{client}.value']
+        if config.capacity_phases.get(phase) is None:
+            phase = callback_context.states[f"memory_phase_{client}.data"]
+            phase_name = config.capacity_phases[phase].get('name')
+        else:
+            phase_name = config.capacity_phases[phase].get('name')
+
+        project = callback_context.inputs[f'project-dropdown-{client}.value']
+
+        freq = callback_context.inputs[f'frequency-selector-{client}.value']
+        freq = 'week' if freq is None else freq
 
         selection_settings = dict(
             client=client, project=project, phase=phase
         )
-
-        freq = 'week'  # hier moet zometeen de keuze week of month gemaakt worden via filter oid
 
         indicator_values = dict(target=0, werkvoorraad=0, capacity_ideal=0, poc_ideal=0)
         timeseries = dict(target=pd.Series(), werkvoorraad=pd.Series(), capacity_ideal=pd.Series(), poc_ideal=pd.Series())
@@ -88,10 +100,7 @@ for client in config.client_config.keys():
                 indicator_values[key] = int(indicator_dict['this_' + freq])
                 timeseries[key] = pd.Series(indicator_dict['series_' + freq])
 
-        phase_name = config.capacity_phases[phase].get('name')
-
         if line_graph_bool:
-            print(timeseries)
             line_graph = px.line(timeseries)
             line_graph.update_layout(
                 height=500,
@@ -105,7 +114,8 @@ for client in config.client_config.keys():
                                  werkvoorraad=indicator_values['werkvoorraad'],
                                  capacity=indicator_values['capacity_ideal'],
                                  poc=indicator_values['poc_ideal']),
-                line_graph
+                line_graph,
+                phase
                 ]
 
     @app.callback(

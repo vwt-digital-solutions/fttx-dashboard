@@ -23,6 +23,7 @@ def capacity_template(client):
     return html.Div(
         id=f'cookie-factory-{client}',
         children=[
+            dcc.Store(id=f"memory_phase_{client}", data="geulen"),
             dbc.Row(
                 id=f"selection-menu-{client}",
                 children=[
