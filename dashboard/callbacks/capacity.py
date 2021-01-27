@@ -10,7 +10,7 @@ from data.collection import get_document
 from data.data import no_graph
 from layout.components.capacity.capacity_summary import capacity_summary
 
-import plotly.express as px
+import plotly.graph_objects as go
 
 import pandas as pd
 
@@ -101,7 +101,9 @@ for client in config.client_config.keys():
                 timeseries[key] = pd.Series(indicator_dict['series_' + freq])
 
         if line_graph_bool:
-            line_graph = px.line(timeseries)
+            line_graph = go.Figure()
+            for k, v in timeseries.items():
+                line_graph.add_trace(go.Scatter(x=v.index, y=v, mode='lines+markers', name=k))
             line_graph.update_layout(
                 height=500,
                 paper_bgcolor=config.colors_vwt['paper_bgcolor'],
