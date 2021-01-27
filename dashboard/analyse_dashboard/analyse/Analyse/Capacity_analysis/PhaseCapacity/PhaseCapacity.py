@@ -65,8 +65,22 @@ class PhaseCapacity:
 
         # calculate werkvoorraad
         if self.phase == 'geulen':
-            self.werkvoorraad = self.poc_ideal
-        self.werkvoorraad.name = 'werkvoorraad_indicator'
+            self.werkvoorraad = TimeseriesLine(self.pocideal_real.make_series().add(pocideal_extrap.make_series().iloc[1:], fill_value=0),
+                                               name='werkvoorraad_indicator')
+
+        # calculate poc verwacht
+        slope2 = int(self.pocideal_real.integrate().extrapolate(data_partition=0.5).slope)
+        if (slope2 > 0) & (self.phases_config['total_units'] > 0):
+            n_days2 = int(round((self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / slope2))
+        else:
+            n_days2 = 1
+        if n_days2 < 1:
+            n_days2 = 1
+        poc_extrap = TimeseriesLine(pd.Series(data=slope2, index=DateDomainRange(begin=str(self.pocideal_real.make_series().index[-1]),
+                                                                                 n_days=n_days2).domain)
+                                    )
+        self.poc_verwacht = TimeseriesLine(self.pocideal_real.make_series().add(poc_extrap.make_series().iloc[1:], fill_value=0),
+                                           name='poc_verwacht_indicator')
 
         # write indicators to records
         target_over_time_record = LineRecord(record=self.target_over_time,
@@ -93,10 +107,17 @@ class PhaseCapacity:
                                                    phase=self.phase,
                                                    client=self.client,
                                                    project=self.project)
+        poc_verwacht_over_time_record = LineRecord(record=self.poc_verwacht,
+                                                   collection='Lines',
+                                                   graph_name=f'{self.poc_verwacht.name}',
+                                                   phase=self.phase,
+                                                   client=self.client,
+                                                   project=self.project)
         self.record_list.append(target_over_time_record)
         self.record_list.append(poc_ideal_over_time_record)
         self.record_list.append(capacity_over_time_record)
         self.record_list.append(werkvoorraad_over_time_record)
+        self.record_list.append(poc_verwacht_over_time_record)
         return self
 
     # TODO: Documentation by Casper van Houten

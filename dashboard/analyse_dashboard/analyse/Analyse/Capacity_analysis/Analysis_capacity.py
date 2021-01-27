@@ -83,6 +83,8 @@ class CapacityTransform(FttXTransform):
                 # Temporary default value getters as data are incomplete for now.
                 civiel_startdatum = self.get_civiel_start_date(project_info.get('Civiel startdatum'))
                 total_units = self.get_total_units(project_info.get(phase_config['units_key']), phase_config['units_key'])
+                if pd.isnull(total_units):
+                    total_units = 0
                 phases_projectspecific[project][phase] = \
                     dict(start_date=civiel_startdatum + timedelta(days=phase_config['phase_delta']),
                          total_units=total_units,
@@ -93,6 +95,9 @@ class CapacityTransform(FttXTransform):
                          phase_norm=phase_config['phase_norm'],
                          phase_delta=phase_config['phase_delta']
                          )
+            phases_projectspecific[project]['schieten']['phase_norm'] = 13 / \
+                phases_projectspecific[project]['oplever']['total_units'] * \
+                phases_projectspecific[project]['schieten']['total_units']
         self.transformed_data.project_phase_data = phases_projectspecific
 
 
