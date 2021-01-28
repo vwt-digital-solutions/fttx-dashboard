@@ -98,6 +98,9 @@ class PhaseCapacity:
 
         # self.add_rest_periods_to_line(self.poc_ideal, self.rest_dates)
 
+        self.werkvoorraad_absoluut = self.werkvoorraad.integrate() - self.poc_ideal.integrate()
+        self.werkvoorraad_absoluut.name = 'werkvoorraad_absoluut_indicator'
+
         # write indicators to records
         target_over_time_record = LineRecord(record=self.target_over_time,
                                              collection='Lines',
@@ -129,11 +132,18 @@ class PhaseCapacity:
                                                    phase=self.phase,
                                                    client=self.client,
                                                    project=self.project)
+        werkvoorraad_absoluut_over_time_record = LineRecord(record=self.werkvoorraad_absoluut,
+                                                            collection='Lines',
+                                                            graph_name=f'{self.werkvoorraad_absoluut.name}',
+                                                            phase=self.phase,
+                                                            client=self.client,
+                                                            project=self.project)
         self.record_list.append(target_over_time_record)
         self.record_list.append(poc_ideal_over_time_record)
         # self.record_list.append(capacity_over_time_record)
         self.record_list.append(werkvoorraad_over_time_record)
         self.record_list.append(poc_verwacht_over_time_record)
+        self.record_list.append(werkvoorraad_absoluut_over_time_record)
         return self
 
     # TODO: Documentation by Casper van Houten

@@ -56,6 +56,12 @@ class LineRecord(Record):
                                         ).strftime('%Y-%m-%d')
         if sample == 'MS':
             date_index = pd.Timestamp.now().strftime('%Y-%m-%d')[0:8] + '01'
+            replace = int(date_index[5:7]) + 1
+            if replace < 10:
+                replace = '0' + str(replace)
+            else:
+                replace = str(replace)
+            date_index = date_index[0:5] + replace + date_index[7:]
 
         if date_index in series.index:
             value = series[date_index]
