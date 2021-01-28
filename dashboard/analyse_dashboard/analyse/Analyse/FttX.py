@@ -3,6 +3,7 @@ import time
 from google.cloud import firestore
 from sqlalchemy import text, bindparam
 
+import config
 from Analyse.Data import Data
 from Analyse.ETL import Extract, ETL, Transform, ETLBase, Load
 import pandas as pd
@@ -140,7 +141,11 @@ where project in :projects
                 xls = pd.ExcelFile(self.planning_location)
             else:
                 xls = pd.ExcelFile(self.planning_location)
-            df = pd.read_excel(xls, 'FTTX ').fillna(0)
+
+            if self.client_name == 'kpn':
+                df = pd.read_excel(xls, 'Planning 2021 (2)')
+            else:
+                df = pd.read_excel(xls)
             self.extracted_data.planning = df
         else:
             self.extracted_data.planning = pd.DataFrame()
@@ -170,6 +175,7 @@ class FttXTransform(Transform):
     def transform(self, **kwargs):
         super().transform()
         logger.info("Transforming the data following the FttX protocol")
+        self._make_project_list()
         self._fix_dates()
         self._transform_planning()
         self._add_columns()
@@ -177,7 +183,6 @@ class FttXTransform(Transform):
         self._add_status_columns()
         self._set_totals()
         self._clean_ftu_data()
-        self._make_project_list()
 
     def _clean_ftu_data(self):
         for key in ['date_FTU0', 'date_FTU1']:
@@ -317,32 +322,29 @@ class FttXTransform(Transform):
 
     def _transform_planning(self):
         logger.info("Transforming planning for KPN")
-        HP = dict(HPendT=[0] * 52)
-        df = self.extracted_data.get("planning", pd.DataFrame())
-        if not df.empty:
-            for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
-                if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
-                    HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
-                    HP['HPendT'] = [sum(x) for x in zip(HP['HPendT'], HP[df.loc[el, ('Unnamed: 0')]])]
-                    if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Oude Stad':
-                        HP['Bergen op Zoom oude stad'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
-                        HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
-                        HP['Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
-                        HP['Den Haag - Haagse Hout-Bezuidenhout West'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
-                        HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
-                        HP['Den Haag - Vrederust en Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == '':
-                        HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-                    if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
-                        HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
+        planning_excel = self.extracted_data.get("planning", pd.DataFrame())
+        if not planning_excel.empty:
+            planning_excel.rename(columns={'Unnamed: 1': 'project'}, inplace=True)
+            df = planning_excel.iloc[:, 20:72].copy()
+            df['project'] = planning_excel['project'].astype(str)
+            df.fillna(0, inplace=True)
+            df['project'].replace(config.planning_excel_project_mapping, inplace=True)
+
+            empty_list = [0] * 52
+            hp = {}
+            hp_end_t = empty_list
+            for project in self.project_list:
+                if project in df.project.unique():
+                    weeks_list = list(df[df.project == project].iloc[0][0:-1])
+                    hp[project] = weeks_list
+                    hp_end_t = [x + y for x, y in zip(hp_end_t, weeks_list)]
+                else:
+                    hp[project] = empty_list
+                    hp_end_t = [x + y for x, y in zip(hp_end_t, empty_list)]
+            hp['HPendT'] = hp_end_t
         else:
-            HP = {}
-        self.transformed_data.planning = HP
+            hp = {}
+        self.transformed_data.planning = hp
 
 
 class FttXAnalyse(FttXBase):
