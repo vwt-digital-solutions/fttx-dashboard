@@ -102,6 +102,8 @@ for client in config.client_config.keys():
                 indicator_values[key] = int(indicator_dict['this_' + freq])
                 timeseries[key] = pd.Series(indicator_dict['series_' + freq])
         werkvoorraad_absoluut = indicator_values.pop('werkvoorraad_absoluut')
+        if werkvoorraad_absoluut < 0:
+            werkvoorraad_absoluut = 0
         if phase == 'geulen':
             werkvoorraad_absoluut = None
         del timeseries['werkvoorraad_absoluut']
