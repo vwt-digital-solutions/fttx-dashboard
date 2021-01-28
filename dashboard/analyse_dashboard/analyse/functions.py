@@ -1643,7 +1643,7 @@ def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None)
     Returns: A pd.Series object
 
     """
-    use_old_kpn_planning = False
+    use_old_kpn_planning = True
     if planning and client == 'kpn' and use_old_kpn_planning is True:
         return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
     else:
@@ -1666,7 +1666,7 @@ def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
         # TODO: remove hardcoded start date
-        y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(data), freq='W-MON'),
+        y_plan = pd.DataFrame(index=pd.date_range(start='2021-01-04', periods=len(data), freq='W-MON'),
                               columns=['planning_kpn'], data=data)
         y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
         df = df.add(y_plan, fill_value=0)
