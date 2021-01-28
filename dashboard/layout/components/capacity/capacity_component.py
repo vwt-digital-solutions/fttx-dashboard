@@ -41,8 +41,9 @@ def capacity_template(client):
                         className="container-display",
                         children=dcc.Dropdown(
                             id=f"frequency-selector-{client}",
-                            options=[{'label': 'week', 'value': 'week'}, {'label': 'month', 'value': 'month'}],
+                            options=[{'label': 'Week', 'value': 'week'}, {'label': 'Maand', 'value': 'month'}],
                             value='week',
+                            clearable=False,
                             style={'color': config.colors_vwt.get('darkgray'),
                                    "margin-left": "10px",
                                    "width": "150%"
