@@ -25,6 +25,7 @@ class PhaseCapacity:
         self.pocideal_line_masterphase = pocideal_line_masterphase
         self.masterphase_data = masterphase_data
         self.record_list = RecordList()
+        self.holiday_dates = holiday_dates
 
     def algorithm(self):
         """
@@ -141,8 +142,8 @@ class PhaseCapacity:
         return self.record_list
 
     #
-    def add_rest_periods_to_line(self, line, sorted_rest_dates):
-        '''
+    def add_holiday_periods_to_line(self, line, sorted_holiday_periods):
+        """
         Function that will enhance a line to include input rest periods.
         The productivity during the rest period will be 0, and the line will be extended to keep the same total.
         Args:
@@ -151,25 +152,25 @@ class PhaseCapacity:
 
         Returns:
 
-        '''
-        rest_periods = sorted_rest_dates  # Retrieve full set of defined rest dates
+        """
+        holiday_periods = sorted_holiday_periods  # Retrieve full set of defined rest dates
         # Main loop.
         # You have to loop over the rest periods multiple times,
         # because you are extending the timeperiod in every loop
         while True:
             # Find all relevant rest periods, given current dates of the line
-            next_rest_period, other_periods = self._find_next_rest_periods_in_date_range(line.make_series().index,
-                                                                                         rest_periods)
-            if not next_rest_period:
+            next_holiday_period, other_periods = self._find_next_holiday_periods_in_date_range(line.make_series().index,
+                                                                                               holiday_periods)
+            if not next_holiday_period:
                 break  # Stop looping if there's no rest periods left to add
             # Remove rest periods that have been added from the set that can still be added
-            rest_periods = other_periods
+            holiday_periods = other_periods
             # Add next relevant rest periods to the line, continue with the new line
-            line = self._add_rest_period(line, next_rest_period)
+            line = self._add_holiday_period(line, next_holiday_period)
         return line
 
-    def _add_rest_period(self, line, rest_period):
-        '''
+    def _add_holiday_period(self, line, holiday_period):
+        """
         Helper function to add a single rest period to a TimeseriesLine
         Args:
             line:
@@ -177,15 +178,15 @@ class PhaseCapacity:
 
         Returns:
 
-        '''
-        rest_period_line = TimeseriesLine(pd.Series(index=rest_period, data=0))
-        before_line = line.slice(end=rest_period.min())
-        after_line = line.slice(begin=rest_period.min()).translate_x(len(rest_period))
-        return before_line.append(rest_period_line, skip=1, skip_base=True).append(after_line)
+        """
+        holiday_period_line = TimeseriesLine(pd.Series(index=holiday_period, data=0))
+        before_line = line.slice(end=holiday_period.min())
+        after_line = line.slice(begin=holiday_period.min()).translate_x(len(holiday_period))
+        return before_line.append(holiday_period_line, skip=1, skip_base=True).append(after_line)
 
     # Rest dates have to be sorted to yield correct results!!
-    def _find_next_rest_periods_in_date_range(self, date_range, rest_dates):
-        '''
+    def _find_next_holiday_periods_in_date_range(self, date_range, holidays_period):
+        """
         Helper function to find the next rest period in the given set of rest dates.
         Args:
             date_range:
@@ -193,25 +194,25 @@ class PhaseCapacity:
 
         Returns:
 
-        '''
+        """
         overlapping_dates = None
-        while len(rest_dates) > 0:
-            dates = rest_dates.pop(0)
+        while len(holidays_period) > 0:
+            dates = holidays_period.pop(0)
             overlapping_dates = self._find_overlapping_dates(date_range, dates)
             if overlapping_dates:
                 overlapping_dates = pd.date_range(start=overlapping_dates[0], end=overlapping_dates[-1], freq='D')
                 break
-        return overlapping_dates, rest_dates
+        return overlapping_dates, holidays_period
 
-    def _find_overlapping_dates(self, base_period, rest_period):
-        if rest_period.min() in base_period:
-            overlapping_dates = rest_period.to_list()
+    def _find_overlapping_dates(self, base_period, holidays_period):
+        if holidays_period.min() in base_period:
+            overlapping_dates = holidays_period.to_list()
         else:
-            overlapping_dates = [date for date in rest_period if date in base_period]
+            overlapping_dates = [date for date in holidays_period if date in base_period]
         return overlapping_dates
 
-    def _remove_rest_periods(self, rest_periods, to_remove):
-        new_list = [x for x in rest_periods if not to_remove]
-        if len(new_list) == len(rest_periods):
+    def _remove_holiday_periods(self, holidays_period, to_remove):
+        new_list = [x for x in holidays_period if not to_remove]
+        if len(new_list) == len(holidays_period):
             raise ValueError('Did not remove value from list, this would result in infinite loop')
         return new_list

@@ -214,7 +214,7 @@ class CapacityAnalyse:
 
     def get_rest_dates_as_list_of_series(self):
         rest_dates = []
-        for rest_date in self.config['rest_periods']:
+        for rest_date in self.config['holidays_periods']:
             rest_dates.append(pd.date_range(start=rest_date[0], end=rest_date[1], freq='D'))
         return rest_dates
 
