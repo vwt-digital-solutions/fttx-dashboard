@@ -74,10 +74,10 @@ class PhaseCapacity:
         if self.phase == 'geulen':
             self.werkvoorraad = TimeseriesLine(data=self.poc_ideal.make_series(), name='werkvoorraad_indicator')
         else:
-            shift = self.phases_config['phase_delta'] - self.phases_projects[self.phases_config['master_phase']]['phase_delta']
+            shift = 0  # self.phases_config['phase_delta'] - self.phases_projects[self.phases_config['master_phase']]['phase_delta']
             ratio = self.phases_config['total_units'] / self.phases_projects[self.phases_config['master_phase']]['total_units']
-            self.werkvoorraad = TimeseriesLine(data=self.werkvoorraad,
-                                               name='werkvoorraad_indicator').translate_x(shift) * ratio
+            self.werkvoorraad = TimeseriesLine(data=self.werkvoorraad).translate_x(shift) * ratio
+            self.werkvoorraad.name = 'werkvoorraad_indicator'
 
         # calculate poc verwacht
         if len(self.pocideal_real.make_series()) > 2:
