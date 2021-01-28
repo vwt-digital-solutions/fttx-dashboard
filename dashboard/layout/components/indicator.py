@@ -5,7 +5,7 @@ from config import colors_vwt as colors
 
 
 def indicator(value, previous_value=None, title="", sub_title="", font_color=None, id="", invert_delta=False,
-              percentage=False, **kwargs):
+              percentage=False, suffix=None, **kwargs):
     fig = go.Figure(
         layout={
             "height": 200,
@@ -22,6 +22,9 @@ def indicator(value, previous_value=None, title="", sub_title="", font_color=Non
                 "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"},
         mode='number'
     )
+
+    if suffix:
+        indicator_args['number']['suffix'] = suffix
 
     if previous_value is not None:
         indicator_args['delta'] = {'reference': previous_value, "valueformat": ':'}

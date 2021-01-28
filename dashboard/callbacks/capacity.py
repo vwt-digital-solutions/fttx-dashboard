@@ -14,6 +14,8 @@ import plotly.graph_objects as go
 
 import pandas as pd
 
+colors = config.colors_vwt
+
 for client in config.client_config.keys():
     @app.callback(
         Output(f'capacity-phase-geulen-{client}', 'n_clicks'),
@@ -84,7 +86,6 @@ for client in config.client_config.keys():
         project = callback_context.inputs[f'project-dropdown-{client}.value']
 
         freq = callback_context.inputs[f'frequency-selector-{client}.value']
-        freq = 'week' if freq is None else freq
 
         selection_settings = dict(
             client=client, project=project, phase=phase
@@ -101,24 +102,31 @@ for client in config.client_config.keys():
                 timeseries[key] = pd.Series(indicator_dict['series_' + freq])
 
         if line_graph_bool:
+            color_count = 0
+            color_selection = [colors['darkgray'], colors['lightgray'], colors['vwt_blue'], colors['black']]
             line_graph = go.Figure()
             for k, v in timeseries.items():
-                line_graph.add_trace(go.Scatter(x=v.index, y=v, mode='lines+markers', name=k))
-            line_graph.update_layout(
-                height=500,
-                paper_bgcolor=config.colors_vwt['paper_bgcolor'],
-                plot_bgcolor=config.colors_vwt['plot_bgcolor'],
-            )
+                line_graph.add_trace(go.Scatter(x=v.index,
+                                                y=v,
+                                                mode='lines+markers',
+                                                name=k,
+                                                marker=dict(color=color_selection[color_count])))
+                color_count += 1
+
+            line_graph.update_layout(height=500,
+                                     paper_bgcolor=colors['paper_bgcolor'],
+                                     plot_bgcolor=colors['plot_bgcolor'])
         else:
             line_graph = no_graph("No data")
+
         return [capacity_summary(phase_name=phase_name,
                                  target=indicator_values['target'],
                                  werkvoorraad=indicator_values['werkvoorraad'],
                                  capacity=indicator_values['poc_verwacht'],
-                                 poc=indicator_values['poc_ideal']),
+                                 poc=indicator_values['poc_ideal'],
+                                 unit=config.capacity_phases[phase].get('unit')),
                 line_graph,
-                phase
-                ]
+                phase]
 
     @app.callback(
         Output(f"more-info-collapse-{client}", "is_open"),

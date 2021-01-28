@@ -2,7 +2,7 @@ import dash_html_components as html
 from layout.components.indicator import indicator
 
 
-def capacity_summary(phase_name, target, werkvoorraad, capacity, poc):
+def capacity_summary(phase_name, target, werkvoorraad, capacity, poc, unit):
     """
     The capacity summary component shows the main indicators regarding the capacity analysis.
 
@@ -25,14 +25,17 @@ def capacity_summary(phase_name, target, werkvoorraad, capacity, poc):
             className="container-display",
             children=[
                 indicator(value=capacity,
-                          title="Wat ga ik doen?"),
+                          title="Wat ga ik doen?",
+                          suffix=unit),
                 indicator(value=target,
-                          title="Wat heb ik afgesproken?"),
+                          title="Wat heb ik afgesproken?",
+                          suffix=unit),
                 indicator(value=werkvoorraad,
-                          title="Wat kan ik doen?"),
+                          title="Wat kan ik doen?",
+                          suffix=unit),
                 indicator(value=poc,
-                          title="Wat moet ik doen?")
-
+                          title="Wat moet ik doen?",
+                          suffix=unit)
             ]
         )
     ]
