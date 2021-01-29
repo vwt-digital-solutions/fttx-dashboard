@@ -70,7 +70,12 @@ def analyseKPN(client_name):
     kpn = KPNETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
     cpc = CapacityETL(client=client_name, config=config.client_config[client_name])
-    cpc.perform()
+    cpc.extracted_data = kpn.extracted_data
+    del kpn
+    cpc.extract_BIS()
+    cpc.transform()
+    cpc.analyse()
+    cpc.load()
 
 
 def analyseDFN(client_name):
