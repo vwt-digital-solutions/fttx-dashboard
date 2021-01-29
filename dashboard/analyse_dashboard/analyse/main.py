@@ -66,7 +66,7 @@ def analyse_dfn(request):
         logging.info('run done')
 
 
-def analyse_capacity(request):
+def analyse_capacity_kpn(request):
     try:
         if get_update_dates('kpn'):
             analyseCapacity('kpn')
