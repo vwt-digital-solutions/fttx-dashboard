@@ -63,7 +63,7 @@ def geschouwed(df, time_delta_days=0):
     return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
 
 
-# TODO: remove when removing new_projectspecific_views
+# TODO: Documentation by Erik van Egmond
 def ordered(df, time_delta_days=0):
     return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
 

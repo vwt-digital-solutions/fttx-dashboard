@@ -20,11 +20,10 @@ import business_rules as br
 from Analyse.Record.RecordListWrapper import RecordListWrapper
 from functions import extract_realisatie_hpend_dates, cluster_reden_na, \
     create_project_filter, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
-    extract_werkvoorraad_has_dates, calculate_redenna_per_period, \
-    calculate_projectspecs, extract_voorspelling_dates, individual_reden_na, \
-    ratio_sum_over_periods_to_record, get_database_engine, \
-    overview_reden_na, sum_over_period_to_record, voorspel_and_planning_minus_HPend_sum_over_periods_to_record, \
-    extract_planning_dates, extract_target_dates, extract_aangesloten_orders_dates
+    extract_werkvoorraad_has_dates, calculate_redenna_per_period, extract_voorspelling_dates, individual_reden_na, \
+    ratio_sum_over_periods_to_record, get_database_engine, overview_reden_na, sum_over_period_to_record, \
+    voorspel_and_planning_minus_HPend_sum_over_periods_to_record, extract_planning_dates, extract_target_dates, \
+    extract_aangesloten_orders_dates
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -362,11 +361,8 @@ class FttXAnalyse(FttXBase):
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
-        if toggles.new_projectspecific_views:
-            self._make_intermediate_results_ratios_project_specific_values()
-            self._make_intermediate_results_tmobile_project_specific_values()
-        else:
-            self._calculate_projectspecs()
+        self._make_intermediate_results_ratios_project_specific_values()
+        self._make_intermediate_results_tmobile_project_specific_values()
         self._calculate_y_voorraad_act()
         self._reden_na()
         self._set_filters()
@@ -466,21 +462,21 @@ class FttXAnalyse(FttXBase):
         self.records.add('List_of_years', list_of_years, Record, 'Data')
         self.intermediate_results.List_of_years = list_of_years
 
-    def _calculate_projectspecs(self):
-        logger.info("Calculating project specs")
-        results = calculate_projectspecs(self.transformed_data.df)
-
-        # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
-        self.records.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
-        # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
-        # self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
-        # self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
-
-        # self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
-        self.intermediate_results.HC_HPend_l = results.hc_hpend_ratio
-        # self.intermediate_results.Schouw_BIS = results.has_ready
-        # self.intermediate_results.HPend_l = results.homes_ended
-        # self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
+    # def _calculate_projectspecs(self):
+    #     logger.info("Calculating project specs")
+    #     results = calculate_projectspecs(self.transformed_data.df)
+    #
+    #     # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
+    #     self.records.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
+    #     # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
+    #     # self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
+    #     # self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
+    #
+    #     # self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
+    #     self.intermediate_results.HC_HPend_l = results.hc_hpend_ratio
+    #     # self.intermediate_results.Schouw_BIS = results.has_ready
+    #     # self.intermediate_results.HPend_l = results.homes_ended
+    #     # self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
 
     def _calculate_y_voorraad_act(self):
         logger.info("Calculating y voorraad act for KPN")

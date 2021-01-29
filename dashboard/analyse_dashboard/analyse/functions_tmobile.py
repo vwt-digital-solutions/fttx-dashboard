@@ -61,11 +61,11 @@ def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
     return record
 
 
-def slice_for_jaaroverzicht(data):
-    df = pd.DataFrame.from_dict(data, orient='index', columns=['count_by_month'])
-    df.index = pd.to_datetime(df.index)
-    period = ['2019-12-23', '2020-12-27']
-    return df.loc[period[0]:period[1], 'count_by_month'].to_list()
+# def slice_for_jaaroverzicht(data):
+#     df = pd.DataFrame.from_dict(data, orient='index', columns=['count_by_month'])
+#     df.index = pd.to_datetime(df.index)
+#     period = ['2019-12-23', '2020-12-27']
+#     return df.loc[period[0]:period[1], 'count_by_month'].to_list()
 
 
 # def preprocess_for_jaaroverzicht(*args):
