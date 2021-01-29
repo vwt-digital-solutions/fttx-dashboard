@@ -43,12 +43,9 @@ def is_date_set(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
          pd.Series: A series of truth values.
     """
     time_point: pd.Timestamp = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    return (
-            ~series.isna() &  # date must be known
-            (
-                    series <= time_point  # the date must be before or on the day of the delta.
-            )
-    )
+    return (~series.isna()  # date must be known
+            &
+            (series <= time_point))  # the date must be before or on the day of the delta.
 
 
 def geschouwed(df, time_delta_days=0):
@@ -84,10 +81,7 @@ def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
          pd.Series: A series of truth values.
 
     """
-    return (
-            # (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
-            # &
-            (df.status.isin(['HOLD', 'PLANNED', 'CHANGED', 'CLOSED', 'ACCEPTED']))
+    return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
             &
             (df.type.isin(['AANLEG', 'Aanleg'])))
 
@@ -287,10 +281,9 @@ def hp_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (
-            (df['opleverstatus'] != '2') &
-            (~df['opleverdatum'].isna())
-    )
+    return ((df['opleverstatus'] != '2')
+            &
+            (~df['opleverdatum'].isna()))
 
 
 def has_ingeplanned(df):
@@ -304,10 +297,9 @@ def has_ingeplanned(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (
-            df['opleverdatum'].isna() &
-            ~df['hasdatum'].isna()
-    )
+    return (df['opleverdatum'].isna()
+            &
+            ~df['hasdatum'].isna())
 
 
 def has_niet_opgeleverd(df):
@@ -321,11 +313,10 @@ def has_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (
-            df['opleverdatum'].isna() &
+    return (df['opleverdatum'].isna()
+            &
             # TODO is the hasdatum not the planned date? If so, 'has' can be 'niet opgeleverd' but still be planned.
-            df['hasdatum'].isna()
-    )
+            df['hasdatum'].isna())
 
 
 def hpend(df, time_delta_days=0):
