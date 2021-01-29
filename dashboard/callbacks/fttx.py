@@ -272,10 +272,10 @@ for client in config.client_config.keys():
             redenna_pie = redenna_status_pie.get_fig(redenna_counts,
                                                      title="Opgegeven reden na",
                                                      colors=[
-                                                        colors['vwt_blue'],
+                                                        colors['green'],
                                                         colors['yellow'],
                                                         colors['red'],
-                                                        colors['green']
+                                                        colors['vwt_blue']
                                                      ])
             if click_filter:
                 download_url = f'/dash/project_redenna_download?project={project_name}&{urlencode(click_filter)}'
