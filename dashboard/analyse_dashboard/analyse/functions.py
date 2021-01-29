@@ -625,9 +625,16 @@ def slice_for_jaaroverzicht(data):
 
 
 # TODO: Documentation by Casper van Houten
-def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
+def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
     record_dict = {}
     for key in y_prog_l:
+        if not FTU0_date[key]:  # TODO: Fix this
+            FTU0_date[key] = '2020-01-01'
+        if not FTU1_date[key]:  # some project do not have a FTU1 date assigned (yet), set project length to 100 days:
+            FTU1_date[key] = (pd.to_datetime(FTU0_date[key]) + pd.Timedelta(days=100)).strftime('%Y-%m-%d')
+        else:  # most projects have not finished at FTU1 date, adding 100 days to axis:
+            FTU1_date[key] = (pd.to_datetime(FTU1_date[key]) + pd.Timedelta(days=100)).strftime('%Y-%m-%d')
+
         fig = {'data': [{
             'x': list(x_d.strftime('%Y-%m-%d')),
             'y': list(y_prog_l[key]),
@@ -636,12 +643,12 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l):
             'name': 'Voorspelling (VQD)',
         }],
             'layout': {
-                'xaxis': {'title': 'Opleverdatum [d]', 'range': ['2020-01-01', '2020-12-31']},
+                'xaxis': {'title': 'Opleverdatum [d]', 'range': [FTU0_date[key], FTU1_date[key]]},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
                 'title': {'text': 'Voortgang project vs target:'},
                 'showlegend': True,
-                'legend': {'x': 1.2, 'xanchor': 'right', 'y': 1},
-                'height': 350,
+                'legend': {'x': 0, 'xanchor': 'left', 'y': 1.15},
+                'height': 450,
                 'plot_bgcolor': colors['plot_bgcolor'],
                 'paper_bgcolor': colors['paper_bgcolor'],
             },

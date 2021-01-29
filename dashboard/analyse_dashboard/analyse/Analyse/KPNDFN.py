@@ -196,7 +196,10 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.timeline,
             self.intermediate_results.y_prog_l,
             self.intermediate_results.d_real_l,
-            self.intermediate_results.y_target_l)
+            self.intermediate_results.y_target_l,
+            self.extracted_data.ftu['date_FTU0'],
+            self.extracted_data.ftu['date_FTU1']
+        )
         self.records.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
 
     def _overview(self):
