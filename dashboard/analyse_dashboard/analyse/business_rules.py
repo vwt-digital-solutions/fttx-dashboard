@@ -43,12 +43,9 @@ def is_date_set(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
          pd.Series: A series of truth values.
     """
     time_point: pd.Timestamp = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    return (
-            ~series.isna() &  # date must be known
-            (
-                    series <= time_point  # the date must be before or on the day of the delta.
-            )
-    )
+    return (~series.isna()  # date must be known
+            &
+            (series <= time_point))  # the date must be before or on the day of the delta.
 
 
 def geschouwed(df, time_delta_days=0):
@@ -66,90 +63,106 @@ def geschouwed(df, time_delta_days=0):
     return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
 
 
-# TODO: remove when removing toggle new_structure_overviews
+# TODO: Documentation by Erik van Egmond
 def ordered(df, time_delta_days=0):
     return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
 
 
-def on_time_opgeleverd(df):
+def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
     """
-    Used to calculate the homes that have been completed within 8 weeks (56 days) after providing permission.
+    Used to calculate the actieve orders for tmobile, based on the business rules:
+        - Is the df row status not equal to CANCELLED or TO_BE_CANCELLED?
+        - Is the df row type equal to AANLEG?
 
     Args:
-        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
-        dates.
+        df (pd.DataFrame): A dataframe containing a status and type column.
 
     Returns:
          pd.Series: A series of truth values.
 
     """
-    # TODO: change toestemming_datum to creation (and check other tmobile business rules)
-    return (df['opleverdatum'] - df['toestemming_datum']).dt.days <= 56
+    return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
+            &
+            (df.type.isin(['AANLEG', 'Aanleg'])))
 
 
-def on_time_openstaand(df):
+def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
+                               time_window: str = None, order_type: str = None) -> pd.Series:
     """
-    Used to calculate the homes that are still to be completed, and which are still within 8 weeks (56 days) after
-    providing permission.
+    Used to calculate the openstaande orders for tmobile, based on the business rules:
+        - Is the df row status not equal to CANCELLED, TO_BE_CANCELLED or CLOSED?
+        - Is the df row type equal to AANLEG?
+    Additionally, a time window can be set, which adds the following rules:
+        - Is the time between today and creation date less than 8 weeks ("on time", 56 days); between 8 & 12 weeks
+        ("limited time", 56 & 84 days) or above 12 weeks ("late", 84 days)?
 
     Args:
-        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
-        dates.
+        df (pd.DataFrame): A dataframe containing a status, type and creation column, of which creation contains dates.
+        time_delta_days (int): optional, the number of days before today.
+        time_window (str): A string to set the wanted time window.
 
     Returns:
          pd.Series: A series of truth values.
 
     """
-    # TODO: change toestemming_datum to creation
-    return (
-            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days <= 56)
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+
+    mask = ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
             &
-            (df.opleverdatum.isna() | (df.opleverdatum > pd.Timestamp.today()))
-    )
+            (df.type.isin(['AANLEG', 'Aanleg'])))
+
+    if order_type == 'patch only':
+        mask = (mask
+                &
+                (df.plantype == 'Zonder klantafspraak'))
+    elif order_type == 'hc aanleg':
+        mask = (mask
+                &
+                (df.plantype != 'Zonder klantafspraak'))
+
+    if time_window == 'on time':
+        mask = (mask
+                &
+                ((time_point - df['creation']).dt.days <= 56))
+    elif time_window == 'limited':
+        mask = (mask
+                &
+                (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
+    elif time_window == 'late':
+        mask = (mask
+                &
+                ((time_point - df['creation']).dt.days > 84))
+
+    return mask
 
 
-def nog_beperkte_tijd_openstaand(df):
+def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.Series:
     """
-    Used to calculate the homes that are still to be completed, and which are between 8 and 12 weeks (56 and 84 days)
-    after providing permission.
-
+    Used to calculate the totaal aangesloten orders for tmobile, based on the business rules:
+        - Is the df row status equal to CLOSED?
+        - Is the df row type equal to AANLEG?
+    Additionally, a time window can be set, which adds the following rule:
+        - Is the time between opleverdatum and creation date less than 8 weeks ("on time", 56 days)?
     Args:
-        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
-        dates.
+        df (pd.DataFrame): A dataframe containing a status, type, opleverdatum and creation column, of which the latter
+        two contain dates.
+        time_window (str): A string to set the wanted time window.
 
     Returns:
-         pd.Series: A series of truth values.
+        pd.Series: A series of truth values.
 
     """
-    # TODO: change toestemming_datum to creation
-    return (
-            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days > 56)
+
+    mask = ((df.status == 'CLOSED')
             &
-            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days <= 84)
-            &
-            (df.opleverdatum.isna() | (df.opleverdatum > pd.Timestamp.today()))
-    )
+            (df.type.isin(['AANLEG', 'Aanleg'])))
 
+    if time_window == 'on time':
+        mask = (mask
+                &
+                ((df['opleverdatum'] - df['creation']).dt.days <= 56))
 
-def te_laat_openstaand(df):
-    """
-    Used to calculate the homes that are still to be completed, which are above 12 weeks (84 days) after
-    providing permission (and therefore considered "te laat").
-
-    Args:
-        df (pd.DataFrame): A dataframe containing an opleverdatum column and toestemming_datum column, both containing
-        dates.
-
-    Returns:
-         pd.Series: A series of truth values.
-
-    """
-    # TODO: change toestemming_datum to creation
-    return (
-            ((pd.Timestamp.today() - df['toestemming_datum']).dt.days > 84)
-            &
-            (df.opleverdatum.isna() | (df.opleverdatum > pd.Timestamp.today()))
-    )
+    return mask
 
 
 def toestemming_bekend(df):
@@ -163,11 +176,6 @@ def toestemming_bekend(df):
          pd.Series: A series of truth values.
     """
     return ~df['toestemming'].isna()
-
-
-# TODO: Tjeerd Pols, remove this function.
-def toestemming_gegeven(df):
-    return ~df['toestemming_datum'].isna()
 
 
 def laswerk_ap_gereed(df):
@@ -222,7 +230,6 @@ def laswerk_dp_niet_gereed(df):
     return df['laswerkdpgereed'] != '1'
 
 
-# TODO: remove when removing toggle new_structure_overviews
 def bis_opgeleverd(df):
     """
     BIS is done when `opleverstatus` is **not** set to 1.
@@ -233,7 +240,7 @@ def bis_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'] != '0'
+    return ~df['opleverstatus'].isin(['0', '90', '99'])
 
 
 def bis_niet_opgeleverd(df):
@@ -246,24 +253,7 @@ def bis_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'] == '0'
-
-
-# Todo: Andre van Turnhout: Document/remove this function. It should not be named something_new.
-def bis_opgeleverd_new(df):
-    return ~df['opleverstatus'].isin(['0', '90', '99'])
-
-
-# TODO: Andre van Turnhout. You should probably have used the hpend() function. If so: refactor the code that uses this
-#  function, otherwise document this function
-def hpend_opgeleverd(df):
-    return ~df['opleverdatum'].isna()
-
-
-# TODO: Tjeerd Pols Document this function. Reuse other business rules when applicable.
-#  Here you need to use the opgeleverd and orderd rules.
-def hpend_opgeleverd_and_ordered(df):
-    return (~df['opleverdatum'].isna()) & (~df['ordered'].isna())
+    return df['opleverstatus'].isin(['0', '90', '99'])
 
 
 def hc_opgeleverd(df):
@@ -291,10 +281,9 @@ def hp_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (
-            (df['opleverstatus'] != '2') &
-            (~df['opleverdatum'].isna())
-    )
+    return ((df['opleverstatus'] != '2')
+            &
+            (~df['opleverdatum'].isna()))
 
 
 def has_ingeplanned(df):
@@ -308,10 +297,9 @@ def has_ingeplanned(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (
-            df['opleverdatum'].isna() &
-            ~df['hasdatum'].isna()
-    )
+    return (df['opleverdatum'].isna()
+            &
+            ~df['hasdatum'].isna())
 
 
 def has_niet_opgeleverd(df):
@@ -325,11 +313,10 @@ def has_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (
-            df['opleverdatum'].isna() &
+    return (df['opleverdatum'].isna()
+            &
             # TODO is the hasdatum not the planned date? If so, 'has' can be 'niet opgeleverd' but still be planned.
-            df['hasdatum'].isna()
-    )
+            df['hasdatum'].isna())
 
 
 def hpend(df, time_delta_days=0):
@@ -385,9 +372,9 @@ def has_werkvoorraad(df, time_delta_days=0):
             &
             (df.opleverdatum.isna() | (df.opleverdatum > time_point))
             &
-            ~df.toestemming_datum.isna()
+            (df.toestemming == 'Ja')
             &
-            ~df.opleverstatus.isin(['0', '90', '99'])
+            (~df.opleverstatus.isin(['0', '90', '99']))
     )
 
 
@@ -420,5 +407,5 @@ def target_tmobile(df):
             &
             (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
             &
-            (df.type == 'AANLEG')
+            (df.type.isin(['AANLEG', 'Aanleg']))
     )

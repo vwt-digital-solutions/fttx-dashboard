@@ -7,7 +7,6 @@ import business_rules as br
 from functions import calculate_projectindicators_tmobile, calculate_oplevertijd, wait_bins
 from functions_tmobile import calculate_voorraadvormend, add_weeknumber, counts_by_time_period
 import logging
-from toggles import toggles
 
 logger = logging.getLogger('FttX Analyse')
 
@@ -58,13 +57,11 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_week()
         self._get_voorraadvormend()
         self._calculate_project_indicators()
-        if toggles.download_indicators:
-            self._endriched_data()
 
     def _get_voorraadvormend(self):
         logger.info("Calculating voorraadvormend")
         record = calculate_voorraadvormend(self.transformed_data.df)
-        self.record_dict.add('voorraadvormend', record, Record, "Data")
+        self.records.add('voorraadvormend', record, Record, "Data")
 
     def _get_counts_by_week(self):
         logger.info("Calculating counts by week")
@@ -72,7 +69,7 @@ class TMobileAnalyse(FttXAnalyse):
         drl = [dict(record={k: v},
                     graph_name=f"{k}_by_week")
                for k, v in counts_by_week.items()]
-        self.record_dict.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
+        self.records.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
     # def _jaaroverzicht(self):
     #     # Function should not be ran on first pass, as it is called in super constructor.
@@ -102,26 +99,18 @@ class TMobileAnalyse(FttXAnalyse):
         drl = [dict(record={k: v},
                     graph_name=f"{k}_by_month")
                for k, v in self.intermediate_results.counts_by_month.items()]
-        self.record_dict.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
+        self.records.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")
-        counts_by_project = calculate_projectindicators_tmobile(self.transformed_data.df)
-        self.record_dict.add(key="project_indicators",
-                             collection="Data",
-                             record_type=DictRecord,
-                             record=counts_by_project)
-
-    def _endriched_data(self):
-        logger.info("Storing data to Houses")
-        self._delete_collection(u'Houses')
-        df_copy = self.transformed_data.df.copy()
-        df_copy = df_copy[df_copy['wait_category'].notna()]
-        datums = [col for col in df_copy.columns if "datum" in col or 'date' in col or "creation" in col]
-        df_copy.loc[:, datums] = df_copy[datums].apply(lambda x: x.dt.strftime("%Y-%m-%d"))
-        df_copy.astype(str, inplace=True)
-        doc_list = [{'record': x, 'sleutel': x['sleutel']} for x in df_copy.to_dict(orient='rows')]
-        self.record_dict.add('enriched_data', doc_list, DocumentListRecord, 'Houses', document_key=['sleutel'])
+        counts_by_project = calculate_projectindicators_tmobile(self.transformed_data.df,
+                                                                self.intermediate_results.has_werkvoorraad_per_project,
+                                                                self.intermediate_results.orders_time_windows_per_project,
+                                                                self.intermediate_results.ratio_under_8weeks_per_project)
+        self.records.add(key="project_indicators",
+                         collection="Data",
+                         record_type=DictRecord,
+                         record=counts_by_project)
 
     def _delete_collection(self, collection_name, batch_size=500, count=0):
         logger.info("Deleting collection Houses")

@@ -146,7 +146,7 @@ for client in config.client_config.keys():
         redenna_by_period = collection.get_document(collection="Data",
                                                     client=client,
                                                     graph_name=f"redenna_by_{period}")
-
+        # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
         redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
 
         if redenna_dict:
@@ -240,6 +240,8 @@ for client in config.client_config.keys():
     def update_graphs_using_status_clicks(click_filter, project_name, client=client):
         if project_name:
             status_counts = completed_status_counts(project_name, click_filter=click_filter, client=client)
+            if status_counts is None:
+                return [no_graph(), no_graph(), {'display': 'block'}, {'display': 'block'}]
             laagbouw = completed_status_counts_bar.get_fig(status_counts.laagbouw,
                                                            title="Status oplevering per fase (LB)")
             laagbouw_style = {'display': 'block'} if laagbouw else {'display': 'none'}
@@ -247,7 +249,10 @@ for client in config.client_config.keys():
                                                            title="Status oplevering per fase (HB & Duplex)")
             hoogbouw_style = {'display': 'block'} if hoogbouw else {'display': 'none'}
             return laagbouw, hoogbouw, laagbouw_style, hoogbouw_style
-        return {'data': None, 'layout': None}, {'data': None, 'layout': None}, {'display': 'block'}, {'display': 'block'}
+        return {'data': None, 'layout': None}, \
+               {'data': None, 'layout': None}, \
+               {'display': 'block'}, \
+               {'display': 'block'}
 
     @app.callback(
         [
@@ -262,13 +267,15 @@ for client in config.client_config.keys():
     def update_redenna_status_clicks(click_filter, project_name, client=client):
         if project_name:
             redenna_counts = redenna_by_completed_status(project_name, click_filter=click_filter, client=client)
+            if redenna_counts is None:
+                return [no_graph(), ""]
             redenna_pie = redenna_status_pie.get_fig(redenna_counts,
                                                      title="Opgegeven reden na",
                                                      colors=[
-                                                        colors['vwt_blue'],
+                                                        colors['green'],
                                                         colors['yellow'],
                                                         colors['red'],
-                                                        colors['green']
+                                                        colors['vwt_blue']
                                                      ])
             if click_filter:
                 download_url = f'/dash/project_redenna_download?project={project_name}&{urlencode(click_filter)}'

@@ -47,6 +47,7 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from datetime import timedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
@@ -408,7 +409,7 @@ class TimeseriesLine(PointLine):
         integral = self.make_series().cumsum()
         return TimeseriesLine(data=integral)
 
-    def append(self, other, skip=0):
+    def append(self, other, skip=0, skip_base=False):
         """
 
         Args:
@@ -425,10 +426,47 @@ class TimeseriesLine(PointLine):
         if self.domain.end > other.domain.begin:
             raise NotImplementedError("You can only add lines that have a higher index than the line in the object")
 
-        series = self.make_series()
-        other_series = other.make_series()[skip:]
+        if skip_base:
+            series = self.make_series()[:-skip]
+            other_series = other.make_series()
+        else:
+            series = self.make_series()
+            other_series = other.make_series()[skip:]
+
         intersect = series.index.intersection(other_series.index)
         if len(intersect):
             raise ValueError(f"Cannot append Lines that have overlapping indices: {intersect}")
 
         return TimeseriesLine(series.add(other_series, fill_value=0))
+
+    def translate_x(self, delta=0):
+        data = self.data
+        data.index = data.index + timedelta(delta)
+        domain = self.domain.shift(delta)
+        return TimeseriesLine(data=data, domain=domain)
+
+    def slice(self, begin=None, end=None):
+        if begin is None:
+            begin = self.domain.begin
+        if end is None:
+            end = self.domain.end
+        data = self.make_series()[begin:end]
+        domain = DateDomain(begin, end)
+        return TimeseriesLine(data, domain)
+
+    def linear_regression(self, data_partition=None):
+        """
+        Given a set of points, do a linear regression to extrapolate future data
+        """
+        if data_partition:
+            shift = int(len(self.domain) * data_partition)
+            time_shift = timedelta(days=shift)
+            start = self.data.index[0] + time_shift
+            end = self.data.index[-1]
+            data = self.data[start:end]
+            index = list(range(shift, len(data) + shift))
+        else:
+            index = list(range(0, len(self.data)))
+            data = self.data
+        slope, intersect = np.polyfit(index, data, 1)
+        return slope, intersect

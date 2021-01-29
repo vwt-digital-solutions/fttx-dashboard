@@ -1,4 +1,5 @@
 import config
+from Analyse.Capacity_analysis.Analysis_capacity import CapacityETL
 from Analyse.KPNDFN import KPNETL, DFNETL
 from Analyse.TMobile import TMobileETL
 from functions import set_date_update
@@ -65,9 +66,30 @@ def analyse_dfn(request):
         logging.info('run done')
 
 
+def analyse_capacity_kpn(request):
+    try:
+        if get_update_dates('kpn'):
+            analyseCapacity('kpn')
+            set_date_update('kpn')
+            return 'OK', 200
+        else:
+            logging.info('Capacity analysis KPN skipped, already up to date')
+            return 'OK', 200
+    except Exception as e:
+        logging.exception(f'Capacity analysis KPN failed {e}')
+        return 'Error', 500
+    finally:
+        logging.info('run done')
+
+
 def analyseKPN(client_name):
     kpn = KPNETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
+
+
+def analyseCapacity(client_name):
+    cpc = CapacityETL(client=client_name, config=config.client_config[client_name])
+    cpc.perform()
 
 
 def analyseDFN(client_name):

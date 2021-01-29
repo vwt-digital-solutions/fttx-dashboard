@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
 
-from app import app, toggles
+from app import app
 from config import colors_vwt as colors
 from data import collection
 from layout.components.figure import figure
@@ -39,8 +39,10 @@ def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clic
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
         key = changed_id.partition("-")[-1].partition("-")[0]
-        figure = pie_chart.get_html(labels=list(result[key]['cluster_redenna'].keys()),
-                                    values=list(result[key]['cluster_redenna'].values()),
+        # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
+        cluster_redenna_sorted_dict = dict(sorted(result[key]['cluster_redenna'].items()))
+        figure = pie_chart.get_html(labels=list(cluster_redenna_sorted_dict.keys()),
+                                    values=list(cluster_redenna_sorted_dict.values()),
                                     title="Reden na",
                                     colors=[
                                         colors['green'],
@@ -95,7 +97,7 @@ def update_indicators(dropdown_selection):
                         html.A(
                             dbc.Button("Download", id="download-indicator", className="ml-auto"),
                             id=f"indicator-download-{client}",
-                            href="/dash/urlToDownload") if toggles.download_indicators else None,
+                            href="/dash/urlToDownload"),
                         dbc.Button("Close", id="close-sm", className="ml-auto"),
                     ]
                 ),

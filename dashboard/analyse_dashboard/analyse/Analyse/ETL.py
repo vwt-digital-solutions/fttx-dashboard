@@ -1,5 +1,6 @@
 from Analyse.Data import Data
 import logging
+import copy
 
 logger = logging.getLogger('ETL')
 
@@ -27,7 +28,7 @@ class Transform(ETLBase):
         if not self.transformed_data:
             logger.info("Transforming by using the extracted data directly. There was no previous tranformed data")
             # TODO make a copy. Now transformed_data and extracted_data point to the same object
-            self.transformed_data = self.extracted_data
+            self.transformed_data = copy.deepcopy(self.extracted_data)
         else:
             logger.info("No tranformation in the base class as there was already transformed data")
 

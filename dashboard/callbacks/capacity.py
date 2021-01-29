@@ -6,11 +6,19 @@ import config
 from dash.dependencies import Input, Output, State
 
 from app import app
+from data.collection import get_document
+from data.data import no_graph
 from layout.components.capacity.capacity_summary import capacity_summary
+
+import plotly.graph_objects as go
+
+import pandas as pd
+
+colors = config.colors_vwt
 
 for client in config.client_config.keys():
     @app.callback(
-        Output(f'capacity-phase-Schouwen-{client}', 'n_clicks'),
+        Output(f'capacity-phase-geulen-{client}', 'n_clicks'),
         [
             Input("project-tabs", "active_tab")
         ]
@@ -31,13 +39,24 @@ for client in config.client_config.keys():
         return [None]
 
     @app.callback(
-        Output(f"capacity-indicators-{client}", "children"),
+        [
+            Output(f"capacity-indicators-{client}", "children"),
+            Output(f"more-info-graph-{client}", "figure"),
+            Output(f"memory_phase_{client}", "data")
+        ],
         [
             Input(f'capacity-phase-{phase}-{client}', 'n_clicks') for phase in
-            ['Schouwen', 'Lassen', 'Graven', 'HASsen']
+            config.capacity_phases.keys()
+        ] +
+        [
+            Input(f"frequency-selector-{client}", 'value'),
+            Input(f'project-dropdown-{client}', 'value')
+        ],
+        [
+            State(f"memory_phase_{client}", "data")
         ]
     )
-    def phase_buttons(schouwen, lassen, graven, hassen):
+    def phase_buttons(*args, client=client):
         """
         This callback switches the view based on which tab is clicked. The input variables are not used as
         callback_context.triggered is used to access which trigger caused the callback.
@@ -55,8 +74,66 @@ for client in config.client_config.keys():
         """
         if not callback_context.triggered:
             raise PreventUpdate
+
         phase = callback_context.triggered[0]['prop_id'].split("-")[2]
-        return capacity_summary(phase)
+
+        if config.capacity_phases.get(phase) is None:
+            phase = callback_context.states[f"memory_phase_{client}.data"]
+            phase_name = config.capacity_phases[phase].get('name')
+        else:
+            phase_name = config.capacity_phases[phase].get('name')
+
+        project = callback_context.inputs[f'project-dropdown-{client}.value']
+
+        freq = callback_context.inputs[f'frequency-selector-{client}.value']
+
+        selection_settings = dict(
+            client=client, project=project, phase=phase
+        )
+
+        indicator_values = dict(target=0, werkvoorraad=0, poc_verwacht=0, poc_ideal=0, werkvoorraad_absoluut=0)
+        timeseries = dict(target=pd.Series(), werkvoorraad=pd.Series(), poc_verwacht=pd.Series(),
+                          poc_ideal=pd.Series(), werkvoorraad_absoluut=pd.Series())
+        line_graph_bool = False
+        for key in indicator_values:
+            indicator_dict = get_document("Lines", line=key + '_indicator', **selection_settings)
+            if indicator_dict:
+                line_graph_bool = True
+                indicator_values[key] = int(indicator_dict['this_' + freq])
+                timeseries[key] = pd.Series(indicator_dict['series_' + freq])
+        werkvoorraad_absoluut = indicator_values.pop('werkvoorraad_absoluut')
+        if werkvoorraad_absoluut < 0:
+            werkvoorraad_absoluut = 0
+        if phase == 'geulen':
+            werkvoorraad_absoluut = None
+        del timeseries['werkvoorraad_absoluut']
+
+        if line_graph_bool:
+            color_count = 0
+            color_selection = [colors['darkgray'], colors['lightgray'], colors['vwt_blue'], colors['black']]
+            line_graph = go.Figure()
+            for k, v in timeseries.items():
+                line_graph.add_trace(go.Scatter(x=v.index,
+                                                y=v,
+                                                mode='lines+markers',
+                                                name=k,
+                                                marker=dict(color=color_selection[color_count])))
+                color_count += 1
+
+            line_graph.update_layout(height=500,
+                                     paper_bgcolor=colors['paper_bgcolor'],
+                                     plot_bgcolor=colors['plot_bgcolor'])
+        else:
+            line_graph = no_graph("No data")
+
+        return [capacity_summary(phase_name=phase_name,
+                                 target=indicator_values['target'],
+                                 werkvoorraad=werkvoorraad_absoluut,
+                                 capacity=indicator_values['poc_verwacht'],
+                                 poc=indicator_values['poc_ideal'],
+                                 unit=config.capacity_phases[phase].get('unit')),
+                line_graph,
+                phase]
 
     @app.callback(
         Output(f"more-info-collapse-{client}", "is_open"),

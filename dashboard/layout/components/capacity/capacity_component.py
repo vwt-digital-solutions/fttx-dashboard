@@ -1,6 +1,8 @@
 import dash_html_components as html
 import dash_bootstrap_components as dbc
+import dash_core_components as dcc
 
+import config
 from data.data import no_graph
 from layout.components.figure import figure
 
@@ -21,15 +23,34 @@ def capacity_template(client):
     return html.Div(
         id=f'cookie-factory-{client}',
         children=[
-            html.Div(
-                className="container-display",
-                id=f"capacity-phase-{client}",
-                children=dbc.ButtonGroup(
-                    [
-                        dbc.Button(phase, id=f"capacity-phase-{phase}-{client}")
-                        for i, phase in enumerate(['Schouwen', 'Lassen', 'Graven', 'HASsen'])
-                    ]
-                )
+            dcc.Store(id=f"memory_phase_{client}", data="geulen"),
+            dbc.Row(
+                id=f"selection-menu-{client}",
+                children=[
+                    html.Div(
+                        className=f"container-display-{client}",
+                        id=f"capacity-phase-{client}",
+                        children=dbc.ButtonGroup(
+                            [
+                                dbc.Button(phase_data.get("name"), id=f"capacity-phase-{phase}-{client}")
+                                for phase, phase_data in config.capacity_phases.items()
+                            ]
+                        )
+                    ),
+                    html.Div(
+                        className="container-display",
+                        children=dcc.Dropdown(
+                            id=f"frequency-selector-{client}",
+                            options=[{'label': 'Week', 'value': 'week'}, {'label': 'Maand', 'value': 'month'}],
+                            value='week',
+                            clearable=False,
+                            style={'color': config.colors_vwt.get('darkgray'),
+                                   "margin-left": "10px",
+                                   "width": "150%"
+                                   }
+                        )
+                    )
+                ]
             ),
             html.Div(
                 id=f"capacity-indicators-{client}",
@@ -46,6 +67,7 @@ def capacity_template(client):
                         ),
                         dbc.Collapse(
                             figure(
+                                graph_id=f"more-info-graph-{client}",
                                 figure=no_graph(title="Verdieping Capaciteit", text='Geen data...')
                             ),
                             id=f"more-info-collapse-{client}",

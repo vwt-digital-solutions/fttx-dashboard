@@ -47,10 +47,10 @@ class Record:
     def _transform(self, record):
         return record
 
-    def _to_document(self, graph_name, client):
+    def _to_document(self):
         return dict(record=self.record,
-                    client=client,
-                    graph_name=graph_name)
+                    client=self.client,
+                    graph_name=self.graph_name)
 
     def to_firestore(self):
         """
@@ -60,7 +60,7 @@ class Record:
         document_name = self.document_name()
         document = firestore.Client().collection(self.collection).document(document_name)
         logging.info(f"Set document {document_name}")
-        document.set(self._to_document(self.graph_name, self.client))
+        document.set(self._to_document())
 
     def document_name(self):
         """
