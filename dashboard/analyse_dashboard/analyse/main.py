@@ -1,4 +1,5 @@
 import config
+from Analyse.Capacity_analysis.Analysis_capacity import CapacityETL
 from Analyse.KPNDFN import KPNETL, DFNETL
 from Analyse.TMobile import TMobileETL
 from functions import set_date_update
@@ -68,6 +69,8 @@ def analyse_dfn(request):
 def analyseKPN(client_name):
     kpn = KPNETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
+    cpc = CapacityETL(client=client_name, config=config.client_config[client_name])
+    cpc.perform()
 
 
 def analyseDFN(client_name):

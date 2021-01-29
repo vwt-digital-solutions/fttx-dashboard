@@ -453,3 +453,20 @@ class TimeseriesLine(PointLine):
         data = self.make_series()[begin:end]
         domain = DateDomain(begin, end)
         return TimeseriesLine(data, domain)
+
+    def linear_regression(self, data_partition=None):
+        """
+        Given a set of points, do a linear regression to extrapolate future data
+        """
+        if data_partition:
+            shift = int(len(self.domain) * data_partition)
+            time_shift = timedelta(days=shift)
+            start = self.data.index[0] + time_shift
+            end = self.data.index[-1]
+            data = self.data[start:end]
+            index = list(range(shift, len(data) + shift))
+        else:
+            index = list(range(0, len(self.data)))
+            data = self.data
+        slope, intersect = np.polyfit(index, data, 1)
+        return slope, intersect
