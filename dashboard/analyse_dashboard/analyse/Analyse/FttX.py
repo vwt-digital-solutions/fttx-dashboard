@@ -357,7 +357,7 @@ class FttXAnalyse(FttXBase):
     def analyse(self):
         logger.info("Analysing using the FttX protocol")
         self._calculate_list_of_years()
-        self._make_records_for_dashboard_values(self.project_list)
+        self._make_records_for_dashboard_values()
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
@@ -534,7 +534,17 @@ class FttXAnalyse(FttXBase):
                                                freq="Y")
         self.records.add('redenna_by_year', by_year, Record, 'Data')
 
-    def _make_records_for_dashboard_values(self, project_list):
+    def _make_records_for_dashboard_values(self):
+        """
+        Calculates the overzicht values per jaar of simple KPI's that do not contain a ratio or need a subtraction.
+        These values are extracted as a pd.Series with dates, based on the underlying business rules (see the functions
+        in function_dict). The values are then calculated per year (obtained from _calculate_list_of_years) and per
+        period ('W-MON', 'M', 'Y') through the sum_over_period_to_record function. All these values are added as
+        dictionaries to a document_list, which is added to the Firestore.
+
+        Returns: a list with dictionaries containing the relevant values
+
+        """
         logger.info("Making records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         df = self.transformed_data.df
@@ -542,7 +552,7 @@ class FttXAnalyse(FttXBase):
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
                          'target': extract_target_dates(df=df,
-                                                        project_list=project_list,
+                                                        project_list=self.project_list,
                                                         totals=self.transformed_data.get("totals"),
                                                         ftu=self.extracted_data.get("ftu")),
                          'voorspelling': extract_voorspelling_dates(df=df,
