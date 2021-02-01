@@ -930,8 +930,18 @@ def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarg
 #     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
 
 
-# TODO: Documentation by Tjeerd Pols
 def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_per_project: dict):
+    """
+    This function takes in a dictionary with HC/HPend ratios per project and a project of interest. It then returns
+    a dictionary that has all the graphical layout components necessary to plot the HC/HPend value on the dashboard.
+
+    Args:
+        project: the project of interest (str)
+        ratio_HC_HPend_per_project: a dictionary with HC/HPend values per project (dict)
+
+    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+
+    """
     counts = round(ratio_HC_HPend_per_project[project], 2)
 
     return dict(title='HC / HPend',
@@ -956,8 +966,19 @@ def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_pe
                 id=None)
 
 
-# TODO: Documation by Tjeerd Pols
 def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors_per_project: dict):
+    """
+    This function takes in a dictionary with the number of errors between FiberConnect (FC) and KPN's Beschikbaarheid
+    Checker (BC) per project and a project of interest. It then returns a dictionary that has all the graphical layout
+    components necessary to plot the errors between FC/BC on the dashboard.
+
+    Args:
+        project: the project of interest (str)
+        ratio_HC_HPend_per_project: a dictionary with error between FC/BC values per project (dict)
+
+    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+
+    """
     return dict(counts=number_errors_per_project[project],
                 counts_prev=None,
                 title='Errors FC- BC',
@@ -1370,9 +1391,23 @@ def calculate_ready_for_has(df, time_delta_days=0):
 #     return result_dict
 
 
-# TODO: Documentation by Tjeerd Pols
 def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_project: dict,
                                         time_windows_per_project: dict, ratio_under_8weeks_per_project: dict):
+    """
+    This function takes in the transformed_data DataFrame and three dictionairies, containing the HAS werkvoorrraad,
+    openstaande orders per timewindow and ratio <8 weeks aangesloten orders values per project, respectively. The
+    function first generates a markup_dict, which contains all the graphical layout components necessary to plot
+    these values (specific for tmobile) on the dashboard.
+
+    Args:
+        df: the transformed_data DataFrame (pd.DataFrame)
+        has_werkvoorraad_per_project: a dictionary with HAS werkvoorraad values per project (dict)
+        time_windows_per_project: a dictionary with openstaande orders per timewindow per project (dict)
+        ratio_under_8weeks_per_project: a dictionary with ratio <8 weeks aangesloten orders per project (dict)
+
+    Returns: a dictionary that contains the graphical layout to plot tmobile values on the dashboard
+
+    """
     markup_dict = {
         'on_time': {'title': 'Openstaande orders op tijd',
                     'subtitle': '< 8 weken',
