@@ -68,9 +68,9 @@ def analyse_dfn(request):
 
 def analyse_capacity_kpn(request):
     try:
-        if get_update_dates('kpn'):
+        if get_update_dates('capacity_kpn'):
             analyseCapacity('kpn')
-            set_date_update('kpn')
+            set_date_update('capacity_kpn')
             return 'OK', 200
         else:
             logging.info('Capacity analysis KPN skipped, already up to date')

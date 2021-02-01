@@ -52,121 +52,121 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
     return total_objects
 
 
-def get_homes_completed(df: pd.DataFrame) -> dict:
-    """
-    Count the number of homes completed per project.
-
-    Args:
-        df (pd.DataFrame): A dataframe with at columns `project` and `homes_completed`.
-
-    Returns:
-        dict: A dictionary (str: float) with the projects as keys and the number of homes completed as values
-
-    """
-    result = df[['project', 'homes_completed']] \
-        .groupby(by="project") \
-        .sum() \
-        .reset_index() \
-        .set_index("project") \
-        .to_dict()['homes_completed']
-
-    return result
-
-
-def get_HPend(df: pd.DataFrame):
-    """
-    Count the number of hpend (homes permanently passed or completed) per project.
-
-    Args:
-        df (pd.DataFrame): A dataframe with at columns `project` and `hpend`.
-
-    Returns:
-        dict (str: float):  a dictionary with the projects as keys and the number of hpend as values
-
-    """
-    result = df[['project', 'hpend']] \
-        .groupby(by="project") \
-        .sum() \
-        .reset_index() \
-        .set_index("project") \
-        .to_dict()['hpend']
-    return result
+# def get_homes_completed(df: pd.DataFrame) -> dict:
+#     """
+#     Count the number of homes completed per project.
+#
+#     Args:
+#         df (pd.DataFrame): A dataframe with at columns `project` and `homes_completed`.
+#
+#     Returns:
+#         dict: A dictionary (str: float) with the projects as keys and the number of homes completed as values
+#
+#     """
+#     result = df[['project', 'homes_completed']] \
+#         .groupby(by="project") \
+#         .sum() \
+#         .reset_index() \
+#         .set_index("project") \
+#         .to_dict()['homes_completed']
+#
+#     return result
 
 
-# TODO: I nominate this function for removal.
-def get_HPend_for_2020(df: pd.DataFrame):
-    test_df = df[['project']].copy()
-    test_df["hpend_not_2020"] = df.opleverdatum.notna()
-    return test_df.groupby(by="project").sum().reset_index().set_index("project").to_dict()['hpend_not_2020']
+# def get_HPend(df: pd.DataFrame):
+#     """
+#     Count the number of hpend (homes permanently passed or completed) per project.
+#
+#     Args:
+#         df (pd.DataFrame): A dataframe with at columns `project` and `hpend`.
+#
+#     Returns:
+#         dict (str: float):  a dictionary with the projects as keys and the number of hpend as values
+#
+#     """
+#     result = df[['project', 'hpend']] \
+#         .groupby(by="project") \
+#         .sum() \
+#         .reset_index() \
+#         .set_index("project") \
+#         .to_dict()['hpend']
+#     return result
 
 
-def get_has_ready(df: pd.DataFrame):
-    """
-    Count the HAS werkvoorraad (Homes to be connected or passed) per project.
-
-    Args:
-        df (pd.DataFrame): A dataframe containing the following columns: [schouwdatum,
-        opleverdatum, opleverstatus, toestemming_datum]
-
-    Returns:
-        dict (str: float):  a dictionary with the projects as keys and the werkvoorraad as values
-    """
-    tmp_df = df.copy()
-    tmp_df['has_ready'] = br.has_werkvoorraad(tmp_df)
-    result = tmp_df[['project', 'has_ready']] \
-        .groupby(by="project") \
-        .sum() \
-        .reset_index() \
-        .set_index("project") \
-        .to_dict()['has_ready']
-
-    return result
+# # TODO: I nominate this function for removal.
+# def get_HPend_for_2020(df: pd.DataFrame):
+#     test_df = df[['project']].copy()
+#     test_df["hpend_not_2020"] = df.opleverdatum.notna()
+#     return test_df.groupby(by="project").sum().reset_index().set_index("project").to_dict()['hpend_not_2020']
 
 
-# TODO: Documentation by Casper van Houten
-# Total ratio of completed objects v.s. completed + permanently passed objects.
-def get_hc_hpend_ratio_total(hc, hpend):
-    return round(sum(hc.values()) / sum(hpend.values()), 2)
+# def get_has_ready(df: pd.DataFrame):
+#     """
+#     Count the HAS werkvoorraad (Homes to be connected or passed) per project.
+#
+#     Args:
+#         df (pd.DataFrame): A dataframe containing the following columns: [schouwdatum,
+#         opleverdatum, opleverstatus, toestemming_datum]
+#
+#     Returns:
+#         dict (str: float):  a dictionary with the projects as keys and the werkvoorraad as values
+#     """
+#     tmp_df = df.copy()
+#     tmp_df['has_ready'] = br.has_werkvoorraad(tmp_df)
+#     result = tmp_df[['project', 'has_ready']] \
+#         .groupby(by="project") \
+#         .sum() \
+#         .reset_index() \
+#         .set_index("project") \
+#         .to_dict()['has_ready']
+#
+#     return result
 
 
-# TODO: Documentation by Erik van Egmond
-# Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
-def get_hc_hpend_ratio(df: pd.DataFrame):
-    temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
-    temp_df['has_opleverdatum'] = br.opgeleverd(df)
-    sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(
-        by="project").sum().reset_index()
-    sum_df['ratio'] = sum_df.apply(
-        lambda x: x.homes_completed_total / x.has_opleverdatum * 100
-        if x.has_opleverdatum else 0, axis=1
-    )
-    return sum_df[['project', 'ratio']].set_index("project").to_dict()['ratio']
+# # TODO: Documentation by Casper van Houten
+# # Total ratio of completed objects v.s. completed + permanently passed objects.
+# def get_hc_hpend_ratio_total(hc, hpend):
+#     return round(sum(hc.values()) / sum(hpend.values()), 2)
 
 
-# TODO: Documentation by Erik van Egmond
-def get_has_werkvoorraad(df: pd.DataFrame):
-    # todo add in_has_werkvoorraad column in etl and use that column
-    return calculate_ready_for_has(df)
+# # TODO: Documentation by Erik van Egmond
+# # Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
+# def get_hc_hpend_ratio(df: pd.DataFrame):
+#     temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
+#     temp_df['has_opleverdatum'] = br.opgeleverd(df)
+#     sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(
+#         by="project").sum().reset_index()
+#     sum_df['ratio'] = sum_df.apply(
+#         lambda x: x.homes_completed_total / x.has_opleverdatum * 100
+#         if x.has_opleverdatum else 0, axis=1
+#     )
+#     return sum_df[['project', 'ratio']].set_index("project").to_dict()['ratio']
 
 
-# TODO: Documentation by Tjeerd Pols
-def calculate_projectspecs(df: pd.DataFrame):
-    # TODO: cleanup of this function (see _calculate_projectspecs)
-    homes_completed = get_homes_completed(df)
-    homes_ended = get_HPend(df)
-    homes_ended_in_2020 = get_HPend_for_2020(df)
-    has_ready = get_has_ready(df)
-    hc_hpend_ratio = get_hc_hpend_ratio(df)
-    hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
-    werkvoorraad = get_has_werkvoorraad(df)
+# # TODO: Documentation by Erik van Egmond
+# def get_has_werkvoorraad(df: pd.DataFrame):
+#     # todo add in_has_werkvoorraad column in etl and use that column
+#     return calculate_ready_for_has(df)
 
-    ProjectSpecs = namedtuple("ProjectSpecs", ['hc_hp_end_ratio_total',
-                                               'hc_hpend_ratio',
-                                               'has_ready',
-                                               'homes_ended_in_2020',
-                                               'werkvoorraad'])
 
-    return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended_in_2020, werkvoorraad)
+# # TODO: Documentation by Tjeerd Pols
+# def calculate_projectspecs(df: pd.DataFrame):
+#     # TODO: cleanup of this function (see _calculate_projectspecs)
+#     homes_completed = get_homes_completed(df)
+#     homes_ended = get_HPend(df)
+#     homes_ended_in_2020 = get_HPend_for_2020(df)
+#     has_ready = get_has_ready(df)
+#     hc_hpend_ratio = get_hc_hpend_ratio(df)
+#     hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
+#     werkvoorraad = get_has_werkvoorraad(df)
+#
+#     ProjectSpecs = namedtuple("ProjectSpecs", ['hc_hp_end_ratio_total',
+#                                                'hc_hpend_ratio',
+#                                                'has_ready',
+#                                                'homes_ended_in_2020',
+#                                                'werkvoorraad'])
+#
+#     return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended_in_2020, werkvoorraad)
 
 
 # # TODO: Documentation by Casper van Houten
@@ -930,8 +930,18 @@ def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarg
 #     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
 
 
-# TODO: Documentation by Tjeerd Pols
 def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_per_project: dict):
+    """
+    This function takes in a dictionary with HC/HPend ratios per project and a project of interest. It then returns
+    a dictionary that has all the graphical layout components necessary to plot the HC/HPend value on the dashboard.
+
+    Args:
+        project: the project of interest (str)
+        ratio_HC_HPend_per_project: a dictionary with HC/HPend values per project (dict)
+
+    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+
+    """
     counts = round(ratio_HC_HPend_per_project[project], 2)
 
     return dict(title='HC / HPend',
@@ -956,8 +966,19 @@ def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_pe
                 id=None)
 
 
-# TODO: Documation by Tjeerd Pols
 def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors_per_project: dict):
+    """
+    This function takes in a dictionary with the number of errors between FiberConnect (FC) and KPN's Beschikbaarheid
+    Checker (BC) per project and a project of interest. It then returns a dictionary that has all the graphical layout
+    components necessary to plot the errors between FC/BC on the dashboard.
+
+    Args:
+        project: the project of interest (str)
+        ratio_HC_HPend_per_project: a dictionary with error between FC/BC values per project (dict)
+
+    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+
+    """
     return dict(counts=number_errors_per_project[project],
                 counts_prev=None,
                 title='Errors FC- BC',
@@ -1370,9 +1391,23 @@ def calculate_ready_for_has(df, time_delta_days=0):
 #     return result_dict
 
 
-# TODO: Documentation by Tjeerd Pols
 def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_project: dict,
                                         time_windows_per_project: dict, ratio_under_8weeks_per_project: dict):
+    """
+    This function takes in the transformed_data DataFrame and three dictionairies, containing the HAS werkvoorrraad,
+    openstaande orders per timewindow and ratio <8 weeks aangesloten orders values per project, respectively. The
+    function first generates a markup_dict, which contains all the graphical layout components necessary to plot
+    these values (specific for tmobile) on the dashboard.
+
+    Args:
+        df: the transformed_data DataFrame (pd.DataFrame)
+        has_werkvoorraad_per_project: a dictionary with HAS werkvoorraad values per project (dict)
+        time_windows_per_project: a dictionary with openstaande orders per timewindow per project (dict)
+        ratio_under_8weeks_per_project: a dictionary with ratio <8 weeks aangesloten orders per project (dict)
+
+    Returns: a dictionary that contains the graphical layout to plot tmobile values on the dashboard
+
+    """
     markup_dict = {
         'on_time': {'title': 'Openstaande orders op tijd',
                     'subtitle': '< 8 weken',
