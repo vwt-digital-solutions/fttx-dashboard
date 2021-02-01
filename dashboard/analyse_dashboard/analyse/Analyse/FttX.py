@@ -451,6 +451,12 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "project", 'data_set'])
 
     def _calculate_list_of_years(self):
+        """
+        Calculates a list of years per client based on the dates that are found in the date columns.
+
+        Returns: a list of years (as individual strings), sorted per year
+
+        """
         logger.info("Calculating list of years")
         date_columns = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col or "creation" in col]
         dc_data = self.transformed_data.df.loc[:, date_columns]
@@ -546,8 +552,8 @@ class FttXAnalyse(FttXBase):
 
         """
         logger.info("Making records for dashboard overview  values")
-        # Create a dictionary that contains the functions and the output name
         df = self.transformed_data.df
+        # Create a dictionary that contains the functions and the output name:
         function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
@@ -568,8 +574,7 @@ class FttXAnalyse(FttXBase):
             for year in self.intermediate_results.List_of_years:
                 for freq in list_of_freq:
                     record = sum_over_period_to_record(timeseries=values, freq=freq, year=year)
-                    # To remove the date when there is only one period (when summing over a year):
-                    if len(record) == 1:
+                    if len(record) == 1:  # removes the date when summing over a year
                         record = list(record.values())[0]
                     document_list.append(dict(client=self.client,
                                               graph_name=key,
@@ -580,6 +585,17 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
+        """
+        Calculates the overzicht values per jaar of voorspelling and planning, from which the HPend values are
+        subtracted before they are shown on the dashboard. These values are extracted as a pd.Series with dates,
+        based on the underlying business rules (see the functions in function_dict). The values are then calculated
+        per year (obtained from _calculate_list_of_years) and per period ('W-MON', 'M', 'Y') through the
+        sum_over_period_to_record function. All these values are added as dictionaries to a document_list, which is
+        added to the Firestore.
+
+        Returns: a list with dictionaries containing the values for voorspelling and planning
+
+        """
         logger.info("Making voorspelling and planning records for dashboard overview  values")
         # Create a dictionary that contains the functions and the output name
         function_dict = {'voorspelling_minus_HPend': extract_voorspelling_dates(
@@ -599,8 +615,7 @@ class FttXAnalyse(FttXBase):
                     record = voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted=values,
                                                                                           realized=realisatie_hpend,
                                                                                           freq=freq, year=year)
-                    # To remove the date when there is only one period (when summing over a year):
-                    if len(record) == 1:
+                    if len(record) == 1:  # removes the date when summing over a year
                         record = list(record.values())[0]
                     document_list.append(dict(client=self.client,
                                               graph_name=key,
@@ -611,6 +626,16 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_hc_hpend_for_dashboard_values(self):
+        """
+        Calculates the overzicht value per jaar of ratio HC/HPend. This value is extracted as a pd.Series with dates,
+        based on the underlying business rules (see extract_realisatie_hc_dates and extract_realisatie_hpend_dates).
+        The ratio HC/HPend is then calculated per year (obtained from _calculate_list_of_years) and per
+        period ('W-MON', 'M', 'Y') through the sum_over_period_to_record function. All these values are added as
+        dictionaries to a document_list, which is added to the Firestore.
+
+        Returns: a list with dictionaries containing the ratio HC/HPend
+
+        """
         logger.info("Making record of ratio HC/HPend for dashboard overview  values")
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
@@ -632,6 +657,16 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_under_8weeks_for_dashboard_values(self):
+        """
+        Calculates the overzicht value per jaar of ratio under 8 weeks. This value is extracted as a pd.Series with
+        dates, based on the underlying business rules (see br.aangesloten_orders_tmobile and
+        extract_aangesloten_orders_dates). The ratio under 8 weeks is then calculated per year (obtained from
+        _calculate_list_of_years) and per period ('W-MON', 'M', 'Y') through the sum_over_period_to_record function.
+        All these values are added as dictionaries to a document_list, which is added to the Firestore.
+
+        Returns: a list with dictionaries containing the ratio under 8 weeks
+
+        """
         logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
         df = self.transformed_data.df
         aangesloten_orders_under_8weeks = df[br.aangesloten_orders_tmobile(df=df,
@@ -644,8 +679,7 @@ class FttXAnalyse(FttXBase):
                 record = ratio_sum_over_periods_to_record(numerator=aangesloten_orders_under_8weeks,
                                                           divider=aangesloten_orders,
                                                           freq=freq, year=year)
-                # To remove the date when there is only one period (when summing over a year):
-                if len(record) == 1:
+                if len(record) == 1:  # removes the date when summing over a year
                     record = list(record.values())[0]
                 document_list.append(dict(client=self.client,
                                           graph_name='ratio_8weeks_hpend',
@@ -656,6 +690,16 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_intermediate_results_ratios_project_specific_values(self):
+        """
+        Calculates the project specific values of ratio HC/HPend, ratio under 8 weeks and HAS werkvoorraad.
+        These values are extracted as a pd.Series with dates, based on the underlying business rules (see the functions
+        called below). The values are then calculated per project (obtained from df.groupby('project')) with the
+        calculate_ratio function OR set into a dictionary to work with calculate_projectindicators_tmobile.
+        All these values are added into a dictionary with integers per project, which is added to intermediate_results.
+
+        Returns: dictionaries with the values per project
+
+        """
         logger.info("Making intermediate results of ratios and HAS werkvoorraad for project specific values")
         df = self.transformed_data.df
         realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
@@ -672,10 +716,14 @@ class FttXAnalyse(FttXBase):
         project_dict_under_8weeks = {}
         project_dict_has_werkvoorraad = {}
         for project, df in df.groupby('project'):
-            record_hc_hpend = self.calculate_ratio(project, realisatie_hc, realisatie_hpend)
+            record_hc_hpend = self.calculate_ratio(project=project,
+                                                   numerator=realisatie_hc,
+                                                   divider=realisatie_hpend)
             project_dict_hc_hpend[project] = record_hc_hpend
 
-            record_under_8weeks = self.calculate_ratio(project, aangesloten_under_8weeks, aangesloten_totaal)
+            record_under_8weeks = self.calculate_ratio(project=project,
+                                                       numerator=aangesloten_under_8weeks,
+                                                       divider=aangesloten_totaal)
             project_dict_under_8weeks[project] = record_under_8weeks
 
             # The following is to add the values for HAS werkvoorraad in the "old tmobile way" -> should be updated !!
@@ -688,16 +736,32 @@ class FttXAnalyse(FttXBase):
         self.intermediate_results.has_werkvoorraad_per_project = project_dict_has_werkvoorraad
 
     def calculate_ratio(self, project, numerator, divider):
+        """
+        Calculates the ratio between the length of two pd.Series objects, filtered by a specific project.
+
+        Returns: a ratio between two pd.Series as an integer
+
+        """
         project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)
         project_dates_divider = divider[divider.project == project].drop(labels='project', axis=1)
 
-        if len(project_dates_divider) == 0:
+        if len(project_dates_divider) == 0:    # to prevent zero division errors
             record = 0
         else:
             record = len(project_dates_numerator) / len(project_dates_divider)
         return record
 
     def _make_intermediate_results_tmobile_project_specific_values(self):
+        """
+        Calculates the project specific values of openstaande orders for tmobile. These values are extracted as a
+        pd.Series with dates, based on the underlying business rules (see br.openstaande_orders_tmobile). The values
+        are then calculated per project (obtained from df.groupby('project')) by calculating their lengths OR the
+        redenna values of the pd.Series are extracted. The values and redenna values are added into a dictionary
+        per project, which is added to intermediate_results.
+
+        Returns: dictionaries with the values per project
+
+        """
         logger.info("Making intermediate results for tmobile project specific values")
         df = self.transformed_data.df
         function_dict = {'openstaand_on_time': [
@@ -724,6 +788,7 @@ class FttXAnalyse(FttXBase):
                     .groupby(by='cluster_redenna').count()\
                     .rename({'creation': 'cluster_redenna'}, axis=1)\
                     .to_dict()['cluster_redenna']
+                # The following dict is made to comply with calculate_projectindicators_tmobile:
                 order_time_windows_dict[key] = {'counts': value_this_week,
                                                 'counts_prev': value_last_week,
                                                 'cluster_redenna': redenna_this_week}
