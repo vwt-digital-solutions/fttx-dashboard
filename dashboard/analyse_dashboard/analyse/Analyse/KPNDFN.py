@@ -71,7 +71,7 @@ class KPNDFNTransform(FttXTransform):
             df = planning_excel.iloc[:, 20:72].copy()
             df['project'] = planning_excel['project'].astype(str)
             df.fillna(0, inplace=True)
-            df['project'].replace(self.config.planning_excel_project_mapping, inplace=True)
+            df['project'].replace(self.config.planning_excel_project_map, inplace=True)
 
             empty_list = [0] * 52
             hp = {}
