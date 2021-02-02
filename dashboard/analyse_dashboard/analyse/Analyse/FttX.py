@@ -3,7 +3,6 @@ import time
 from google.cloud import firestore
 from sqlalchemy import text, bindparam
 
-import config
 from Analyse.Data import Data
 from Analyse.ETL import Extract, ETL, Transform, ETLBase, Load
 import pandas as pd
@@ -64,7 +63,6 @@ class FttXExtract(Extract):
         else:
             self._extract_from_firestore()
         self._extract_project_info()
-        self._extract_planning()
 
     def _extract_from_firestore(self):
         logger.info("Extracting from the firestore")
@@ -133,22 +131,6 @@ where project in :projects
             info_per_project[project] = df.loc[project].to_dict()
         self.extracted_data.project_info = info_per_project
 
-    def _extract_planning(self):
-        logger.info("Extracting Planning")
-        if hasattr(self, 'planning_location'):
-            if 'gs://' in self.planning_location:
-                xls = pd.ExcelFile(self.planning_location)
-            else:
-                xls = pd.ExcelFile(self.planning_location)
-
-            if self.client_name == 'kpn':
-                df = pd.read_excel(xls, 'Planning 2021 (2)')
-            else:
-                df = pd.read_excel(xls)
-            self.extracted_data.planning = df
-        else:
-            self.extracted_data.planning = pd.DataFrame()
-
 
 class PickleExtract(Extract, FttXBase):
     def __init__(self, **kwargs):
@@ -176,7 +158,6 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._make_project_list()
         self._fix_dates()
-        self._transform_planning()
         self._add_columns()
         self._cluster_reden_na()
         self._add_status_columns()
@@ -318,32 +299,6 @@ class FttXTransform(Transform):
         status_df.columns = colnames
         self.transformed_data.df.drop('false', inplace=True, axis=1)
         self.transformed_data.df = pd.merge(self.transformed_data.df, status_df, on="sleutel", how="left")
-
-    def _transform_planning(self):
-        logger.info("Transforming planning for KPN")
-        planning_excel = self.extracted_data.get("planning", pd.DataFrame())
-        if not planning_excel.empty:
-            planning_excel.rename(columns={'Unnamed: 1': 'project'}, inplace=True)
-            df = planning_excel.iloc[:, 20:72].copy()
-            df['project'] = planning_excel['project'].astype(str)
-            df.fillna(0, inplace=True)
-            df['project'].replace(config.planning_excel_project_mapping, inplace=True)
-
-            empty_list = [0] * 52
-            hp = {}
-            hp_end_t = empty_list
-            for project in self.project_list:
-                if project in df.project.unique():
-                    weeks_list = list(df[df.project == project].iloc[0][0:-1])
-                    hp[project] = weeks_list
-                    hp_end_t = [x + y for x, y in zip(hp_end_t, weeks_list)]
-                else:
-                    hp[project] = empty_list
-                    hp_end_t = [x + y for x, y in zip(hp_end_t, empty_list)]
-            hp['HPendT'] = hp_end_t
-        else:
-            hp = {}
-        self.transformed_data.planning = hp
 
 
 class FttXAnalyse(FttXBase):

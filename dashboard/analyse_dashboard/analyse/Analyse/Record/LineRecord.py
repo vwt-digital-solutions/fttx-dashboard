@@ -47,14 +47,15 @@ class LineRecord(Record):
         return series
 
     def _get_freq_value(self, record, sample):
-        series = record.make_series().resample(sample).sum()
-        series.index = series.index.format()
-
         if sample == 'W-MON':
+            series = record.make_series().resample(sample, loffset='-1W-MON', closed='left').sum()
+            series.index = series.index.format()
             date_index = pd.to_datetime(datetime.now() -
                                         timedelta(days=datetime.now().isoweekday() % 7 - 1 - 7)
                                         ).strftime('%Y-%m-%d')
         if sample == 'MS':
+            series = record.make_series().resample(sample).sum()
+            series.index = series.index.format()
             date_index = pd.Timestamp.now().strftime('%Y-%m-%d')[0:8] + '01'
             replace = int(date_index[5:7]) + 1
             if replace < 10:
