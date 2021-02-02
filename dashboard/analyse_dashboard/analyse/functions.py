@@ -229,7 +229,7 @@ def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     t_diff = {}
     target_per_week_dict = {}
     for key in list_of_projects:
-        if date_FTU0[key]:
+        if date_FTU0[key] or date_FTU0[key] != '':
             t_start = x_prog[x_d == date_FTU0[key]][0]
             if date_FTU1[key]:
                 t_max = x_prog[x_d == date_FTU1[key]][0]
