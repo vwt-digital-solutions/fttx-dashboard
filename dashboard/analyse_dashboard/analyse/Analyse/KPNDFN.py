@@ -27,6 +27,7 @@ class KPNDFNExtract(FttXExtract):
 
     def extract(self):
         self._extract_project_info()
+        self._extract_planning()
         super().extract()
 
     def _extract_project_info(self):
@@ -47,49 +48,46 @@ class KPNDFNExtract(FttXExtract):
             info_per_project[project] = df.loc[project].to_dict()
         self.extracted_data.project_info = info_per_project
 
-    # def _extract_planning(self):
-    #     logger.info("Extracting Planning")
-    #     if self.planning_location:
-    #         if 'gs://' in self.planning_location:
-    #             xls = pd.ExcelFile(self.planning_location)
-    #         else:
-    #             xls = pd.ExcelFile(self.planning_location)
-    #         df = pd.read_excel(xls, 'FTTX ').fillna(0)
-    #         self.extracted_data.planning = df
-    #     else:
-    #         raise ValueError("No planning_location is configured to extract the planning.")
+    def _extract_planning(self):
+        logger.info("Extracting Planning")
+        if self.planning_location:
+            xls = pd.ExcelFile(self.planning_location)
+            self.extracted_data.planning = pd.read_excel(xls, 'Planning 2021 (2)')
+        else:
+            self.extracted_data.planning = pd.DataFrame()
 
 
 class KPNDFNTransform(FttXTransform):
 
     def transform(self):
         super().transform()
+        self._transform_planning()
 
-    # def _transform_planning(self):
-    #     logger.info("Transforming planning for KPN")
-    #     HP = dict(HPendT=[0] * 52)
-    #     df = self.extracted_data.planning
-    #     for el in df.index:  # Arnhem Presikhaaf toevoegen aan subset??
-    #         if df.loc[el, ('Unnamed: 1')] == 'HP+ Plan':
-    #             HP[df.loc[el, ('Unnamed: 0')]] = df.loc[el][16:68].to_list()
-    #             HP['HPendT'] = [sum(x) for x in zip(HP['HPendT'], HP[df.loc[el, ('Unnamed: 0')]])]
-    #             if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Oude Stad':
-    #                 HP['Bergen op Zoom oude stad'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == 'Arnhem Gulden Bodem':
-    #                 HP['Arnhem Gulden Bodem Schaarsbergen'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == 'Bergen op Zoom Noord':
-    #                 HP['Bergen op Zoom Noord\xa0 wijk 01\xa0+ Halsteren'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Bezuidenhout':
-    #                 HP['Den Haag - Haagse Hout-Bezuidenhout West'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Morgenstond':
-    #                 HP['Den Haag Morgenstond west'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == 'Den Haag Vrederust Bouwlust':
-    #                 HP['Den Haag - Vrederust en Bouwlust'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == '':
-    #                 HP['KPN Spijkernisse'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #             if df.loc[el, ('Unnamed: 0')] == 'Gouda Kort Haarlem':
-    #                 HP['KPN Gouda Kort Haarlem en Noord'] = HP.pop(df.loc[el, ('Unnamed: 0')])
-    #     self.transformed_data.planning = HP
+    def _transform_planning(self):
+        logger.info("Transforming planning for KPN")
+        planning_excel = self.extracted_data.get("planning", pd.DataFrame())
+        if not planning_excel.empty:
+            planning_excel.rename(columns={'Unnamed: 1': 'project'}, inplace=True)
+            df = planning_excel.iloc[:, 20:72].copy()
+            df['project'] = planning_excel['project'].astype(str)
+            df.fillna(0, inplace=True)
+            df['project'].replace(self.config.planning_excel_project_mapping, inplace=True)
+
+            empty_list = [0] * 52
+            hp = {}
+            hp_end_t = empty_list
+            for project in self.project_list:
+                if project in df.project.unique():
+                    weeks_list = list(df[df.project == project].iloc[0][0:-1])
+                    hp[project] = weeks_list
+                    hp_end_t = [x + y for x, y in zip(hp_end_t, weeks_list)]
+                else:
+                    hp[project] = empty_list
+                    hp_end_t = [x + y for x, y in zip(hp_end_t, empty_list)]
+            hp['HPendT'] = hp_end_t
+        else:
+            hp = {}
+        self.transformed_data.planning = hp
 
 
 class KPNAnalyse(FttXAnalyse):
