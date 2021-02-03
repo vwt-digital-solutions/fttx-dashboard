@@ -143,7 +143,6 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
 #     return sum_df[['project', 'ratio']].set_index("project").to_dict()['ratio']
 
 
-# # TODO: Documentation by Erik van Egmond
 # def get_has_werkvoorraad(df: pd.DataFrame):
 #     # todo add in_has_werkvoorraad column in etl and use that column
 #     return calculate_ready_for_has(df)
@@ -670,7 +669,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
 
 
 # TODO: Documentation by Andre van Turnhout
-def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
+def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, current_werkvoorraad):
     n_now = int((pd.Timestamp.now() - x_d[0]).days)
     x = []
     y = []
@@ -682,7 +681,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             x += [0]
         y_voorraad = tot_l[key] / t_diff[key] * 7 * 9  # op basis van 9 weken voorraad
         if y_voorraad > 0:
-            y += [round(y_voorraad_act[key] / y_voorraad * 100)]
+            y += [round(current_werkvoorraad[key] / y_voorraad * 100)]
         else:
             y += [0]
         names += [key]
@@ -854,14 +853,28 @@ def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1:
     return target
 
 
-# TODO: Documentation by Erik van Egmond
-def create_bullet_chart_realisatie(value,
-                                   prev_value,
-                                   max_value,
-                                   yellow_border,
-                                   threshold,
-                                   title="",
-                                   subtitle=""):
+def _create_bullet_chart_realisatie(value: float,
+                                    prev_value: float,
+                                    max_value: float,
+                                    yellow_border: float,
+                                    threshold: float,
+                                    title: str = "",
+                                    subtitle: str = ""):
+    """
+    Creates a bullet chart to be rendered by `Plotly <https://plotly.com/python/indicator/#bullet-gauge>`_.
+
+    Args:
+        value (float): Current value
+        prev_value (float): Previous value, adds a delta to the bullet chart
+        max_value (float): Maximum value in the range of the bullet chart
+        yellow_border (float): Maximum value for the yellow area
+        threshold (float): Value for the red line
+        title (str): Title, optional
+        subtitle (str): Subtitle, optional
+
+    Returns:
+        dict: A plotly graph object
+    """
     return dict(counts=value,
                 counts_prev=prev_value,
                 title=title,
@@ -880,8 +893,17 @@ def create_bullet_chart_realisatie(value,
                 id=None)
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_lastweek_realisatie_hpend_and_return_graphics(project_df, weektarget):
+def lastweek_realisatie_hpend_bullet_chart(project_df, weektarget):
+    """
+    Calculate the HPend realisatie and target for last week and visualize in a bullet chart.
+
+    Args:
+        project_df (pd.DataFrame): Project dataframe containing an opleverdatum.
+        weektarget (float): The target for HPend per week
+
+    Returns:
+        dict: A plotly bullet chart
+    """
     weekday = datetime.datetime.now().weekday()
     realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
@@ -889,17 +911,28 @@ def calculate_lastweek_realisatie_hpend_and_return_graphics(project_df, weektarg
     realisatie = int(realisatie_end_week - realisatie_beginning_week)
 
     max_value = int(max(weektarget, realisatie, 1) * 1.1)
-    return create_bullet_chart_realisatie(value=realisatie,
-                                          prev_value=None,
-                                          max_value=max_value,
-                                          yellow_border=int(weektarget * 0.9),
-                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                          title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
-                                          subtitle=f"Target: {weektarget}")
+    return _create_bullet_chart_realisatie(value=realisatie,
+                                           prev_value=None,
+                                           max_value=max_value,
+                                           yellow_border=int(weektarget * 0.9),
+                                           threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                           title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+                                           subtitle=f"Target: {weektarget}")
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarget, delta=0):
+def thisweek_realisatie_hpend_bullet_chart(project_df, weektarget, delta=0):
+    """
+    Calculate the HPend realisatie and target for last week and visualize in a bullet chart.
+
+    Args:
+        project_df (pd.DataFrame): Project dataframe containing an opleverdatum.
+        weektarget (float): The target for HPend per week
+        delta: The number of days to shift the realisatie.
+
+    Returns:
+        dict: A plotly bullet chart
+
+    """
     weekday = datetime.datetime.now().weekday()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
 
@@ -910,13 +943,13 @@ def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarg
     realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
 
     max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
-    return create_bullet_chart_realisatie(value=realisatie_this_week,
-                                          prev_value=realisatie_this_week_yesterday,
-                                          max_value=max_value,
-                                          yellow_border=int(weektarget * 0.9),
-                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                          title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
-                                          subtitle=f"Target:{weektarget}")
+    return _create_bullet_chart_realisatie(value=realisatie_this_week,
+                                           prev_value=realisatie_this_week_yesterday,
+                                           max_value=max_value,
+                                           yellow_border=int(weektarget * 0.9),
+                                           threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                           title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
+                                           subtitle=f"Target:{weektarget}")
 
 
 # # TODO: Documentation by Andre van Turnhout
@@ -987,11 +1020,22 @@ def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors
                 id=None)
 
 
-# TODO: Documation by Erik van Egmond
-def calculate_y_voorraad_act(df: pd.DataFrame):
+def calculate_current_werkvoorraad(df: pd.DataFrame):
+    """
+    Calculates the current werkvoorraad per project.
+    Args:
+        df (pd.DataFrame):  A dataframe containing the following columns:
+        [schouwdatum, opleverdatum, toestemming_datum, opleverstatus]
+
+    Returns:
+        dict: A dictionary with the project as key and the werkvoorraad as the value.
+    """
     # todo add in_has_werkvoorraad column in etl and use that column
     return df[br.has_werkvoorraad(df)] \
-        .groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
+        .groupby(by="project") \
+        .count() \
+        .reset_index()[['project', "sleutel"]] \
+        .set_index("project").to_dict()['sleutel']
 
 
 # TODO: Documentation by Andre van Turnhout. Perhaps remove?
@@ -1023,7 +1067,7 @@ def set_date_update(client=None):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-# TODO: Documentation by Erik van Egmond
+# TODO: Documentation by Andre van Turnhout
 def error_check_FCBC(df: pd.DataFrame):
     business_rules = {}
 
@@ -1080,17 +1124,27 @@ def error_check_FCBC(df: pd.DataFrame):
          '50', '90', '91', '96', '97', '98', '99']))
     business_rules['508'] = no_errors_series  # niet te checken, geen toegang tot Areapop
 
-    # TODO: Documentation by Erik van Egmond
-    def check_numeric_and_lenght(series: pd.Series, min_lenght=1, max_lenght=100, fillna=True):
-        return (series.str.len() > max_lenght) | (series.str.len() < min_lenght) | ~(
+    def check_numeric_and_lenght(series: pd.Series, min_length=1, max_length=100, fillna=True):
+        """
+        Checks if the number of digits is within a range. Empty values will be evaluated the fillna parameter describes.
+        Args:
+            series: A series of values
+            min_length: Minimal length
+            max_length: Maximum length
+            fillna: True or False.
+
+        Returns:
+
+        """
+        return (series.str.len() > max_length) | (series.str.len() < min_length) | ~(
             series.str.isnumeric().fillna(fillna))
 
-    business_rules['509'] = check_numeric_and_lenght(df.kastrij, max_lenght=2)
-    business_rules['510'] = check_numeric_and_lenght(df.kast, max_lenght=4)
-    business_rules['511'] = check_numeric_and_lenght(df.odf, max_lenght=5)
-    business_rules['512'] = check_numeric_and_lenght(df.odfpos, max_lenght=2)
-    business_rules['513'] = check_numeric_and_lenght(df.catv, max_lenght=5)
-    business_rules['514'] = check_numeric_and_lenght(df.catvpos, max_lenght=3)
+    business_rules['509'] = check_numeric_and_lenght(df.kastrij, max_length=2)
+    business_rules['510'] = check_numeric_and_lenght(df.kast, max_length=4)
+    business_rules['511'] = check_numeric_and_lenght(df.odf, max_length=5)
+    business_rules['512'] = check_numeric_and_lenght(df.odfpos, max_length=2)
+    business_rules['513'] = check_numeric_and_lenght(df.catv, max_length=5)
+    business_rules['514'] = check_numeric_and_lenght(df.catvpos, max_length=3)
 
     business_rules['516'] = no_errors_series  # cannot check
     business_rules['517'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
@@ -1227,7 +1281,7 @@ def get_pie_layout():
 
 
 # def analyse_documents(y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-#                       df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
+#                       df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, current_werkvoorraad, HC_HPend_l,
 #                       Schouw_BIS, HPend_l, n_err, Schouw, BIS):
 #     y_prog_l_r = {}
 #     y_target_l_r = {}
@@ -1249,7 +1303,7 @@ def get_pie_layout():
 #             rc2_r[key] = list(rc2[key])
 #     analysis2 = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
 #                      y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
-#                      x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
+#                      x_prog=[int(el) for el in x_prog], current_werkvoorraad=current_werkvoorraad, HC_HPend_l=HC_HPend_l,
 #                      Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
 #     analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
 #     return analysis2, analysis3
@@ -1361,12 +1415,12 @@ def wait_bin_cluster_redenna(df):
     return wait_bin_cluster_redenna_df
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_ready_for_has(df, time_delta_days=0):
-    schouw_df = df[['schouwdatum', 'opleverdatum', 'toestemming', 'toestemming_datum', 'opleverstatus']]
-
-    ready_for_has_df = schouw_df[br.has_werkvoorraad(schouw_df, time_delta_days)]
-    return len(ready_for_has_df)
+# # TODO: Documentation by Erik van Egmond
+# def calculate_ready_for_has(df, time_delta_days=0):
+#     schouw_df = df[['schouwdatum', 'opleverdatum', 'toestemming', 'toestemming_datum', 'opleverstatus']]
+#
+#     ready_for_has_df = schouw_df[br.has_werkvoorraad(schouw_df, time_delta_days)]
+#     return len(ready_for_has_df)
 
 
 # # TODO: Documentation by Erik van Egmond
@@ -1735,8 +1789,14 @@ def get_secret(project_id, secret_id, version_id='latest'):
     return payload
 
 
-# TODO: Documentation by Erik van Egmond
 def get_database_engine():
+    """
+    Construct an SQLAlchemy Engine based on the config file.
+
+    Returns:
+        An SQLAlchemy Engine instance
+    """
+
     if 'db_ip' in config.database:
         SACN = 'mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}'.format(
             config.database['db_user'],

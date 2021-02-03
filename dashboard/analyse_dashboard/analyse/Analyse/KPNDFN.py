@@ -8,8 +8,10 @@ from Analyse.Record.StringRecord import StringRecord
 from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
 from functions import error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
-    prognose, performance_matrix, prognose_graph, calculate_lastweek_realisatie_hpend_and_return_graphics, \
-    calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
+    lastweek_realisatie_hpend_bullet_chart, \
+    thisweek_realisatie_hpend_bullet_chart, \
+    prognose, performance_matrix, prognose_graph, \
+    make_graphics_for_ratio_hc_hpend_per_project, \
     make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new
 import pandas as pd
 
@@ -169,7 +171,7 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.d_real_l,
             self.intermediate_results.total_objects,
             self.intermediate_results.t_diff,
-            self.intermediate_results.y_voorraad_act
+            self.intermediate_results.current_werkvoorraad
         )
         self.records.add('project_performance', graph, Record, 'Graphs')
 
@@ -271,10 +273,10 @@ class KPNAnalyse(FttXAnalyse):
 
             project_df = self.transformed_data.df[self.transformed_data.df.project == project]
 
-            project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
+            project_indicators['weekrealisatie'] = thisweek_realisatie_hpend_bullet_chart(
                 project_df, week_target)
 
-            project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
+            project_indicators['lastweek_realisatie'] = lastweek_realisatie_hpend_bullet_chart(
                 project_df, lastweek_target)
 
             project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
@@ -305,7 +307,7 @@ class KPNAnalyse(FttXAnalyse):
     #         t_shift=self.intermediate_results.t_shift,
     #         rc2=self.intermediate_results.rc2,
     #         cutoff=self.intermediate_results.cutoff,
-    #         y_voorraad_act=self.intermediate_results.y_voorraad_act,
+    #         current_werkvoorraad=self.intermediate_results.current_werkvoorraad,
     #         HC_HPend_l=self.intermediate_results.HC_HPend_l,
     #         Schouw_BIS=self.intermediate_results.Schouw_BIS,
     #         HPend_l=self.intermediate_results.HPend_l,

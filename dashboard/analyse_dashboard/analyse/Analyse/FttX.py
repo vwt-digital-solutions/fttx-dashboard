@@ -18,7 +18,7 @@ from Analyse.Record.Record import Record
 import business_rules as br
 from Analyse.Record.RecordListWrapper import RecordListWrapper
 from functions import extract_realisatie_hpend_dates, cluster_reden_na, \
-    create_project_filter, calculate_y_voorraad_act, extract_realisatie_hc_dates, rules_to_state, \
+    create_project_filter, calculate_current_werkvoorraad, extract_realisatie_hc_dates, rules_to_state, \
     extract_werkvoorraad_has_dates, calculate_redenna_per_period, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, overview_reden_na, sum_over_period_to_record, \
     voorspel_and_planning_minus_HPend_sum_over_periods_to_record, extract_planning_dates, extract_target_dates, \
@@ -318,7 +318,7 @@ class FttXAnalyse(FttXBase):
         self._make_records_ratio_under_8weeks_for_dashboard_values()
         self._make_intermediate_results_ratios_project_specific_values()
         self._make_intermediate_results_tmobile_project_specific_values()
-        self._calculate_y_voorraad_act()
+        self._calculate_current_werkvoorraad()
         self._reden_na()
         self._set_filters()
         self._calculate_status_counts_per_project()
@@ -439,11 +439,10 @@ class FttXAnalyse(FttXBase):
     #     # self.intermediate_results.HPend_l = results.homes_ended
     #     # self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
 
-    def _calculate_y_voorraad_act(self):
+    def _calculate_current_werkvoorraad(self):
         logger.info("Calculating y voorraad act for KPN")
-        y_voorraad_act = calculate_y_voorraad_act(self.transformed_data.df)
-        self.intermediate_results.y_voorraad_act = y_voorraad_act
-        self.records.add('y_voorraad_act', y_voorraad_act, Record, 'Data')
+        current_werkvoorraad = calculate_current_werkvoorraad(self.transformed_data.df)
+        self.intermediate_results.current_werkvoorraad = current_werkvoorraad
 
     def _reden_na(self):
         logger.info("Calculating reden na graphs")
