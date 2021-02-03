@@ -43,9 +43,16 @@ def get_start_time(df: pd.DataFrame) -> dict:
     return start_time_by_project
 
 
-# TODO: Documentation by Casper van Houten
-def get_timeline(t_s) -> pd.DatetimeIndex:
-    x_axis = pd.date_range(min(t_s.values()), periods=2000 + 1, freq='D')
+def get_timeline(time_sequence) -> pd.DatetimeIndex:
+    """
+    Make a date_range to be used as x-axis from the start of a given sequence of date values.
+    Args:
+        time_sequence: a dictionary of datetime values.
+
+    Returns:a daterange, ranging from input to 2000 days after input date.
+
+    """
+    x_axis = pd.date_range(min(time_sequence.values()), periods=2000 + 1, freq='D')
     return x_axis
 
 
@@ -160,47 +167,6 @@ def get_cumsum_of_col(df: pd.DataFrame, column):
     return cumulative_df
 
 
-# TODO: check if this can be removed. It does not seem to be used.
-def get_real_df(df: pd.DataFrame, t_s, tot_l):
-    d_real_l = {}
-    for project, project_df in df.groupby(by="project"):
-        project_df_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
-        project_df_real_counts = project_df_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(
-            columns={'sleutel': 'Aantal'})
-        project_df_real_counts.index = pd.to_datetime(project_df_real_counts.index, format='%Y-%m-%d')
-        project_df_real_counts = project_df_real_counts.sort_index()
-
-        project_df_realised_counts_to_present = project_df_real_counts[
-            project_df_real_counts.index < pd.Timestamp.now()]
-        project_df_realised_counts_to_present_percentage = project_df_realised_counts_to_present.cumsum() / tot_l[
-            project] * 100
-
-        # first date in counts dataframe
-        min_date = project_df_realised_counts_to_present_percentage.index.min()
-
-        # What does this date represent? Should this be in business rules?
-        min_shift = min(t_s.values())
-
-        # Amount of days this specific projects starts after the start of the 'earliest' project?
-        t_shift = get_t_shift(min_date, min_shift)
-
-        # Dirty fix, still necessary?
-        # only necessary for DH
-        project_df_realised_counts_to_present_percentage[
-            project_df_realised_counts_to_present_percentage.Aantal > 100] = 100
-
-        d_real = 'dummy'
-        # I think I'd prefer messing with the index completely separately.
-        d_real.index = (d_real.index - d_real.index[0]).days + t_shift[project]
-        d_real_l[project] = d_real
-    return d_real_l
-
-
-# TODO: Documentation by Casper van Houten. Refactor by generalize the argument names.
-def get_t_shift(min_date, min_shift):
-    return (min_date - min_shift).days
-
-
 # TODO: Documentation by Andre van Turnhout
 def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     x_prog = np.array(list(range(0, len(x_d))))
@@ -282,62 +248,240 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
     return PrognoseResult(rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff)
 
 
-# TODO: Documentation by Casper van Houten
-def fill_2020(df):
-    filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df.index[0], freq='D'),
-                              columns=['d'],
-                              data=0)
-    df = pd.concat([filler2020[0:-1], df], axis=0)
-    return df
+# # TODO: Documentation by Casper van Houten
+# def fill_2020(df):
+#     """
+#     Function to
+#     Args:
+#         df:
+#
+#     Returns:
+#
+#     """
+#     filler2020 = pd.DataFrame(index=pd.date_range(start='2020-01-01', end=df.index[0], freq='D'),
+#                               columns=['d'],
+#                               data=0)
+#     df = pd.concat([filler2020[0:-1], df], axis=0)
+#     return df
 
 
-# TODO: Documentation by Casper van Houten
-def percentage_to_amount(percentage, total):
-    return percentage / 100 * total
+# # TODO: Documentation by Casper van Houten
+# def percentage_to_amount(percentage, total):
+#     return percentage / 100 * total
 
 
-# TODO: Documentation by Casper van Houten
-def transform_to_amounts(percentage_dict, total_dict, days_index):
-    df = pd.DataFrame(index=days_index, columns=['d'], data=0)
-    for key in percentage_dict:
-        amounts = percentage_to_amount(percentage_dict[key], total_dict[key])
-        df += pd.DataFrame(index=days_index, columns=['d'], data=amounts).diff().fillna(0)
-    if df.index[0] > pd.Timestamp('2020-01-01'):
-        df = fill_2020(df)
-    df = df['2020-01-01':]  # remove values from 2019, not required
-    return df
+# # TODO: Documentation by Casper van Houten
+# def transform_to_amounts(percentage_dict, total_dict, days_index):
+#     df = pd.DataFrame(index=days_index, columns=['d'], data=0)
+#     for key in percentage_dict:
+#         amounts = percentage_to_amount(percentage_dict[key], total_dict[key])
+#         df += pd.DataFrame(index=days_index, columns=['d'], data=amounts).diff().fillna(0)
+#     if df.index[0] > pd.Timestamp('2020-01-01'):
+#         df = fill_2020(df)
+#     df = df['2020-01-01':]  # remove values from 2019, not required
+#     return df
+#
+# # TODO: Documentation by Casper van Houten
+# def transform_df_plan(x_d, HP):
+#     df = pd.DataFrame(index=x_d, columns=['d'], data=0)
+#     y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
+#                           columns=['d'], data=HP['HPendT'])
+#     y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
+#     df = df.add(y_plan, fill_value=0)
+#     if df.index[0] > pd.Timestamp('2020-01-01'):
+#         df = fill_2020(df)
+#     df = df['2020-01-01':]  # remove values from 2019, not required
+#     return df
 
 
-# TODO: Documentation by Casper van Houten
-def transform_df_real(percentage_dict, total_dict, days_index):
-    df = pd.DataFrame(index=days_index, columns=['d'], data=0)
-    for key in percentage_dict:
-        y_real = (percentage_dict[key] / 100 * total_dict[key]).diff().fillna(
-            (percentage_dict[key] / 100 * total_dict[key]).iloc[0])
-        y_real = y_real.rename(columns={'Aantal': 'd'})
-        y_real.index = days_index[y_real.index]
-        df = df.add(y_real, fill_value=0)
-    if df.index[0] > pd.Timestamp('2020-01-01'):
-        df = fill_2020(df)
-    df = df['2020-01-01':]  # remove values from 2019, not required
-    return df
+# # TODO: Documentation by Casper van Houten
+# def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
+#     df_prog = transform_to_amounts(y_prog_l, tot_l, x_d)
+#     df_target = transform_to_amounts(y_target_l, tot_l, x_d)
+#     df_real = transform_df_real(d_real_l, tot_l, x_d)
+#     df_plan = transform_df_plan(x_d, HP)
+#     OverviewResults = namedtuple("OverviewResults", ['df_prog', 'df_target', 'df_real', 'df_plan'])
+#     return OverviewResults(df_prog, df_target, df_real, df_plan)
 
 
-# TODO: Documentation by Casper van Houten
-def transform_df_plan(x_d, HP):
-    df = pd.DataFrame(index=x_d, columns=['d'], data=0)
-    y_plan = pd.DataFrame(index=pd.date_range(start='30-12-2019', periods=len(HP['HPendT']), freq='W-MON'),
-                          columns=['d'], data=HP['HPendT'])
-    y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-    df = df.add(y_plan, fill_value=0)
-    if df.index[0] > pd.Timestamp('2020-01-01'):
-        df = fill_2020(df)
-    df = df['2020-01-01':]  # remove values from 2019, not required
-    return df
+# def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res, show_planning=True):
+#     if 'W' in res:
+#         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
+#         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
+#         x_ticks = list(range(n_now - n_d, n_now + 5 - n_d))
+#         x_ticks_text = [datetime.datetime.strptime('2020-W' + str(int(el - 1)) + '-1', "%Y-W%W-%w").date().strftime(
+#             '%Y-%m-%d') + '<br>W' + str(el) for el in x_ticks]
+#         x_range = [n_now - n_d - 0.5, n_now + 4.5 - n_d]
+#         y_range = [0, 3000]
+#         width = 0.08
+#         text_title = 'Maandoverzicht'
+#         period = ['2019-12-23', '2020-12-27']
+#         close = 'left'
+#         loff = '-1W-MON'
+#         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.week.to_list()
+#         x[0] = 0
+#     if 'M' == res:
+#         n_now = datetime.date.today().month
+#         x_ticks = list(range(0, 13))
+#         x_ticks_text = ['dec', 'jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
+#         x_range = [0.5, 12.5]
+#         y_range = [0, 18000]
+#         width = 0.2
+#         text_title = 'Jaaroverzicht'
+#         period = ['2019-12-23', '2020-12-27']
+#         close = 'left'
+#         loff = None
+#         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.month.to_list()
+#
+#     prog0 = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     prog = prog0.to_list()
+#     target0 = df_target[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     target = target0.to_list()
+#     real0 = df_real[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     real = real0.to_list()
+#     plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
+#     plan = plan0.to_list()
+#
+#     if 'M' == res:
+#         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target))), real=str(round(sum(real))),
+#                              plan=str(round(sum(plan[n_now - 1:]) - real[n_now - 1])),
+#                              prog=str(round(sum(prog[n_now - 1:]) - real[n_now - 1])),
+#                              HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
+#         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
+#             jaaroverzicht['prog_c'] = 'pretty_container_red'
+#
+#     bar_now = dict(x=[n_now],
+#                    y=[y_range[1]],
+#                    name='Huidige week',
+#                    type='bar',
+#                    marker=dict(color=colors['black']),
+#                    width=0.5 * width,
+#                    )
+#     bar_t = dict(x=[el - 0.5 * width for el in x],
+#                  y=target,
+#                  name='Planning',
+#                  type='bar',
+#                  marker=dict(color=colors['lightgray']),
+#                  width=width,
+#                  )
+#     bar_pr = dict(x=x,
+#                   y=prog,
+#                   name='Voorspelling (VQD)',
+#                   mode='markers',
+#                   marker=dict(color=colors['yellow'], symbol='diamond', size=15),
+#                   #   width=0.2,
+#                   )
+#     bar_r = dict(x=[el + 0.5 * width for el in x],
+#                  y=real,
+#                  name='Realisatie (FC)',
+#                  type='bar',
+#                  marker=dict(color=colors['green']),
+#                  width=width,
+#                  )
+#     bar_pl = dict(x=x,
+#                   y=plan,
+#                   name='Planning HP (VWT)',
+#                   type='lines',
+#                   marker=dict(color=colors['red']),
+#                   width=width,
+#                   )
+#     fig = {
+#         'data': [bar_pr, bar_pl, bar_r, bar_t, bar_now],
+#         'layout': {
+#             'barmode': 'stack',
+#             #   'clickmode': 'event+select',
+#             'showlegend': True,
+#             'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
+#             'height': 300,
+#             'margin': {'l': 5, 'r': 15, 'b': 10, 't': 40},
+#             'title': {'text': text_title},
+#             'xaxis': {'range': x_range,
+#                       'tickvals': x_ticks,
+#                       'ticktext': x_ticks_text,
+#                       'title': ' '},
+#             'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
+#             'plot_bgcolor': colors['plot_bgcolor'],
+#             'paper_bgcolor': colors['paper_bgcolor'],
+#             #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
+#             #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
+#         },
+#     }
+#
+#     prog0.index = prog0.index.strftime('%Y-%m-%d')
+#     data_pr = dict(count_voorspellingdatum=prog0.to_dict())
+#     target0.index = target0.index.strftime('%Y-%m-%d')
+#     data_t = dict(count_outlookdatum=target0.to_dict())
+#     real0.index = real0.index.strftime('%Y-%m-%d')
+#     data_r = dict(count_opleverdatum=real0.to_dict())
+#     plan0.index = plan0.index.strftime('%Y-%m-%d')
+#     data_p = dict(count_hasdatum=plan0.to_dict())
+#
+#     if not show_planning:
+#         data_p = dict.fromkeys(data_p, 0)
+#
+#     if 'W' in res:
+#         record = dict(id='graph_targets_W', figure=fig)
+#         return record, data_pr, data_t, data_r, data_p
+#     if 'M' == res:
+#         record = dict(id='graph_targets_M', figure=fig)
+#         return record, data_pr, data_t, data_r, data_p
 
+
+# # TODO: Documentation by Casper van Houten
+# def slice_for_jaaroverzicht(data):
+#     res = 'M'
+#     close = 'left'
+#     loff = None
+#     period = ['2019-12-23', '2020-12-27']
+#     return data[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
+
+
+# def preprocess_for_jaaroverzicht(*args):
+#     return [slice_for_jaaroverzicht(arg) for arg in args]
+#     # prog = slice_for_jaaroverzicht(df_prog)
+#     # target = slice_for_jaaroverzicht(df_target)
+#     # real = slice_for_jaaroverzicht(df_real)
+#     # plan = slice_for_jaaroverzicht(df_plan)
+#     # return prog, target, real, plan
+
+
+# def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
+#     n_now = datetime.date.today().month
+#
+#     target_sum = str(round(sum(target)))
+#     planning_sum = sum(planning[n_now - 1:]) - realisatie[n_now - 1]
+#     prognose_sum = sum(prognose[n_now - 1:]) - realisatie[n_now - 1]
+#     realisatie_sum = str(round(sum(realisatie)))
+#
+#     jaaroverzicht = dict(id='jaaroverzicht',
+#                          target=str(int(target_sum)),
+#                          real=str(int(realisatie_sum)),
+#                          plan=str(int(planning_sum)),
+#                          prog=str(int(prognose_sum)),
+#                          HC_HPend=str(HC_HPend),
+#                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
+#                          bis_gereed=str(bis_gereed),
+#                          prog_c='pretty_container')
+#     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
+#         jaaroverzicht['prog_c'] = 'pretty_container_red'
+#     return jaaroverzicht
 
 # TODO: Documentation by Casper van Houten
 def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
+    """
+    Function that loops over all prognoses series, and turns them into a graphical representation per project.
+    Should be refactored.
+    Args:
+        x_d: List of days
+        y_prog_l: Dictionary of prognoses per project
+        d_real_l: Dictionary of realised objectes per project
+        y_target_l: Dictionary of target per project
+        FTU0_date: Dictionary of FTU0 dates per project
+        FTU1_date: Dictionary of FTU1 dates per project
+
+    Returns: A dictionary of prognoses records per project, to be written to the firestore.
+
+    """
     record_dict = {}
     for key in y_prog_l:
         if not FTU0_date[key]:  # TODO: Fix this -> replace with self.project_list
@@ -919,15 +1063,32 @@ def error_check_FCBC(df: pd.DataFrame):
     return n_err, errors_FC_BC
 
 
-# TODO: Documentation by Casper van Houten
 def cluster_reden_na(label, clusters):
+    """
+    Retrieves the relevant cluster of a label, given a set of clusters.
+    Args:
+        label: Current, unclustered label of the data
+        clusters: A dictionary of clusters, keys being the name of the cluster, values being the labels in the cluster.
+
+    Returns: The cluster of the data.
+
+    """
     for k, v in clusters.items():
         if label in v:
             return k
+    # raise ValueError(f'No label found for {label}')
 
 
-# TODO: Documentation by Casper van Houten
-def pie_chart_reden_na(df_na, clusters, key):
+def pie_chart_reden_na(df_na, key):
+    """
+    Creates a pie chart for reden_na
+    Args:
+        df_na: Dataframe with reden_na
+        key: Name of the project
+
+    Returns: Record to be written to the firestore, along with the name of the document.
+
+    """
     counts = df_na[['cluster_redenna', 'sleutel']].groupby("cluster_redenna").count().reset_index()
     labels = counts.cluster_redenna.to_list()
     values = counts.sleutel.to_list()
@@ -949,8 +1110,16 @@ def pie_chart_reden_na(df_na, clusters, key):
     return data, document
 
 
-# TODO: Documentation by Casper van Houten
 def overview_reden_na(df: pd.DataFrame, clusters):
+    """
+    Wrapper function to create the record for overview reden na.
+    Args:
+        df: Dataframe that contains data for all projects in FC
+        clusters: Clusters that the reden_na will be discriminated to, and will be used in the pie chart
+
+    Returns: Record to be written to the firestore.
+
+    """
     data, document = pie_chart_reden_na(df, clusters, 'overview')
     layout = get_pie_layout()
     fig = dict(data=data, layout=layout)
@@ -958,8 +1127,16 @@ def overview_reden_na(df: pd.DataFrame, clusters):
     return record
 
 
-# TODO: Documentation by Casper van Houten
 def individual_reden_na(df: pd.DataFrame, clusters):
+    """
+    Wrapper function to create the records for reden na per project.
+    Args:
+        df: Dataframe that contains data for all projects in FC
+        clusters: Clusters that the reden_na will be discriminated to, and will be used in the pie chart
+
+    Returns: Record to be written to the firestore.
+
+    """
     record_dict = {}
     for project, df in df.groupby(by="project"):
         data, document = pie_chart_reden_na(df, clusters, project)
@@ -968,8 +1145,12 @@ def individual_reden_na(df: pd.DataFrame, clusters):
     return record_dict
 
 
-# TODO: Documentation by Casper van Houten
 def get_pie_layout():
+    """
+    Getter for the layout of the reden_na pie chart
+    Returns: Layout for reden_na pie chart.
+
+    """
     layout = {
         #   'clickmode': 'event+select',
         'showlegend': True,
@@ -1162,14 +1343,43 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
     return counts_by_project
 
 
+# # TODO: Documentation by Casper van Houten
+# def calculate_on_time_ratio(df):
+#     # Maximum days an order is allowed to take in days
+#     max_order_time = 56
+#     ordered = df[df.ordered & df.opgeleverd]
+#     on_time = ordered[ordered.oplevertijd <= max_order_time]
+#     try:
+#         on_time_ratio = len(on_time) / len(ordered)
+#     except ZeroDivisionError:
+#         on_time_ratio = 0
+#     return on_time_ratio
+
+
 # TODO: Documentation by Casper van Houten
 def calculate_oplevertijd(row):
+    """
+    Calculates the oplevertijd, which is the amount of days between the toestemmingsdatum and opleverdatum.
+    Used for T-mobile, as it uses 'ordered' logic, which only applies to T-mobile.
+    Args:
+        row: row of data, including exactly one opleverdatum and toestemmingsdatum
+
+    Returns: the oplevertijd in days, as an integer.
+    will return NaN if woning does not have state 'opgeleverd' yet, or if the row has not been ordered yet.
+
+    """
     # Do not calculate an oplevertijd if row was not ordered or not opgeleverd
     if row.ordered and row.opgeleverd:
         oplevertijd = (row.opleverdatum - row.toestemming_datum).days
     else:
         oplevertijd = np.nan
     return oplevertijd
+
+# def calculate_bis_gereed(df):
+#     df_copy = df.copy()
+#     df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
+#     return sum(br.bis_opgeleverd(df_copy))
+
 
 
 # TODO: Documentation by Casper van Houten
