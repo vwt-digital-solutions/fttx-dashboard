@@ -416,8 +416,8 @@ class FttXAnalyse(FttXBase):
 
     def _reden_na(self):
         logger.info("Calculating reden na graphs")
-        overview_record = overview_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
-        record_dict = individual_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
+        overview_record = overview_reden_na(self.transformed_data.df)
+        record_dict = individual_reden_na(self.transformed_data.df)
         self.records.add('reden_na_overview', overview_record, Record, 'Data')
         self.records.add('reden_na_projects', record_dict, DictRecord, 'Data')
 
