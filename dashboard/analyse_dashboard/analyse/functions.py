@@ -1110,7 +1110,7 @@ def pie_chart_reden_na(df_na, key):
     return data, document
 
 
-def overview_reden_na(df: pd.DataFrame, clusters):
+def overview_reden_na(df: pd.DataFrame):
     """
     Wrapper function to create the record for overview reden na.
     Args:
@@ -1120,14 +1120,14 @@ def overview_reden_na(df: pd.DataFrame, clusters):
     Returns: Record to be written to the firestore.
 
     """
-    data, document = pie_chart_reden_na(df, clusters, 'overview')
+    data, document = pie_chart_reden_na(df, 'overview')
     layout = get_pie_layout()
     fig = dict(data=data, layout=layout)
     record = dict(id=document, figure=fig)
     return record
 
 
-def individual_reden_na(df: pd.DataFrame, clusters):
+def individual_reden_na(df: pd.DataFrame):
     """
     Wrapper function to create the records for reden na per project.
     Args:
@@ -1139,7 +1139,7 @@ def individual_reden_na(df: pd.DataFrame, clusters):
     """
     record_dict = {}
     for project, df in df.groupby(by="project"):
-        data, document = pie_chart_reden_na(df, clusters, project)
+        data, document = pie_chart_reden_na(df, project)
         record = dict(id=document, data=data)
         record_dict[document] = record
     return record_dict
