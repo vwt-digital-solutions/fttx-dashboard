@@ -60,13 +60,13 @@ class CapacityTransform(FttXTransform):
 
     def get_civiel_start_date(self, start_date):
         default_start_date = '2021-01-01'
-        if start_date == 'None' or start_date is None:
+        if start_date == 'None' or start_date is None or start_date == '':
             start_date = default_start_date
         return pd.to_datetime(start_date)
 
     def get_total_units(self, total_units, type_total):
         default_total_unit_dict = {'meters BIS': 100000, 'meters tuinschieten': 50000, 'huisaansluitingen': 10000}
-        if total_units == 'None' or total_units is None:
+        if total_units == 'None' or total_units is None or total_units == '':
             total_units = default_total_unit_dict[type_total]
         return float(total_units)
 
