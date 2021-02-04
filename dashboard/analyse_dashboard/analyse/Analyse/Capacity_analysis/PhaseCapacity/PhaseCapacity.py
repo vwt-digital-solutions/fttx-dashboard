@@ -37,30 +37,27 @@ class PhaseCapacity:
         """
 
         objects = []
-        objects += self._target2object()
-        objects += self._pocreal2object()
-        objects += self._pocideal2object()
-        objects += self._pocverwacht2object()
+        objects += [self.target2object()]
+        objects += [self.pocreal2object()]
+        objects += [self.pocideal2object()]
+        objects += [self.pocverwacht2object()]
         [self.obj_2record(obj) for obj in objects]
-
-        self.pocideal_object = objects[2]
-
         return self
 
-    def _target2object(self):
-        data = pd.Series(data=self.phase_data[self.phase]['performance_norm_unit'],
-                         index=DateDomainRange(begin=self.phase_data[self.phase]['start_date'],
-                                               n_days=self.phase_data[self.phase]['n_days']).domain)
+    def target2object(self):
+        data = pd.Series(data=self.phase_data['performance_norm_unit'],
+                         index=DateDomainRange(begin=self.phase_data['start_date'],
+                                               n_days=self.phase_data['n_days']).domain)
         lineobject = TimeseriesLine(data=data, name='target_indicator')
         return lineobject
 
-    def _pocreal2object(self):
-        ds = self.df[self.phase_data[self.phase]['phase_column']]
-        if not isinstance(self.ds.index[0], pd.Timestamp):
-            ds = self.ds[(~self.df.isna()) & (self.ds <= pd.Timestamp.now())]
+    def pocreal2object(self):
+        ds = self.df[self.phase_data['phase_column']]
+        if not isinstance(ds.index[0], pd.Timestamp):
+            ds = ds[(~ds.isna()) & (ds <= pd.Timestamp.now())]
             ds = ds.groupby(ds.dt.date).count()
         else:
-            ds = self.ds[(~self.ds.isna())]
+            ds = ds[(~ds.isna())]
 
         if not ds.empty:
             lineobject = TimeseriesLine(data=ds,
@@ -69,17 +66,17 @@ class PhaseCapacity:
                                         name='poc_real_indicator')
         else:
             lineobject = TimeseriesLine(data=pd.Series(data=0),
-                                        domain=DateDomainRange(begin=self.phase_data[self.phase]['start_date'],
+                                        domain=DateDomainRange(begin=self.phase_data['start_date'],
                                                                n_days=1),
                                         name='poc_real_indicator')
         return lineobject
 
-    def _pocideal2object(self):
-        pocreal_object = self._pocreal2object()
-        target_object = self._target2object()
+    def pocideal2object(self):
+        pocreal_object = self.pocreal2object()
+        target_object = self.target2object()
         begin = pocreal_object.make_series().index[-1]
         end = target_object.make_series().index[-1]
-        slope = (self.phase_data[self.phase]['total_units'] - pocreal_object.integrate().make_series().max()) / \
+        slope = (self.phase_data['total_units'] - pocreal_object.integrate().make_series().max()) / \
                 (end - begin).days
         if end <= begin:
             end = begin + timedelta(7)
@@ -91,14 +88,14 @@ class PhaseCapacity:
                                     name='poc_ideal_indicator')
         return lineobject
 
-    def _pocverwacht2object(self):
-        pocreal_object = self._pocreal2object()
+    def pocverwacht2object(self):
+        pocreal_object = self.pocreal2object()
         if len(pocreal_object.make_series()) > 2:
             slope2 = int(pocreal_object.integrate().extrapolate(data_partition=0.5).slope)
         else:
             slope2 = 0
-        if (slope2 > 0) & (self.phase_data[self.phase]['total_units'] > 0):
-            n_days2 = int(round((self.phase_data[self.phase]['total_units'] -
+        if (slope2 > 0) & (self.phase_data['total_units'] > 0):
+            n_days2 = int(round((self.phase_data['total_units'] -
                                  pocreal_object.integrate().make_series().max()) / slope2))
         else:
             n_days2 = 1
@@ -115,7 +112,7 @@ class PhaseCapacity:
         self.record_list.append(LineRecord(record=lineobject,
                                            collection='Lines',
                                            graph_name=f'{lineobject.name}',
-                                           phase=self.phase,
+                                           phase=self.phase_data['name'],
                                            client=self.client,
                                            project=self.project))
 
