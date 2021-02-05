@@ -187,74 +187,6 @@ class KPNAnalyse(FttXAnalyse):
         )
         self.records.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
 
-    # def _overview(self):
-    #     result = overview(self.intermediate_results.timeline,
-    #                       self.intermediate_results.y_prog_l,
-    #                       self.intermediate_results.total_objects,
-    #                       self.intermediate_results.d_real_l,
-    #                       self.transformed_data.planning,
-    #                       self.intermediate_results.y_target_l)
-    #     self.intermediate_results.df_prog = result.df_prog
-    #     self.intermediate_results.df_target = result.df_target
-    #     self.intermediate_results.df_real = result.df_real
-    #     self.intermediate_results.df_plan = result.df_plan
-
-    # def _calculate_graph_overview(self):
-    #     logger.info("Calculating graph overview")
-    #     graph_targets_W, data_pr, data_t, data_r, data_p = graph_overview(
-    #         self.intermediate_results.df_prog,
-    #         self.intermediate_results.df_target,
-    #         self.intermediate_results.df_real,
-    #         self.intermediate_results.df_plan,
-    #         self.intermediate_results.HC_HPend,
-    #         self.intermediate_results.HAS_werkvoorraad,
-    #         res='W-MON')
-    #     self.record_dict.add('graph_targets_W', graph_targets_W, Record, 'Graphs')
-    #     self.record_dict.add('count_voorspellingdatum_by_week', data_pr, Record, 'Data')
-    #     self.record_dict.add('count_outlookdatum_by_week', data_t, Record, 'Data')
-    #     self.record_dict.add('count_opleverdatum_by_week', data_r, Record, 'Data')
-    #     self.record_dict.add('count_hasdatum_by_week', data_p, Record, 'Data')
-    #
-    #     graph_targets_M, data_pr, data_t, data_r, data_p = graph_overview(
-    #         self.intermediate_results.df_prog,
-    #         self.intermediate_results.df_target,
-    #         self.intermediate_results.df_real,
-    #         self.intermediate_results.df_plan,
-    #         self.intermediate_results.HC_HPend,
-    #         self.intermediate_results.HAS_werkvoorraad,
-    #         res='M')
-    #
-    #     self.intermediate_results.data_pr = data_pr
-    #     self.intermediate_results.data_t = data_t
-    #     self.intermediate_results.data_r = data_r
-    #     self.intermediate_results.data_p = data_p
-    #
-    #     self.record_dict.add('graph_targets_M', graph_targets_M, Record, 'Graphs')
-    #     self.record_dict.add('count_voorspellingdatum_by_month', data_pr, Record, 'Data')
-    #     self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
-    #     self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
-    #     self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
-
-    # def _jaaroverzicht(self):
-    #     # Function should not be ran on first pass, as it is called in super constructor.
-    #     # Required variables will not be accessible during call of super constructor.
-    #     if 'df_prog' in self.intermediate_results:
-    #         prog, target, real, plan = preprocess_for_jaaroverzicht(
-    #             self.intermediate_results.df_prog,
-    #             self.intermediate_results.df_target,
-    #             self.intermediate_results.df_real,
-    #             self.intermediate_results.df_plan,
-    #         )
-    #
-    #         bis_gereed = calculate_bis_gereed(self.transformed_data.df)
-    #         jaaroverzicht = calculate_jaaroverzicht(
-    #             prog, target, real, plan,
-    #             self.intermediate_results.HAS_werkvoorraad,
-    #             self.intermediate_results.HC_HPend,
-    #             bis_gereed
-    #         )
-    #         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
-
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators and making graphic boxes for dashboard")
         record = {}
@@ -288,36 +220,6 @@ class KPNAnalyse(FttXAnalyse):
             record[project] = project_indicators
 
         self.records.add('project_indicators', record, DictRecord, 'Data')
-
-    # def _analysis_documents(self):
-    #     doc2, doc3 = analyse_documents(
-    #         y_target_l=self.intermediate_results.y_target_l_old,
-    #         rc1=self.intermediate_results.rc1,
-    #         x_prog=self.intermediate_results.x_prog,
-    #         x_d=self.intermediate_results.timeline,
-    #         d_real_l=self.intermediate_results.d_real_l_old,
-    #         df_prog=self.intermediate_results.df_prog,
-    #         df_target=self.intermediate_results.df_target,
-    #         df_real=self.intermediate_results.df_real,
-    #         df_plan=self.intermediate_results.df_plan,
-    #         HC_HPend=self.intermediate_results.HC_HPend,
-    #         y_prog_l=self.intermediate_results.y_prog_l_old,
-    #         tot_l=self.intermediate_results.total_objects,
-    #         HP=self.transformed_data.planning,
-    #         t_shift=self.intermediate_results.t_shift,
-    #         rc2=self.intermediate_results.rc2,
-    #         cutoff=self.intermediate_results.cutoff,
-    #         current_werkvoorraad=self.intermediate_results.current_werkvoorraad,
-    #         HC_HPend_l=self.intermediate_results.HC_HPend_l,
-    #         Schouw_BIS=self.intermediate_results.Schouw_BIS,
-    #         HPend_l=self.intermediate_results.HPend_l,
-    #         n_err=self.intermediate_results.n_err,
-    #         Schouw=None,
-    #         BIS=None
-    #     )
-    #
-    #     self.record_dict.add("analysis2", doc2, Record, "Data")
-    #     self.record_dict.add("analysis3", doc3, Record, "Data")
 
 
 class DFNAnalyse(KPNAnalyse):
