@@ -423,22 +423,6 @@ class FttXAnalyse(FttXBase):
         self.records.add('List_of_years', list_of_years, Record, 'Data')
         self.intermediate_results.List_of_years = list_of_years
 
-    # def _calculate_projectspecs(self):
-    #     logger.info("Calculating project specs")
-    #     results = calculate_projectspecs(self.transformed_data.df)
-    #
-    #     # self.record_dict.add('HC_HPend', results.hc_hp_end_ratio_total, Record, 'Data')
-    #     self.records.add('HC_HPend_l', results.hc_hpend_ratio, Record, 'Data')
-    #     # self.record_dict.add('Schouw_BIS', results.has_ready, Record, 'Data')
-    #     # self.record_dict.add('HPend_l', results.homes_ended, Record, 'Data')
-    #     # self.record_dict.add('HAS_werkvoorraad', results.werkvoorraad, Record, 'Data')
-    #
-    #     # self.intermediate_results.HC_HPend = results.hc_hp_end_ratio_total
-    #     self.intermediate_results.HC_HPend_l = results.hc_hpend_ratio
-    #     # self.intermediate_results.Schouw_BIS = results.has_ready
-    #     # self.intermediate_results.HPend_l = results.homes_ended
-    #     # self.intermediate_results.HAS_werkvoorraad = results.werkvoorraad
-
     def _calculate_current_werkvoorraad(self):
         logger.info("Calculating y voorraad act for KPN")
         current_werkvoorraad = calculate_current_werkvoorraad(self.transformed_data.df)
@@ -453,11 +437,6 @@ class FttXAnalyse(FttXBase):
 
     def _set_filters(self):
         self.records.add("project_names", create_project_filter(self.transformed_data.df), ListRecord, "Data")
-
-    # def _jaaroverzicht(self):
-    #     # placeholder empty dict to shoot to firestore, to ensure no errors are thrown when no client specific logic has been made.
-    #     jaaroverzicht = {}
-    #     self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_status_counts_per_project(self):
         logger.info("Calculating completed status counts per project")
