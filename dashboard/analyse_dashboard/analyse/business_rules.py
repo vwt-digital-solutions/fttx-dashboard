@@ -211,7 +211,7 @@ def laswerk_ap_gereed(df):
 
 def laswerk_ap_niet_gereed(df):
     """
-    Laswerk AP is done when `laswerkapgereed` is **not** set to 1.
+    Laswerk AP is not done when `laswerkapgereed` is **not** set to 1.
 
     Args:
         df (pd.DataFrame): A dataframe containing a laswerkapgereed column containing ones and zeroes.
@@ -237,7 +237,7 @@ def laswerk_dp_gereed(df):
 
 def laswerk_dp_niet_gereed(df):
     """
-    Laswerk DP is done when `laswerkdpgereed` is **not** set to 1.
+    Laswerk DP is not done when `laswerkdpgereed` is **not** set to 1.
 
     Args:
         df (pd.DataFrame): A dataframe containing a laswerkdpgereed column containing ones and zeroes.
@@ -290,7 +290,7 @@ def hc_opgeleverd(df):
 def hp_opgeleverd(df):
     """
     HP (Homes Passed) is done when `opleverstatus` is **not** set to 2 and `opleverdatum` is not NA.
-    Status 2: a home is connected.
+    Status 2 means a home is connected (see BR hc_opgeleverd).
 
     Args:
         df (pd.DataFrame): A dataframe containing a opleverstatus column with `opleverstatussen` and a opleverdatum
