@@ -1,3 +1,10 @@
+"""
+functions.py
+================
+
+A big collection of functions used in the analysis.
+"""
+
 from collections import defaultdict
 
 import pandas as pd
@@ -206,7 +213,7 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
 #     return TargetResults(y_target_l, t_diff, target_per_week_dict)
 
 
-# TODO: Documentation by Andre van Turnhout
+# TODO: Documentation by Andre van Turnhout. How does it calculate the target?
 def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     """
 
@@ -219,7 +226,8 @@ def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
         date_FTU1: FTU1 date per project
         total_objects: total objects per project
 
-    Returns: target information for KPN per weeks
+    Returns:
+        target information for KPN per weeks
 
     """
     # to add target info KPN in days uitgaande van FTU0 en FTU1
@@ -777,7 +785,7 @@ def create_project_filter(df: pd.DataFrame):
 
     Returns:
         list[dict]: A list of dictionaries with the projects with the following shape
-         {'label': project, 'value': project}
+        {'label': project, 'value': project}
     """
     filters = [{'label': x, 'value': x} for x in df.project.cat.categories]
     record = dict(filters=filters)
@@ -972,7 +980,8 @@ def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_pe
         project: the project of interest (str)
         ratio_HC_HPend_per_project: a dictionary with HC/HPend values per project (dict)
 
-    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+    Returns:
+        a dictionary that contains the graphical layout to plot this value on the dashboard
 
     """
     counts = round(ratio_HC_HPend_per_project[project], 2)
@@ -1009,7 +1018,8 @@ def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors
         project: the project of interest (str)
         ratio_HC_HPend_per_project: a dictionary with error between FC/BC values per project (dict)
 
-    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+    Returns:
+        a dictionary that contains the graphical layout to plot this value on the dashboard
 
     """
     return dict(counts=number_errors_per_project[project],
@@ -1459,7 +1469,8 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
         time_windows_per_project: a dictionary with openstaande orders per timewindow per project (dict)
         ratio_under_8weeks_per_project: a dictionary with ratio <8 weeks aangesloten orders per project (dict)
 
-    Returns: a dictionary that contains the graphical layout to plot tmobile values on the dashboard
+    Returns:
+         a dictionary that contains the graphical layout to plot tmobile values on the dashboard
 
     """
     markup_dict = {
@@ -1646,7 +1657,8 @@ def extract_voorspelling_dates(df: pd.DataFrame, ftu=None, totals=None) -> pd.Se
         ftu: Andre van Turnhout
         totals: Andre van Turnhout
 
-    Returns: A pd.Series object
+    Returns:
+         A pd.Series object
 
     """
     if ftu and any(ftu.get('date_FTU0', {}).values()):
@@ -1699,7 +1711,8 @@ def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None)
         client: Either 'kpn', 'tmobile' or 'dfn'
         planning: Optional column for kpn, not used anymore
 
-    Returns: A pd.Series object
+    Returns:
+         A pd.Series object
 
     """
     use_old_kpn_planning = True
