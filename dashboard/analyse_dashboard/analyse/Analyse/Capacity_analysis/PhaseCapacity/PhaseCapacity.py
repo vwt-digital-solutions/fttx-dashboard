@@ -25,7 +25,6 @@ class PhaseCapacity:
         self.pocideal_line_masterphase = pocideal_line_masterphase
         self.masterphase_data = masterphase_data
         self.record_list = RecordList()
-        self.holiday_dates = holiday_dates
 
     def algorithm(self):
         """
