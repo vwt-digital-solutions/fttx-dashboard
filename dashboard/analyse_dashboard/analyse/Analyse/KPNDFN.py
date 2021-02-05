@@ -109,11 +109,10 @@ class KPNAnalyse(FttXAnalyse):
 
     def _error_check_FCBC(self):
         logger.info("Calculating errors for KPN")
-        n_err, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
+        n_errors_FCBC, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
         # self.record_dict.add('n_err', n_err, Record, 'Data')
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
-
-        self.intermediate_results.n_err = n_err
+        self.intermediate_results.n_errors_FCBC = n_errors_FCBC
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
@@ -215,7 +214,7 @@ class KPNAnalyse(FttXAnalyse):
                 project=project, ratio_HC_HPend_per_project=self.intermediate_results.ratio_HC_HPend_per_project)
 
             project_indicators['weeknerr'] = make_graphics_for_number_errors_fcbc_per_project(
-                project=project, number_errors_per_project=self.intermediate_results.n_err)
+                project=project, number_errors_per_project=self.intermediate_results.n_errors_FCBC)
 
             record[project] = project_indicators
 
