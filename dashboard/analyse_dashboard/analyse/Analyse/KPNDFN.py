@@ -333,6 +333,7 @@ class DFNAnalyse(KPNAnalyse):
         self._performance_matrix()
         self._prognose_graph()
         self._set_filters()
+        self._calculate_project_indicators()
 
 
 class KPNETL(FttXETL, KPNDFNExtract, KPNDFNTransform, KPNAnalyse):
