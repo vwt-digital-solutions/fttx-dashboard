@@ -1,3 +1,12 @@
+"""
+business_rules.py
+=======================
+
+A module that contains the business rules for FttX. Each function in this module is one business rule that operates on
+a DataFrame or Series.
+
+"""
+
 import pandas as pd
 
 opleverstatussen = [
@@ -63,8 +72,17 @@ def geschouwed(df, time_delta_days=0):
     return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
 
 
-# TODO: Documentation by Erik van Egmond
 def ordered(df, time_delta_days=0):
+    """
+    A house is ordered when the toestemming_datum is known.
+
+    Args:
+        df: A dataframe containing a toestemming_datum column with dates.
+        time_delta_days (int): optional, the number of days before today.
+
+    Returns:
+             pd.Series: A series of truth values.
+    """
     return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
 
 
@@ -378,8 +396,18 @@ def has_werkvoorraad(df, time_delta_days=0):
     )
 
 
-# TODO wat is hpend precies? Gewoon opleverdatum?
 def hpend_year(df, year=None):
+    """
+    A home is hpend (any kind of completed) when it is :meth:`opgeleverd`. This rule only calculates HPend for
+    houses that are opgeleverd in the supplied year.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing a opleverdatum column with dates.
+        year (int): optional, when not supplied the current year is used.
+
+    Returns:
+         pd.Series: A series of truth values.
+    """
     if not year:
         year = str(pd.Timestamp.now().year)
     start_year = pd.to_datetime(year + '-01-01')
