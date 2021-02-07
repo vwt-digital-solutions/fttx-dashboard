@@ -1320,33 +1320,32 @@ def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None)
          A pd.Series object
 
     """
-    use_old_kpn_planning = True
-    if planning and client == 'kpn' and use_old_kpn_planning is True:
+    use_kpn_planning_excel = True
+    if planning and client == 'kpn' and use_kpn_planning_excel is True:
         return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
     else:
         return df[~df.hasdatum.isna()].hasdatum
 
 
-# TODO: Documentation by Andre van Turnhout, add arguments and return value
 def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     """
-    This function extracts the planning HPend value from the planning supplied by Wout. We don't use this function
-    anymore, but keep it here in case the excel files are supplied in a timely manner in future.
+    This function extracts the planning HPend value from the planning supplied by Wout. It loads in the data, which
+    contains the planning values per week and converts it into a pd.DataFrame.
 
     Args:
-        data:
-        timeline:
+        data: planning per week values from the kpn planning excel
+        timeline: a datetimeindex running from x to y
 
-    Returns:
+    Returns: a pd.DataFrame containing the planning values per day.
 
     """
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
-        # TODO: remove hardcoded start date
-        y_plan = pd.DataFrame(index=pd.date_range(start='2021-01-04', periods=len(data), freq='W-MON'),
-                              columns=['planning_kpn'], data=data)
-        y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-        df = df.add(y_plan, fill_value=0)
+        planning_df = pd.DataFrame(index=pd.date_range(start='2021-01-04', periods=len(data), freq='W-MON'),
+                                   columns=['planning_kpn'], data=data)
+        planning_df = planning_df / 5  # divides the weekly values to daily values: no work is done in the weekend
+        planning_df = planning_df.resample('D').ffill(limit=4)  # upsamples the weekly values into daily values
+        df = df.add(planning_df, fill_value=0)
     return df.planning_kpn
 
 
@@ -1458,7 +1457,7 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     if data is None:
         data = pd.Series()
 
-    if freq == 'W-MON':
+    if freq == 'W-MON':  # interval labels: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.resample.html
         interval_label = 'left'
     if freq == 'M' or freq == 'Y':
         interval_label = 'right'
