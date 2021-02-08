@@ -90,7 +90,7 @@ def update_indicators(dropdown_selection):
                                                    title=indicators[element]['title'],
                                                    sub_title=indicators[element].get('subtitle', " "),
                                                    font_color=indicators[element].get('font_color', 'black'),
-                                                   invert_delta=indicators[element].get("invert_delta", False),
+                                                   invert_delta=indicators[element].get("invert_delta", True),
                                                    percentage=indicators[element].get("percentage"),
                                                    id=f"indicator-{element}-{client}") for element in indicators_row1],
                                className="container-display"),
@@ -99,7 +99,7 @@ def update_indicators(dropdown_selection):
                                                    title=indicators[element]['title'],
                                                    sub_title=indicators[element].get('subtitle', " "),
                                                    font_color=indicators[element].get('font_color', 'black'),
-                                                   invert_delta=indicators[element].get("invert_delta", False),
+                                                   invert_delta=indicators[element].get("invert_delta", True),
                                                    percentage=indicators[element].get("percentage"),
                                                    id=f"indicator-{element}-{client}") for element in indicators_row2],
                                className="container-display")]
