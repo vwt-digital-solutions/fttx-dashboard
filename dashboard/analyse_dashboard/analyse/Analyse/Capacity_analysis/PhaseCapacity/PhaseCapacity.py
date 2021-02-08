@@ -16,11 +16,14 @@ class PhaseCapacity:
         phases_config:
     """
 
-    def __init__(self, df: pd.DataFrame, phase_data: dict, client=None, project=None):
+    def __init__(self, df: pd.DataFrame, phase_data: dict, client: str,
+                 project: str, werkvoorraad=None, masterphase_data=None):
         self.df = df
         self.phase_data = phase_data
         self.client = client
         self.project = project
+        self.werkvoorraad = werkvoorraad
+        self.masterphase_data = masterphase_data
         self.record_list = RecordList()
 
     def algorithm(self):
@@ -36,22 +39,27 @@ class PhaseCapacity:
 
         """
 
-        objects = []
-        objects += [self.target2object()]
-        objects += [self.pocreal2object()]
-        objects += [self.pocideal2object()]
-        objects += [self.pocverwacht2object()]
-        [self.obj_2record(obj) for obj in objects]
+        lines = []
+        lines.append(self.calculate_target_line())
+        lines.append(self.calculate_pocreal_line())
+        lines.append(self.calculate_pocideal_line())
+        lines.append(self.calculate_pocverwacht_line())
+        if self.werkvoorraad:
+            lines.append(self.calculate_werkvoorraad_line())
+            lines.append(self.calculate_werkvoorraadabsoluut_line())
+
+        [self.line_to_record(line) for line in lines]
+
         return self
 
-    def target2object(self):
+    def calculate_target_line(self):
         data = pd.Series(data=self.phase_data['performance_norm_unit'],
                          index=DateDomainRange(begin=self.phase_data['start_date'],
                                                n_days=self.phase_data['n_days']).domain)
         lineobject = TimeseriesLine(data=data, name='target_indicator')
         return lineobject
 
-    def pocreal2object(self):
+    def calculate_pocreal_line(self):
         ds = self.df[self.phase_data['phase_column']]
         if not isinstance(ds.index[0], pd.Timestamp):
             ds = ds[(~ds.isna()) & (ds <= pd.Timestamp.now())]
@@ -71,9 +79,9 @@ class PhaseCapacity:
                                         name='poc_real_indicator')
         return lineobject
 
-    def pocideal2object(self):
-        pocreal_object = self.pocreal2object()
-        target_object = self.target2object()
+    def calculate_pocideal_line(self):
+        pocreal_object = self.calculate_pocreal_line()
+        target_object = self.calculate_target_line()
         begin = pocreal_object.make_series().index[-1]
         end = target_object.make_series().index[-1]
         slope = (self.phase_data['total_units'] - pocreal_object.integrate().make_series().max()) / \
@@ -88,8 +96,8 @@ class PhaseCapacity:
                                     name='poc_ideal_indicator')
         return lineobject
 
-    def pocverwacht2object(self):
-        pocreal_object = self.pocreal2object()
+    def calculate_pocverwacht_line(self):
+        pocreal_object = self.calculate_pocreal_line()
         if len(pocreal_object.make_series()) > 2:
             slope2 = int(pocreal_object.integrate().extrapolate(data_partition=0.5).slope)
         else:
@@ -108,7 +116,22 @@ class PhaseCapacity:
                                     name='poc_verwacht_indicator')
         return lineobject
 
-    def obj_2record(self, lineobject: object):
+    def calculate_werkvoorraad_line(self):
+        if not self.werkvoorraad:
+            raise ValueError
+        ratio = self.phase_data['total_units'] / self.masterphase_data['total_units']
+        lineobject = self.werkvoorraad * ratio
+        lineobject.name = 'werkvoorraad_indicator'
+        return lineobject
+
+    def calculate_werkvoorraadabsoluut_line(self):
+        werkvoorraadline_object = self.calculate_werkvoorraad_line()
+        pocidealline_object = self.calculate_pocideal_line()
+        lineobject = werkvoorraadline_object.integrate() - pocidealline_object.integrate()
+        lineobject.name = 'werkvoorraad_absoluut_indicator'
+        return lineobject
+
+    def line_to_record(self, lineobject: object):
         self.record_list.append(LineRecord(record=lineobject,
                                            collection='Lines',
                                            graph_name=f'{lineobject.name}',

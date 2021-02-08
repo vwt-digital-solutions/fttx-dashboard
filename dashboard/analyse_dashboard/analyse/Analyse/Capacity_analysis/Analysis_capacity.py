@@ -127,11 +127,11 @@ class CapacityAnalyse:
 
     """
     def analyse(self):
-        self.lines2record()
+        self.lines_to_record()
 
     # TODO: Capser van Houten, refactor this method. The name starts with get, this suggests that the method returns
     #  something.
-    def lines2record(self):
+    def lines_to_record(self):
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
@@ -146,55 +146,55 @@ class CapacityAnalyse:
             if project in demo_projects:
                 phase_data = self.transformed_data.project_phase_data[project]
                 df_meters = self.transformed_data.bis.df.loc[demo_projects[project]]
-                werkvoorraad = {}
+                pocideal_line = {}
 
-                geulen_obj = GeulenCapacity(df=df_meters,
-                                            phase_data=phase_data['geulen'],
+                geulen = GeulenCapacity(df=df_meters,
+                                        phase_data=phase_data['geulen'],
+                                        client=self.client,
+                                        project=project,
+                                        ).algorithm()
+                pocideal_line['geulen'] = geulen.calculate_pocideal_line()
+                line_record_list += geulen.get_record()
+
+                schieten = SchietenCapacity(df=df_meters,
+                                            phase_data=phase_data['schieten'],
+                                            masterphase_data=phase_data[phase_data['schieten']['master_phase']],
                                             client=self.client,
                                             project=project,
+                                            werkvoorraad=pocideal_line[phase_data['schieten']['master_phase']],
                                             ).algorithm()
-                werkvoorraad['geulen'] = geulen_obj.pocideal2object().make_series()
-                line_record_list += geulen_obj.get_record()
+                pocideal_line['schieten'] = schieten.calculate_pocideal_line()
+                line_record_list += schieten.get_record()
 
-                schieten_obj = SchietenCapacity(df=df_meters,
-                                                phase_data=phase_data['schieten'],
-                                                masterphase_data=phase_data[phase_data['schieten']['master_phase']],
-                                                client=self.client,
-                                                project=project,
-                                                werkvoorraad=werkvoorraad[phase_data['schieten']['master_phase']],
-                                                ).algorithm()
-                werkvoorraad['schieten'] = schieten_obj.pocideal2object().make_series()
-                line_record_list += schieten_obj.get_record()
+                lasap = LasAPCapacity(df=df_woningen,
+                                      phase_data=phase_data['lasap'],
+                                      masterphase_data=phase_data[phase_data['lasap']['master_phase']],
+                                      client=self.client,
+                                      project=project,
+                                      werkvoorraad=pocideal_line[phase_data['lasap']['master_phase']],
+                                      ).algorithm()
+                line_record_list += lasap.get_record()
+                pocideal_line['lasap'] = lasap.calculate_pocideal_line()
 
-                lasap_obj = LasAPCapacity(df=df_woningen,
-                                          phase_data=phase_data['lasap'],
-                                          masterphase_data=phase_data[phase_data['lasap']['master_phase']],
+                lasdp = LasDPCapacity(df=df_woningen,
+                                      phase_data=phase_data['lasdp'],
+                                      masterphase_data=phase_data[phase_data['lasdp']['master_phase']],
+                                      client=self.client,
+                                      project=project,
+                                      werkvoorraad=pocideal_line[phase_data['lasdp']['master_phase']],
+                                      ).algorithm()
+                pocideal_line['lasdp'] = lasdp.calculate_pocideal_line()
+                line_record_list += lasdp.get_record()
+
+                oplever = OpleverCapacity(df=df_woningen,
+                                          phase_data=phase_data['oplever'],
+                                          masterphase_data=phase_data[phase_data['oplever']['master_phase']],
                                           client=self.client,
                                           project=project,
-                                          werkvoorraad=werkvoorraad[phase_data['lasap']['master_phase']],
+                                          werkvoorraad=pocideal_line[phase_data['oplever']['master_phase']],
                                           ).algorithm()
-                line_record_list += lasap_obj.get_record()
-                werkvoorraad['lasap'] = lasap_obj.pocideal2object().make_series()
-
-                lasdp_obj = LasDPCapacity(df=df_woningen,
-                                          phase_data=phase_data['lasdp'],
-                                          masterphase_data=phase_data[phase_data['lasdp']['master_phase']],
-                                          client=self.client,
-                                          project=project,
-                                          werkvoorraad=werkvoorraad[phase_data['lasdp']['master_phase']],
-                                          ).algorithm()
-                werkvoorraad['lasdp'] = lasdp_obj.pocideal2object().make_series()
-                line_record_list += lasdp_obj.get_record()
-
-                oplever_obj = OpleverCapacity(df=df_woningen,
-                                              phase_data=phase_data['oplever'],
-                                              masterphase_data=phase_data[phase_data['oplever']['master_phase']],
-                                              client=self.client,
-                                              project=project,
-                                              werkvoorraad=werkvoorraad[phase_data['oplever']['master_phase']],
-                                              ).algorithm()
-                werkvoorraad['oplever'] = oplever_obj.pocideal2object().make_series()
-                line_record_list += oplever_obj.get_record()
+                pocideal_line['oplever'] = oplever.calculate_pocideal_line()
+                line_record_list += oplever.get_record()
 
             self.records = line_record_list
 
