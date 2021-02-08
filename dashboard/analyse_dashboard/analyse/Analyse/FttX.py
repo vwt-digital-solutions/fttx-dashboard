@@ -501,6 +501,7 @@ class FttXAnalyse(FttXBase):
                                                             client=self.client)
                          }
         list_of_freq = ['W-MON', 'M', 'Y']
+
         document_list = []
         for key, values in function_dict.items():
             for year in self.intermediate_results.List_of_years:
@@ -521,7 +522,7 @@ class FttXAnalyse(FttXBase):
         Calculates the overzicht values per jaar of voorspelling and planning, from which the HPend values are
         subtracted before they are shown on the dashboard. These values are extracted as a pd.Series with dates,
         based on the underlying business rules (see the functions in function_dict). The values are then calculated
-        per year (obtained from _calculate_list_of_years) and per period ('W-MON', 'M', 'Y') through the
+        for the current year (otherwise Dashboard shows "n.v.t.") and with yearly frequency through the
         sum_over_period_to_record function. All these values are added as dictionaries to a document_list, which is
         added to the Firestore.
 
@@ -544,21 +545,20 @@ class FttXAnalyse(FttXBase):
                          }
         realisatie_hpend = extract_realisatie_hpend_dates(
             self.transformed_data.df[~self.transformed_data.df.hasdatum.isna()])
-        list_of_freq = ['W-MON', 'M', 'Y']
+
         document_list = []
         for key, values in function_dict.items():
-            for year in self.intermediate_results.List_of_years:
-                for freq in list_of_freq:
-                    record = voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted=values,
-                                                                                          realized=realisatie_hpend,
-                                                                                          freq=freq, year=year)
-                    if len(record) == 1:  # removes the date when summing over a year
-                        record = list(record.values())[0]
-                    document_list.append(dict(client=self.client,
-                                              graph_name=key,  # output name from function_dict
-                                              frequency=freq,
-                                              year=year,
-                                              record=record))
+            record = voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted=values,
+                                                                                  realized=realisatie_hpend,
+                                                                                  freq='Y',
+                                                                                  year=pd.Timestamp.now().strftime("%Y"))
+            if len(record) == 1:  # removes the date when summing over a year
+                record = list(record.values())[0]
+            document_list.append(dict(client=self.client,
+                                      graph_name=key,  # output name from function_dict
+                                      frequency='Y',
+                                      year=pd.Timestamp.now().strftime("%Y"),
+                                      record=record))
         self.records.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
@@ -566,9 +566,9 @@ class FttXAnalyse(FttXBase):
         """
         Calculates the overzicht value per jaar of ratio HC/HPend. This value is extracted as a pd.Series with dates,
         based on the underlying business rules (see extract_realisatie_hc_dates and extract_realisatie_hpend_dates).
-        The ratio HC/HPend is then calculated per year (obtained from _calculate_list_of_years) and per
-        period ('W-MON', 'M', 'Y') through the sum_over_period_to_record function. All these values are added as
-        dictionaries to a document_list, which is added to the Firestore.
+        The ratio HC/HPend is then calculated per year (obtained from _calculate_list_of_years) and with yearly
+        frequency through the sum_over_period_to_record function. All these values are added as dictionaries to a
+        document_list, which is added to the Firestore.
 
         Returns: a list with dictionaries containing the ratio HC/HPend
 
@@ -576,20 +576,19 @@ class FttXAnalyse(FttXBase):
         logger.info("Calculating record of ratio HC/HPend for dashboard overview values")
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
-        list_of_freq = ['W-MON', 'M', 'Y']
+
         document_list = []
         for year in self.intermediate_results.List_of_years:
-            for freq in list_of_freq:
-                record = ratio_sum_over_periods_to_record(numerator=realisatie_hc, divider=realisatie_hpend,
-                                                          freq=freq, year=year)
-                # To remove the date when there is only one period (when summing over a year):
-                if len(record) == 1:
-                    record = list(record.values())[0]
-                document_list.append(dict(client=self.client,
-                                          graph_name='ratio_hc_hpend',
-                                          frequency=freq,
-                                          year=year,
-                                          record=record))
+            record = ratio_sum_over_periods_to_record(numerator=realisatie_hc, divider=realisatie_hpend,
+                                                      freq='Y', year=year)
+            # To remove the date when there is only one period (when summing over a year):
+            if len(record) == 1:
+                record = list(record.values())[0]
+            document_list.append(dict(client=self.client,
+                                      graph_name='ratio_hc_hpend',
+                                      frequency='Y',
+                                      year=year,
+                                      record=record))
         self.records.add("Ratios_hc_hpend_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
@@ -609,20 +608,19 @@ class FttXAnalyse(FttXBase):
         aangesloten_orders_under_8weeks = df[br.aangesloten_orders_tmobile(df=df,
                                                                            time_window="on time")].opleverdatum
         aangesloten_orders = extract_aangesloten_orders_dates(df)
-        list_of_freq = ['W-MON', 'M', 'Y']
+
         document_list = []
         for year in self.intermediate_results.List_of_years:
-            for freq in list_of_freq:
-                record = ratio_sum_over_periods_to_record(numerator=aangesloten_orders_under_8weeks,
-                                                          divider=aangesloten_orders,
-                                                          freq=freq, year=year)
-                if len(record) == 1:  # removes the date when summing over a year
-                    record = list(record.values())[0]
-                document_list.append(dict(client=self.client,
-                                          graph_name='ratio_8weeks_hpend',
-                                          frequency=freq,
-                                          year=year,
-                                          record=record))
+            record = ratio_sum_over_periods_to_record(numerator=aangesloten_orders_under_8weeks,
+                                                      divider=aangesloten_orders,
+                                                      freq='Y', year=year)
+            if len(record) == 1:  # removes the date when summing over a year
+                record = list(record.values())[0]
+            document_list.append(dict(client=self.client,
+                                      graph_name='ratio_8weeks_hpend',
+                                      frequency='Y',
+                                      year=year,
+                                      record=record))
         self.records.add("Ratios_under_8weeks_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
