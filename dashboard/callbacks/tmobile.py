@@ -24,9 +24,12 @@ client = "tmobile"
         Output(f"indicator-download-{client}", 'href')
     ],
     [
-        Input(f"indicator-late-{client}", "n_clicks"),
-        Input(f"indicator-limited_time-{client}", "n_clicks"),
-        Input(f"indicator-on_time-{client}", "n_clicks"),
+        Input(f"indicator-late_hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-limited_hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-on_time_hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-late_patch_only-{client}", "n_clicks"),
+        Input(f"indicator-limited_patch_only-{client}", "n_clicks"),
+        Input(f"indicator-on_time_patch_only-{client}", "n_clicks"),
         Input("close-sm", "n_clicks"),
     ],
     [
@@ -35,9 +38,13 @@ client = "tmobile"
         State(f'project-dropdown-{client}', 'value')
     ]
 )
-def indicator_modal(late_clicks, limited_time_clicks, on_time_clicks, close_clicks, is_open, result, project):
+def indicator_modal(late_clicks_hc, limited_clicks_hc, on_time_clicks_hc,
+                    late_clicks_po, limited_clicks_po, on_time_clicks_po,
+                    close_clicks,
+                    is_open, result, project):
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
-    if "indicator" in changed_id and (late_clicks or limited_time_clicks or on_time_clicks):
+    if "indicator" in changed_id and (late_clicks_hc or limited_clicks_hc or on_time_clicks_hc
+                                      or late_clicks_po or limited_clicks_po or on_time_clicks_po):
         key = changed_id.partition("-")[-1].partition("-")[0]
         # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
         cluster_redenna_sorted_dict = dict(sorted(result[key]['cluster_redenna'].items()))
@@ -71,19 +78,32 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicator_types = ['on_time', 'limited_time', 'late', 'ratio', 'ready_for_has']
+    indicators_row1 = ['on_time_hc_aanleg', 'limited_hc_aanleg', 'late_hc_aanleg', 'ratio']
+    indicators_row2 = ['on_time_patch_only', 'limited_patch_only', 'late_patch_only', 'ready_for_has']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,
                                          client=client)
-    indicator_info = [indicator(value=indicators[element]['counts'],
-                                previous_value=indicators[element].get('counts_prev', None),
-                                title=indicators[element]['title'],
-                                sub_title=indicators[element].get('subtitle', " "),
-                                font_color=indicators[element].get('font_color', 'black'),
-                                invert_delta=indicators[element].get("invert_delta", False),
-                                percentage=indicators[element].get("percentage"),
-                                id=f"indicator-{element}-{client}") for element in indicator_types]
+
+    indicator_info = [html.Div(children=[indicator(value=indicators[element]['counts'],
+                                                   previous_value=indicators[element].get('counts_prev', None),
+                                                   title=indicators[element]['title'],
+                                                   sub_title=indicators[element].get('subtitle', " "),
+                                                   font_color=indicators[element].get('font_color', 'black'),
+                                                   invert_delta=indicators[element].get("invert_delta", False),
+                                                   percentage=indicators[element].get("percentage"),
+                                                   id=f"indicator-{element}-{client}") for element in indicators_row1],
+                               className="container-display"),
+                      html.Div(children=[indicator(value=indicators[element]['counts'],
+                                                   previous_value=indicators[element].get('counts_prev', None),
+                                                   title=indicators[element]['title'],
+                                                   sub_title=indicators[element].get('subtitle', " "),
+                                                   font_color=indicators[element].get('font_color', 'black'),
+                                                   invert_delta=indicators[element].get("invert_delta", False),
+                                                   percentage=indicators[element].get("percentage"),
+                                                   id=f"indicator-{element}-{client}") for element in indicators_row2],
+                               className="container-display")]
+
     indicator_info = indicator_info + [
         dbc.Modal(
             [
