@@ -486,7 +486,7 @@ class FttXAnalyse(FttXBase):
         """
         logger.info("Making records for dashboard overview  values")
         df = self.transformed_data.df
-        # Create a dictionary that contains the functions and the output name:
+        # Create a dictionary that contains the output name and the appropriate mask:
         function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
@@ -510,7 +510,7 @@ class FttXAnalyse(FttXBase):
                     if len(record) == 1:  # removes the date when summing over a year
                         record = list(record.values())[0]
                     document_list.append(dict(client=self.client,
-                                              graph_name=key,
+                                              graph_name=key,  # output name from function_dict
                                               frequency=freq,
                                               year=year,
                                               record=record))
@@ -530,7 +530,7 @@ class FttXAnalyse(FttXBase):
 
         """
         logger.info("Making voorspelling and planning records for dashboard overview  values")
-        # Create a dictionary that contains the functions and the output name
+        # Create a dictionary that contains the output name and the appropriate mask:
         function_dict = {'voorspelling_minus_HPend': extract_voorspelling_dates(
                                                 df=self.transformed_data.df,
                                                 ftu=self.extracted_data.get("ftu"),
@@ -551,7 +551,7 @@ class FttXAnalyse(FttXBase):
                     if len(record) == 1:  # removes the date when summing over a year
                         record = list(record.values())[0]
                     document_list.append(dict(client=self.client,
-                                              graph_name=key,
+                                              graph_name=key,  # output name from function_dict
                                               frequency=freq,
                                               year=year,
                                               record=record))
@@ -697,6 +697,7 @@ class FttXAnalyse(FttXBase):
         """
         logger.info("Making intermediate results for tmobile project specific values")
         df = self.transformed_data.df
+        # Create a dictionary that contains the output name and the appropriate masks:
         function_dict = {'openstaand_on_time': [
             df[br.openstaande_orders_tmobile(df=df, time_window='on time')][['creation', 'project', 'cluster_redenna']],
             df[br.openstaande_orders_tmobile(df=df, time_window='on time', time_delta_days=7)][['creation', 'project']]
