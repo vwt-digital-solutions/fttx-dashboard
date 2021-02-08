@@ -132,11 +132,11 @@ def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
     if order_type == 'patch only':
         mask = (mask
                 &
-                (df.plantype == 'Zonder klantafspraak'))
+                (df.plan_type == 'Zonder klantafspraak'))
     elif order_type == 'hc aanleg':
         mask = (mask
                 &
-                (df.plantype != 'Zonder klantafspraak'))
+                (df.plan_type != 'Zonder klantafspraak'))
 
     if time_window == 'on time':
         mask = (mask
