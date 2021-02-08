@@ -317,7 +317,6 @@ class FttXAnalyse(FttXBase):
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
         self._make_intermediate_results_ratios_project_specific_values()
-        self._make_intermediate_results_tmobile_project_specific_values()
         self._calculate_current_werkvoorraad()
         self._reden_na()
         self._set_filters()
@@ -688,52 +687,6 @@ class FttXAnalyse(FttXBase):
         else:
             record = len(project_dates_numerator) / len(project_dates_divider)
         return record
-
-    def _make_intermediate_results_tmobile_project_specific_values(self):
-        """
-        Calculates the project specific values of openstaande orders for tmobile. These values are extracted as a
-        pd.Series with dates, based on the underlying business rules (see br.openstaande_orders_tmobile). The values
-        are then calculated per project (obtained from df.groupby('project')) by calculating their lengths OR the
-        redenna values of the pd.Series are extracted. The values and redenna values are added into a dictionary
-        per project, which is added to intermediate_results.
-
-        Returns: dictionaries with the values per project
-
-        """
-        logger.info("Making intermediate results for tmobile project specific values")
-        df = self.transformed_data.df
-        # Create a dictionary that contains the output name and the appropriate masks:
-        function_dict = {'openstaand_on_time': [
-            df[br.openstaande_orders_tmobile(df=df, time_window='on time')][['creation', 'project', 'cluster_redenna']],
-            df[br.openstaande_orders_tmobile(df=df, time_window='on time', time_delta_days=7)][['creation', 'project']]
-                                                ],
-                         'openstaand_limited': [
-            df[br.openstaande_orders_tmobile(df=df, time_window='limited')][['creation', 'project', 'cluster_redenna']],
-            df[br.openstaande_orders_tmobile(df=df, time_window='limited', time_delta_days=7)][['creation', 'project']]
-                                                ],
-                         'openstaand_late': [
-            df[br.openstaande_orders_tmobile(df=df, time_window='late')][['creation', 'project', 'cluster_redenna']],
-            df[br.openstaande_orders_tmobile(df=df, time_window='late', time_delta_days=7)][['creation', 'project']]
-                                             ]
-                        }
-
-        order_time_windows_per_project_dict = {}
-        for project, df in df.groupby('project'):
-            order_time_windows_dict = {}
-            for key, values in function_dict.items():
-                value_this_week = len(values[0][values[0].project == project])
-                value_last_week = len(values[1][values[1].project == project])
-                redenna_this_week = values[0][values[0].project == project].drop(labels=['project'], axis=1)\
-                    .groupby(by='cluster_redenna').count()\
-                    .rename({'creation': 'cluster_redenna'}, axis=1)\
-                    .to_dict()['cluster_redenna']
-                # The following dict is made to comply with calculate_projectindicators_tmobile:
-                order_time_windows_dict[key] = {'counts': value_this_week,
-                                                'counts_prev': value_last_week,
-                                                'cluster_redenna': redenna_this_week}
-            order_time_windows_per_project_dict[project] = order_time_windows_dict
-
-        self.intermediate_results.orders_time_windows_per_project = order_time_windows_per_project_dict
 
 
 class FttXLoad(Load, FttXBase):

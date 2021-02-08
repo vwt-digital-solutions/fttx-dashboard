@@ -1098,23 +1098,32 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
 
     """
     markup_dict = {
-        'on_time': {'title': 'Openstaande orders op tijd',
-                    'subtitle': '< 8 weken',
-                    'font_color': 'green'},
-        'limited_time': {'title': 'Openstaande orders nog beperkte tijd',
-                         'subtitle': '> 8 weken < 12 weken',
-                         'font_color': 'orange'},
-        'late': {'title': 'Openstaande orders te laat',
-                 'subtitle': '> 12 weken',
-                 'font_color': 'red'},
+        'on_time_patch_only': {'title': 'Openstaand patch only op tijd',
+                               'subtitle': '< 8 weken',
+                               'font_color': 'green'},
+        'limited_patch_only': {'title': 'Openstaand patch only beperkte tijd',
+                               'subtitle': '> 8 weken < 12 weken',
+                               'font_color': 'orange'},
+        'late_patch_only': {'title': 'Openstaand patch only te laat',
+                            'subtitle': '> 12 weken',
+                            'font_color': 'red'},
+
         'ratio': {'title': 'Ratio op tijd gesloten orders',
                   'subtitle': '<8 weken',
                   'font_color': 'black',
                   'percentage': True},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
-        'ready_for_has': {
-            'title': "Werkvoorraad HAS",
-        }
+        'ready_for_has': {'title': "Werkvoorraad HAS"},
+
+        'on_time_hc_aanleg': {'title': 'Openstaand HC aanleg op tijd',
+                              'subtitle': '< 8 weken',
+                              'font_color': 'green'},
+        'limited_hc_aanleg': {'title': 'Openstaand HC aanleg beperkte tijd',
+                              'subtitle': '> 8 weken < 12 weken',
+                              'font_color': 'orange'},
+        'late_hc_aanleg': {'title': 'Openstaand HC aanleg te laat',
+                           'subtitle': '> 12 weken',
+                           'font_color': 'red'}
     }
 
     counts_by_project = {}
@@ -1122,9 +1131,9 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
         counts_by_project[project] = {}
 
         counts_by_project[project].update({'ready_for_has': has_werkvoorraad_per_project[project]})
-        counts_by_project[project].update({'late': time_windows_per_project[project]['openstaand_late']})
-        counts_by_project[project].update({'on_time': time_windows_per_project[project]['openstaand_on_time']})
-        counts_by_project[project].update({'limited_time': time_windows_per_project[project]['openstaand_limited']})
+        counts_by_project[project].update({'late_patch_only': time_windows_per_project[project]['openstaand_patch_only_late']})
+        counts_by_project[project].update({'on_time_patch_only': time_windows_per_project[project]['openstaand_patch_only_on_time']})
+        counts_by_project[project].update({'limited_patch_only': time_windows_per_project[project]['openstaand_patch_only_limited']})
         counts_by_project[project].update({'before_order': {'counts': 0,
                                                             'counts_prev': 0,
                                                             'cluster_redenna': {'HC': 0,
@@ -1132,6 +1141,9 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
                                                                                 'permissieobstructies': 0,
                                                                                 'technische obstructies': 0}}})
         counts_by_project[project].update({'ratio': {'counts': ratio_under_8weeks_per_project[project]}})
+        counts_by_project[project].update({'late_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_late']})
+        counts_by_project[project].update({'on_time_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_on_time']})
+        counts_by_project[project].update({'limited_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_limited']})
 
         for indicator, markup in markup_dict.items():
             counts_by_project[project][indicator].update(markup)
