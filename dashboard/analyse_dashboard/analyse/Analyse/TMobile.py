@@ -91,7 +91,7 @@ class TMobileAnalyse(FttXAnalyse):
         Returns: dictionaries with the values per project
 
         """
-        logger.info("Making intermediate results for tmobile project specific values")
+        logger.info("Calculating intermediate results for tmobile project specific values")
         df = self.transformed_data.df
         # Create a dictionary that contains the output name and the appropriate masks:
         # Starting with orders that are patch only, followed by HC aanleg:

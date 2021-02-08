@@ -208,7 +208,7 @@ class FttXTransform(Transform):
             self.transformed_data.totals[project] = len(project_df)
 
     def _fix_dates(self):
-        logger.info("Changing columns to datetime column if there is 'datum' in column name.")
+        logger.info("Transforming columns to datetime column if there is 'datum' in column name")
         datums = [col for col in self.transformed_data.df.columns if "datum" in col or "date" in col or "creation" in col]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(pd.to_datetime,
                                                                                   infer_datetime_format=True,
@@ -218,7 +218,7 @@ class FttXTransform(Transform):
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
 
     def _add_columns(self):
-        logger.info("Adding columns to dataframe")
+        logger.info("Transforming dataframe through adding columns")
 
         self.transformed_data.df['hpend'] = br.hpend_year(self.transformed_data.df, self.year)
         self.transformed_data.df['homes_completed'] = br.hc_opgeleverd(self.transformed_data.df) & (
@@ -228,7 +228,7 @@ class FttXTransform(Transform):
         self.transformed_data.df['in_has_werkvoorraad'] = br.has_werkvoorraad(self.transformed_data.df)
 
     def _cluster_reden_na(self):
-        logger.info("Adding column cluster redenna to dataframe")
+        logger.info("Transforming dataframe through adding column cluster redenna")
         clus = self.config['clusters_reden_na']
         self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(
             lambda x: cluster_reden_na(x, clus))
@@ -237,7 +237,7 @@ class FttXTransform(Transform):
         self.transformed_data.df['cluster_redenna'] = self.transformed_data.df['cluster_redenna'].astype(cluster_types)
 
     def _add_status_columns(self):
-        logger.info("Adding status columns to dataframe")
+        logger.info("Transforming dataframe through adding status columns")
         state_list = ['niet_opgeleverd', "ingeplanned", "opgeleverd_zonder_hc", "opgeleverd"]
         self.transformed_data.df['false'] = False
         has_rules_list = [
@@ -483,7 +483,7 @@ class FttXAnalyse(FttXBase):
         Returns: a list with dictionaries containing the relevant values
 
         """
-        logger.info("Making records for dashboard overview  values")
+        logger.info("Calculating records for dashboard overview values")
         df = self.transformed_data.df
         # Create a dictionary that contains the output name and the appropriate mask:
         function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
@@ -532,7 +532,7 @@ class FttXAnalyse(FttXBase):
         Returns: a list with dictionaries containing the values for voorspelling and planning
 
         """
-        logger.info("Making voorspelling and planning records for dashboard overview  values")
+        logger.info("Calculating voorspelling and planning records for dashboard overview values")
         # Create a dictionary that contains the output name and the appropriate mask:
         function_dict = {'voorspelling_minus_HPend': extract_voorspelling_dates(
                                                 df=self.transformed_data.df,
@@ -573,7 +573,7 @@ class FttXAnalyse(FttXBase):
         Returns: a list with dictionaries containing the ratio HC/HPend
 
         """
-        logger.info("Making record of ratio HC/HPend for dashboard overview  values")
+        logger.info("Calculating record of ratio HC/HPend for dashboard overview values")
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
         realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
         list_of_freq = ['W-MON', 'M', 'Y']
@@ -604,7 +604,7 @@ class FttXAnalyse(FttXBase):
         Returns: a list with dictionaries containing the ratio under 8 weeks
 
         """
-        logger.info("Making record of ratio under 8 weeks/HPend for dashboard overview  values")
+        logger.info("Calculating record of ratio <8 weeks for dashboard overview values")
         df = self.transformed_data.df
         aangesloten_orders_under_8weeks = df[br.aangesloten_orders_tmobile(df=df,
                                                                            time_window="on time")].opleverdatum
@@ -637,7 +637,7 @@ class FttXAnalyse(FttXBase):
         Returns: dictionaries with the values per project
 
         """
-        logger.info("Making intermediate results of ratios and HAS werkvoorraad for project specific values")
+        logger.info("Calculating intermediate results of ratios and HAS werkvoorraad for project specific values")
         df = self.transformed_data.df
         realisatie_hc = extract_realisatie_hc_dates(df=df, add_project_column=True)
         realisatie_hpend = extract_realisatie_hpend_dates(df=df, add_project_column=True)
