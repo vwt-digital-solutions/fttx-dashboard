@@ -526,6 +526,10 @@ class FttXAnalyse(FttXBase):
         sum_over_period_to_record function. All these values are added as dictionaries to a document_list, which is
         added to the Firestore.
 
+        Line 547 contains a temporary fix pending a new project structure. In this line, only "opgeleverdatum" values
+        with ~hasdatum.isna() are returned. In a new structure, these loops can be replaced with business rule
+        has_ingeplanned.
+
         Returns: a list with dictionaries containing the values for voorspelling and planning
 
         """
@@ -539,7 +543,8 @@ class FttXAnalyse(FttXBase):
                                                                         planning=self.transformed_data.get("planning"),
                                                                         client=self.client),
                          }
-        realisatie_hpend = extract_realisatie_hpend_dates(self.transformed_data.df)
+        realisatie_hpend = extract_realisatie_hpend_dates(
+            self.transformed_data.df[~self.transformed_data.df.hasdatum.isna()])
         list_of_freq = ['W-MON', 'M', 'Y']
         document_list = []
         for key, values in function_dict.items():
