@@ -71,22 +71,24 @@ class KPNDFNTransform(FttXTransform):
         if not planning_excel.empty:
             planning_excel.rename(columns={'Unnamed: 1': 'project'}, inplace=True)
             df = planning_excel.iloc[:, 20:72].copy()
-            df['project'] = planning_excel['project'].astype(str)
+            df['project'] = planning_excel['project'].fillna(method='ffill').astype(str)
+            df['soort_hp'] = planning_excel.iloc[:, 17].replace('HP end', 'Hp End').fillna('Hp End').copy()
             df.fillna(0, inplace=True)
+            df = df[((df.soort_hp == 'Hp End') | (df.soort_hp == 'Status 16'))].copy()
             df['project'].replace(self.config.get('project_names_planning_map'), inplace=True)
 
             empty_list = [0] * 52
             hp = {}
-            hp_end_t = empty_list
+            hp_end_total = empty_list
             for project in self.project_list:
                 if project in df.project.unique():
                     weeks_list = list(df[df.project == project].iloc[0][0:-1])
                     hp[project] = weeks_list
-                    hp_end_t = [x + y for x, y in zip(hp_end_t, weeks_list)]
+                    hp_end_total = [x + y for x, y in zip(hp_end_total, weeks_list)]
                 else:
                     hp[project] = empty_list
-                    hp_end_t = [x + y for x, y in zip(hp_end_t, empty_list)]
-            hp['HPendT'] = hp_end_t
+                    hp_end_total = [x + y for x, y in zip(hp_end_total, empty_list)]
+            hp['HPendT'] = hp_end_total
         else:
             hp = {}
         self.transformed_data.planning = hp
