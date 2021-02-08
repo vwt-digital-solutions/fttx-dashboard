@@ -101,12 +101,12 @@ def FTU_update(data):
     print('start updating FTU tabel')
     record = dict(graph_name='project_dates', client=client)
     df = pd.DataFrame(data)
+    df.replace('', None, inplace=True)
     updated_dict = {}
     for col in df:
         if col != "Project":
             updated_dict[col] = dict(zip(df['Project'], df[col]))
     record['record'] = updated_dict
-    print(record)
     firestore.Client().collection('Data').document(f'{client}_project_dates').set(record)
     output = collection.get_graph(client=client, graph_name='project_performance')
     return [output]

@@ -91,6 +91,7 @@ def FTU_update(data):
     print('start updating FTU tabel')
     record = dict(graph_name='project_dates', client=client)
     df = pd.DataFrame(data)
+    df.replace('', None, inplace=True)
     updated_dict = {}
     for col in df:
         if col != "Project":
