@@ -56,6 +56,7 @@ class CapacityTransform(FttXTransform):
         self.fill_projectspecific_phase_config()
         self.transform_bis_etl()
         self.add_bis_etl_to_transformed_data()
+        self._combine_and_reformat_data_for_capacity_analysis()
 
     def transform_bis_etl(self):
         self.bis_etl.transform()
@@ -106,6 +107,24 @@ class CapacityTransform(FttXTransform):
                 phases_projectspecific[project]['schieten']['total_units']
         self.transformed_data.project_phase_data = phases_projectspecific
 
+    def _combine_and_reformat_data_for_capacity_analysis(self):
+        self.dict_capacity = {}
+        demo_projects = self.config['demo_projects_capacity']
+        for project in demo_projects:
+            df_capacity_project = pd.DataFrame()
+            for phase_config in self.config['capacity_phases'].values():
+                ds_add = pd.Series()
+                if phase_config['phase_column'] in self.transformed_data.bis.df.columns:
+                    ds_add = self.transformed_data.bis.df.loc[demo_projects[project]][phase_config['phase_column']]
+                    ds_add = ds_add[~ds_add.isna()]
+                if phase_config['phase_column'] in self.transformed_data.df.columns:
+                    ds_add = self.transformed_data.df[phase_config['phase_column']]
+                    ds_add = ds_add[(~ds_add.isna()) & (ds_add <= pd.Timestamp.now())]
+                    ds_add = ds_add.groupby(ds_add.dt.date).count()
+                    ds_add.index.name = 'date'
+                df_capacity_project = df_capacity_project.add(pd.DataFrame(ds_add), fill_value=0).fillna(0)
+            self.dict_capacity[project] = df_capacity_project
+
 
 # TODO: Documentation by Casper van Houten
 class CapacityLoad(Load):
@@ -136,67 +155,61 @@ class CapacityAnalyse:
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
 
-        demo_projects = {'KPN Spijkernisse': 'Spijkenisse',
-                         'KPN Gouda Kort Haarlem en Noord': 'Gouda Kort-Haarlem',
-                         'Nijmegen Dukenburg': 'Dukenburg Schade'
-                         }
-
         line_record_list = RecordList()
-        for project, df_woningen in self.transformed_data.df.groupby(by='project'):
-            if project in demo_projects:
-                phase_data = self.transformed_data.project_phase_data[project]
-                df_meters = self.transformed_data.bis.df.loc[demo_projects[project]]
-                pocideal_line = {}
+        for project in self.config['demo_projects_capacity']:
+            phase_data = self.transformed_data.project_phase_data[project]
+            df = self.dict_capacity[project]
+            pocideal_line = {}
 
-                geulen = GeulenCapacity(df=df_meters,
-                                        phase_data=phase_data['geulen'],
+            geulen = GeulenCapacity(df=df,
+                                    phase_data=phase_data['geulen'],
+                                    client=self.client,
+                                    project=project,
+                                    ).algorithm()
+            pocideal_line['geulen'] = geulen.calculate_pocideal_line()
+            line_record_list += geulen.get_record()
+
+            schieten = SchietenCapacity(df=df,
+                                        phase_data=phase_data['schieten'],
+                                        masterphase_data=phase_data[phase_data['schieten']['master_phase']],
                                         client=self.client,
                                         project=project,
+                                        pocideal_line_masterphase=pocideal_line[phase_data['schieten']['master_phase']],
                                         ).algorithm()
-                pocideal_line['geulen'] = geulen.calculate_pocideal_line()
-                line_record_list += geulen.get_record()
+            pocideal_line['schieten'] = schieten.calculate_pocideal_line()
+            line_record_list += schieten.get_record()
 
-                schieten = SchietenCapacity(df=df_meters,
-                                            phase_data=phase_data['schieten'],
-                                            masterphase_data=phase_data[phase_data['schieten']['master_phase']],
-                                            client=self.client,
-                                            project=project,
-                                            werkvoorraad=pocideal_line[phase_data['schieten']['master_phase']],
-                                            ).algorithm()
-                pocideal_line['schieten'] = schieten.calculate_pocideal_line()
-                line_record_list += schieten.get_record()
+            lasap = LasAPCapacity(df=df,
+                                  phase_data=phase_data['lasap'],
+                                  masterphase_data=phase_data[phase_data['lasap']['master_phase']],
+                                  client=self.client,
+                                  project=project,
+                                  pocideal_line_masterphase=pocideal_line[phase_data['lasap']['master_phase']],
+                                  ).algorithm()
+            line_record_list += lasap.get_record()
+            pocideal_line['lasap'] = lasap.calculate_pocideal_line()
 
-                lasap = LasAPCapacity(df=df_woningen,
-                                      phase_data=phase_data['lasap'],
-                                      masterphase_data=phase_data[phase_data['lasap']['master_phase']],
+            lasdp = LasDPCapacity(df=df,
+                                  phase_data=phase_data['lasdp'],
+                                  masterphase_data=phase_data[phase_data['lasdp']['master_phase']],
+                                  client=self.client,
+                                  project=project,
+                                  pocideal_line_masterphase=pocideal_line[phase_data['lasdp']['master_phase']],
+                                  ).algorithm()
+            pocideal_line['lasdp'] = lasdp.calculate_pocideal_line()
+            line_record_list += lasdp.get_record()
+
+            oplever = OpleverCapacity(df=df,
+                                      phase_data=phase_data['oplever'],
+                                      masterphase_data=phase_data[phase_data['oplever']['master_phase']],
                                       client=self.client,
                                       project=project,
-                                      werkvoorraad=pocideal_line[phase_data['lasap']['master_phase']],
+                                      pocideal_line_masterphase=pocideal_line[phase_data['oplever']['master_phase']],
                                       ).algorithm()
-                line_record_list += lasap.get_record()
-                pocideal_line['lasap'] = lasap.calculate_pocideal_line()
+            pocideal_line['oplever'] = oplever.calculate_pocideal_line()
+            line_record_list += oplever.get_record()
 
-                lasdp = LasDPCapacity(df=df_woningen,
-                                      phase_data=phase_data['lasdp'],
-                                      masterphase_data=phase_data[phase_data['lasdp']['master_phase']],
-                                      client=self.client,
-                                      project=project,
-                                      werkvoorraad=pocideal_line[phase_data['lasdp']['master_phase']],
-                                      ).algorithm()
-                pocideal_line['lasdp'] = lasdp.calculate_pocideal_line()
-                line_record_list += lasdp.get_record()
-
-                oplever = OpleverCapacity(df=df_woningen,
-                                          phase_data=phase_data['oplever'],
-                                          masterphase_data=phase_data[phase_data['oplever']['master_phase']],
-                                          client=self.client,
-                                          project=project,
-                                          werkvoorraad=pocideal_line[phase_data['oplever']['master_phase']],
-                                          ).algorithm()
-                pocideal_line['oplever'] = oplever.calculate_pocideal_line()
-                line_record_list += oplever.get_record()
-
-            self.records = line_record_list
+        self.records = line_record_list
 
     def get_rest_dates_as_list_of_series(self):
         rest_dates = []

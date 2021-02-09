@@ -90,6 +90,14 @@ class Line:
             maximum = max(series)
         return series / maximum
 
+    # TODO: Documentation by Casper van Houten
+    def get_most_recent_point(self, total=None):
+        if total:
+            recent_point = self.make_normalised_series(total)[-1]
+        else:
+            recent_point = self.make_series()[-1]
+        return recent_point
+
     def intersect(self, other):
         raise NotImplementedError
 
@@ -232,14 +240,6 @@ class LinearLine(FunctionLine):
                                      )
 
         return translated_line
-
-    # TODO: Documentation by Casper van Houten
-    def get_most_recent_point(self, total=None):
-        if total:
-            recent_point = self.make_normalised_series(total)[-1:]
-        else:
-            recent_point = self.make_series()[-1:]
-        return recent_point
 
     # TODO: Documentation by Casper van Houten
     def focus_domain(self, lower_treshold=None, upper_treshold=np.Inf):
@@ -420,9 +420,6 @@ class TimeseriesLine(PointLine):
         Returns:
             A new timeseries line
         """
-        if not isinstance(other, TimeseriesLine):
-            raise NotImplementedError
-
         if self.domain.end > other.domain.begin:
             raise NotImplementedError("You can only add lines that have a higher index than the line in the object")
 
@@ -468,5 +465,9 @@ class TimeseriesLine(PointLine):
         else:
             index = list(range(0, len(self.data)))
             data = self.data
-        slope, intersect = np.polyfit(index, data, 1)
+        if len(data) >= 2:
+            slope, intersect = np.polyfit(index, data, 1)
+        else:
+            slope = 0
+            intersect = 0
         return slope, intersect

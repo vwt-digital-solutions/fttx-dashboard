@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import timedelta
-from Analyse.Capacity_analysis.Line import TimeseriesLine
+from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
@@ -17,12 +17,12 @@ class PhaseCapacity:
     """
 
     def __init__(self, df: pd.DataFrame, phase_data: dict, client: str,
-                 project: str, werkvoorraad=None, masterphase_data=None):
+                 project: str, pocideal_line_masterphase=None, masterphase_data=None):
         self.df = df
         self.phase_data = phase_data
         self.client = client
         self.project = project
-        self.werkvoorraad = werkvoorraad
+        self.pocideal_line_masterphase = pocideal_line_masterphase
         self.masterphase_data = masterphase_data
         self.record_list = RecordList()
 
@@ -44,7 +44,7 @@ class PhaseCapacity:
         lines.append(self.calculate_pocreal_line())
         lines.append(self.calculate_pocideal_line())
         lines.append(self.calculate_pocverwacht_line())
-        if self.werkvoorraad:
+        if self.pocideal_line_masterphase:
             lines.append(self.calculate_werkvoorraad_line())
             lines.append(self.calculate_werkvoorraadabsoluut_line())
 
@@ -53,88 +53,72 @@ class PhaseCapacity:
         return self
 
     def calculate_target_line(self):
-        data = pd.Series(data=self.phase_data['performance_norm_unit'],
-                         index=DateDomainRange(begin=self.phase_data['start_date'],
-                                               n_days=self.phase_data['n_days']).domain)
-        lineobject = TimeseriesLine(data=data, name='target_indicator')
-        return lineobject
+        intercept = self.phase_data['performance_norm_unit']
+        domain = DateDomainRange(begin=self.phase_data['start_date'],
+                                 n_days=self.phase_data['n_days'])
+        line = LinearLine(intercept=intercept,
+                          slope=0,
+                          domain=domain,
+                          name='target_indicator')
+        return line
 
     def calculate_pocreal_line(self):
         ds = self.df[self.phase_data['phase_column']]
-        if not isinstance(ds.index[0], pd.Timestamp):
-            ds = ds[(~ds.isna()) & (ds <= pd.Timestamp.now())]
-            ds = ds.groupby(ds.dt.date).count()
-        else:
-            ds = ds[(~ds.isna())]
-
-        if not ds.empty:
-            lineobject = TimeseriesLine(data=ds,
-                                        domain=DateDomain(begin=ds.index[0],
-                                                          end=ds.index[-1]),
-                                        name='poc_real_indicator')
-        else:
-            lineobject = TimeseriesLine(data=pd.Series(data=0),
-                                        domain=DateDomainRange(begin=self.phase_data['start_date'],
-                                                               n_days=1),
-                                        name='poc_real_indicator')
-        return lineobject
+        line = TimeseriesLine(data=ds,
+                              name='poc_real_indicator')
+        return line
 
     def calculate_pocideal_line(self):
-        pocreal_object = self.calculate_pocreal_line()
-        target_object = self.calculate_target_line()
-        begin = pocreal_object.make_series().index[-1]
-        end = target_object.make_series().index[-1]
-        slope = (self.phase_data['total_units'] - pocreal_object.integrate().make_series().max()) / \
-                (end - begin).days
-        if end <= begin:
-            end = begin + timedelta(7)
-        pocideal_extrap = TimeseriesLine(data=pd.Series(data=slope,
-                                                        index=DateDomain(begin=str(begin),
-                                                                         end=str(end)).domain))
-        lineobject = TimeseriesLine(data=pocreal_object.make_series().add(pocideal_extrap.make_series().iloc[1:],
-                                                                          fill_value=0),
-                                    name='poc_ideal_indicator')
-        return lineobject
+        pocreal_line = self.calculate_pocreal_line()
+        target_line = self.calculate_target_line()
+
+        todo = self.phase_data['total_units'] - pocreal_line.integrate().get_most_recent_point()
+        daysleft = (target_line.domain.end - pocreal_line.domain.end).days
+        if (todo > 0) & (daysleft > 0):
+            slope = todo / daysleft
+            domain = DateDomain(begin=pocreal_line.domain.end, end=target_line.domain.end)
+            line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
+        if (todo > 0) & (daysleft <= 0):  # production needed to finish within a week
+            slope = todo / 7
+            domain = DateDomain(begin=pocreal_line.domain.end, end=pd.Timestamp.now() + timedelta(7))
+            line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
+        else:
+            line = pocreal_line
+        line.name = 'poc_ideal_indicator'
+        return line
 
     def calculate_pocverwacht_line(self):
-        pocreal_object = self.calculate_pocreal_line()
-        if len(pocreal_object.make_series()) > 2:
-            slope2 = int(pocreal_object.integrate().extrapolate(data_partition=0.5).slope)
+        pocreal_line = self.calculate_pocreal_line()
+        slope = pocreal_line.integrate().extrapolate(data_partition=0.5).slope
+        if slope == 0:
+            slope = self.phase_data['performance_norm_unit']
+        todo = self.phase_data['total_units'] - pocreal_line.integrate().get_most_recent_point()
+        daysleft = int(todo / slope)
+        if todo > 0:
+            domain = DateDomainRange(begin=pocreal_line.domain.end, n_days=daysleft)
+            line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
         else:
-            slope2 = 0
-        if (slope2 > 0) & (self.phase_data['total_units'] > 0):
-            n_days2 = int(round((self.phase_data['total_units'] -
-                                 pocreal_object.integrate().make_series().max()) / slope2))
-        else:
-            n_days2 = 1
-        if n_days2 < 1:
-            n_days2 = 1
-        index = DateDomainRange(begin=str(pocreal_object.make_series().index[-1]), n_days=n_days2).domain
-        poc_extrap = TimeseriesLine(data=pd.Series(data=slope2, index=index))
-        lineobject = TimeseriesLine(data=pocreal_object.make_series().add(poc_extrap.make_series().iloc[1:],
-                                                                          fill_value=0),
-                                    name='poc_verwacht_indicator')
-        return lineobject
+            line = pocreal_line
+        line.name = 'poc_verwacht_indicator'
+        return line
 
     def calculate_werkvoorraad_line(self):
-        if not self.werkvoorraad:
+        if not self.pocideal_line_masterphase:
             raise ValueError
         ratio = self.phase_data['total_units'] / self.masterphase_data['total_units']
-        lineobject = self.werkvoorraad * ratio
-        lineobject.name = 'werkvoorraad_indicator'
-        return lineobject
+        line = self.pocideal_line_masterphase * ratio
+        line.name = 'werkvoorraad_indicator'
+        return line
 
     def calculate_werkvoorraadabsoluut_line(self):
-        werkvoorraadline_object = self.calculate_werkvoorraad_line()
-        pocidealline_object = self.calculate_pocideal_line()
-        lineobject = werkvoorraadline_object.integrate() - pocidealline_object.integrate()
-        lineobject.name = 'werkvoorraad_absoluut_indicator'
-        return lineobject
+        line = self.calculate_werkvoorraad_line().integrate() - self.calculate_pocideal_line().integrate()
+        line.name = 'werkvoorraad_absoluut_indicator'
+        return line
 
-    def line_to_record(self, lineobject: object):
-        self.record_list.append(LineRecord(record=lineobject,
+    def line_to_record(self, line: object):
+        self.record_list.append(LineRecord(record=line,
                                            collection='Lines',
-                                           graph_name=f'{lineobject.name}',
+                                           graph_name=f'{line.name}',
                                            phase=self.phase_data['name'],
                                            client=self.client,
                                            project=self.project))
