@@ -35,7 +35,7 @@ class BISExtract(Extract):
                 df['project'] = project
                 df_list.append(df)
 
-        df = pd.concat(df_list)
+        df = pd.concat(df_list, sort=True)
 
         self.extracted_data.df = df
 
