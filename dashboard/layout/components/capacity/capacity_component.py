@@ -63,7 +63,7 @@ def capacity_template(client):
                             "Meer informatie",
                             id=f"collapse-button-{client}",
                             className="mb-3",
-                            color="primary",
+                            style={'background-color': config.colors_vwt['vwt_blue']},
                         ),
                         dbc.Collapse(
                             figure(

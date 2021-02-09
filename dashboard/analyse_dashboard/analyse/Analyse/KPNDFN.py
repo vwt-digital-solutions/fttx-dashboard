@@ -8,8 +8,10 @@ from Analyse.Record.StringRecord import StringRecord
 from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
 from functions import error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
-    prognose, performance_matrix, prognose_graph, calculate_lastweek_realisatie_hpend_and_return_graphics, \
-    calculate_thisweek_realisatie_hpend_and_return_graphics, make_graphics_for_ratio_hc_hpend_per_project, \
+    lastweek_realisatie_hpend_bullet_chart, \
+    thisweek_realisatie_hpend_bullet_chart, \
+    prognose, performance_matrix, prognose_graph, \
+    make_graphics_for_ratio_hc_hpend_per_project, \
     make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new
 import pandas as pd
 
@@ -69,22 +71,24 @@ class KPNDFNTransform(FttXTransform):
         if not planning_excel.empty:
             planning_excel.rename(columns={'Unnamed: 1': 'project'}, inplace=True)
             df = planning_excel.iloc[:, 20:72].copy()
-            df['project'] = planning_excel['project'].astype(str)
+            df['project'] = planning_excel['project'].fillna(method='ffill').astype(str)
+            df['soort_hp'] = planning_excel.iloc[:, 17].replace('HP end', 'Hp End').fillna('Hp End').copy()
             df.fillna(0, inplace=True)
+            df = df[((df.soort_hp == 'Hp End') | (df.soort_hp == 'Status 16'))].copy()
             df['project'].replace(self.config.get('project_names_planning_map'), inplace=True)
 
             empty_list = [0] * 52
             hp = {}
-            hp_end_t = empty_list
+            hp_end_total = empty_list
             for project in self.project_list:
                 if project in df.project.unique():
                     weeks_list = list(df[df.project == project].iloc[0][0:-1])
                     hp[project] = weeks_list
-                    hp_end_t = [x + y for x, y in zip(hp_end_t, weeks_list)]
+                    hp_end_total = [x + y for x, y in zip(hp_end_total, weeks_list)]
                 else:
                     hp[project] = empty_list
-                    hp_end_t = [x + y for x, y in zip(hp_end_t, empty_list)]
-            hp['HPendT'] = hp_end_t
+                    hp_end_total = [x + y for x, y in zip(hp_end_total, empty_list)]
+            hp['HPendT'] = hp_end_total
         else:
             hp = {}
         self.transformed_data.planning = hp
@@ -107,11 +111,10 @@ class KPNAnalyse(FttXAnalyse):
 
     def _error_check_FCBC(self):
         logger.info("Calculating errors for KPN")
-        n_err, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
+        n_errors_FCBC, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
         # self.record_dict.add('n_err', n_err, Record, 'Data')
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
-
-        self.intermediate_results.n_err = n_err
+        self.intermediate_results.n_errors_FCBC = n_errors_FCBC
 
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
@@ -169,7 +172,7 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.d_real_l,
             self.intermediate_results.total_objects,
             self.intermediate_results.t_diff,
-            self.intermediate_results.y_voorraad_act
+            self.intermediate_results.current_werkvoorraad
         )
         self.records.add('project_performance', graph, Record, 'Graphs')
 
@@ -184,74 +187,6 @@ class KPNAnalyse(FttXAnalyse):
             self.extracted_data.ftu['date_FTU1']
         )
         self.records.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
-
-    # def _overview(self):
-    #     result = overview(self.intermediate_results.timeline,
-    #                       self.intermediate_results.y_prog_l,
-    #                       self.intermediate_results.total_objects,
-    #                       self.intermediate_results.d_real_l,
-    #                       self.transformed_data.planning,
-    #                       self.intermediate_results.y_target_l)
-    #     self.intermediate_results.df_prog = result.df_prog
-    #     self.intermediate_results.df_target = result.df_target
-    #     self.intermediate_results.df_real = result.df_real
-    #     self.intermediate_results.df_plan = result.df_plan
-
-    # def _calculate_graph_overview(self):
-    #     logger.info("Calculating graph overview")
-    #     graph_targets_W, data_pr, data_t, data_r, data_p = graph_overview(
-    #         self.intermediate_results.df_prog,
-    #         self.intermediate_results.df_target,
-    #         self.intermediate_results.df_real,
-    #         self.intermediate_results.df_plan,
-    #         self.intermediate_results.HC_HPend,
-    #         self.intermediate_results.HAS_werkvoorraad,
-    #         res='W-MON')
-    #     self.record_dict.add('graph_targets_W', graph_targets_W, Record, 'Graphs')
-    #     self.record_dict.add('count_voorspellingdatum_by_week', data_pr, Record, 'Data')
-    #     self.record_dict.add('count_outlookdatum_by_week', data_t, Record, 'Data')
-    #     self.record_dict.add('count_opleverdatum_by_week', data_r, Record, 'Data')
-    #     self.record_dict.add('count_hasdatum_by_week', data_p, Record, 'Data')
-    #
-    #     graph_targets_M, data_pr, data_t, data_r, data_p = graph_overview(
-    #         self.intermediate_results.df_prog,
-    #         self.intermediate_results.df_target,
-    #         self.intermediate_results.df_real,
-    #         self.intermediate_results.df_plan,
-    #         self.intermediate_results.HC_HPend,
-    #         self.intermediate_results.HAS_werkvoorraad,
-    #         res='M')
-    #
-    #     self.intermediate_results.data_pr = data_pr
-    #     self.intermediate_results.data_t = data_t
-    #     self.intermediate_results.data_r = data_r
-    #     self.intermediate_results.data_p = data_p
-    #
-    #     self.record_dict.add('graph_targets_M', graph_targets_M, Record, 'Graphs')
-    #     self.record_dict.add('count_voorspellingdatum_by_month', data_pr, Record, 'Data')
-    #     self.record_dict.add('count_outlookdatum_by_month', data_t, Record, 'Data')
-    #     self.record_dict.add('count_opleverdatum_by_month', data_r, Record, 'Data')
-    #     self.record_dict.add('count_hasdatum_by_month', data_p, Record, 'Data')
-
-    # def _jaaroverzicht(self):
-    #     # Function should not be ran on first pass, as it is called in super constructor.
-    #     # Required variables will not be accessible during call of super constructor.
-    #     if 'df_prog' in self.intermediate_results:
-    #         prog, target, real, plan = preprocess_for_jaaroverzicht(
-    #             self.intermediate_results.df_prog,
-    #             self.intermediate_results.df_target,
-    #             self.intermediate_results.df_real,
-    #             self.intermediate_results.df_plan,
-    #         )
-    #
-    #         bis_gereed = calculate_bis_gereed(self.transformed_data.df)
-    #         jaaroverzicht = calculate_jaaroverzicht(
-    #             prog, target, real, plan,
-    #             self.intermediate_results.HAS_werkvoorraad,
-    #             self.intermediate_results.HC_HPend,
-    #             bis_gereed
-    #         )
-    #         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators and making graphic boxes for dashboard")
@@ -271,51 +206,21 @@ class KPNAnalyse(FttXAnalyse):
 
             project_df = self.transformed_data.df[self.transformed_data.df.project == project]
 
-            project_indicators['weekrealisatie'] = calculate_thisweek_realisatie_hpend_and_return_graphics(
+            project_indicators['weekrealisatie'] = thisweek_realisatie_hpend_bullet_chart(
                 project_df, week_target)
 
-            project_indicators['lastweek_realisatie'] = calculate_lastweek_realisatie_hpend_and_return_graphics(
+            project_indicators['lastweek_realisatie'] = lastweek_realisatie_hpend_bullet_chart(
                 project_df, lastweek_target)
 
             project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
                 project=project, ratio_HC_HPend_per_project=self.intermediate_results.ratio_HC_HPend_per_project)
 
             project_indicators['weeknerr'] = make_graphics_for_number_errors_fcbc_per_project(
-                project=project, number_errors_per_project=self.intermediate_results.n_err)
+                project=project, number_errors_per_project=self.intermediate_results.n_errors_FCBC)
 
             record[project] = project_indicators
 
         self.records.add('project_indicators', record, DictRecord, 'Data')
-
-    # def _analysis_documents(self):
-    #     doc2, doc3 = analyse_documents(
-    #         y_target_l=self.intermediate_results.y_target_l_old,
-    #         rc1=self.intermediate_results.rc1,
-    #         x_prog=self.intermediate_results.x_prog,
-    #         x_d=self.intermediate_results.timeline,
-    #         d_real_l=self.intermediate_results.d_real_l_old,
-    #         df_prog=self.intermediate_results.df_prog,
-    #         df_target=self.intermediate_results.df_target,
-    #         df_real=self.intermediate_results.df_real,
-    #         df_plan=self.intermediate_results.df_plan,
-    #         HC_HPend=self.intermediate_results.HC_HPend,
-    #         y_prog_l=self.intermediate_results.y_prog_l_old,
-    #         tot_l=self.intermediate_results.total_objects,
-    #         HP=self.transformed_data.planning,
-    #         t_shift=self.intermediate_results.t_shift,
-    #         rc2=self.intermediate_results.rc2,
-    #         cutoff=self.intermediate_results.cutoff,
-    #         y_voorraad_act=self.intermediate_results.y_voorraad_act,
-    #         HC_HPend_l=self.intermediate_results.HC_HPend_l,
-    #         Schouw_BIS=self.intermediate_results.Schouw_BIS,
-    #         HPend_l=self.intermediate_results.HPend_l,
-    #         n_err=self.intermediate_results.n_err,
-    #         Schouw=None,
-    #         BIS=None
-    #     )
-    #
-    #     self.record_dict.add("analysis2", doc2, Record, "Data")
-    #     self.record_dict.add("analysis3", doc3, Record, "Data")
 
 
 class DFNAnalyse(KPNAnalyse):
@@ -331,6 +236,7 @@ class DFNAnalyse(KPNAnalyse):
         self._performance_matrix()
         self._prognose_graph()
         self._set_filters()
+        self._calculate_project_indicators()
 
 
 class KPNETL(FttXETL, KPNDFNExtract, KPNDFNTransform, KPNAnalyse):

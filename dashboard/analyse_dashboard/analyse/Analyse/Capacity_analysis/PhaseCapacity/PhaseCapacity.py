@@ -16,17 +16,12 @@ class PhaseCapacity:
         phases_config:
     """
 
-    def __init__(self, df: pd.DataFrame, phases_config: dict, phases_projects=None, phase=None,
-                 client=None, project=None, werkvoorraad=None, rest_dates=None):
+    def __init__(self, df: pd.DataFrame, phase_data: dict, client=None, project=None):
         self.df = df
-        self.phase = phase
+        self.phase_data = phase_data
         self.client = client
         self.project = project
-        self.werkvoorraad = werkvoorraad
-        self.phases_config = phases_config
-        self.phases_projects = phases_projects
         self.record_list = RecordList()
-        self.rest_dates = rest_dates
 
     def algorithm(self):
         """
@@ -40,111 +35,86 @@ class PhaseCapacity:
              PhaseCapacity: used for Method chaining.
 
         """
-        # calculate target indicator
-        self.target_over_time = TimeseriesLine(data=pd.Series(data=self.phases_config['performance_norm_unit'],
-                                                              index=DateDomainRange(begin=self.phases_config['start_date'],
-                                                                                    n_days=self.phases_config['n_days']).domain),
-                                               name='target_indicator')
-        # calculate realised production over time
-        if not isinstance(self.df.index[0], pd.Timestamp):
-            ds = self.df[(~self.df.isna()) & (self.df <= pd.Timestamp.now())]
+
+        objects = []
+        objects += [self.target2object()]
+        objects += [self.pocreal2object()]
+        objects += [self.pocideal2object()]
+        objects += [self.pocverwacht2object()]
+        [self.obj_2record(obj) for obj in objects]
+        return self
+
+    def target2object(self):
+        data = pd.Series(data=self.phase_data['performance_norm_unit'],
+                         index=DateDomainRange(begin=self.phase_data['start_date'],
+                                               n_days=self.phase_data['n_days']).domain)
+        lineobject = TimeseriesLine(data=data, name='target_indicator')
+        return lineobject
+
+    def pocreal2object(self):
+        ds = self.df[self.phase_data['phase_column']]
+        if not isinstance(ds.index[0], pd.Timestamp):
+            ds = ds[(~ds.isna()) & (ds <= pd.Timestamp.now())]
             ds = ds.groupby(ds.dt.date).count()
         else:
-            ds = self.df
+            ds = ds[(~ds.isna())]
+
         if not ds.empty:
-            self.pocideal_real = TimeseriesLine(ds, domain=DateDomain(begin=ds.index[0], end=ds.index[-1]), name='poc_real_indicator')
+            lineobject = TimeseriesLine(data=ds,
+                                        domain=DateDomain(begin=ds.index[0],
+                                                          end=ds.index[-1]),
+                                        name='poc_real_indicator')
         else:
-            self.pocideal_real = TimeseriesLine(pd.Series(data=0), domain=DateDomainRange(
-                begin=self.phases_config['start_date'], n_days=1), name='poc_real_indicator')
-        # calculate ideal production over time
-        slope = (self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / \
-                (self.target_over_time.make_series().index[-1] - self.pocideal_real.make_series().index[-1]).days
-        begin = self.pocideal_real.make_series().index[-1]
-        end = self.target_over_time.make_series().index[-1]
+            lineobject = TimeseriesLine(data=pd.Series(data=0),
+                                        domain=DateDomainRange(begin=self.phase_data['start_date'],
+                                                               n_days=1),
+                                        name='poc_real_indicator')
+        return lineobject
+
+    def pocideal2object(self):
+        pocreal_object = self.pocreal2object()
+        target_object = self.target2object()
+        begin = pocreal_object.make_series().index[-1]
+        end = target_object.make_series().index[-1]
+        slope = (self.phase_data['total_units'] - pocreal_object.integrate().make_series().max()) / \
+                (end - begin).days
         if end <= begin:
             end = begin + timedelta(7)
-        pocideal_extrap = TimeseriesLine(data=pd.Series(data=slope, index=DateDomain(begin=str(begin), end=str(end)).domain))
-        self.poc_ideal = TimeseriesLine(self.pocideal_real.make_series().add(pocideal_extrap.make_series().iloc[1:], fill_value=0),
-                                        name='poc_ideal_indicator')
-        # # calculate ideal capacity over time
-        # self.capacity_ideal = self.poc_ideal /  self.phases_config['phase_norm']
-        # self.capacity_ideal.name = 'capacity_ideal_indicator'
+        pocideal_extrap = TimeseriesLine(data=pd.Series(data=slope,
+                                                        index=DateDomain(begin=str(begin),
+                                                                         end=str(end)).domain))
+        lineobject = TimeseriesLine(data=pocreal_object.make_series().add(pocideal_extrap.make_series().iloc[1:],
+                                                                          fill_value=0),
+                                    name='poc_ideal_indicator')
+        return lineobject
 
-        # calculate werkvoorraad
-        if self.phase == 'geulen':
-            self.werkvoorraad = TimeseriesLine(data=self.poc_ideal.make_series(), name='werkvoorraad_indicator')
-        else:
-            shift = 0  # self.phases_config['phase_delta'] - self.phases_projects[self.phases_config['master_phase']]['phase_delta']
-            ratio = self.phases_config['total_units'] / self.phases_projects[self.phases_config['master_phase']]['total_units']
-            self.werkvoorraad = TimeseriesLine(data=self.werkvoorraad).translate_x(shift) * ratio
-            self.werkvoorraad.name = 'werkvoorraad_indicator'
-
-        # calculate poc verwacht
-        if len(self.pocideal_real.make_series()) > 2:
-            slope2 = int(self.pocideal_real.integrate().extrapolate(data_partition=0.5).slope)
+    def pocverwacht2object(self):
+        pocreal_object = self.pocreal2object()
+        if len(pocreal_object.make_series()) > 2:
+            slope2 = int(pocreal_object.integrate().extrapolate(data_partition=0.5).slope)
         else:
             slope2 = 0
-        if (slope2 > 0) & (self.phases_config['total_units'] > 0):
-            n_days2 = int(round((self.phases_config['total_units'] - self.pocideal_real.integrate().make_series().max()) / slope2))
+        if (slope2 > 0) & (self.phase_data['total_units'] > 0):
+            n_days2 = int(round((self.phase_data['total_units'] -
+                                 pocreal_object.integrate().make_series().max()) / slope2))
         else:
             n_days2 = 1
         if n_days2 < 1:
             n_days2 = 1
-        poc_extrap = TimeseriesLine(pd.Series(data=slope2, index=DateDomainRange(begin=str(self.pocideal_real.make_series().index[-1]),
-                                                                                 n_days=n_days2).domain)
-                                    )
-        self.poc_verwacht = TimeseriesLine(self.pocideal_real.make_series().add(poc_extrap.make_series().iloc[1:], fill_value=0),
-                                           name='poc_verwacht_indicator')
+        index = DateDomainRange(begin=str(pocreal_object.make_series().index[-1]), n_days=n_days2).domain
+        poc_extrap = TimeseriesLine(data=pd.Series(data=slope2, index=index))
+        lineobject = TimeseriesLine(data=pocreal_object.make_series().add(poc_extrap.make_series().iloc[1:],
+                                                                          fill_value=0),
+                                    name='poc_verwacht_indicator')
+        return lineobject
 
-        # self.add_rest_periods_to_line(self.poc_ideal, self.rest_dates)
-
-        self.werkvoorraad_absoluut = self.werkvoorraad.integrate() - self.poc_ideal.integrate()
-        self.werkvoorraad_absoluut.name = 'werkvoorraad_absoluut_indicator'
-
-        # write indicators to records
-        target_over_time_record = LineRecord(record=self.target_over_time,
-                                             collection='Lines',
-                                             graph_name=f'{self.target_over_time.name}',
-                                             phase=self.phase,
-                                             client=self.client,
-                                             project=self.project)
-        poc_ideal_over_time_record = LineRecord(record=self.poc_ideal,
-                                                collection='Lines',
-                                                graph_name=f'{self.poc_ideal.name}',
-                                                phase=self.phase,
-                                                client=self.client,
-                                                project=self.project)
-        # capacity_over_time_record = LineRecord(record=self.capacity_ideal,
-        #                                        collection='Lines',
-        #                                        graph_name=f'{self.capacity_ideal.name}',
-        #                                        phase=self.phase,
-        #                                        client=self.client,
-        #                                        project=self.project)
-        werkvoorraad_over_time_record = LineRecord(record=self.werkvoorraad,
-                                                   collection='Lines',
-                                                   graph_name=f'{self.werkvoorraad.name}',
-                                                   phase=self.phase,
-                                                   client=self.client,
-                                                   project=self.project)
-        poc_verwacht_over_time_record = LineRecord(record=self.poc_verwacht,
-                                                   collection='Lines',
-                                                   graph_name=f'{self.poc_verwacht.name}',
-                                                   phase=self.phase,
-                                                   client=self.client,
-                                                   project=self.project)
-        werkvoorraad_absoluut_over_time_record = LineRecord(record=self.werkvoorraad_absoluut,
-                                                            collection='Lines',
-                                                            graph_name=f'{self.werkvoorraad_absoluut.name}',
-                                                            phase=self.phase,
-                                                            client=self.client,
-                                                            project=self.project)
-        self.record_list.append(target_over_time_record)
-        self.record_list.append(poc_ideal_over_time_record)
-        # self.record_list.append(capacity_over_time_record)
-        self.record_list.append(werkvoorraad_over_time_record)
-        self.record_list.append(poc_verwacht_over_time_record)
-        self.record_list.append(werkvoorraad_absoluut_over_time_record)
-        return self
+    def obj_2record(self, lineobject: object):
+        self.record_list.append(LineRecord(record=lineobject,
+                                           collection='Lines',
+                                           graph_name=f'{lineobject.name}',
+                                           phase=self.phase_data['name'],
+                                           client=self.client,
+                                           project=self.project))
 
     # TODO: Documentation by Casper van Houten
     def get_record(self, **kwargs):

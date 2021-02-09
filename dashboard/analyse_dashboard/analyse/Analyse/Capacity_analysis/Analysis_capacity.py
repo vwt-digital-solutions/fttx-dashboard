@@ -10,6 +10,7 @@ from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform, FttXExtract
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
 import pandas as pd
+import copy
 
 from Analyse.Record.RecordList import RecordList
 
@@ -47,7 +48,11 @@ class CapacityTransform(FttXTransform):
         self.performance_norm_config = 1
 
     def transform(self):
-        super().transform()
+        logger.info("Transforming the data following the Capacity protocol")
+        logger.info("Transforming by using the extracted data directly. There was no previous tranformed data")
+        self.transformed_data = copy.deepcopy(self.extracted_data)
+        self._fix_dates()
+        self._clean_ftu_data()
         self.fill_projectspecific_phase_config()
         self.transform_bis_etl()
         self.add_bis_etl_to_transformed_data()
@@ -93,7 +98,8 @@ class CapacityTransform(FttXTransform):
                          n_days=(100 / performance_norm_config - 1),
                          master_phase=phase_config['master_phase'],
                          phase_norm=phase_config['phase_norm'],
-                         phase_delta=phase_config['phase_delta']
+                         phase_delta=phase_config['phase_delta'],
+                         name=phase_config['name'],
                          )
             phases_projectspecific[project]['schieten']['phase_norm'] = 13 / \
                 phases_projectspecific[project]['oplever']['total_units'] * \
@@ -121,82 +127,75 @@ class CapacityAnalyse:
 
     """
     def analyse(self):
-        self.get_lines_per_phase()
+        self.lines2record()
 
     # TODO: Capser van Houten, refactor this method. The name starts with get, this suggests that the method returns
     #  something.
-    def get_lines_per_phase(self):
+    def lines2record(self):
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
 
-        project_mapping = {'KPN Spijkernisse': 'Spijkenisse',
-                           'KPN Gouda Kort Haarlem en Noord': 'Gouda Kort-Haarlem',
-                           'Nijmegen Dukenburg': 'Dukenburg Schade'
-                           }
+        demo_projects = {'KPN Spijkernisse': 'Spijkenisse',
+                         'KPN Gouda Kort Haarlem en Noord': 'Gouda Kort-Haarlem',
+                         'Nijmegen Dukenburg': 'Dukenburg Schade'
+                         }
 
         line_record_list = RecordList()
-        rest_dates = self.get_rest_dates_as_list_of_series()
-        for project, project_df in self.transformed_data.df.groupby(by="project"):
-            if not self.transformed_data.df[self.transformed_data.df.project == project].empty:
-                if project in project_mapping:
-                    project_t = project_mapping[project]
-                else:
-                    project_t = project_mapping['KPN Spijkernisse']
-                dft = self.transformed_data.bis.df
-                df_geul = dft[(~dft.meters_bis_geul.isna())].loc[project_t]
-                df_schieten = dft[(~dft.meters_tuinboring.isna())].loc[project_t]
+        for project, df_woningen in self.transformed_data.df.groupby(by='project'):
+            if project in demo_projects:
                 phase_data = self.transformed_data.project_phase_data[project]
-                fase_geulen = GeulenCapacity(df=df_geul[phase_data['geulen']['phase_column']],
-                                             phases_config=phase_data['geulen'],  # Example phase_data.
-                                             phases_projects=phase_data,
-                                             phase='geulen',
-                                             client=self.client,
-                                             project=project,
-                                             werkvoorraad=None,
-                                             rest_dates=rest_dates
-                                             ).algorithm()
-                line_record_list += fase_geulen.get_record()
-                fase_schieten = SchietenCapacity(df=df_schieten[phase_data['schieten']['phase_column']],
-                                                 phases_config=phase_data['schieten'],
-                                                 phases_projects=phase_data,
-                                                 phase='schieten',
-                                                 client=self.client,
-                                                 project=project,
-                                                 werkvoorraad=fase_geulen.poc_ideal.make_series(),
-                                                 rest_dates=rest_dates
-                                                 ).algorithm()
-                line_record_list += fase_schieten.get_record()
-                fase_lasap = LasAPCapacity(df=project_df[phase_data['lasap']['phase_column']],
-                                           phases_config=phase_data['lasap'],
-                                           phases_projects=phase_data,
-                                           phase='lasap',
-                                           client=self.client,
-                                           project=project,
-                                           werkvoorraad=fase_geulen.poc_ideal.make_series(),
-                                           rest_dates=rest_dates
-                                           ).algorithm()
-                line_record_list += fase_lasap.get_record()
-                fase_lasdp = LasDPCapacity(df=project_df[phase_data['lasdp']['phase_column']],
-                                           phases_config=phase_data['lasdp'],
-                                           phases_projects=phase_data,
-                                           phase='lasdp',
-                                           client=self.client,
-                                           project=project,
-                                           werkvoorraad=fase_geulen.poc_ideal.make_series(),
-                                           rest_dates=rest_dates
-                                           ).algorithm()
-                line_record_list += fase_lasdp.get_record()
-                fase_oplever = OpleverCapacity(df=project_df[phase_data['oplever']['phase_column']],
-                                               phases_config=phase_data['oplever'],
-                                               phases_projects=phase_data,
-                                               phase='oplever',
-                                               client=self.client,
-                                               project=project,
-                                               werkvoorraad=fase_lasdp.poc_ideal.make_series(),
-                                               rest_dates=rest_dates
-                                               ).algorithm()
-                line_record_list += fase_oplever.get_record()
+                df_meters = self.transformed_data.bis.df.loc[demo_projects[project]]
+                werkvoorraad = {}
+
+                geulen_obj = GeulenCapacity(df=df_meters,
+                                            phase_data=phase_data['geulen'],
+                                            client=self.client,
+                                            project=project,
+                                            ).algorithm()
+                werkvoorraad['geulen'] = geulen_obj.pocideal2object().make_series()
+                line_record_list += geulen_obj.get_record()
+
+                schieten_obj = SchietenCapacity(df=df_meters,
+                                                phase_data=phase_data['schieten'],
+                                                masterphase_data=phase_data[phase_data['schieten']['master_phase']],
+                                                client=self.client,
+                                                project=project,
+                                                werkvoorraad=werkvoorraad[phase_data['schieten']['master_phase']],
+                                                ).algorithm()
+                werkvoorraad['schieten'] = schieten_obj.pocideal2object().make_series()
+                line_record_list += schieten_obj.get_record()
+
+                lasap_obj = LasAPCapacity(df=df_woningen,
+                                          phase_data=phase_data['lasap'],
+                                          masterphase_data=phase_data[phase_data['lasap']['master_phase']],
+                                          client=self.client,
+                                          project=project,
+                                          werkvoorraad=werkvoorraad[phase_data['lasap']['master_phase']],
+                                          ).algorithm()
+                line_record_list += lasap_obj.get_record()
+                werkvoorraad['lasap'] = lasap_obj.pocideal2object().make_series()
+
+                lasdp_obj = LasDPCapacity(df=df_woningen,
+                                          phase_data=phase_data['lasdp'],
+                                          masterphase_data=phase_data[phase_data['lasdp']['master_phase']],
+                                          client=self.client,
+                                          project=project,
+                                          werkvoorraad=werkvoorraad[phase_data['lasdp']['master_phase']],
+                                          ).algorithm()
+                werkvoorraad['lasdp'] = lasdp_obj.pocideal2object().make_series()
+                line_record_list += lasdp_obj.get_record()
+
+                oplever_obj = OpleverCapacity(df=df_woningen,
+                                              phase_data=phase_data['oplever'],
+                                              masterphase_data=phase_data[phase_data['oplever']['master_phase']],
+                                              client=self.client,
+                                              project=project,
+                                              werkvoorraad=werkvoorraad[phase_data['oplever']['master_phase']],
+                                              ).algorithm()
+                werkvoorraad['oplever'] = oplever_obj.pocideal2object().make_series()
+                line_record_list += oplever_obj.get_record()
+
             self.records = line_record_list
 
     def get_rest_dates_as_list_of_series(self):

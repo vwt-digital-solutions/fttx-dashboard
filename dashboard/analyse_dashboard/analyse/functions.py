@@ -1,3 +1,10 @@
+"""
+functions.py
+================
+
+A big collection of functions used in the analysis.
+"""
+
 from collections import defaultdict
 
 import pandas as pd
@@ -52,123 +59,6 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
     return total_objects
 
 
-# def get_homes_completed(df: pd.DataFrame) -> dict:
-#     """
-#     Count the number of homes completed per project.
-#
-#     Args:
-#         df (pd.DataFrame): A dataframe with at columns `project` and `homes_completed`.
-#
-#     Returns:
-#         dict: A dictionary (str: float) with the projects as keys and the number of homes completed as values
-#
-#     """
-#     result = df[['project', 'homes_completed']] \
-#         .groupby(by="project") \
-#         .sum() \
-#         .reset_index() \
-#         .set_index("project") \
-#         .to_dict()['homes_completed']
-#
-#     return result
-
-
-# def get_HPend(df: pd.DataFrame):
-#     """
-#     Count the number of hpend (homes permanently passed or completed) per project.
-#
-#     Args:
-#         df (pd.DataFrame): A dataframe with at columns `project` and `hpend`.
-#
-#     Returns:
-#         dict (str: float):  a dictionary with the projects as keys and the number of hpend as values
-#
-#     """
-#     result = df[['project', 'hpend']] \
-#         .groupby(by="project") \
-#         .sum() \
-#         .reset_index() \
-#         .set_index("project") \
-#         .to_dict()['hpend']
-#     return result
-
-
-# # TODO: I nominate this function for removal.
-# def get_HPend_for_2020(df: pd.DataFrame):
-#     test_df = df[['project']].copy()
-#     test_df["hpend_not_2020"] = df.opleverdatum.notna()
-#     return test_df.groupby(by="project").sum().reset_index().set_index("project").to_dict()['hpend_not_2020']
-
-
-# def get_has_ready(df: pd.DataFrame):
-#     """
-#     Count the HAS werkvoorraad (Homes to be connected or passed) per project.
-#
-#     Args:
-#         df (pd.DataFrame): A dataframe containing the following columns: [schouwdatum,
-#         opleverdatum, opleverstatus, toestemming_datum]
-#
-#     Returns:
-#         dict (str: float):  a dictionary with the projects as keys and the werkvoorraad as values
-#     """
-#     tmp_df = df.copy()
-#     tmp_df['has_ready'] = br.has_werkvoorraad(tmp_df)
-#     result = tmp_df[['project', 'has_ready']] \
-#         .groupby(by="project") \
-#         .sum() \
-#         .reset_index() \
-#         .set_index("project") \
-#         .to_dict()['has_ready']
-#
-#     return result
-
-
-# # TODO: Documentation by Casper van Houten
-# # Total ratio of completed objects v.s. completed + permanently passed objects.
-# def get_hc_hpend_ratio_total(hc, hpend):
-#     return round(sum(hc.values()) / sum(hpend.values()), 2)
-
-
-# # TODO: Documentation by Erik van Egmond
-# # Calculates the ratio between homes completed v.s. completed + permanently passed objects per project
-# def get_hc_hpend_ratio(df: pd.DataFrame):
-#     temp_df = df[['sleutel', "project", 'homes_completed_total']].copy()
-#     temp_df['has_opleverdatum'] = br.opgeleverd(df)
-#     sum_df = temp_df[['sleutel', "project", "has_opleverdatum", 'homes_completed_total']].groupby(
-#         by="project").sum().reset_index()
-#     sum_df['ratio'] = sum_df.apply(
-#         lambda x: x.homes_completed_total / x.has_opleverdatum * 100
-#         if x.has_opleverdatum else 0, axis=1
-#     )
-#     return sum_df[['project', 'ratio']].set_index("project").to_dict()['ratio']
-
-
-# # TODO: Documentation by Erik van Egmond
-# def get_has_werkvoorraad(df: pd.DataFrame):
-#     # todo add in_has_werkvoorraad column in etl and use that column
-#     return calculate_ready_for_has(df)
-
-
-# # TODO: Documentation by Tjeerd Pols
-# def calculate_projectspecs(df: pd.DataFrame):
-#     # TODO: cleanup of this function (see _calculate_projectspecs)
-#     homes_completed = get_homes_completed(df)
-#     homes_ended = get_HPend(df)
-#     homes_ended_in_2020 = get_HPend_for_2020(df)
-#     has_ready = get_has_ready(df)
-#     hc_hpend_ratio = get_hc_hpend_ratio(df)
-#     hc_hp_end_ratio_total = get_hc_hpend_ratio_total(homes_completed, homes_ended)
-#     werkvoorraad = get_has_werkvoorraad(df)
-#
-#     ProjectSpecs = namedtuple("ProjectSpecs", ['hc_hp_end_ratio_total',
-#                                                'hc_hpend_ratio',
-#                                                'has_ready',
-#                                                'homes_ended_in_2020',
-#                                                'werkvoorraad'])
-#
-#     return ProjectSpecs(hc_hp_end_ratio_total, hc_hpend_ratio, has_ready, homes_ended_in_2020, werkvoorraad)
-
-
 # # TODO: Documentation by Casper van Houten
 # def targets(x_prog, x_d, t_shift, date_FTU0, date_FTU1, rc1, d_real_l, total_objects):
 #     # to add target info KPN in days uitgaande van FTU0 en FTU1
@@ -207,7 +97,7 @@ def get_total_objects(df):  # Don't think this is necessary to calculate at this
 #     return TargetResults(y_target_l, t_diff, target_per_week_dict)
 
 
-# TODO: Documentation by Andre van Turnhout
+# TODO: Documentation by Andre van Turnhout. How does it calculate the target?
 def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     """
 
@@ -220,7 +110,8 @@ def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
         date_FTU1: FTU1 date per project
         total_objects: total objects per project
 
-    Returns: target information for KPN per weeks
+    Returns:
+        target information for KPN per weeks
 
     """
     # to add target info KPN in days uitgaande van FTU0 en FTU1
@@ -445,179 +336,6 @@ def transform_df_plan(x_d, HP):
     return df
 
 
-# # TODO: Documentation by Casper van Houten
-# def overview(x_d, y_prog_l, tot_l, d_real_l, HP, y_target_l):
-#     df_prog = transform_to_amounts(y_prog_l, tot_l, x_d)
-#     df_target = transform_to_amounts(y_target_l, tot_l, x_d)
-#     df_real = transform_df_real(d_real_l, tot_l, x_d)
-#     df_plan = transform_df_plan(x_d, HP)
-#     OverviewResults = namedtuple("OverviewResults", ['df_prog', 'df_target', 'df_real', 'df_plan'])
-#     return OverviewResults(df_prog, df_target, df_real, df_plan)
-
-
-# def graph_overview(df_prog, df_target, df_real, df_plan, HC_HPend, HAS_werkvoorraad, res, show_planning=True):
-#     if 'W' in res:
-#         n_now = int((pd.Timestamp.now() - pd.to_datetime('2019-12-30')).days / 7) + 1
-#         n_d = int((pd.Timestamp.now() - pd.to_datetime('2020-' + str(datetime.date.today().month) + '-01')).days / 7)
-#         x_ticks = list(range(n_now - n_d, n_now + 5 - n_d))
-#         x_ticks_text = [datetime.datetime.strptime('2020-W' + str(int(el - 1)) + '-1', "%Y-W%W-%w").date().strftime(
-#             '%Y-%m-%d') + '<br>W' + str(el) for el in x_ticks]
-#         x_range = [n_now - n_d - 0.5, n_now + 4.5 - n_d]
-#         y_range = [0, 3000]
-#         width = 0.08
-#         text_title = 'Maandoverzicht'
-#         period = ['2019-12-23', '2020-12-27']
-#         close = 'left'
-#         loff = '-1W-MON'
-#         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.week.to_list()
-#         x[0] = 0
-#     if 'M' == res:
-#         n_now = datetime.date.today().month
-#         x_ticks = list(range(0, 13))
-#         x_ticks_text = ['dec', 'jan', 'feb', 'maa', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec']
-#         x_range = [0.5, 12.5]
-#         y_range = [0, 18000]
-#         width = 0.2
-#         text_title = 'Jaaroverzicht'
-#         period = ['2019-12-23', '2020-12-27']
-#         close = 'left'
-#         loff = None
-#         x = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum().index.month.to_list()
-#
-#     prog0 = df_prog[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-#     prog = prog0.to_list()
-#     target0 = df_target[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-#     target = target0.to_list()
-#     real0 = df_real[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-#     real = real0.to_list()
-#     plan0 = df_plan[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d']
-#     plan = plan0.to_list()
-#
-#     if 'M' == res:
-#         jaaroverzicht = dict(id='jaaroverzicht', target=str(round(sum(target))), real=str(round(sum(real))),
-#                              plan=str(round(sum(plan[n_now - 1:]) - real[n_now - 1])),
-#                              prog=str(round(sum(prog[n_now - 1:]) - real[n_now - 1])),
-#                              HC_HPend=str(HC_HPend), HAS_werkvoorraad=str(HAS_werkvoorraad), prog_c='pretty_container')
-#         if jaaroverzicht['prog'] < jaaroverzicht['plan']:
-#             jaaroverzicht['prog_c'] = 'pretty_container_red'
-#
-#     bar_now = dict(x=[n_now],
-#                    y=[y_range[1]],
-#                    name='Huidige week',
-#                    type='bar',
-#                    marker=dict(color=colors['black']),
-#                    width=0.5 * width,
-#                    )
-#     bar_t = dict(x=[el - 0.5 * width for el in x],
-#                  y=target,
-#                  name='Planning',
-#                  type='bar',
-#                  marker=dict(color=colors['lightgray']),
-#                  width=width,
-#                  )
-#     bar_pr = dict(x=x,
-#                   y=prog,
-#                   name='Voorspelling (VQD)',
-#                   mode='markers',
-#                   marker=dict(color=colors['yellow'], symbol='diamond', size=15),
-#                   #   width=0.2,
-#                   )
-#     bar_r = dict(x=[el + 0.5 * width for el in x],
-#                  y=real,
-#                  name='Realisatie (FC)',
-#                  type='bar',
-#                  marker=dict(color=colors['green']),
-#                  width=width,
-#                  )
-#     bar_pl = dict(x=x,
-#                   y=plan,
-#                   name='Planning HP (VWT)',
-#                   type='lines',
-#                   marker=dict(color=colors['red']),
-#                   width=width,
-#                   )
-#     fig = {
-#         'data': [bar_pr, bar_pl, bar_r, bar_t, bar_now],
-#         'layout': {
-#             'barmode': 'stack',
-#             #   'clickmode': 'event+select',
-#             'showlegend': True,
-#             'legend': {'orientation': 'h', 'x': -0.075, 'xanchor': 'left', 'y': -0.25, 'font': {'size': 10}},
-#             'height': 300,
-#             'margin': {'l': 5, 'r': 15, 'b': 10, 't': 40},
-#             'title': {'text': text_title},
-#             'xaxis': {'range': x_range,
-#                       'tickvals': x_ticks,
-#                       'ticktext': x_ticks_text,
-#                       'title': ' '},
-#             'yaxis': {'range': y_range, 'title': 'Aantal HPend'},
-#             'plot_bgcolor': colors['plot_bgcolor'],
-#             'paper_bgcolor': colors['paper_bgcolor'],
-#             #   'annotations': [dict(x=x_ann, y=y_ann, text=jaaroverzicht, xref="x", yref="y",
-#             #                   ax=0, ay=0, alignment='left', font=dict(color="black", size=15))]
-#         },
-#     }
-#
-#     prog0.index = prog0.index.strftime('%Y-%m-%d')
-#     data_pr = dict(count_voorspellingdatum=prog0.to_dict())
-#     target0.index = target0.index.strftime('%Y-%m-%d')
-#     data_t = dict(count_outlookdatum=target0.to_dict())
-#     real0.index = real0.index.strftime('%Y-%m-%d')
-#     data_r = dict(count_opleverdatum=real0.to_dict())
-#     plan0.index = plan0.index.strftime('%Y-%m-%d')
-#     data_p = dict(count_hasdatum=plan0.to_dict())
-#
-#     if not show_planning:
-#         data_p = dict.fromkeys(data_p, 0)
-#
-#     if 'W' in res:
-#         record = dict(id='graph_targets_W', figure=fig)
-#         return record, data_pr, data_t, data_r, data_p
-#     if 'M' == res:
-#         record = dict(id='graph_targets_M', figure=fig)
-#         return record, data_pr, data_t, data_r, data_p
-
-
-# # TODO: Documentation by Casper van Houten
-# def slice_for_jaaroverzicht(data):
-#     res = 'M'
-#     close = 'left'
-#     loff = None
-#     period = ['2019-12-23', '2020-12-27']
-#     return data[period[0]:period[1]].resample(res, closed=close, loffset=loff).sum()['d'].to_list()
-
-
-# def preprocess_for_jaaroverzicht(*args):
-#     return [slice_for_jaaroverzicht(arg) for arg in args]
-#     # prog = slice_for_jaaroverzicht(df_prog)
-#     # target = slice_for_jaaroverzicht(df_target)
-#     # real = slice_for_jaaroverzicht(df_real)
-#     # plan = slice_for_jaaroverzicht(df_plan)
-#     # return prog, target, real, plan
-
-
-# def calculate_jaaroverzicht(prognose, target, realisatie, planning, HAS_werkvoorraad, HC_HPend, bis_gereed):
-#     n_now = datetime.date.today().month
-#
-#     target_sum = str(round(sum(target)))
-#     planning_sum = sum(planning[n_now - 1:]) - realisatie[n_now - 1]
-#     prognose_sum = sum(prognose[n_now - 1:]) - realisatie[n_now - 1]
-#     realisatie_sum = str(round(sum(realisatie)))
-#
-#     jaaroverzicht = dict(id='jaaroverzicht',
-#                          target=str(int(target_sum)),
-#                          real=str(int(realisatie_sum)),
-#                          plan=str(int(planning_sum)),
-#                          prog=str(int(prognose_sum)),
-#                          HC_HPend=str(HC_HPend),
-#                          HAS_werkvoorraad=str(int(HAS_werkvoorraad)),
-#                          bis_gereed=str(bis_gereed),
-#                          prog_c='pretty_container')
-#     if jaaroverzicht['prog'] < jaaroverzicht['plan']:
-#         jaaroverzicht['prog_c'] = 'pretty_container_red'
-#     return jaaroverzicht
-
-
 # TODO: Documentation by Casper van Houten
 def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
     record_dict = {}
@@ -670,7 +388,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
 
 
 # TODO: Documentation by Andre van Turnhout
-def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act):
+def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, current_werkvoorraad):
     n_now = int((pd.Timestamp.now() - x_d[0]).days)
     x = []
     y = []
@@ -682,7 +400,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, y_voorraad_act)
             x += [0]
         y_voorraad = tot_l[key] / t_diff[key] * 7 * 9  # op basis van 9 weken voorraad
         if y_voorraad > 0:
-            y += [round(y_voorraad_act[key] / y_voorraad * 100)]
+            y += [round(current_werkvoorraad[key] / y_voorraad * 100)]
         else:
             y += [0]
         names += [key]
@@ -778,7 +496,7 @@ def create_project_filter(df: pd.DataFrame):
 
     Returns:
         list[dict]: A list of dictionaries with the projects with the following shape
-         {'label': project, 'value': project}
+        {'label': project, 'value': project}
     """
     filters = [{'label': x, 'value': x} for x in df.project.cat.categories]
     record = dict(filters=filters)
@@ -802,23 +520,6 @@ def get_intersect(a1, a2, b1, b2):
     if z == 0:  # lines are parallel
         return (float('inf'), float('inf'))
     return (x / z, y / z)
-
-
-# # TODO: Documentation by Andre van Turnhout. Perhaps remove?
-# def days_in_2019(timeline):
-#     return len(timeline[timeline < pd.to_datetime('2020-01-01')])
-
-
-# # TODO: Documentation by Andre van Turnhout
-# def calculate_weektarget(project, y_target_l, total_objects, timeline):  # berekent voor de week t/m de huidige dag
-#     index_firstdaythisweek = days_in_2019(timeline) + pd.Timestamp.now().dayofyear - pd.Timestamp.now().dayofweek - 1
-#     if project in y_target_l:
-#         value_atstartweek = y_target_l[project][index_firstdaythisweek - 1]
-#         value_atendweek = y_target_l[project][index_firstdaythisweek + 7]
-#         target = int(round((value_atendweek - value_atstartweek) / 100 * total_objects[project]))
-#     else:
-#         target = 0
-#     return target
 
 
 def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1: dict, time_delta_days: int = 0) -> int:
@@ -854,14 +555,28 @@ def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1:
     return target
 
 
-# TODO: Documentation by Erik van Egmond
-def create_bullet_chart_realisatie(value,
-                                   prev_value,
-                                   max_value,
-                                   yellow_border,
-                                   threshold,
-                                   title="",
-                                   subtitle=""):
+def _create_bullet_chart_realisatie(value: float,
+                                    prev_value: float,
+                                    max_value: float,
+                                    yellow_border: float,
+                                    threshold: float,
+                                    title: str = "",
+                                    subtitle: str = ""):
+    """
+    Creates a bullet chart to be rendered by `Plotly <https://plotly.com/python/indicator/#bullet-gauge>`_.
+
+    Args:
+        value (float): Current value
+        prev_value (float): Previous value, adds a delta to the bullet chart
+        max_value (float): Maximum value in the range of the bullet chart
+        yellow_border (float): Maximum value for the yellow area
+        threshold (float): Value for the red line
+        title (str): Title, optional
+        subtitle (str): Subtitle, optional
+
+    Returns:
+        dict: A plotly graph object
+    """
     return dict(counts=value,
                 counts_prev=prev_value,
                 title=title,
@@ -880,8 +595,17 @@ def create_bullet_chart_realisatie(value,
                 id=None)
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_lastweek_realisatie_hpend_and_return_graphics(project_df, weektarget):
+def lastweek_realisatie_hpend_bullet_chart(project_df, weektarget):
+    """
+    Calculate the HPend realisatie and target for last week and visualize in a bullet chart.
+
+    Args:
+        project_df (pd.DataFrame): Project dataframe containing an opleverdatum.
+        weektarget (float): The target for HPend per week
+
+    Returns:
+        dict: A plotly bullet chart
+    """
     weekday = datetime.datetime.now().weekday()
     realisatie_end_week = br.opgeleverd(project_df, weekday).sum()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + 7).sum()
@@ -889,17 +613,28 @@ def calculate_lastweek_realisatie_hpend_and_return_graphics(project_df, weektarg
     realisatie = int(realisatie_end_week - realisatie_beginning_week)
 
     max_value = int(max(weektarget, realisatie, 1) * 1.1)
-    return create_bullet_chart_realisatie(value=realisatie,
-                                          prev_value=None,
-                                          max_value=max_value,
-                                          yellow_border=int(weektarget * 0.9),
-                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                          title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
-                                          subtitle=f"Target: {weektarget}")
+    return _create_bullet_chart_realisatie(value=realisatie,
+                                           prev_value=None,
+                                           max_value=max_value,
+                                           yellow_border=int(weektarget * 0.9),
+                                           threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                           title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+                                           subtitle=f"Target: {weektarget}")
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarget, delta=0):
+def thisweek_realisatie_hpend_bullet_chart(project_df, weektarget, delta=0):
+    """
+    Calculate the HPend realisatie and target for last week and visualize in a bullet chart.
+
+    Args:
+        project_df (pd.DataFrame): Project dataframe containing an opleverdatum.
+        weektarget (float): The target for HPend per week
+        delta: The number of days to shift the realisatie.
+
+    Returns:
+        dict: A plotly bullet chart
+
+    """
     weekday = datetime.datetime.now().weekday()
     realisatie_beginning_week = br.opgeleverd(project_df, weekday + 1 + delta).sum()
 
@@ -910,24 +645,13 @@ def calculate_thisweek_realisatie_hpend_and_return_graphics(project_df, weektarg
     realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
 
     max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
-    return create_bullet_chart_realisatie(value=realisatie_this_week,
-                                          prev_value=realisatie_this_week_yesterday,
-                                          max_value=max_value,
-                                          yellow_border=int(weektarget * 0.9),
-                                          threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                          title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
-                                          subtitle=f"Target:{weektarget}")
-
-
-# # TODO: Documentation by Andre van Turnhout
-# def calculate_weekdelta(project, y_target_l, d_real_l, total_objects,
-#                         timeline, client):  # berekent voor de week t/m de huidige dag
-#     target = calculate_weektarget(project, y_target_l, total_objects, timeline)['counts']
-#     record = calculate_thisweek_realisatie_hpend_and_return_graphics(project, d_real_l, total_objects,
-#                                                                      timeline, client, delay=0)
-#     delta = record['counts'] - target
-#     # delta_min1W = record['counts_prev'] - target
-#     return dict(counts=delta, counts_prev=None, title='Delta', subtitle='', font_color='green', id=None)
+    return _create_bullet_chart_realisatie(value=realisatie_this_week,
+                                           prev_value=realisatie_this_week_yesterday,
+                                           max_value=max_value,
+                                           yellow_border=int(weektarget * 0.9),
+                                           threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+                                           title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
+                                           subtitle=f"Target:{weektarget}")
 
 
 def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_per_project: dict):
@@ -939,7 +663,8 @@ def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_pe
         project: the project of interest (str)
         ratio_HC_HPend_per_project: a dictionary with HC/HPend values per project (dict)
 
-    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+    Returns:
+        a dictionary that contains the graphical layout to plot this value on the dashboard
 
     """
     counts = round(ratio_HC_HPend_per_project[project], 2)
@@ -976,7 +701,8 @@ def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors
         project: the project of interest (str)
         ratio_HC_HPend_per_project: a dictionary with error between FC/BC values per project (dict)
 
-    Returns: a dictionary that contains the graphical layout to plot this value on the dashboard
+    Returns:
+        a dictionary that contains the graphical layout to plot this value on the dashboard
 
     """
     return dict(counts=number_errors_per_project[project],
@@ -987,11 +713,22 @@ def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors
                 id=None)
 
 
-# TODO: Documation by Erik van Egmond
-def calculate_y_voorraad_act(df: pd.DataFrame):
+def calculate_current_werkvoorraad(df: pd.DataFrame):
+    """
+    Calculates the current werkvoorraad per project.
+    Args:
+        df (pd.DataFrame):  A dataframe containing the following columns:
+        [schouwdatum, opleverdatum, toestemming_datum, opleverstatus]
+
+    Returns:
+        dict: A dictionary with the project as key and the werkvoorraad as the value.
+    """
     # todo add in_has_werkvoorraad column in etl and use that column
     return df[br.has_werkvoorraad(df)] \
-        .groupby(by="project").count().reset_index()[['project', "sleutel"]].set_index("project").to_dict()['sleutel']
+        .groupby(by="project") \
+        .count() \
+        .reset_index()[['project', "sleutel"]] \
+        .set_index("project").to_dict()['sleutel']
 
 
 # TODO: Documentation by Andre van Turnhout. Perhaps remove?
@@ -1023,7 +760,7 @@ def set_date_update(client=None):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-# TODO: Documentation by Erik van Egmond
+# TODO: Documentation by Andre van Turnhout
 def error_check_FCBC(df: pd.DataFrame):
     business_rules = {}
 
@@ -1080,17 +817,27 @@ def error_check_FCBC(df: pd.DataFrame):
          '50', '90', '91', '96', '97', '98', '99']))
     business_rules['508'] = no_errors_series  # niet te checken, geen toegang tot Areapop
 
-    # TODO: Documentation by Erik van Egmond
-    def check_numeric_and_lenght(series: pd.Series, min_lenght=1, max_lenght=100, fillna=True):
-        return (series.str.len() > max_lenght) | (series.str.len() < min_lenght) | ~(
+    def check_numeric_and_lenght(series: pd.Series, min_length=1, max_length=100, fillna=True):
+        """
+        Checks if the number of digits is within a range. Empty values will be evaluated the fillna parameter describes.
+        Args:
+            series: A series of values
+            min_length: Minimal length
+            max_length: Maximum length
+            fillna: True or False.
+
+        Returns:
+
+        """
+        return (series.str.len() > max_length) | (series.str.len() < min_length) | ~(
             series.str.isnumeric().fillna(fillna))
 
-    business_rules['509'] = check_numeric_and_lenght(df.kastrij, max_lenght=2)
-    business_rules['510'] = check_numeric_and_lenght(df.kast, max_lenght=4)
-    business_rules['511'] = check_numeric_and_lenght(df.odf, max_lenght=5)
-    business_rules['512'] = check_numeric_and_lenght(df.odfpos, max_lenght=2)
-    business_rules['513'] = check_numeric_and_lenght(df.catv, max_lenght=5)
-    business_rules['514'] = check_numeric_and_lenght(df.catvpos, max_lenght=3)
+    business_rules['509'] = check_numeric_and_lenght(df.kastrij, max_length=2)
+    business_rules['510'] = check_numeric_and_lenght(df.kast, max_length=4)
+    business_rules['511'] = check_numeric_and_lenght(df.odf, max_length=5)
+    business_rules['512'] = check_numeric_and_lenght(df.odfpos, max_length=2)
+    business_rules['513'] = check_numeric_and_lenght(df.catv, max_length=5)
+    business_rules['514'] = check_numeric_and_lenght(df.catvpos, max_length=3)
 
     business_rules['516'] = no_errors_series  # cannot check
     business_rules['517'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
@@ -1226,35 +973,6 @@ def get_pie_layout():
     return layout
 
 
-# def analyse_documents(y_target_l, rc1, x_prog, x_d, d_real_l, df_prog, df_target, df_real,
-#                       df_plan, HC_HPend, y_prog_l, tot_l, HP, t_shift, rc2, cutoff, y_voorraad_act, HC_HPend_l,
-#                       Schouw_BIS, HPend_l, n_err, Schouw, BIS):
-#     y_prog_l_r = {}
-#     y_target_l_r = {}
-#     t_shift_r = {}
-#     d_real_l_r = {}
-#     d_real_l_ri = {}
-#     rc1_r = {}
-#     rc2_r = {}
-#     for key in y_prog_l:
-#         y_prog_l_r[key] = list(y_prog_l[key])
-#         y_target_l_r[key] = list(y_target_l[key])
-#         t_shift_r[key] = str(t_shift[key])
-#         if key in d_real_l:
-#             d_real_l_r[key] = list(d_real_l[key]['Aantal'])
-#             d_real_l_ri[key] = list(d_real_l[key].index)
-#         if key in rc1:
-#             rc1_r[key] = list(rc1[key])
-#         if key in rc2:
-#             rc2_r[key] = list(rc2[key])
-#     analysis2 = dict(id='analysis2', x_d=[el.strftime('%Y-%m-%d') for el in x_d], tot_l=tot_l, y_prog_l=y_prog_l_r,
-#                      y_target_l=y_target_l_r, HP=HP, rc1=rc1_r, rc2=rc2_r, t_shift=t_shift_r, cutoff=cutoff,
-#                      x_prog=[int(el) for el in x_prog], y_voorraad_act=y_voorraad_act, HC_HPend_l=HC_HPend_l,
-#                      Schouw_BIS=Schouw_BIS, HPend_l=HPend_l)
-#     analysis3 = dict(id='analysis3', d_real_l=d_real_l_r, d_real_li=d_real_l_ri, n_err=n_err)
-#     return analysis2, analysis3
-
-
 def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum', freq: str = 'W-MON') -> dict:
     """
     Calculates the number of each reden na cluster (as defined in the config) grouped by
@@ -1361,36 +1079,6 @@ def wait_bin_cluster_redenna(df):
     return wait_bin_cluster_redenna_df
 
 
-# TODO: Documentation by Erik van Egmond
-def calculate_ready_for_has(df, time_delta_days=0):
-    schouw_df = df[['schouwdatum', 'opleverdatum', 'toestemming', 'toestemming_datum', 'opleverstatus']]
-
-    ready_for_has_df = schouw_df[br.has_werkvoorraad(schouw_df, time_delta_days)]
-    return len(ready_for_has_df)
-
-
-# # TODO: Documentation by Erik van Egmond
-# def calculate_ready_for_has_indicator(project_df):
-#     count_now = calculate_ready_for_has(project_df)
-#     count_prev = calculate_ready_for_has(project_df, time_delta_days=7)
-#     return {'ready_for_has': {"counts": count_now, "counts_prev": count_prev}}
-
-
-# # TODO: Documentation by Erik van Egmond
-# def calculate_wait_indicators(project_df):
-#     counts = project_df.wait_category.value_counts()
-#     counts_prev = project_df.wait_category_minus_delta.value_counts()
-#
-#     counts_df = pd.DataFrame(counts).join(pd.DataFrame(counts_prev), rsuffix="_prev")
-#     counts_df.rename(columns={"wait_category": "counts", "wait_category_minus_delta": "counts_prev"}, inplace=True)
-#     result_dict = counts_df.to_dict(orient='index')
-#     wait_bin_cluster_redenna_df = wait_bin_cluster_redenna(project_df)
-#     for index, grouped_df in wait_bin_cluster_redenna_df.groupby('wait_category'):
-#         result_dict[index]['cluster_redenna'] = \
-#             grouped_df.reset_index(level=0, drop=True).to_dict(orient='dict')['count']
-#     return result_dict
-
-
 def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_project: dict,
                                         time_windows_per_project: dict, ratio_under_8weeks_per_project: dict):
     """
@@ -1405,27 +1093,37 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
         time_windows_per_project: a dictionary with openstaande orders per timewindow per project (dict)
         ratio_under_8weeks_per_project: a dictionary with ratio <8 weeks aangesloten orders per project (dict)
 
-    Returns: a dictionary that contains the graphical layout to plot tmobile values on the dashboard
+    Returns:
+         a dictionary that contains the graphical layout to plot tmobile values on the dashboard
 
     """
     markup_dict = {
-        'on_time': {'title': 'Openstaande orders op tijd',
-                    'subtitle': '< 8 weken',
-                    'font_color': 'green'},
-        'limited_time': {'title': 'Openstaande orders nog beperkte tijd',
-                         'subtitle': '> 8 weken < 12 weken',
-                         'font_color': 'orange'},
-        'late': {'title': 'Openstaande orders te laat',
-                 'subtitle': '> 12 weken',
-                 'font_color': 'red'},
+        'on_time_patch_only': {'title': 'Openstaand patch only op tijd',
+                               'subtitle': '< 8 weken',
+                               'font_color': 'green'},
+        'limited_patch_only': {'title': 'Openstaand patch only beperkte tijd',
+                               'subtitle': '> 8 weken < 12 weken',
+                               'font_color': 'orange'},
+        'late_patch_only': {'title': 'Openstaand patch only te laat',
+                            'subtitle': '> 12 weken',
+                            'font_color': 'red'},
+
         'ratio': {'title': 'Ratio op tijd gesloten orders',
                   'subtitle': '<8 weken',
                   'font_color': 'black',
                   'percentage': True},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
-        'ready_for_has': {
-            'title': "Werkvoorraad HAS",
-        }
+        'ready_for_has': {'title': "Werkvoorraad HAS"},
+
+        'on_time_hc_aanleg': {'title': 'Openstaand HC aanleg op tijd',
+                              'subtitle': '< 8 weken',
+                              'font_color': 'green'},
+        'limited_hc_aanleg': {'title': 'Openstaand HC aanleg beperkte tijd',
+                              'subtitle': '> 8 weken < 12 weken',
+                              'font_color': 'orange'},
+        'late_hc_aanleg': {'title': 'Openstaand HC aanleg te laat',
+                           'subtitle': '> 12 weken',
+                           'font_color': 'red'}
     }
 
     counts_by_project = {}
@@ -1433,9 +1131,9 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
         counts_by_project[project] = {}
 
         counts_by_project[project].update({'ready_for_has': has_werkvoorraad_per_project[project]})
-        counts_by_project[project].update({'late': time_windows_per_project[project]['openstaand_late']})
-        counts_by_project[project].update({'on_time': time_windows_per_project[project]['openstaand_on_time']})
-        counts_by_project[project].update({'limited_time': time_windows_per_project[project]['openstaand_limited']})
+        counts_by_project[project].update({'late_patch_only': time_windows_per_project[project]['openstaand_patch_only_late']})
+        counts_by_project[project].update({'on_time_patch_only': time_windows_per_project[project]['openstaand_patch_only_on_time']})
+        counts_by_project[project].update({'limited_patch_only': time_windows_per_project[project]['openstaand_patch_only_limited']})
         counts_by_project[project].update({'before_order': {'counts': 0,
                                                             'counts_prev': 0,
                                                             'cluster_redenna': {'HC': 0,
@@ -1443,23 +1141,13 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
                                                                                 'permissieobstructies': 0,
                                                                                 'technische obstructies': 0}}})
         counts_by_project[project].update({'ratio': {'counts': ratio_under_8weeks_per_project[project]}})
+        counts_by_project[project].update({'late_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_late']})
+        counts_by_project[project].update({'on_time_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_on_time']})
+        counts_by_project[project].update({'limited_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_limited']})
 
         for indicator, markup in markup_dict.items():
             counts_by_project[project][indicator].update(markup)
     return counts_by_project
-
-
-# # TODO: Documentation by Casper van Houten
-# def calculate_on_time_ratio(df):
-#     # Maximum days an order is allowed to take in days
-#     max_order_time = 56
-#     ordered = df[df.ordered & df.opgeleverd]
-#     on_time = ordered[ordered.oplevertijd <= max_order_time]
-#     try:
-#         on_time_ratio = len(on_time) / len(ordered)
-#     except ZeroDivisionError:
-#         on_time_ratio = 0
-#     return on_time_ratio
 
 
 # TODO: Documentation by Casper van Houten
@@ -1487,12 +1175,6 @@ def multi_index_to_dict(df):
         data = df.loc[idx[:], idx[project, :]][project]
         project_dict[project] = data
     return project_dict
-
-
-# def calculate_bis_gereed(df):
-#     df_copy = df.copy()
-#     df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
-#     return sum(br.bis_opgeleverd(df_copy))
 
 
 def extract_werkvoorraad_has_dates(df: pd.DataFrame, time_delta_days: int = 0, add_project_column: bool = False):
@@ -1592,7 +1274,8 @@ def extract_voorspelling_dates(df: pd.DataFrame, ftu=None, totals=None) -> pd.Se
         ftu: Andre van Turnhout
         totals: Andre van Turnhout
 
-    Returns: A pd.Series object
+    Returns:
+         A pd.Series object
 
     """
     if ftu and any(ftu.get('date_FTU0', {}).values()):
@@ -1645,36 +1328,36 @@ def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None)
         client: Either 'kpn', 'tmobile' or 'dfn'
         planning: Optional column for kpn, not used anymore
 
-    Returns: A pd.Series object
+    Returns:
+         A pd.Series object
 
     """
-    use_old_kpn_planning = True
-    if planning and client == 'kpn' and use_old_kpn_planning is True:
+    use_kpn_planning_excel = True
+    if planning and client == 'kpn' and use_kpn_planning_excel is True:
         return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
     else:
         return df[~df.hasdatum.isna()].hasdatum
 
 
-# TODO: Documentation by Andre van Turnhout, add arguments and return value
 def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     """
-    This function extracts the planning HPend value from the planning supplied by Wout. We don't use this function
-    anymore, but keep it here in case the excel files are supplied in a timely manner in future.
+    This function extracts the planning HPend value from the planning supplied by Wout. It loads in the data, which
+    contains the planning values per week and converts it into a pd.DataFrame.
 
     Args:
-        data:
-        timeline:
+        data: planning per week values from the kpn planning excel
+        timeline: a datetimeindex running from x to y
 
-    Returns:
+    Returns: a pd.DataFrame containing the planning values per day.
 
     """
     df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
     if data:
-        # TODO: remove hardcoded start date
-        y_plan = pd.DataFrame(index=pd.date_range(start='2021-01-04', periods=len(data), freq='W-MON'),
-                              columns=['planning_kpn'], data=data)
-        y_plan = y_plan.cumsum().resample('D').mean().interpolate().diff().fillna(y_plan.iloc[0])
-        df = df.add(y_plan, fill_value=0)
+        planning_df = pd.DataFrame(index=pd.date_range(start='2021-01-04', periods=len(data), freq='W-MON'),
+                                   columns=['planning_kpn'], data=data)
+        planning_df = planning_df / 5  # divides the weekly values to daily values: no work is done in the weekend
+        planning_df = planning_df.resample('D').ffill(limit=4)  # upsamples the weekly values into daily values
+        df = df.add(planning_df, fill_value=0)
     return df.planning_kpn
 
 
@@ -1735,8 +1418,14 @@ def get_secret(project_id, secret_id, version_id='latest'):
     return payload
 
 
-# TODO: Documentation by Erik van Egmond
 def get_database_engine():
+    """
+    Construct an SQLAlchemy Engine based on the config file.
+
+    Returns:
+        An SQLAlchemy Engine instance
+    """
+
     if 'db_ip' in config.database:
         SACN = 'mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}'.format(
             config.database['db_user'],
@@ -1780,7 +1469,7 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     if data is None:
         data = pd.Series()
 
-    if freq == 'W-MON':
+    if freq == 'W-MON':  # interval labels: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.resample.html
         interval_label = 'left'
     if freq == 'M' or freq == 'Y':
         interval_label = 'right'

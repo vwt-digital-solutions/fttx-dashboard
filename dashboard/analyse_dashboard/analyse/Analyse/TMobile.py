@@ -56,6 +56,7 @@ class TMobileAnalyse(FttXAnalyse):
         self._get_counts_by_month()
         self._get_counts_by_week()
         self._get_voorraadvormend()
+        self._make_intermediate_results_tmobile_project_specific_values()
         self._calculate_project_indicators()
 
     def _get_voorraadvormend(self):
@@ -71,28 +72,6 @@ class TMobileAnalyse(FttXAnalyse):
                for k, v in counts_by_week.items()]
         self.records.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
-    # def _jaaroverzicht(self):
-    #     # Function should not be ran on first pass, as it is called in super constructor.
-    #     # Required variables will not be accessible during call of super constructor.
-    #     if 'counts_by_month' in self.intermediate_results:
-    #         real, plan = preprocess_for_jaaroverzicht(
-    #             self.intermediate_results.counts_by_month['count_opleverdatum'],
-    #             self.intermediate_results.counts_by_month['count_hasdatum'],
-    #         )
-    #         on_time_ratio = calculate_on_time_ratio(self.transformed_data.df)
-    #         outlook = self.transformed_data.df['ordered'].sum()
-    #         bis_gereed = calculate_bis_gereed(self.transformed_data.df)
-    #         jaaroverzicht = calculate_jaaroverzicht(
-    #             real,
-    #             plan,
-    #             self.intermediate_results.HAS_werkvoorraad,
-    #             self.intermediate_results.HC_HPend,
-    #             on_time_ratio,
-    #             outlook,
-    #             bis_gereed
-    #         )
-    #         self.record_dict.add('jaaroverzicht', jaaroverzicht, Record, 'Data')
-
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
         self.intermediate_results.counts_by_month = counts_by_time_period(self.transformed_data.df, freq="MS")
@@ -100,6 +79,78 @@ class TMobileAnalyse(FttXAnalyse):
                     graph_name=f"{k}_by_month")
                for k, v in self.intermediate_results.counts_by_month.items()]
         self.records.add('monthly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
+
+    def _make_intermediate_results_tmobile_project_specific_values(self):
+        """
+        Calculates the project specific values of openstaande orders for tmobile. These values are extracted as a
+        pd.Series with dates, based on the underlying business rules (see br.openstaande_orders_tmobile). The values
+        are then calculated per project (obtained from df.groupby('project')) by calculating their lengths OR the
+        redenna values of the pd.Series are extracted. The values and redenna values are added into a dictionary
+        per project, which is added to intermediate_results.
+
+        Returns: dictionaries with the values per project
+
+        """
+        logger.info("Calculating intermediate results for tmobile project specific values")
+        df = self.transformed_data.df
+        # Create a dictionary that contains the output name and the appropriate masks:
+        # Starting with orders that are patch only, followed by HC aanleg:
+        function_dict = {
+            'openstaand_patch_only_on_time': [
+             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='patch only')][
+                ['creation', 'project', 'cluster_redenna']],
+             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='patch only', time_delta_days=7)][
+                ['creation', 'project']]
+            ],
+            'openstaand_patch_only_limited': [
+             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='patch only')][
+                ['creation', 'project', 'cluster_redenna']],
+             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='patch only', time_delta_days=7)][
+                ['creation', 'project']]
+            ],
+            'openstaand_patch_only_late': [
+             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='patch only')][
+                ['creation', 'project', 'cluster_redenna']],
+             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='patch only', time_delta_days=7)][
+                ['creation', 'project']]
+            ],
+            'openstaand_hc_aanleg_on_time': [
+             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='hc aanleg')][
+                ['creation', 'project', 'cluster_redenna']],
+             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='hc aanleg', time_delta_days=7)][
+                ['creation', 'project']]
+            ],
+            'openstaand_hc_aanleg_limited': [
+             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='hc aanleg')][
+                ['creation', 'project', 'cluster_redenna']],
+             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='hc aanleg', time_delta_days=7)][
+                ['creation', 'project']]
+            ],
+            'openstaand_hc_aanleg_late': [
+             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='hc aanleg')][
+                ['creation', 'project', 'cluster_redenna']],
+             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='hc aanleg', time_delta_days=7)][
+                ['creation', 'project']]
+            ]
+        }
+
+        order_time_windows_per_project_dict = {}
+        for project, df in df.groupby('project'):
+            order_time_windows_dict = {}
+            for key, values in function_dict.items():
+                value_this_week = len(values[0][values[0].project == project])
+                value_last_week = len(values[1][values[1].project == project])
+                redenna_this_week = values[0][values[0].project == project].drop(labels=['project'], axis=1)\
+                    .groupby(by='cluster_redenna').count()\
+                    .rename({'creation': 'cluster_redenna'}, axis=1)\
+                    .to_dict()['cluster_redenna']
+                # The following dict is made to comply with _calculate_projectindicators_tmobile:
+                order_time_windows_dict[key] = {'counts': value_this_week,
+                                                'counts_prev': value_last_week,
+                                                'cluster_redenna': redenna_this_week}
+            order_time_windows_per_project_dict[project] = order_time_windows_dict
+
+        self.intermediate_results.orders_time_windows_per_project = order_time_windows_per_project_dict
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators")
