@@ -1,6 +1,8 @@
 # %%
 import logging
 import argparse
+import os
+
 import config
 from Analyse.KPNDFN import DFNLocalETL, KPNETL, DFNETL
 from Analyse.KPNDFN import KPNLocalETL
@@ -14,7 +16,7 @@ logging.basicConfig(
 
 
 def run_client(client_name, etl_process, steps=None, reload=False, project=None):
-    etl = etl_process(client_name=client_name, config=config.client_config[client_name])
+    etl = etl_process(client=client_name, config=config.client_config[client_name])
     if steps is None:
         etl.perform()
     else:
@@ -44,25 +46,54 @@ def get_etl_process(client, local=True):
     return etl_processes[client][type]
 
 
+def set_config_project(project, client):
+    if client == 'kpn' and project in config.subset_KPN_2021:
+        config.subset_KPN_2021 = [project]
+    elif client == 'tmobile' and project in config.projects_tmobile:
+        config.projects_tmobile = [project]
+    elif client == 'dfn' and project in config.projects_dfn:
+        config.projects_dfn = [project]
+    else:
+        raise NotImplementedError("Please select a correct combination of project and client")
+
+
+def remove_pickle(client):
+    filename = f'{client}_data.pickle'
+    if os.path.exists(filename):
+        os.remove(filename)
+        print("Old pickle has been removed.")
+    else:
+        print("No pickle was present.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--client', help='Run the analysis for a specific client')
     parser.add_argument('--local',
                         help='Write results to local firestore or actual firestore',
                         default=True)
+    parser.add_argument('--project', help='Run the analysis only for a specific project')
+    parser.add_argument('--force-reload', help="Force reloading data from database, rather than using local pickle.")
     args = parser.parse_args()
     local = args.local
-    if local:
+    project = args.project
+    client = args.client
+    set_config_project(project, client)
+
+    if not local:
         prompt = input("Data will be written to the development firestore, confirm that this is intentional (y/n):")
         if prompt != 'y':
             raise ValueError("Please run with --local is True (the default value) to write to the local firestore.")
-    if args.client:
-        client = [args.client]
+    if client:
+        clients = [client]
     else:
         clients = ['kpn', 'tmobile', 'dfn']
 
     for client in clients:
         etl_process = get_etl_process(client=client, local=local)
+        if args.force_reload:
+            remove_pickle(client)
+            run_client(client, etl_process, steps=1)
         run_client(client, etl_process)
 
 
