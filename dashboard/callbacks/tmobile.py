@@ -24,12 +24,12 @@ client = "tmobile"
         Output(f"indicator-download-{client}", 'href')
     ],
     [
-        Input(f"indicator-late_hc_aanleg-{client}", "n_clicks"),
-        Input(f"indicator-limited_hc_aanleg-{client}", "n_clicks"),
-        Input(f"indicator-on_time_hc_aanleg-{client}", "n_clicks"),
-        Input(f"indicator-late_patch_only-{client}", "n_clicks"),
-        Input(f"indicator-limited_patch_only-{client}", "n_clicks"),
-        Input(f"indicator-on_time_patch_only-{client}", "n_clicks"),
+        Input(f"indicator-late-hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-limited-hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-on_time-hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-late-patch_only-{client}", "n_clicks"),
+        Input(f"indicator-limited-patch_only-{client}", "n_clicks"),
+        Input(f"indicator-on_time-patch_only-{client}", "n_clicks"),
         Input("close-sm", "n_clicks"),
     ],
     [
@@ -45,9 +45,11 @@ def indicator_modal(late_clicks_hc, limited_clicks_hc, on_time_clicks_hc,
     changed_id = [p['prop_id'] for p in dash.callback_context.triggered][0]
     if "indicator" in changed_id and (late_clicks_hc or limited_clicks_hc or on_time_clicks_hc
                                       or late_clicks_po or limited_clicks_po or on_time_clicks_po):
-        key = changed_id.partition("-")[-1].partition("-")[0]
+        changed_list = changed_id.split("-")
+        wait_category = changed_list[1]
+        order_type = changed_list[2]
         # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
-        cluster_redenna_sorted_dict = dict(sorted(result[key]['cluster_redenna'].items()))
+        cluster_redenna_sorted_dict = dict(sorted(result[wait_category + "-" + order_type]['cluster_redenna'].items()))
         figure = pie_chart.get_html(labels=list(cluster_redenna_sorted_dict.keys()),
                                     values=list(cluster_redenna_sorted_dict.values()),
                                     title="Reden na",
@@ -58,7 +60,9 @@ def indicator_modal(late_clicks_hc, limited_clicks_hc, on_time_clicks_hc,
                                         colors['vwt_blue'],
                                     ])
 
-        return [not is_open, figure, f'/dash/order_wait_download?wait_category={key}&project={project}']
+        return [not is_open,
+                figure,
+                f'/dash/order_wait_download?wait_category={wait_category}&project={project}&order_type={order_type}']
 
     if close_clicks:
         return [not is_open, {'data': None, 'layout': None}, ""]
@@ -78,8 +82,8 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicators_row1 = ['on_time_hc_aanleg', 'limited_hc_aanleg', 'late_hc_aanleg', 'ratio']
-    indicators_row2 = ['on_time_patch_only', 'limited_patch_only', 'late_patch_only', 'ready_for_has']
+    indicators_row1 = ['on_time-hc_aanleg', 'limited-hc_aanleg', 'late-hc_aanleg', 'ratio']
+    indicators_row2 = ['on_time-patch_only', 'limited-patch_only', 'late-patch_only', 'ready_for_has']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,

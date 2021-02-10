@@ -29,10 +29,10 @@ def validate_project(func):
 
 
 @validate_project
-def waiting_category(project: str, wait_category: str):
+def waiting_category(project: str, wait_category: str, order_type: str):
     """
     This function generates an sql query for a particular project that returns the houses in a particular waiting
-    category.
+    category. See the BR openstaande_orders_tmobile for the logic behind the SQL query
 
     :param project: A fiberconnect project name
     :param wait_category: The wait category used in the filter. One of [on_time, limited_time, late]
@@ -40,24 +40,30 @@ def waiting_category(project: str, wait_category: str):
     """
     if wait_category == "on_time":
         having = "wachttijd > 0 and wachttijd <= 8"
-    elif wait_category == "limited_time":
+    elif wait_category == "limited":
         having = "wachttijd > 8 and wachttijd <= 12"
     elif wait_category == "late":
         having = "wachttijd > 12"
     else:
         having = "wachttijd > 0"
 
+    if order_type == "hc_aanleg":
+        plan_type = "not in ('Zonder klantafspraak')"
+    elif order_type == "patch_only":
+        plan_type = "in ('Zonder klantafspraak')"
+
     return text(f"""
-Select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming,
-        fc.toestemming_datum, fc.opleverstatus, fc.opleverdatum, fc.hasdatum, f.cluster_redenna, fc.redenna,
-        fc.toelichting_status, DATEDIFF(NOW(), fc.toestemming_datum)/7 as wachttijd
+Select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming, fc.creation as creationdatum,
+        fc.opleverstatus, fc.opleverdatum, fc.hasdatum, f.cluster_redenna, fc.redenna,
+        fc.toelichting_status, fc.plan_type, DATEDIFF(NOW(), fc.creation)/7 as wachttijd
 from fc_aansluitingen fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
 where   fc.project = :project
-and     fc.opleverdatum is null
-and     fc.toestemming is not null
+and     fc.status not in ('CANCELLED', 'TO_BE_CANCELLED', 'CLOSED')
+and     fc.type in ('AANLEG', 'Aanleg')
+and     fc.plan_type {plan_type}
 having {having}
-order by fc.toestemming_datum
+order by fc.creation
     """).bindparams(project=project)  # nosec
 
 

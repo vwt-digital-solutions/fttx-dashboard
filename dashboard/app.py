@@ -131,23 +131,25 @@ def order_wait_download():
     from data.download_queries import waiting_category
 
     wait_category = flask.request.args.get('wait_category')
+    order_type = flask.request.args.get('order_type')
     project = flask.request.args.get('project')
-    logging.info(f"Collecting data for {wait_category}.")
+    logging.info(f"Collecting data for {wait_category}, {order_type}.")
 
-    result = download_from_sql(waiting_category(project=project, wait_category=wait_category))
+    result = download_from_sql(waiting_category(project=project, wait_category=wait_category, order_type=order_type))
 
     relevant_columns = ['adres',
                         'postcode',
                         'huisnummer',
                         'soort_bouw',
                         'toestemming',
-                        'toestemming_datum',
+                        'creationdatum',
                         'opleverstatus',
                         'opleverdatum',
                         'hasdatum',
                         'cluster_redenna',
                         'redenna',
                         'toelichting_status',
+                        'plan_type',
                         'wachttijd'
                         ]
 
