@@ -1,6 +1,4 @@
 from Analyse.Record.Record import Record
-import pandas as pd
-from datetime import datetime, timedelta
 
 
 # TODO: Documentation by Casper van Houten
@@ -32,43 +30,19 @@ class LineRecord(Record):
 
     def _transform(self, record):
         record_to_write = dict()
-        series_week = self._make_series_from_record(record, 'W-MON')
-        series_month = self._make_series_from_record(record, 'MS')
-        record_to_write['series_week'] = series_week.to_dict()
-        record_to_write['series_month'] = series_month.to_dict()
-        record_to_write['this_week'] = self._get_freq_value(record, 'W-MON')
-        record_to_write['this_month'] = self._get_freq_value(record, 'MS')
+        record_to_write['series_week'] = record.get_line_aggregate(freq='W-MON',
+                                                                   loffset='-1',
+                                                                   aggregate_type='series',
+                                                                   index_as_str=True).to_dict()
+        record_to_write['series_month'] = record.get_line_aggregate(freq='MS',
+                                                                    aggregate_type='series',
+                                                                    index_as_str=True).to_dict()
+        record_to_write['next_week'] = record.get_line_aggregate(freq='W-MON',
+                                                                 loffset='-1',
+                                                                 aggregate_type='value').to_dict()
+        record_to_write['next_month'] = record.get_line_aggregate(freq='MS',
+                                                                  aggregate_type='value').to_dict()
         return record_to_write
-
-    def _make_series_from_record(self, record, sample):
-        series = record.make_series().resample(sample).sum().cumsum()
-        series = series / series.max() * 100
-        series.index = series.index.format()
-        return series
-
-    def _get_freq_value(self, record, sample):
-        if sample == 'W-MON':
-            series = record.make_series().resample(sample, loffset='-1W-MON', closed='left').sum()
-            series.index = series.index.format()
-            date_index = pd.to_datetime(datetime.now() -
-                                        timedelta(days=datetime.now().isoweekday() % 7 - 1 - 7)
-                                        ).strftime('%Y-%m-%d')
-        if sample == 'MS':
-            series = record.make_series().resample(sample).sum()
-            series.index = series.index.format()
-            date_index = pd.Timestamp.now().strftime('%Y-%m-%d')[0:8] + '01'
-            replace = int(date_index[5:7]) + 1
-            if replace < 10:
-                replace = '0' + str(replace)
-            else:
-                replace = str(replace)
-            date_index = date_index[0:5] + replace + date_index[7:]
-
-        if date_index in series.index:
-            value = series[date_index]
-        else:
-            value = 0
-        return value
 
     def document_name(self, **kwargs):
         """

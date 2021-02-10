@@ -59,47 +59,61 @@ class PhaseCapacity:
         line = LinearLine(intercept=intercept,
                           slope=0,
                           domain=domain,
-                          name='target_indicator')
+                          name='target_indicator',
+                          max_value=self.phase_data['total_units'])
         return line
 
     def calculate_pocreal_line(self):
         ds = self.df[self.phase_data['phase_column']]
         line = TimeseriesLine(data=ds,
-                              name='poc_real_indicator')
+                              name='poc_real_indicator',
+                              max_value=self.phase_data['total_units'])
         return line
 
     def calculate_pocideal_line(self):
         pocreal_line = self.calculate_pocreal_line()
         target_line = self.calculate_target_line()
-
-        todo = self.phase_data['total_units'] - pocreal_line.integrate().get_most_recent_point()
-        daysleft = (target_line.domain.end - pocreal_line.domain.end).days
+        todo = pocreal_line.todo()
+        daysleft = pocreal_line.daysleft(end=target_line.domain.end)
+        # normal case: when there is still work to do and there is time left before the target deadline
         if (todo > 0) & (daysleft > 0):
             slope = todo / daysleft
             domain = DateDomain(begin=pocreal_line.domain.end, end=target_line.domain.end)
-            line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
-        if (todo > 0) & (daysleft <= 0):  # production needed to finish within a week
-            slope = todo / 7
+            line = pocreal_line.append(LinearLine(intercept=slope,
+                                                  slope=0,
+                                                  domain=domain),
+                                       skip=1)
+        # exception: when there is still work to do but the target deadline has already passed
+        elif (todo > 0) & (daysleft <= 0):
+            slope = todo / 7  # past deadline, production needs to be finish within a week
             domain = DateDomain(begin=pocreal_line.domain.end, end=pd.Timestamp.now() + timedelta(7))
-            line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
+            line = pocreal_line.append(LinearLine(intercept=slope,
+                                                  slope=0,
+                                                  domain=domain),
+                                       skip=1)
+        # no more work to do, so ideal line == realised line
         else:
             line = pocreal_line
         line.name = 'poc_ideal_indicator'
+        line.max_value = self.phase_data['total_units']
         return line
 
     def calculate_pocverwacht_line(self):
         pocreal_line = self.calculate_pocreal_line()
         slope = pocreal_line.integrate().extrapolate(data_partition=0.5).slope
+        # when there not enough realised data pionts, we take the ideal speed as slope
         if slope == 0:
             slope = self.phase_data['performance_norm_unit']
-        todo = self.phase_data['total_units'] - pocreal_line.integrate().get_most_recent_point()
-        daysleft = int(todo / slope)
+        todo = pocreal_line.todo()
+        daysleft = pocreal_line.daysleft(slope=slope)
+        # if there is work to do we extend the pocreal line, if not ideal line == realised line
         if todo > 0:
             domain = DateDomainRange(begin=pocreal_line.domain.end, n_days=daysleft)
             line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
         else:
             line = pocreal_line
         line.name = 'poc_verwacht_indicator'
+        line.max_value = self.phase_data['total_units']
         return line
 
     def calculate_werkvoorraad_line(self):
@@ -108,11 +122,13 @@ class PhaseCapacity:
         ratio = self.phase_data['total_units'] / self.masterphase_data['total_units']
         line = self.pocideal_line_masterphase * ratio
         line.name = 'werkvoorraad_indicator'
+        line.max_value = self.phase_data['total_units']
         return line
 
     def calculate_werkvoorraadabsoluut_line(self):
         line = self.calculate_werkvoorraad_line().integrate() - self.calculate_pocideal_line().integrate()
         line.name = 'werkvoorraad_absoluut_indicator'
+        line.max_value = self.phase_data['total_units']
         return line
 
     def line_to_record(self, line: object):

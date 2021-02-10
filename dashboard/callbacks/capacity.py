@@ -99,7 +99,7 @@ for client in config.client_config.keys():
             indicator_dict = get_document("Lines", line=key + '_indicator', **selection_settings)
             if indicator_dict:
                 line_graph_bool = True
-                indicator_values[key] = int(indicator_dict['this_' + freq])
+                indicator_values[key] = int(indicator_dict['next_' + freq])
                 timeseries[key] = pd.Series(indicator_dict['series_' + freq])
         werkvoorraad_absoluut = indicator_values.pop('werkvoorraad_absoluut')
         if werkvoorraad_absoluut < 0:
