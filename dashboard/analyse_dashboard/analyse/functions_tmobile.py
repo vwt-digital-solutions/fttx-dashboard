@@ -59,30 +59,3 @@ def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
 
     record = {col: pd.Series(series).dropna().to_dict() for col, series in df_merged.iteritems()}
     return record
-
-
-# def slice_for_jaaroverzicht(data):
-#     df = pd.DataFrame.from_dict(data, orient='index', columns=['count_by_month'])
-#     df.index = pd.to_datetime(df.index)
-#     period = ['2019-12-23', '2020-12-27']
-#     return df.loc[period[0]:period[1], 'count_by_month'].to_list()
-
-
-# def preprocess_for_jaaroverzicht(*args):
-#     return [slice_for_jaaroverzicht(arg) for arg in args]
-
-
-# def calculate_jaaroverzicht(realisatie, planning, HAS_werkvoorraad, HC_HPend, on_time_ratio, outlook, bis_gereed):
-#     realisatie_sum = round(sum(realisatie))
-#     planning_sum = sum(planning)
-#     planning_result = planning_sum - realisatie_sum
-#     jaaroverzicht = dict(id='jaaroverzicht',
-#                          real=str(realisatie_sum),
-#                          plan=str(planning_result),
-#                          HAS_werkvoorraad=str(HAS_werkvoorraad),
-#                          ratio_op_tijd="{:.2f}".format(on_time_ratio),
-#                          bis_gereed=str(bis_gereed),
-#                          prog_c='pretty_container',
-#                          target=str(outlook))
-#
-#     return jaaroverzicht
