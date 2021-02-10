@@ -1039,7 +1039,7 @@ def rules_to_state(rules_list, state_list):
     return state
 
 
-# TODO: Documentation by  Andre van Turnhout, add the arguments and return value
+# TODO: Documentation by  Andre van Turnhout, add the arguments and return value   -> can this be removed?
 def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     """
     This function counts the wait between toestemming datum and now (or a reference date, based on time_delta_days).
@@ -1063,14 +1063,14 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     return toestemming_df
 
 
-# TODO: Documentation by Andre van Turnhout
+# TODO: Documentation by Andre van Turnhout  -> can this be removed?
 def count_toestemming(toestemming_df):
     toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
     counts = toestemming_df.counts.value_counts()
     return counts
 
 
-# TODO: Documentation by Andre van Turnhout
+# TODO: Documentation by Andre van Turnhout  -> can this be removed?
 def wait_bin_cluster_redenna(df):
     wait_bin_cluster_redenna_df = df[['wait_category', 'cluster_redenna', 'toestemming']].groupby(
         by=['wait_category', 'cluster_redenna']).count()
