@@ -110,14 +110,17 @@ def download_from_sql(query):
     return result
 
 
-def df_to_excel(df: pd.DataFrame, relevant_columns: list):
+def df_to_excel(df: pd.DataFrame, relevant_columns: list = None):
     output = BytesIO()
     writer = pd.ExcelWriter(output, engine='xlsxwriter')
     if df.empty:
         result = pd.DataFrame(columns=relevant_columns)
         result.to_excel(writer, index=False)
     else:
-        df[relevant_columns].to_excel(writer, index=False)
+        if relevant_columns:
+            df[relevant_columns].to_excel(writer, index=False)
+        else:
+            df.to_excel(writer, index=False)
     writer.save()
     output.seek(0)
     return output
