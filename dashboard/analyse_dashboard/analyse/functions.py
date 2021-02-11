@@ -998,16 +998,18 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
 
     """
     if freq == 'W-MON':
-        interval_label = 'left'
+        label_side = 'left'
+        closed_side = 'left'
     if freq == 'M' or freq == 'Y':
-        interval_label = 'right'
+        label_side = 'right'
+        closed_side = 'right'
 
     redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
         .groupby(by=[pd.Grouper(key=date_column,
                                 freq=freq,
-                                closed='left',  # closed end of the interval, see:
+                                closed=closed_side,  # closed end of the interval, see:
                                 # (https://en.wikipedia.org/wiki/Interval_(mathematics)#Terminology)
-                                label=interval_label  # label specifies whether the result is labeled
+                                label=label_side  # label specifies whether the result is labeled
                                 # with the beginning or the end of the interval.
                                 ),
                      "cluster_redenna",
@@ -1470,9 +1472,11 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
         data = pd.Series()
 
     if freq == 'W-MON':  # interval labels: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.resample.html
-        interval_label = 'left'
+        label_side = 'left'
+        closed_side = 'left'
     if freq == 'M' or freq == 'Y':
-        interval_label = 'right'
+        label_side = 'right'
+        closed_side = 'right'
 
     if not data[~data.isna()].empty:
         if not isinstance(data.index[0], pd.Timestamp):
@@ -1481,13 +1485,13 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     if period:
         data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
         if not data[~data.isna()].empty:
-            data_counted = (data_filler + data.resample(freq, closed='left', label=interval_label).sum()[
+            data_counted = (data_filler + data.resample(freq, closed=closed_side, label=label_side).sum()[
                                           period[0]:period[1]]).fillna(0)
         else:
             data_counted = data_filler
     else:
         if not data[~data.isna()].empty:
-            data_counted = data.resample(freq, closed='left', label=interval_label).sum()
+            data_counted = data.resample(freq, closed=closed_side, label=label_side).sum()
         else:
             data_counted = pd.Series()
 

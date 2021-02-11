@@ -64,6 +64,7 @@ class TMobileAnalyse(FttXAnalyse):
         record = calculate_voorraadvormend(self.transformed_data.df)
         self.records.add('voorraadvormend', record, Record, "Data")
 
+    # TODO: can this be removed ? Does not seem to be used
     def _get_counts_by_week(self):
         logger.info("Calculating counts by week")
         counts_by_week = counts_by_time_period(self.transformed_data.df)
@@ -72,6 +73,7 @@ class TMobileAnalyse(FttXAnalyse):
                for k, v in counts_by_week.items()]
         self.records.add('weekly_date_counts', drl, DocumentListRecord, "Data", document_key=['graph_name'])
 
+    # TODO: can this be removed ? Does not seem to be used
     def _get_counts_by_month(self):
         logger.info("Calculating counts by month")
         self.intermediate_results.counts_by_month = counts_by_time_period(self.transformed_data.df, freq="MS")
