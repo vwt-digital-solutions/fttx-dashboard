@@ -88,7 +88,7 @@ for client in config.client_config.keys():
         freq = callback_context.inputs[f'frequency-selector-{client}.value']
 
         selection_settings = dict(
-            client=client, project=project, phase=phase
+            client=client, project=project, phase=phase_name
         )
 
         indicator_values = dict(target=0, werkvoorraad=0, poc_verwacht=0, poc_ideal=0, werkvoorraad_absoluut=0)

@@ -118,7 +118,8 @@ class CapacityTransform(FttXTransform):
                     ds_add = self.transformed_data.bis.df.loc[project][phase_config['phase_column']]
                     ds_add = ds_add[~ds_add.isna()]
                 if phase_config['phase_column'] in self.transformed_data.df.columns:
-                    ds_add = self.transformed_data.df[phase_config['phase_column']]
+                    df_project = self.transformed_data.df[self.transformed_data.df.project == project]
+                    ds_add = df_project[phase_config['phase_column']]
                     ds_add = ds_add[(~ds_add.isna()) & (ds_add <= pd.Timestamp.now())]
                     ds_add = ds_add.groupby(ds_add.dt.date).count()
                     ds_add.index.name = 'date'

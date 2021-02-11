@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import timedelta
-from Analyse.Capacity_analysis.Line import TimeseriesLine, LinearLine
+from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
@@ -56,11 +56,10 @@ class PhaseCapacity:
         intercept = self.phase_data['performance_norm_unit']
         domain = DateDomainRange(begin=self.phase_data['start_date'],
                                  n_days=self.phase_data['n_days'])
-        line = LinearLine(intercept=intercept,
-                          slope=0,
-                          domain=domain,
-                          name='target_indicator',
-                          max_value=self.phase_data['total_units'])
+        line = TimeseriesLine(data=intercept,
+                              domain=domain,
+                              name='target_indicator',
+                              max_value=self.phase_data['total_units'])
         return line
 
     def calculate_pocreal_line(self):
@@ -73,23 +72,21 @@ class PhaseCapacity:
     def calculate_pocideal_line(self):
         pocreal_line = self.calculate_pocreal_line()
         target_line = self.calculate_target_line()
-        todo = pocreal_line.todo()
+        distance_to_max_value = pocreal_line.distance_to_max_value()
         daysleft = pocreal_line.daysleft(end=target_line.domain.end)
         # normal case: when there is still work to do and there is time left before the target deadline
-        if (todo > 0) & (daysleft > 0):
-            slope = todo / daysleft
+        if (distance_to_max_value > 0) & (daysleft > 0):
+            slope = distance_to_max_value / daysleft
             domain = DateDomain(begin=pocreal_line.domain.end, end=target_line.domain.end)
-            line = pocreal_line.append(LinearLine(intercept=slope,
-                                                  slope=0,
-                                                  domain=domain),
+            line = pocreal_line.append(TimeseriesLine(data=slope,
+                                                      domain=domain),
                                        skip=1)
         # exception: when there is still work to do but the target deadline has already passed
-        elif (todo > 0) & (daysleft <= 0):
-            slope = todo / 7  # past deadline, production needs to be finish within a week
+        elif (distance_to_max_value > 0) & (daysleft <= 0):
+            slope = distance_to_max_value / 7  # past deadline, production needs to be finish within a week
             domain = DateDomain(begin=pocreal_line.domain.end, end=pd.Timestamp.now() + timedelta(7))
-            line = pocreal_line.append(LinearLine(intercept=slope,
-                                                  slope=0,
-                                                  domain=domain),
+            line = pocreal_line.append(TimeseriesLine(data=slope,
+                                                      domain=domain),
                                        skip=1)
         # no more work to do, so ideal line == realised line
         else:
@@ -104,12 +101,12 @@ class PhaseCapacity:
         # when there not enough realised data pionts, we take the ideal speed as slope
         if slope == 0:
             slope = self.phase_data['performance_norm_unit']
-        todo = pocreal_line.todo()
+        distance_to_max_value = pocreal_line.distance_to_max_value()
         daysleft = pocreal_line.daysleft(slope=slope)
         # if there is work to do we extend the pocreal line, if not ideal line == realised line
-        if todo > 0:
+        if distance_to_max_value > 0:
             domain = DateDomainRange(begin=pocreal_line.domain.end, n_days=daysleft)
-            line = pocreal_line.append(LinearLine(intercept=slope, slope=0, domain=domain), skip=1)
+            line = pocreal_line.append(TimeseriesLine(data=slope, domain=domain), skip=1)
         else:
             line = pocreal_line
         line.name = 'poc_verwacht_indicator'

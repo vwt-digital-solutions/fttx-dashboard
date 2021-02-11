@@ -47,7 +47,6 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
@@ -62,10 +61,9 @@ class Line:
         label (str): optional
     """
 
-    def __init__(self, name="", label=None, max_value=None):
+    def __init__(self, name="", label=None):
         self.name = name
         self.label = label
-        self.max_value = max_value
 
     def make_series(self) -> pd.Series:
         """
@@ -124,44 +122,6 @@ class Line:
 
         """
         raise NotImplementedError
-
-    #  this function requires a line based on speed, not distance
-    def get_line_aggregate(self, freq='MS', aggregate_type='series', loffset='0', closed='left', index_as_str=False):
-        series = self.make_normalised_series(maximum=self.max_value, percentage=True)
-        series = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
-        if freq == 'MS':
-            next_period = pd.to_datetime(datetime.now() -
-                                         relativedelta(days=datetime.now().date().day - 1) +
-                                         relativedelta(months=1))
-        if freq == 'W-MON':
-            next_period = pd.to_datetime(datetime.now().date() -
-                                         relativedelta(datetime.now().date().weekday()) +
-                                         relativedelta(weeks=1))
-        if aggregate_type == 'series':
-            aggregate = series.cumsum()
-            if index_as_str:
-                aggregate.index = aggregate.index.format()
-        if aggregate_type == 'value':
-            if next_period in series.index:
-                aggregate = series[next_period]
-            else:
-                aggregate = 0
-
-        return aggregate
-
-    def todo(self):
-        return self.max_value - self.integrate().get_most_recent_point()
-
-    def daysleft(self, end=None, slope=None):
-        if end:
-            if type(end) is str:
-                end = pd.to_datetime(end)
-            daysleft = (end - self.domain.end).days
-        elif slope:
-            daysleft = int(self.todo() / slope)
-        else:
-            daysleft = None
-        return daysleft
 
     def __add__(self, other):
         raise NotImplementedError
@@ -425,12 +385,16 @@ class TimeseriesLine(PointLine):
     A point line is a collection of datapoints on a shared datetime index.
     """
 
-    def __init__(self, data, domain=None, *args, **kwargs):
+    def __init__(self, data, domain=None, max_value=None, *args, **kwargs):
         super().__init__(data=data, *args, **kwargs)
-        if domain:
+        if (len(self.data) == 1) & (domain is not None):
+            self.domain = domain
+            self.data = pd.Series(data=self.data.iloc[0], index=self.domain.domain)
+        elif domain:
             self.domain = domain
         else:
-            self.domain = DateDomain(data.index[0], data.index[-1])
+            self.domain = DateDomain(self.data.index[0], self.data.index[-1])
+        self.max_value = max_value
 
     # TODO: Documentation by Casper van Houten
     def make_series(self):
@@ -515,3 +479,46 @@ class TimeseriesLine(PointLine):
             slope = 0
             intersect = 0
         return slope, intersect
+
+    #  this function requires a line based on speed, not distance
+    def get_line_aggregate(self, freq='MS', aggregate_type='series', loffset='0', closed='left', index_as_str=False):
+        if aggregate_type == 'series':
+            series = self.make_normalised_series(maximum=self.max_value, percentage=True)
+            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum().cumsum()
+            if index_as_str:
+                aggregate.index = aggregate.index.format()
+        elif aggregate_type == 'value':
+            series = self.make_series()
+            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
+            period_for_output = self.period_for_output(freq)
+            if period_for_output in series.index:
+                aggregate = aggregate[period_for_output]
+            else:
+                aggregate = 0
+        else:
+            raise NotImplementedError('No method implemented for aggregate type {}'.format(aggregate_type))
+
+        return aggregate
+
+    def period_for_output(self, freq: str):
+        if freq == 'MS':
+            period = pd.Timestamp(pd.Timestamp.now().year, pd.Timestamp.now().month, 1) + relativedelta(months=1)
+        elif freq == 'W-MON':
+            period = pd.to_datetime(pd.Timestamp.now().date() + relativedelta(days=7 - pd.Timestamp.now().weekday()))
+        else:
+            raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
+        return period
+
+    def distance_to_max_value(self):
+        return self.max_value - self.integrate().get_most_recent_point()
+
+    def daysleft(self, end=None, slope=None):
+        if end:
+            if type(end) is str:
+                end = pd.to_datetime(end)
+            daysleft = (end - self.domain.end).days
+        elif slope:
+            daysleft = int(self.distance_to_max_value() / slope)
+        else:
+            daysleft = None
+        return daysleft
