@@ -187,7 +187,8 @@ def project_redenna_download():
                         "opleverdatum",
                         'laswerkdpgereed',
                         'laswerkapgereed',
-                        'hasdatum']
+                        'hasdatum',
+                        'creationdatum_tmobile']  # TODO: only add creationdatum when client == tmobile
 
     excel = df_to_excel(result, relevant_columns)
     now = datetime.now().strftime('%Y%m%d')

@@ -93,11 +93,11 @@ def project_redenna(project,
             filters += "and fc.toestemming is not null\n"
         elif schouw_status == "opgeleverd":
             filters += "and fc.toestemming is null\n"
-    if bis_status:
+    if bis_status:  # see BR: bis_opgeleverd and bis_niet_opgeleverd
         if bis_status == "niet_opgeleverd":
-            filters += "and fc.opleverstatus = 0\n"
+            filters += "and fc.opleverstatus in (0, 90, 99)\n"
         elif bis_status == "opgeleverd":
-            filters += "and fc.opleverstatus != 0\n"
+            filters += "and fc.opleverstatus not in (0, 90, 99)\n"
     if lasdp_status:
         if lasdp_status == "niet_opgeleverd":
             filters += "and fc.laswerkdpgereed != 1\n"
@@ -129,7 +129,8 @@ def project_redenna(project,
         fc.laswerkdpgereed,
         fc.laswerkapgereed,
         fc.opleverstatus, fc.opleverdatum,
-        fc.hasdatum
+        fc.hasdatum,
+        fc.creation as creationdatum_tmobile
 from fc_aansluitingen as fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
 where project = :project
