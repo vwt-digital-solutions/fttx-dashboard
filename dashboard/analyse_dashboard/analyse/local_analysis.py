@@ -4,9 +4,9 @@ import argparse
 import os
 
 import config
-from Analyse.KPNDFN import DFNLocalETL, KPNETL, DFNETL
-from Analyse.KPNDFN import KPNLocalETL
-from Analyse.TMobile import TMobileLocalETL, TMobileETL
+from Analyse.KPNDFN import DFNLocalETL, KPNETL, KPNLocalETL, DFNETL, KPNTestETL, DFNTestETL
+from Analyse.TMobile import TMobileLocalETL, TMobileETL, TMobileTestETL
+
 from builtins import input
 
 logging.basicConfig(
@@ -18,43 +18,40 @@ logging.basicConfig(
 def run_client(client_name, etl_process, steps=None, reload=False, project=None):
     etl = etl_process(client=client_name, config=config.client_config[client_name])
     if steps is None:
+        print(f'Performing {etl_process.__name__} for {client_name}')
         etl.perform()
     else:
         step_list = [etl.extract, etl.transform, etl.analyse, etl.load]
+        print(f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}")
         [step() for step in step_list[:steps]]
 
 
-def get_etl_process(client, local=True):
-    if local:
-        type = 'local'
-    else:
-        type = 'real'
+def get_etl_process(client, etl_type='local'):
     etl_processes = {
                     'kpn': {
                             'local': KPNLocalETL,
                             'real': KPNETL,
+                            'reload': KPNTestETL
                             },
                     'tmobile': {
                                 'local': TMobileLocalETL,
                                 'real': TMobileETL,
+                                'reload': TMobileTestETL
                                },
                     'dfn': {
                             'local': DFNLocalETL,
                             'real': DFNETL,
+                            'reload': DFNTestETL
                            }
                     }
-    return etl_processes[client][type]
+    return etl_processes[client][etl_type]
 
 
 def set_config_project(project, client):
-    if client == 'kpn' and project in config.subset_KPN_2021:
-        config.subset_KPN_2021 = [project]
-    elif client == 'tmobile' and project in config.projects_tmobile:
-        config.projects_tmobile = [project]
-    elif client == 'dfn' and project in config.projects_dfn:
-        config.projects_dfn = [project]
+    if project in config.client_config[client]['projects']:
+        config.client_config[client]['projects'] = [project]
     else:
-        raise NotImplementedError("Please select a correct combination of project and client")
+        raise ValueError("Please select a valid combination of client and project")
 
 
 def remove_pickle(client):
@@ -66,34 +63,54 @@ def remove_pickle(client):
         print("No pickle was present.")
 
 
+def force_reload(clients):
+    for client in clients:
+        remove_pickle(client)
+        extract_process = get_etl_process(client=client, etl_type='reload')
+        run_client(client, extract_process, steps=1)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--client', help='Run the analysis for a specific client')
+    parser.add_argument('--client', help='Run the analysis for a specific client', default=False)
     parser.add_argument('--local',
                         help='Write results to local firestore or actual firestore',
                         default=True)
     parser.add_argument('--project', help='Run the analysis only for a specific project')
-    parser.add_argument('--force-reload', help="Force reloading data from database, rather than using local pickle.")
+    parser.add_argument('--force-reload',
+                        action='store_const',
+                        const=True,
+                        help="Force reloading data from database, rather than using local pickle.")
     args = parser.parse_args()
     local = args.local
     project = args.project
     client = args.client
-    set_config_project(project, client)
+
+    if project:
+        if not client:
+            raise ValueError("Please select a client in combination with a project")
+        set_config_project(project, client)
 
     if not local:
         prompt = input("Data will be written to the development firestore, confirm that this is intentional (y/n):")
         if prompt != 'y':
             raise ValueError("Please run with --local is True (the default value) to write to the local firestore.")
+        etl_type = 'real'
+
     if client:
         clients = [client]
     else:
         clients = ['kpn', 'tmobile', 'dfn']
 
+    if args.force_reload:
+        force_reload(clients)
+
+    if local:
+        os.environ['FIRESTORE_EMULATOR_HOST'] = 'localhost:8080'
+        etl_type = 'local'
+
     for client in clients:
-        etl_process = get_etl_process(client=client, local=local)
-        if args.force_reload:
-            remove_pickle(client)
-            run_client(client, etl_process, steps=1)
+        etl_process = get_etl_process(client=client, etl_type=etl_type)
         run_client(client, etl_process)
 
 
