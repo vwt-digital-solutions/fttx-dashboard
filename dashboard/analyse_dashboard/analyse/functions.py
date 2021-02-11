@@ -753,8 +753,18 @@ def add_token_mapbox(token):
     firestore.Client().collection('Graphs').document(record['id']).set(record)
 
 
-# TODO: Documentation by Mark Bruisten
 def set_date_update(client=None):
+    """
+    This functions sets the date for the last time the analysis function has run correctly
+    Since we have disinct analysis functions for each client, the update date is set for a
+    specific client.
+
+    Args:
+        client: client name
+
+    Returns: timestamp store in a document for the last correct run of the analysis
+
+    """
     id_ = f'update_date_{client}' if client else 'update_date'
     record = dict(id=id_, date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
     firestore.Client().collection('Graphs').document(record['id']).set(record)
