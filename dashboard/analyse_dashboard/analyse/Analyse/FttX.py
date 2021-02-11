@@ -58,20 +58,8 @@ class FttXExtract(Extract):
         Sets self.extracted_data to a pd.Dataframe of all data.
         """
         logger.info("Extracting the Projects collection")
-        if toggles.fc_sql:
-            self._extract_from_sql()
-        else:
-            self._extract_from_firestore()
+        self._extract_from_sql()
         self._extract_project_info()
-
-    def _extract_from_firestore(self):
-        logger.info("Extracting from the firestore")
-        df = pd.DataFrame([])
-        for key in self.projects:
-            df = df.append(self._extract_project(key), ignore_index=True, sort=True)
-        projects_category = pd.CategoricalDtype(categories=self.projects)
-        df['project'] = df.project.astype(projects_category)
-        self.extracted_data.df = df
 
     def _extract_from_sql(self):
         logger.info("Extracting from the sql database")

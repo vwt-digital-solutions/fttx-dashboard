@@ -29,10 +29,10 @@ def validate_project(func):
 
 
 @validate_project
-def waiting_category(project: str, wait_category: str):
+def waiting_category(project: str, wait_category: str, order_type: str):
     """
     This function generates an sql query for a particular project that returns the houses in a particular waiting
-    category.
+    category. See the BR openstaande_orders_tmobile for the logic behind the SQL query
 
     :param project: A fiberconnect project name
     :param wait_category: The wait category used in the filter. One of [on_time, limited_time, late]
@@ -40,24 +40,30 @@ def waiting_category(project: str, wait_category: str):
     """
     if wait_category == "on_time":
         having = "wachttijd > 0 and wachttijd <= 8"
-    elif wait_category == "limited_time":
+    elif wait_category == "limited":
         having = "wachttijd > 8 and wachttijd <= 12"
     elif wait_category == "late":
         having = "wachttijd > 12"
     else:
         having = "wachttijd > 0"
 
+    if order_type == "hc_aanleg":
+        plan_type = "not in ('Zonder klantafspraak')"
+    elif order_type == "patch_only":
+        plan_type = "in ('Zonder klantafspraak')"
+
     return text(f"""
-Select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming,
-        fc.toestemming_datum, fc.opleverstatus, fc.opleverdatum, fc.hasdatum, f.cluster_redenna, fc.redenna,
-        fc.toelichting_status, DATEDIFF(NOW(), fc.toestemming_datum)/7 as wachttijd
+Select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming, fc.creation as creationdatum,
+        fc.opleverstatus, fc.opleverdatum, fc.hasdatum, f.cluster_redenna, fc.redenna,
+        fc.toelichting_status, fc.plan_type, DATEDIFF(NOW(), fc.creation)/7 as wachttijd
 from fc_aansluitingen fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
 where   fc.project = :project
-and     fc.opleverdatum is null
-and     fc.toestemming is not null
+and     fc.status not in ('CANCELLED', 'TO_BE_CANCELLED', 'CLOSED')
+and     fc.type in ('AANLEG', 'Aanleg')
+and     fc.plan_type {plan_type}
 having {having}
-order by fc.toestemming_datum
+order by fc.creation
     """).bindparams(project=project)  # nosec
 
 
@@ -88,10 +94,10 @@ def project_redenna(project,
         elif schouw_status == "opgeleverd":
             filters += "and fc.toestemming is null\n"
     if bis_status:
-        if bis_status == "niet_opgeleverd":
-            filters += "and fc.opleverstatus = 0\n"
-        elif bis_status == "opgeleverd":
-            filters += "and fc.opleverstatus != 0\n"
+        if bis_status == "niet_opgeleverd":  # see BR: bis_niet_opgeleverd
+            filters += "and fc.opleverstatus in (0, 90, 99)\n"
+        elif bis_status == "opgeleverd":  # see BR: bis_opgeleverd
+            filters += "and fc.opleverstatus not in (0, 90, 99)\n"
     if lasdp_status:
         if lasdp_status == "niet_opgeleverd":
             filters += "and fc.laswerkdpgereed != 1\n"
@@ -123,7 +129,8 @@ def project_redenna(project,
         fc.laswerkdpgereed,
         fc.laswerkapgereed,
         fc.opleverstatus, fc.opleverdatum,
-        fc.hasdatum
+        fc.hasdatum,
+        fc.creation as creationdatum
 from fc_aansluitingen as fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
 where project = :project

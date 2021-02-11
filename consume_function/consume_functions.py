@@ -8,7 +8,6 @@ from pandas._libs.tslibs.nattype import NaTType
 from sqlalchemy.engine import ResultProxy
 
 import config
-from toggles import toggles
 from sqlalchemy import create_engine
 from contextlib import contextmanager
 import pandas as pd
@@ -30,21 +29,11 @@ def process_fiberconnect(records, topic_config):
     logging.info("Processing fiber connect")
     update_date_document_name = topic_config.get('update_date_document')
     records, logs = prepare_records(records)
-    if toggles.fc_sql:
-        table = topic_config.get('sql_table')
-        write_records_to_sql(records=records,
-                             table=table,
-                             update_date_document_name=update_date_document_name)
-    else:
-        collection_name = topic_config.get('firestore_collection')
-        primary_key = topic_config.get('primary_key')
-        write_records_to_fs(records=records,
-                            collection_name=collection_name,
-                            update_date_document_name=update_date_document_name,
-                            primary_key=primary_key)
-        write_records_to_fs(records=logs,
-                            collection_name='transitionlog',
-                            update_date_document_name=update_date_document_name)
+    table = topic_config.get('sql_table')
+    write_logs_to_sql(logs)
+    write_records_to_sql(records=records,
+                         table=table,
+                         update_date_document_name=update_date_document_name)
 
 
 def parse_request(request):
@@ -65,9 +54,16 @@ def write_records_to_fs(records, collection_name, update_date_document_name=None
             batch.commit()
             logging.info(f'Write {i} message(s) to the firestore')
     batch.commit()
-    db.collection('Graphs').document(update_date_document_name).\
+    db.collection('Graphs').document(update_date_document_name). \
         set(dict(id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
     logging.info(f'Writing message to {collection_name} finished')
+
+
+def write_logs_to_sql(logs):
+    if logs:
+        log_df = pd.DataFrame(logs)
+        log_df['date'] = pd.to_datetime(log_df.date)
+        log_df.to_sql('fc_transitie_log', con=sqlEngine, index=False, if_exists='append')
 
 
 def write_records_to_sql(records, table, update_date_document_name):
@@ -96,7 +92,7 @@ on duplicate key update
     with sqlEngine.connect() as con:
         logging.info('created conn')
         result: ResultProxy = con.execute(update_query, *values)
-    db.collection('Graphs').document(update_date_document_name).\
+    db.collection('Graphs').document(update_date_document_name). \
         set(dict(id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
     logging.info(f"{result.rowcount} where written to the database")
 
@@ -144,111 +140,68 @@ where fca.sleutel = '{sleutel}'
     yield get_aansluiting
 
 
-@contextmanager
-def firestore_reference(firestore_collection):
-    collection = db.collection(firestore_collection)
+def prepare_records(records):
+    logging.info("Preparing records")
+    updated_records = []
+    updated_log = []
+    history_columns = config.HISTORY_COLUMNS
+    status_change_columns = config.STATUS_CHANGE_COLUMNS
+    primary_keys = config.PRIMARY_KEYS
 
-    def get_aansluiting(doc_id):
-        return collection.document(doc_id).get().to_dict()
+    context = sql_reference([record[primary_keys] for record in records])
+    datetime_format = '%Y-%m-%d %H:%M:%S'
 
-    yield get_aansluiting
-
-
-if toggles.fc_sql:
-    def prepare_records(records):
-        logging.info("Preparing records")
-        updated_records = []
-        updated_log = []
-        history_columns = config.HISTORY_COLUMNS
-        firestore_collection = config.FIRESTORE_COLLECTION
-        primary_keys = config.PRIMARY_KEYS
-
-        if toggles.fc_sql:
-            context = sql_reference([record[primary_keys] for record in records])
-            datetime_format = '%Y-%m-%d %H:%M:%S'
-        else:
-            context = firestore_reference(firestore_collection)
-            datetime_format = '%Y-%m-%dT%H:%M:%SZ'
-
-        with context as get_aansluiting:
-            df = pd.DataFrame(records)
-            datums = [col for col in df.columns if "datum" in col]
-            for datum in datums:
-                df[datum] = df[datum].apply(pd.to_datetime,
-                                            infer_datetime_format=True,
-                                            errors="coerce",
-                                            utc=True)
-                df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
-            for i, record in df.iterrows():
-                record = dict(record)
-                reference_record = get_aansluiting(record[primary_keys])
-                if reference_record:
-                    # add date column to new record if already exists or if value = 1
-                    for column, date_column in history_columns.items():
-                        if not isinstance(reference_record.get(date_column), NaTType):
-                            record[date_column] = reference_record[date_column]
-                        elif '1' in str(record[column]):
-                            record[date_column] = datetime.now().strftime(datetime_format)
-
-                else:  # if not exists update log with 'primary entry'
-                    for key, value in history_columns.items():
-                        if '1' in str(record[key]):
-                            record[value] = datetime.now().strftime(datetime_format)
-
-                updated_records.append(record)
-
-        logging.info(f"{len(updated_records)} records to be updated, {len(updated_log)} logs to be added")
-        return updated_records, updated_log
-
-else:
-    def prepare_records(records):
-        updated_records = []
-        updated_log = []
-        history_columns = config.HISTORY_COLUMNS
-        status_change_columns = config.STATUS_CHANGE_COLUMNS
-        firestore_collection = config.FIRESTORE_COLLECTION
-        primary_keys = config.PRIMARY_KEYS
-
-        for record in records:
-            record_fs = db.collection(firestore_collection).document(record[primary_keys]).get()
-            if record_fs.exists:
-                record_fs = record_fs.to_dict()
+    with context as get_aansluiting:
+        df = pd.DataFrame(records)
+        datums = [col for col in df.columns if "datum" in col]
+        for datum in datums:
+            df[datum] = df[datum].apply(pd.to_datetime,
+                                        infer_datetime_format=True,
+                                        errors="coerce",
+                                        utc=True)
+            df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
+        for i, record in df.iterrows():
+            record = dict(record)
+            reference_record = get_aansluiting(record[primary_keys])
+            if reference_record:
 
                 # add date column to new record if already exists or if value = 1
-                for key, value in history_columns.items():
-                    if value in record_fs:
-                        record[value] = record_fs[value]
-                    elif '1' in str(record[key]):
-                        record[value] = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+                for column, date_column in history_columns.items():
+                    if not isinstance(reference_record.get(date_column), NaTType):
+                        record[date_column] = reference_record[date_column]
+                    elif '1' in str(record[column]):
+                        record[date_column] = datetime.now().strftime(datetime_format)
 
                 # add transition log if the status changed
-                for key, value in status_change_columns.items():
-                    if key in record_fs:
-                        if record_fs[key] != record[key]:
-                            updated_log.append(create_log(key, value, record, record_fs))
+                for column, id_columns in status_change_columns.items():
+                    if column in reference_record:
+                        if (reference_record[column] != record[column]) and \
+                                not (pd.isnull(reference_record[column]) and pd.isnull(record[column])):
+                            updated_log.append(create_log(column, id_columns, record, reference_record))
                     else:  # if the column did not exists before, update log with 'primary entry'
-                        updated_log.append(create_log(key, value, record))
+                        updated_log.append(create_log(column, id_columns, record))
 
             else:  # if not exists update log with 'primary entry'
-                for key, value in status_change_columns.items():
-                    updated_log.append(create_log(key, value, record))
                 for key, value in history_columns.items():
                     if '1' in str(record[key]):
-                        record[value] = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+                        record[value] = datetime.now().strftime(datetime_format)
 
             updated_records.append(record)
 
-        return updated_records, updated_log
+    logging.info(f"{len(updated_records)} records to be updated, {len(updated_log)} logs to be added")
+    return updated_records, updated_log
 
-    def create_log(key, value, record, record_fs=None):
-        return {
-            'sleutel': record[value['sleutel']],
-            'key': key,
-            'from_value': record_fs[key] if record_fs else 'First entry',
-            'to_value': record[key],
-            'date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'project': record[value['project']]
-        }
+
+def create_log(key, value, record, record_fs=None):
+    return {
+        'sleutel': record[value['sleutel']],
+        'key': key,
+        'from_value': record_fs[key] if record_fs else 'First entry',
+        'to_value': record[key],
+        'date': datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'project': record[value['project']]
+    }
+
 
 if 'db_ip' in config.database:
     SACN = 'mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}'.format(

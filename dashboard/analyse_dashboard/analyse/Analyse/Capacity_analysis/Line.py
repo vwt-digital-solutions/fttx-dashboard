@@ -47,7 +47,8 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from datetime import timedelta
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
@@ -61,9 +62,10 @@ class Line:
         label (str): optional
     """
 
-    def __init__(self, name="", label=None):
+    def __init__(self, name="", label=None, max_value=None):
         self.name = name
         self.label = label
+        self.max_value = max_value
 
     def make_series(self) -> pd.Series:
         """
@@ -74,7 +76,7 @@ class Line:
         """
         raise NotImplementedError
 
-    def make_normalised_series(self, maximum=None) -> pd.Series:
+    def make_normalised_series(self, maximum=None, percentage=False) -> pd.Series:
         """
          A function to return a normalized series of the line.
 
@@ -88,7 +90,19 @@ class Line:
         series = self.make_series()
         if not maximum:
             maximum = max(series)
-        return series / maximum
+        if percentage:
+            normalized_series = series / maximum * 100
+        else:
+            normalized_series = series / maximum
+        return normalized_series
+
+    # TODO: Documentation by Casper van Houten
+    def get_most_recent_point(self, total=None):
+        if total:
+            recent_point = self.make_normalised_series(total)[-1]
+        else:
+            recent_point = self.make_series()[-1]
+        return recent_point
 
     def intersect(self, other):
         raise NotImplementedError
@@ -110,6 +124,44 @@ class Line:
 
         """
         raise NotImplementedError
+
+    #  this function requires a line based on speed, not distance
+    def get_line_aggregate(self, freq='MS', aggregate_type='series', loffset='0', closed='left', index_as_str=False):
+        series = self.make_normalised_series(maximum=self.max_value, percentage=True)
+        series = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
+        if freq == 'MS':
+            next_period = pd.to_datetime(datetime.now() -
+                                         relativedelta(days=datetime.now().date().day - 1) +
+                                         relativedelta(months=1))
+        if freq == 'W-MON':
+            next_period = pd.to_datetime(datetime.now().date() -
+                                         relativedelta(datetime.now().date().weekday()) +
+                                         relativedelta(weeks=1))
+        if aggregate_type == 'series':
+            aggregate = series.cumsum()
+            if index_as_str:
+                aggregate.index = aggregate.index.format()
+        if aggregate_type == 'value':
+            if next_period in series.index:
+                aggregate = series[next_period]
+            else:
+                aggregate = 0
+
+        return aggregate
+
+    def todo(self):
+        return self.max_value - self.integrate().get_most_recent_point()
+
+    def daysleft(self, end=None, slope=None):
+        if end:
+            if type(end) is str:
+                end = pd.to_datetime(end)
+            daysleft = (end - self.domain.end).days
+        elif slope:
+            daysleft = int(self.todo() / slope)
+        else:
+            daysleft = None
+        return daysleft
 
     def __add__(self, other):
         raise NotImplementedError
@@ -232,14 +284,6 @@ class LinearLine(FunctionLine):
                                      )
 
         return translated_line
-
-    # TODO: Documentation by Casper van Houten
-    def get_most_recent_point(self, total=None):
-        if total:
-            recent_point = self.make_normalised_series(total)[-1:]
-        else:
-            recent_point = self.make_series()[-1:]
-        return recent_point
 
     # TODO: Documentation by Casper van Houten
     def focus_domain(self, lower_treshold=None, upper_treshold=np.Inf):
@@ -420,9 +464,6 @@ class TimeseriesLine(PointLine):
         Returns:
             A new timeseries line
         """
-        if not isinstance(other, TimeseriesLine):
-            raise NotImplementedError
-
         if self.domain.end > other.domain.begin:
             raise NotImplementedError("You can only add lines that have a higher index than the line in the object")
 
@@ -441,7 +482,7 @@ class TimeseriesLine(PointLine):
 
     def translate_x(self, delta=0):
         data = self.data
-        data.index = data.index + timedelta(delta)
+        data.index = data.index + relativedelta(days=delta)
         domain = self.domain.shift(delta)
         return TimeseriesLine(data=data, domain=domain)
 
@@ -460,7 +501,7 @@ class TimeseriesLine(PointLine):
         """
         if data_partition:
             shift = int(len(self.domain) * data_partition)
-            time_shift = timedelta(days=shift)
+            time_shift = relativedelta(days=shift)
             start = self.data.index[0] + time_shift
             end = self.data.index[-1]
             data = self.data[start:end]
@@ -468,5 +509,9 @@ class TimeseriesLine(PointLine):
         else:
             index = list(range(0, len(self.data)))
             data = self.data
-        slope, intersect = np.polyfit(index, data, 1)
+        if len(data) >= 2:
+            slope, intersect = np.polyfit(index, data, 1)
+        else:
+            slope = 0
+            intersect = 0
         return slope, intersect

@@ -1039,7 +1039,7 @@ def rules_to_state(rules_list, state_list):
     return state
 
 
-# TODO: Documentation by  Andre van Turnhout, add the arguments and return value
+# TODO: Documentation by  Andre van Turnhout, add the arguments and return value   -> can this be removed?
 def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     """
     This function counts the wait between toestemming datum and now (or a reference date, based on time_delta_days).
@@ -1063,14 +1063,14 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     return toestemming_df
 
 
-# TODO: Documentation by Andre van Turnhout
+# TODO: Documentation by Andre van Turnhout  -> can this be removed?
 def count_toestemming(toestemming_df):
     toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
     counts = toestemming_df.counts.value_counts()
     return counts
 
 
-# TODO: Documentation by Andre van Turnhout
+# TODO: Documentation by Andre van Turnhout  -> can this be removed?
 def wait_bin_cluster_redenna(df):
     wait_bin_cluster_redenna_df = df[['wait_category', 'cluster_redenna', 'toestemming']].groupby(
         by=['wait_category', 'cluster_redenna']).count()
@@ -1098,13 +1098,13 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
 
     """
     markup_dict = {
-        'on_time_patch_only': {'title': 'Openstaand patch only op tijd',
+        'on_time-patch_only': {'title': 'Openstaand patch only op tijd',
                                'subtitle': '< 8 weken',
                                'font_color': 'green'},
-        'limited_patch_only': {'title': 'Openstaand patch only beperkte tijd',
+        'limited-patch_only': {'title': 'Openstaand patch only beperkte tijd',
                                'subtitle': '> 8 weken < 12 weken',
                                'font_color': 'orange'},
-        'late_patch_only': {'title': 'Openstaand patch only te laat',
+        'late-patch_only': {'title': 'Openstaand patch only te laat',
                             'subtitle': '> 12 weken',
                             'font_color': 'red'},
 
@@ -1115,13 +1115,13 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
         'ready_for_has': {'title': "Werkvoorraad HAS"},
 
-        'on_time_hc_aanleg': {'title': 'Openstaand HC aanleg op tijd',
+        'on_time-hc_aanleg': {'title': 'Openstaand HC aanleg op tijd',
                               'subtitle': '< 8 weken',
                               'font_color': 'green'},
-        'limited_hc_aanleg': {'title': 'Openstaand HC aanleg beperkte tijd',
+        'limited-hc_aanleg': {'title': 'Openstaand HC aanleg beperkte tijd',
                               'subtitle': '> 8 weken < 12 weken',
                               'font_color': 'orange'},
-        'late_hc_aanleg': {'title': 'Openstaand HC aanleg te laat',
+        'late-hc_aanleg': {'title': 'Openstaand HC aanleg te laat',
                            'subtitle': '> 12 weken',
                            'font_color': 'red'}
     }
@@ -1131,9 +1131,9 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
         counts_by_project[project] = {}
 
         counts_by_project[project].update({'ready_for_has': has_werkvoorraad_per_project[project]})
-        counts_by_project[project].update({'late_patch_only': time_windows_per_project[project]['openstaand_patch_only_late']})
-        counts_by_project[project].update({'on_time_patch_only': time_windows_per_project[project]['openstaand_patch_only_on_time']})
-        counts_by_project[project].update({'limited_patch_only': time_windows_per_project[project]['openstaand_patch_only_limited']})
+        counts_by_project[project].update({'late-patch_only': time_windows_per_project[project]['openstaand_patch_only_late']})
+        counts_by_project[project].update({'on_time-patch_only': time_windows_per_project[project]['openstaand_patch_only_on_time']})
+        counts_by_project[project].update({'limited-patch_only': time_windows_per_project[project]['openstaand_patch_only_limited']})
         counts_by_project[project].update({'before_order': {'counts': 0,
                                                             'counts_prev': 0,
                                                             'cluster_redenna': {'HC': 0,
@@ -1141,9 +1141,9 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
                                                                                 'permissieobstructies': 0,
                                                                                 'technische obstructies': 0}}})
         counts_by_project[project].update({'ratio': {'counts': ratio_under_8weeks_per_project[project]}})
-        counts_by_project[project].update({'late_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_late']})
-        counts_by_project[project].update({'on_time_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_on_time']})
-        counts_by_project[project].update({'limited_hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_limited']})
+        counts_by_project[project].update({'late-hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_late']})
+        counts_by_project[project].update({'on_time-hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_on_time']})
+        counts_by_project[project].update({'limited-hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_limited']})
 
         for indicator, markup in markup_dict.items():
             counts_by_project[project][indicator].update(markup)
