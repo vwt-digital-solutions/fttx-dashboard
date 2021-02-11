@@ -5,7 +5,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasAPCapacity import LasAPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
-from Analyse.ETL import Load, logger
+from Analyse.ETL import Load, logger, ETLBase
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform, FttXExtract
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
@@ -134,7 +134,7 @@ class CapacityLoad(Load):
 
 
 # TODO: Casper van Houten, add some simple examples
-class CapacityAnalyse:
+class CapacityAnalyse(ETLBase):
     """
     Main class for the analyses required for the capacity planning algorithm. Per project and phase,
     required indicators are calculated and stored in dedicated phase objects. At the moment,
