@@ -15,7 +15,15 @@ logging.basicConfig(
 )
 
 
-def run_client(client_name, etl_process, steps=None, reload=False, project=None):
+def run_client(client_name, etl_process, steps=None):
+    """
+    Runs ETL-process for a specific client
+    Args:
+        client_name: name of client to be used in etl-process
+        etl_process: Class of ETL-process to be ran.
+        steps: Amount of steps to be taken, 1 through 4 for extract, transform, analysis and load respectively.
+            Will run all steps upto the given number
+    """
     etl = etl_process(client=client_name, config=config.client_config[client_name])
     if steps is None:
         print(f'Performing {etl_process.__name__} for {client_name}')
@@ -27,6 +35,15 @@ def run_client(client_name, etl_process, steps=None, reload=False, project=None)
 
 
 def get_etl_process(client, etl_type='local'):
+    """
+    Retrieves ETL process given type and client
+    Args:
+        client:
+        etl_type:
+
+    Returns:
+
+    """
     etl_processes = {
                     'kpn': {
                             'local': KPNLocalETL,
