@@ -127,7 +127,7 @@ class Line:
 
     #  this function requires a line based on speed, not distance
     def get_line_aggregate(self, freq='MS', aggregate_type='series', loffset='0', closed='left', index_as_str=False):
-        series = self.make_normalized_series(maximum=self.max_value, percentage=True).make_series()
+        series = self.make_normalised_series(maximum=self.max_value, percentage=True)
         series = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
         if freq == 'MS':
             next_period = pd.to_datetime(datetime.now() -
