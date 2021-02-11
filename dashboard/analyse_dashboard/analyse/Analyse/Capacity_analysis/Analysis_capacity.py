@@ -115,7 +115,7 @@ class CapacityTransform(FttXTransform):
             for phase_config in self.config['capacity_phases'].values():
                 ds_add = pd.Series()
                 if phase_config['phase_column'] in self.transformed_data.bis.df.columns:
-                    ds_add = self.transformed_data.bis.df.loc[demo_projects[project]][phase_config['phase_column']]
+                    ds_add = self.transformed_data.bis.df.loc[project][phase_config['phase_column']]
                     ds_add = ds_add[~ds_add.isna()]
                 if phase_config['phase_column'] in self.transformed_data.df.columns:
                     ds_add = self.transformed_data.df[phase_config['phase_column']]
