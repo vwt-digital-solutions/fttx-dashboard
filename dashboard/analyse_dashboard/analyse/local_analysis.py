@@ -129,32 +129,3 @@ if __name__ == "__main__":
     for client in clients:
         etl_process = get_etl_process(client=client, etl_type=etl_type)
         run_client(client, etl_process)
-
-
-# if __name__ == "__main__":
-#     if 'FIRESTORE_EMULATOR_HOST' in os.environ:
-#         logging.info('writing to local firestore')
-#         client_name = "kpn"
-#         kpn = KPNLocalETL(client=client_name, config=config.client_config[client_name])
-#         kpn.perform()
-#         client_name = "tmobile"
-#         tmobile = TMobileLocalETL(client=client_name, config=config.client_config[client_name])
-#         tmobile.perform()
-#         client_name = "dfn"
-#         dfn = DFNLocalETL(client=client_name, config=config.client_config[client_name])
-#         dfn.perform()
-#     else:
-#         logging.info('testing ETL, not writing to firestore')
-#         client_name = "kpn"
-#         kpn = KPNTestETL(client=client_name, config=config.client_config[client_name])
-#         kpn.perform()
-#         client_name = "tmobile"
-#         tmobile = TMobileTestETL(client=client_name, config=config.client_config[client_name])
-#         tmobile.perform()
-#         client_name = "dfn"
-#         dfn = DFNTestETL(client=client_name, config=config.client_config[client_name])
-#         dfn.perform()
-
-# %%
-
-# %%
