@@ -12,6 +12,7 @@ import numpy as np
 from google.cloud import firestore, secretmanager
 import time
 import datetime
+import math
 
 from sqlalchemy import create_engine
 
@@ -1734,6 +1735,184 @@ def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
     data.index = data.index.format()
     record = data.to_dict()
     return record
+
+
+def convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis: float, total_num_has: float, snelheid_m_week: float):
+    """
+    Calculates target speed (woning/dag) by given graafsnelheid in meters per week, total meters bis and total
+    number huisaansluitingen.
+
+    Args:
+        total_meters_bis: total meter graven bis in a project
+        total_num_has: total number of huisaansluitingen in a project
+        snelheid_m_week: graafsnelheid (meters per week) specified for a project
+    Returns:
+        speed_woning_per_day: target number of woningen to pass per day in a project
+    """
+    snelheid_m_day = snelheid_m_week / 7
+    meter_per_woning = total_meters_bis / total_num_has
+    speed_woning_per_day = snelheid_m_day / meter_per_woning
+    return(speed_woning_per_day)
+
+
+def calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has: float):
+    """
+    Calculates target speed in (woning/dag) by norm percentage of total woningen to be done per day and total
+    number of huisaansluitingen.
+
+    Args:
+        total_num_has: total number of huisaansluitingen in a project
+    Returns:
+        speed_woning_per_day: target number of woningen to pass per day in a project
+    """
+    speed_woning_per_day = config.perc_norm_bis * total_num_has
+    return(speed_woning_per_day)
+
+
+def calculate_graafsnelheid_woning_day(total_meters_bis: float, total_num_has: float, snelheid_m_week: float):
+    """
+    Calculates target speed (woningen/day) either by norm percentage of total woningen or given graafsnelheid.
+    Will use percentage norm for calculation if either total meters bis or graafsnelheid is not specified in project.
+
+    Args:
+        total_meters_bis: total meter graven bis in a project
+        total_num_has: total number of huisaansluitingen in a project
+        snelheid_m_week: graafsnelheid (meters per week) specified for a project
+    Returns:
+
+    """
+    if np.isnan(total_meters_bis) or np.isnan(snelheid_m_week):
+        return(calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has))
+    else:
+        return(convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis, total_num_has, snelheid_m_week))
+
+
+def calculate_project_duration(snelheid_woning_day: float, total_num_has: float):
+    """
+    Calculates the target duration of a project based on its target graafsnelheid (woningen/day) and total number of
+    woningen in the project.
+
+    Args:
+        snelheid_woning_day: target number of woningen to pass each day in a project
+        total_number_has: total number of woningen in project to pass
+    Returns:
+        duration_days: duration of project based assuming target speed
+    """
+    duration_days = total_num_has / snelheid_woning_day
+    return(duration_days)
+
+
+def calculate_bis_target_of_project(civiel_startdatum: str, duration_days: float, snelheid_woning_day: float):
+    """
+    Calculates BIS target of a project in number of woningen to pass on each date based on target speed and duration.
+    First creates series with dates based on start date and duration of porject. Next, assigns snelheid_woning_day as
+    target woning to pass on date. Last, corrects the remaining work on the last day of the project.
+
+    Args:
+        civiel_startdatum: civiele startdatum of a project
+        duration_days: target duration of project based assuming target speed
+        snelheid_woning_day: target number of woningen to pass each day in a project
+    Returns:
+        target_series: A pd.Series with dates on index and woningen to pass as values
+    """
+    working_dates = pd.date_range(start=civiel_startdatum, periods=math.ceil(duration_days), freq='D')
+    target_series = pd.Series(index=working_dates, data=snelheid_woning_day)
+    target_series.iloc[-1] = (duration_days - int(duration_days)) * snelheid_woning_day
+    return(target_series)
+
+
+def sum_bis_targets_multiple_projects(civiel_startdatum: pd.Series, duration_days: pd.Series,
+                                      snelheid_woning_day: pd.Series):
+    """
+    First, calculates BIS target of each project in number of woningen to pass on each date. Then, takes sum off BIS
+    targets of all projects to determine provider level BIS target (woning/date).
+
+    Args:
+        civiel_startdatum: pd.Series of civiele startdatums of projects
+        duration_days: target duration of project assuming target speed
+        snelheid_woning_day: target number of woningen to pass each day in a project
+    Returns:
+        series_bis_target: A pd.Series with dates on index and target woningen to pass as values
+    """
+    # Calculate bis target of each project
+    list_project_target = list(map(calculate_bis_target_of_project, civiel_startdatum, duration_days,
+                                   snelheid_woning_day))
+
+    # Sum bis targets of all projects
+    series_bis_target = pd.Series()
+    for series in list_project_target:
+        series_bis_target = series_bis_target.add(series, fill_value=0)
+    return series_bis_target
+
+
+def combine_dicts_into_dataframe(civiel_startdatum: dict, total_meters_bis: dict, total_num_has: dict,
+                                 snelheid_m_week: dict):
+    """
+    Takes project info input as dicts and merges into a dataframe.
+
+    Args:
+        civiel_startdatum: A dict with civiele startdatum for each project
+        total_meters_bis: A dict with total meter graven bis for each project
+        total_num_has: A dict with total number of huisaansluitingen for each project
+        snelheid_m_week: A dict with graafsnelheid (meters per week) specified for each project
+    Returns:
+        df: Dataframe with project info
+    """
+    df = (pd.DataFrame.from_dict(snelheid_m_week, orient='index', columns=['snelheid_m_week']).
+          merge(pd.DataFrame.from_dict(total_meters_bis, orient='index', columns=['total_meters_bis']),
+                left_index=True, right_index=True, how='outer').
+          merge(pd.DataFrame.from_dict(total_num_has, orient='index', columns=['total_num_has']),
+                left_index=True, right_index=True, how='outer').
+          merge(pd.DataFrame.from_dict(civiel_startdatum, orient='index', columns=['civiel_startdatum']),
+                left_index=True, right_index=True, how='outer')
+          )
+    return df
+
+
+def filter_projects_complete_info(df: pd.DataFrame):
+    """
+    Filters a dataframe with project info. Only projects with both a civiele startdatum and a value for total
+    number of huisaansluitingen are returned.
+
+    Args:
+        df: A dataframe with project info
+    Returns:
+        df: A filtered dataframe with project info
+    """
+    df = df[~df.civiel_startdatum.isna() & ~df.total_num_has.isna()]
+    return df
+
+
+def extract_bis_target_overview(civiel_startdatum: dict, total_meters_bis: dict, total_num_has: dict,
+                                snelheid_m_week: dict, client: str):
+    """
+    Calculates BIS target in number of woningen to pass on each date. First combines and filters data. Next determines
+    target speed (woning/day) and target duration (days) for each project. Then calculates target woningen per date for
+    all project and takes sum of all projects.
+
+    Args:
+        civiel_startdatum: A dict with civiele startdatum for each project
+        total_meters_bis: A dict with total meter graven bis for each project
+        total_num_has: A dict with total number of huisaansluitingen for each project
+        snelheid_m_week: A dict with graafsnelheid (meters per week) specified for each project
+    Returns:
+        bis_target: A pd.Series defining target bis (woning/day) for each date summed over all projects
+    """
+    # TODO: If statement and client parameter can be removed when DFN and TMobile provides project info
+    if client in ['kpn']:
+        # Create dataframe with project info and filter complete cases
+        df = combine_dicts_into_dataframe(civiel_startdatum, total_meters_bis, total_num_has, snelheid_m_week)
+        df = filter_projects_complete_info(df)
+
+        # Determine for each project target speed (woning/day) and target duration (days)
+        speed = list(map(calculate_graafsnelheid_woning_day, df.total_meters_bis, df.total_num_has, df.snelheid_m_week))
+        duration = list(map(calculate_project_duration, speed, df.total_num_has))
+
+        # Create series defining target bis (woning/date) summed over all projects
+        bis_target = sum_bis_targets_multiple_projects(df.civiel_startdatum, duration, speed)
+    else:
+        bis_target = None
+    return bis_target
 
 
 def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):
