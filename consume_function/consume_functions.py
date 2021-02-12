@@ -63,6 +63,8 @@ def write_logs_to_sql(logs):
     if logs:
         log_df = pd.DataFrame(logs)
         log_df['date'] = pd.to_datetime(log_df.date)
+        log_df['from_value'] = log_df.from_value.astype(str)
+        log_df['to_value'] = log_df.to_value.astype(str)
         log_df.to_sql('fc_transitie_log', con=sqlEngine, index=False, if_exists='append')
 
 

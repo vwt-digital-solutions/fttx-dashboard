@@ -1,6 +1,7 @@
 from google.cloud import storage
 
-from Analyse.ETL import Extract, ETL, Transform
+from Analyse.ETL import Extract, ETL, Transform, logger
+from functions import get_database_engine
 
 import pandas as pd
 import re
@@ -21,6 +22,7 @@ class BISExtract(Extract):
         client = storage.Client()
         bucket = config.data_bucket
         folder = config.folder_data_schaderapportages
+        mapping = self.get_bnumber_project_mapping()
         for file in client.list_blobs(bucket, prefix=folder):
             filename = file.name
             if filename[-5:] == '.xlsx':
@@ -28,16 +30,24 @@ class BISExtract(Extract):
                 df = pd.read_excel(file_path,
                                    sheet_name='Productie',
                                    skiprows=list(range(0, 12)))
-                # Dirty regex to find project from filename. Should enforce standardises names when files will be
-                # updated.
-                project = re.findall(r"schaderapportages/B\d{4} (.*) (?=Invulformulier|invulformulier)",
-                                     filename)[0]
-                df['project'] = project
-                df_list.append(df)
+                b_number = re.findall(r"B\d*", filename)[0][1:]  # find b-number (B + fiberconnect project number)
+                project = mapping.get(b_number)
+                if project:
+                    df['project'] = project
+                    df_list.append(df)
+                else:
+                    logger.error(f'Cannot map b-number to project name: {b_number}')
 
         df = pd.concat(df_list, sort=True)
 
         self.extracted_data.df = df
+
+    def get_bnumber_project_mapping(self):
+        sql_engine = get_database_engine()
+        df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
+        df = df[['fiberconnect_code', 'project_naam']].dropna()
+        mapping_dict = dict(zip(df.fiberconnect_code.astype(int).astype(str), df.project_naam))
+        return mapping_dict
 
 
 class BISTransform(Transform):

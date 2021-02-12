@@ -53,7 +53,7 @@ def waiting_category(project: str, wait_category: str, order_type: str):
         plan_type = "in ('Zonder klantafspraak')"
 
     return text(f"""
-Select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming, fc.creation as creationdatum,
+select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming, fc.creation as creationdatum,
         fc.opleverstatus, fc.opleverdatum, fc.hasdatum, f.cluster_redenna, fc.redenna,
         fc.toelichting_status, fc.plan_type, DATEDIFF(NOW(), fc.creation)/7 as wachttijd
 from fc_aansluitingen fc
@@ -62,7 +62,7 @@ where   fc.project = :project
 and     fc.status not in ('CANCELLED', 'TO_BE_CANCELLED', 'CLOSED')
 and     fc.type in ('AANLEG', 'Aanleg')
 and     fc.plan_type {plan_type}
-having {having}
+having  {having}
 order by fc.creation
     """).bindparams(project=project)  # nosec
 
@@ -119,21 +119,13 @@ def project_redenna(project,
             filters += "and fc.opleverstatus = 2\n"
 
     sql = text(f"""
-    Select
-        fc.sleutel,
-        fc.project,
-        fc.plaats, fc.postcode, fc.adres, fc.huisnummer,
-        f.cluster_redenna, fc.redenna, fc.toelichting_status,
-        fc.soort_bouw,
-        fc.schouwdatum,
-        fc.laswerkdpgereed,
-        fc.laswerkapgereed,
-        fc.opleverstatus, fc.opleverdatum,
-        fc.hasdatum,
+select  fc.sleutel, fc.project, fc.plaats, fc.postcode, fc.adres, fc.huisnummer,
+        f.cluster_redenna, fc.redenna, fc.toelichting_status, fc.soort_bouw, fc.schouwdatum,
+        fc.laswerkdpgereed, fc.laswerkapgereed, fc.opleverstatus, fc.opleverdatum, fc.hasdatum,
         fc.creation as creationdatum
 from fc_aansluitingen as fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
-where project = :project
-{filters}
+where   project = :project
+        {filters}
     """).bindparams(project=project)  # nosec
     return sql

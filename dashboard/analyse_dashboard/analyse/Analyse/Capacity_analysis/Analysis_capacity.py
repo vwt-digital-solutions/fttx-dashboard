@@ -5,7 +5,7 @@ from Analyse.Capacity_analysis.PhaseCapacity.LasAPCapacity import LasAPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.LasDPCapacity import LasDPCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.OpleverCapacity import OpleverCapacity
 from Analyse.Capacity_analysis.PhaseCapacity.SchietenCapacity import SchietenCapacity
-from Analyse.ETL import Load, logger
+from Analyse.ETL import Load, logger, ETLBase
 from Analyse.FttX import FttXTestLoad, PickleExtract, FttXTransform, FttXExtract
 from Analyse.BIS_ETL import BISETL
 from datetime import timedelta
@@ -115,10 +115,11 @@ class CapacityTransform(FttXTransform):
             for phase_config in self.config['capacity_phases'].values():
                 ds_add = pd.Series()
                 if phase_config['phase_column'] in self.transformed_data.bis.df.columns:
-                    ds_add = self.transformed_data.bis.df.loc[demo_projects[project]][phase_config['phase_column']]
+                    ds_add = self.transformed_data.bis.df.loc[project][phase_config['phase_column']]
                     ds_add = ds_add[~ds_add.isna()]
                 if phase_config['phase_column'] in self.transformed_data.df.columns:
-                    ds_add = self.transformed_data.df[phase_config['phase_column']]
+                    df_project = self.transformed_data.df[self.transformed_data.df.project == project]
+                    ds_add = df_project[phase_config['phase_column']]
                     ds_add = ds_add[(~ds_add.isna()) & (ds_add <= pd.Timestamp.now())]
                     ds_add = ds_add.groupby(ds_add.dt.date).count()
                     ds_add.index.name = 'date'
@@ -133,7 +134,7 @@ class CapacityLoad(Load):
 
 
 # TODO: Casper van Houten, add some simple examples
-class CapacityAnalyse:
+class CapacityAnalyse(ETLBase):
     """
     Main class for the analyses required for the capacity planning algorithm. Per project and phase,
     required indicators are calculated and stored in dedicated phase objects. At the moment,
@@ -213,7 +214,7 @@ class CapacityAnalyse:
 
     def get_rest_dates_as_list_of_series(self):
         rest_dates = []
-        for rest_date in self.config['rest_periods']:
+        for rest_date in self.config['holidays_periods']:
             rest_dates.append(pd.date_range(start=rest_date[0], end=rest_date[1], freq='D'))
         return rest_dates
 

@@ -112,7 +112,6 @@ where project in :projects
         self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
         self.extracted_data.total_meters_bis = doc.get('meters BIS')
         self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
-
         df = pd.DataFrame(doc)
         info_per_project = {}
         for project in df.index:
@@ -206,6 +205,11 @@ class FttXTransform(Transform):
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
 
     def _add_columns(self):
+        """
+        Adding columns so that the transformed data can be downloaded easily.
+        TODO: Check if this is still necessary.
+        """
+        logger.info("Adding columns to dataframe")
         logger.info("Transforming dataframe through adding columns")
 
         self.transformed_data.df['hpend'] = br.hpend_year(self.transformed_data.df, self.year)
@@ -234,6 +238,7 @@ class FttXTransform(Transform):
             br.hp_opgeleverd(self.transformed_data.df),
             br.hc_opgeleverd(self.transformed_data.df)
         ]
+        logger.info("Added has_rules_list")
         has = rules_to_state(has_rules_list, state_list)
         geschouwd_rules_list = [
             ~ br.toestemming_bekend(self.transformed_data.df),
@@ -242,6 +247,7 @@ class FttXTransform(Transform):
             br.toestemming_bekend(self.transformed_data.df)
         ]
         geschouwd = rules_to_state(geschouwd_rules_list, state_list)
+        logger.info("Added geschouwd_rules_list")
 
         bis_gereed_rules_list = [
             br.bis_niet_opgeleverd(self.transformed_data.df),
@@ -250,6 +256,7 @@ class FttXTransform(Transform):
             br.bis_opgeleverd(self.transformed_data.df)
         ]
         bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
+        logger.info("Added bis_gereed_rules_list")
 
         laswerkdpgereed_rules_list = [
             br.laswerk_dp_niet_gereed(self.transformed_data.df),
@@ -259,6 +266,8 @@ class FttXTransform(Transform):
         ]
         laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
 
+        logger.info("Added laswerkdpgereed_rules_list")
+
         laswerkapgereed_rules_list = [
             br.laswerk_ap_niet_gereed(self.transformed_data.df),
             self.transformed_data.df['false'],
@@ -267,6 +276,7 @@ class FttXTransform(Transform):
         ]
         laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
 
+        logger.info("Added laswerkapgereed_rules_list")
         business_rules_list = [
             [geschouwd, "schouw_status"],
             [bis_gereed, "bis_status"],
@@ -417,8 +427,8 @@ class FttXAnalyse(FttXBase):
 
     def _reden_na(self):
         logger.info("Calculating reden na graphs")
-        overview_record = overview_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
-        record_dict = individual_reden_na(self.transformed_data.df, self.config['clusters_reden_na'])
+        overview_record = overview_reden_na(self.transformed_data.df)
+        record_dict = individual_reden_na(self.transformed_data.df)
         self.records.add('reden_na_overview', overview_record, Record, 'Data')
         self.records.add('reden_na_projects', record_dict, DictRecord, 'Data')
 

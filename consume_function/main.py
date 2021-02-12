@@ -16,7 +16,7 @@ def handler(request):
             process_asbuilt(records, topic_config)
 
     except Exception as e:
-        logging.error(f'Extracting of data failed: {e}')
+        logging.error(f'Extracting of data failed: {e}', exc_info=True)
         return 'Error', 500
 
     return 'OK', 200
