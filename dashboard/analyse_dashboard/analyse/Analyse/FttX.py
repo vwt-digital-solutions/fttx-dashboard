@@ -112,6 +112,8 @@ where project in :projects
         self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
         self.extracted_data.total_meters_bis = doc.get('meters BIS')
         self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
+        self.extracted_data.snelheid_mpw = doc.get('snelheid (m/week)')
+
         df = pd.DataFrame(doc)
         info_per_project = {}
         for project in df.index:
