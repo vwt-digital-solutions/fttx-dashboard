@@ -1381,7 +1381,6 @@ def calculate_oplevertijd(row):
 #     return sum(br.bis_opgeleverd(df_copy))
 
 
-
 # TODO: Documentation by Casper van Houten
 def linear_regression(data):
     fit_range = data.day_count.to_list()
