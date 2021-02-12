@@ -46,8 +46,8 @@ class BISExtract(Extract):
         sql_engine = get_database_engine()
         df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
         df = df[['fiberconnect_code', 'project_naam']].dropna()
-        mappig_dict = dict(zip(df.fiberconnect_code.astype(int).astype(str), df.project_naam))
-        return mappig_dict
+        mapping_dict = dict(zip(df.fiberconnect_code.astype(int).astype(str), df.project_naam))
+        return mapping_dict
 
 
 class BISTransform(Transform):
