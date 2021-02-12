@@ -488,6 +488,7 @@ class FttXAnalyse(FttXBase):
         df = self.transformed_data.df
         # Create a dictionary that contains the output name and the appropriate mask:
         function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
+                         'werkvoorraad_bis': df[br.bis_niet_opgeleverd(df)].status_civiel_datum,
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
                          'target_intern_bis': extract_bis_target_overview(
