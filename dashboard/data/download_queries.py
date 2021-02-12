@@ -62,7 +62,7 @@ where   fc.project = :project
 and     fc.status not in ('CANCELLED', 'TO_BE_CANCELLED', 'CLOSED')
 and     fc.type in ('AANLEG', 'Aanleg')
 and     fc.plan_type {plan_type}
-having {having}
+having  {having}
 order by fc.creation
     """).bindparams(project=project)  # nosec
 
@@ -125,7 +125,7 @@ select  fc.sleutel, fc.project, fc.plaats, fc.postcode, fc.adres, fc.huisnummer,
         fc.creation as creationdatum
 from fc_aansluitingen as fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
-where project = :project
-{filters}
+where   project = :project
+        {filters}
     """).bindparams(project=project)  # nosec
     return sql
