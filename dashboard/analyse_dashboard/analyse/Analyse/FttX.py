@@ -313,6 +313,7 @@ class FttXAnalyse(FttXBase):
         logger.info("Analysing using the FttX protocol")
         self._calculate_list_of_years()
         self._make_records_for_dashboard_values()
+        self._make_records_of_client_targets_for_dashboard_values()
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
         self._make_records_ratio_hc_hpend_for_dashboard_values()
         self._make_records_ratio_under_8weeks_for_dashboard_values()
