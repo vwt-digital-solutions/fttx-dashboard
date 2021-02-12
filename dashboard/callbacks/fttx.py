@@ -5,7 +5,7 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from layout.components.graphs import pie_chart, completed_status_counts_bar
-from app import app
+from app import app, toggles
 
 import config
 from data import collection
@@ -294,85 +294,203 @@ for client in config.client_config.keys():
         if not year:
             raise PreventUpdate
 
-        parameters_global_info_list = [
-            dict(id_="info_globaal_container0",
-                 title='Target',
-                 text=f"HPend afgesproken in {year}: ",
-                 value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="target",
+        if toggles.overview_indicators:
+            parameters_global_info_list = [
+                dict(id_="info_globaal_container0",
+                     title='Internal Target (HPend)',
+                     text=f"HPend afgesproken in {year}: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="target",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     ),
+                dict(id_="info_globaal_container0",
+                     title='Internal Target (BIS)',
+                     text=f"BIS afgesproken in {year}: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="target_intern_bis",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     ),
+                dict(id_="info_globaal_container0",
+                     title='Client Target (HPend)',
+                     text=f"Has afgesproken in {year}: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="has_target_client",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     ),
+                dict(id_="info_globaal_container0",
+                     title='Client Target (BIS)',
+                     text=f"BIS afgesproken in {year}: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="bis_target_client",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     ),
+                dict(id_="info_globaal_container1",
+                     title='Realisatie (HPend)',
+                     text=f"HPend gerealiseerd in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="realisatie_hpend",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y")))
-                 ),
-            dict(id_="info_globaal_container1",
-                 title='Realisatie (HPend)',
-                 text=f"HPend gerealiseerd in {year}: ",
-                 value=str(collection.get_document(collection="Data",
-                                                   graph_name="realisatie_hpend",
-                                                   client=client,
-                                                   year=year,
-                                                   frequency="Y"))
-                 ),
-            dict(id_="info_globaal_container1",
-                 title='Realisatie (BIS)',
-                 text=f"BIS gerealiseerd in {year}: ",
-                 value=str(collection.get_document(collection="Data",
-                                                   graph_name="realisatie_bis",
-                                                   client=client,
-                                                   year=year,
-                                                   frequency="Y"))
-                 ),
-            dict(id_="info_globaal_container2",
-                 title='Planning (VWT)',
-                 text="HPend gepland vanaf nu: ",
-                 value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="planning_minus_HPend",
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container1",
+                     title='Realisatie (BIS)',
+                     text=f"BIS gerealiseerd in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="realisatie_bis",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y")))
-                 if year == str(datetime.now().year) else 'n.v.t.'  # We only show planning for the current year
-                 ),
-            dict(id_="info_globaal_container3",
-                 title='Voorspelling (VQD)',
-                 text="HPend voorspeld vanaf nu: ",
-                 value=str(int(collection.get_document(collection="Data",
-                                                       graph_name="voorspelling_minus_HPend",
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container2",
+                     title='Planning (VWT)',
+                     text="HPend gepland vanaf nu: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="planning_minus_HPend",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     if year == str(datetime.now().year) else 'n.v.t.'  # We only show planning for the current year
+                     ),
+                dict(id_="info_globaal_container3",
+                     title='Voorspelling (VQD)',
+                     text="HPend voorspeld vanaf nu: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="voorspelling_minus_HPend",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
+                     # We only show voorspelling for the current year and only for KPN and DFN
+                     ),
+                dict(id_="info_globaal_container5",
+                     title='Werkvoorraad HAS',
+                     text=f"Werkvoorraad HAS in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="werkvoorraad_has",
                                                        client=client,
                                                        year=year,
-                                                       frequency="Y")))
-                 if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
-                 # We only show voorspelling for the current year and only for KPN and DFN
-                 ),
-            dict(id_="info_globaal_container5",
-                 title='Werkvoorraad HAS',
-                 text=f"Werkvoorraad HAS in {year}: ",
-                 value=str(collection.get_document(collection="Data",
-                                                   graph_name="werkvoorraad_has",
-                                                   client=client,
-                                                   year=year,
-                                                   frequency="Y"))
-                 ),
-            dict(id_="info_globaal_container4",
-                 title='Actuele HC / HPend',
-                 text=f"HC/HPend in {year}: ",
-                 value=str(format(collection.get_document(collection="Data",
-                                                          graph_name="ratio_hc_hpend",
-                                                          client=client,
-                                                          year=year,
-                                                          frequency="Y"), '.2f'))
-                 if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
-                 ),
-            dict(id_="info_globaal_container4",
-                 title='Ratio <8 weken',
-                 text=f"Ratio <8 weken in {year}: ",
-                 value=str(format(collection.get_document(collection="Data",
-                                                          graph_name="ratio_8weeks_hpend",
-                                                          client=client,
-                                                          year=year,
-                                                          frequency="Y"), '.2f'))
-                 if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
-                 ),
-        ]
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container5",
+                     title='Werkvoorraad BIS',
+                     text=f"Werkvoorraad BIS in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="werkvoorraad_bis",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container4",
+                     title='Actuele HC / HPend',
+                     text=f"HC/HPend in {year}: ",
+                     value=str(format(collection.get_document(collection="Data",
+                                                              graph_name="ratio_hc_hpend",
+                                                              client=client,
+                                                              year=year,
+                                                              frequency="Y"), '.2f'))
+                     if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
+                     ),
+                dict(id_="info_globaal_container4",
+                     title='Ratio <8 weken',
+                     text=f"Ratio <8 weken in {year}: ",
+                     value=str(format(collection.get_document(collection="Data",
+                                                              graph_name="ratio_8weeks_hpend",
+                                                              client=client,
+                                                              year=year,
+                                                              frequency="Y"), '.2f'))
+                     if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
+                     ),
+            ]
+        else:
+            parameters_global_info_list = [
+                dict(id_="info_globaal_container0",
+                     title='Internal Target (HPend)',
+                     text=f"HPend afgesproken in {year}: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="target",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     ),
+                dict(id_="info_globaal_container1",
+                     title='Realisatie (HPend)',
+                     text=f"HPend gerealiseerd in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="realisatie_hpend",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container1",
+                     title='Realisatie (BIS)',
+                     text=f"BIS gerealiseerd in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="realisatie_bis",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container2",
+                     title='Planning (VWT)',
+                     text="HPend gepland vanaf nu: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="planning_minus_HPend",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     if year == str(datetime.now().year) else 'n.v.t.'  # We only show planning for the current year
+                     ),
+                dict(id_="info_globaal_container3",
+                     title='Voorspelling (VQD)',
+                     text="HPend voorspeld vanaf nu: ",
+                     value=str(int(collection.get_document(collection="Data",
+                                                           graph_name="voorspelling_minus_HPend",
+                                                           client=client,
+                                                           year=year,
+                                                           frequency="Y")))
+                     if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
+                     # We only show voorspelling for the current year and only for KPN and DFN
+                     ),
+                dict(id_="info_globaal_container5",
+                     title='Werkvoorraad HAS',
+                     text=f"Werkvoorraad HAS in {year}: ",
+                     value=str(collection.get_document(collection="Data",
+                                                       graph_name="werkvoorraad_has",
+                                                       client=client,
+                                                       year=year,
+                                                       frequency="Y"))
+                     ),
+                dict(id_="info_globaal_container4",
+                     title='Actuele HC / HPend',
+                     text=f"HC/HPend in {year}: ",
+                     value=str(format(collection.get_document(collection="Data",
+                                                              graph_name="ratio_hc_hpend",
+                                                              client=client,
+                                                              year=year,
+                                                              frequency="Y"), '.2f'))
+                     if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
+                     ),
+                dict(id_="info_globaal_container4",
+                     title='Ratio <8 weken',
+                     text=f"Ratio <8 weken in {year}: ",
+                     value=str(format(collection.get_document(collection="Data",
+                                                              graph_name="ratio_8weeks_hpend",
+                                                              client=client,
+                                                              year=year,
+                                                              frequency="Y"), '.2f'))
+                     if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
+                     )
+            ]
+
         return [
             global_info_list(items=parameters_global_info_list,
                              className="container-display")
