@@ -1959,3 +1959,39 @@ def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.S
     data.index = data.index.format()
     record = data.to_dict()
     return record
+
+
+def extract_has_target_client(client, year):
+    """
+    Gets bis target from config for year and client. Determines has target based on defined percentage has of bis.
+    Returns zero if bis target is not defined for client and year.
+
+    Args:
+        client: String of client to get target
+        year: String of year to get target
+    Returns:
+        has_target: Int of target (woningen) agreed with client
+    """
+    bis_target = config.client_bis_target.get(client).get(year)
+    if bis_target is None:
+        return 0
+    else:
+        has_target = int(config.perc_has_of_bis * bis_target)
+        return has_target
+
+
+def extract_bis_target_client(client, year):
+    """
+    Gets bis target from config for year and client. Returns zero if not defined.
+
+    Args:
+        client: String of client to get target
+        year: String of year to get target
+    Returns:
+        bis_target: Int of bis target (woningen) agreed with client
+    """
+    bis_target = config.client_bis_target.get(client).get(year)
+    if bis_target is None:
+        return 0
+    else:
+        return bis_target
