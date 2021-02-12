@@ -22,7 +22,7 @@ from functions import extract_realisatie_hpend_dates, cluster_reden_na, \
     extract_werkvoorraad_has_dates, calculate_redenna_per_period, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, overview_reden_na, sum_over_period_to_record, \
     voorspel_and_planning_minus_HPend_sum_over_periods_to_record, extract_planning_dates, extract_target_dates, \
-    extract_aangesloten_orders_dates
+    extract_aangesloten_orders_dates, extract_bis_target_overview, extract_has_target_client, extract_bis_target_client
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -489,6 +489,12 @@ class FttXAnalyse(FttXBase):
         function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
+                         'target_intern_bis': extract_bis_target_overview(
+                             civiel_startdatum=self.transformed_data.get('civiel_startdatum'),
+                             total_meters_bis=self.transformed_data.get('total_meters_bis'),
+                             total_num_has=self.transformed_data.get('total_number_huisaansluitingen'),
+                             snelheid_m_week=self.transformed_data.get('snelheid_mpw'),
+                             client=self.client),  # TODO: Remove when project info is available for tmobile and dfn
                          'target': extract_target_dates(df=df,
                                                         project_list=self.project_list,
                                                         totals=self.transformed_data.get("totals"),
@@ -515,6 +521,23 @@ class FttXAnalyse(FttXBase):
                                               year=year,
                                               record=record))
         self.records.add("Overzicht_per_jaar", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "graph_name", "frequency", "year"])
+
+    def _make_records_of_client_targets_for_dashboard_values(self):
+
+        document_list = []
+        for year in self.intermediate_results.List_of_years:
+            document_list.append(dict(client=self.client,
+                                      graph_name='has_target_client',
+                                      frequency='Y',
+                                      year=year,
+                                      record=extract_has_target_client(self.client, year)))
+            document_list.append(dict(client=self.client,
+                                      graph_name='bis_target_client',
+                                      frequency='Y',
+                                      year=year,
+                                      record=extract_bis_target_client(self.client, year)))
+        self.records.add("Overzicht_client_targets_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
