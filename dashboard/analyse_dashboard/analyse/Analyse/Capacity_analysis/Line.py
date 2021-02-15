@@ -487,9 +487,17 @@ class TimeseriesLine(PointLine):
             aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum().cumsum()
             if index_as_str:
                 aggregate.index = aggregate.index.format()
-        elif aggregate_type == 'value':
+        elif aggregate_type == 'value_sum':
             series = self.make_series()
             aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
+            period_for_output = self.period_for_output(freq)
+            if period_for_output in series.index:
+                aggregate = aggregate[period_for_output]
+            else:
+                aggregate = 0
+        elif aggregate_type == 'value_mean':
+            series = self.make_series()
+            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).mean()
             period_for_output = self.period_for_output(freq)
             if period_for_output in series.index:
                 aggregate = aggregate[period_for_output]
