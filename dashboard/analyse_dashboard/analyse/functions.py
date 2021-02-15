@@ -1752,7 +1752,7 @@ def convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis: float, tot
     snelheid_m_day = snelheid_m_week / 7
     meter_per_woning = total_meters_bis / total_num_has
     speed_woning_per_day = snelheid_m_day / meter_per_woning
-    return(speed_woning_per_day)
+    return speed_woning_per_day
 
 
 def calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has: float):
@@ -1766,7 +1766,7 @@ def calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has: float):
         speed_woning_per_day: target number of woningen to pass per day in a project
     """
     speed_woning_per_day = config.perc_norm_bis * total_num_has
-    return(speed_woning_per_day)
+    return speed_woning_per_day
 
 
 def calculate_graafsnelheid_woning_day(total_meters_bis: float, total_num_has: float, snelheid_m_week: float):
@@ -1782,9 +1782,9 @@ def calculate_graafsnelheid_woning_day(total_meters_bis: float, total_num_has: f
 
     """
     if np.isnan(total_meters_bis) or np.isnan(snelheid_m_week):
-        return(calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has))
+        return calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has)
     else:
-        return(convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis, total_num_has, snelheid_m_week))
+        return convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis, total_num_has, snelheid_m_week)
 
 
 def calculate_project_duration(snelheid_woning_day: float, total_num_has: float):
@@ -1799,7 +1799,7 @@ def calculate_project_duration(snelheid_woning_day: float, total_num_has: float)
         duration_days: duration of project based assuming target speed
     """
     duration_days = total_num_has / snelheid_woning_day
-    return(duration_days)
+    return duration_days
 
 
 def calculate_bis_target_of_project(civiel_startdatum: str, duration_days: float, snelheid_woning_day: float):
@@ -1818,7 +1818,7 @@ def calculate_bis_target_of_project(civiel_startdatum: str, duration_days: float
     working_dates = pd.date_range(start=civiel_startdatum, periods=math.ceil(duration_days), freq='D')
     target_series = pd.Series(index=working_dates, data=snelheid_woning_day)
     target_series.iloc[-1] = (duration_days - int(duration_days)) * snelheid_woning_day
-    return(target_series)
+    return target_series
 
 
 def sum_bis_targets_multiple_projects(civiel_startdatum: pd.Series, duration_days: pd.Series,
@@ -1969,12 +1969,9 @@ def extract_has_target_client(client, year):
     Returns:
         has_target: Int of target (woningen) agreed with client
     """
-    bis_target = config.client_bis_target.get(client).get(year)
-    if bis_target is None:
-        return 0
-    else:
-        has_target = int(config.perc_has_of_bis * bis_target)
-        return has_target
+    bis_target = config.client_bis_target.get(client, {}).get(year, 0)
+    has_target = int(config.perc_has_of_bis * bis_target)
+    return has_target
 
 
 def extract_bis_target_client(client, year):
@@ -1987,8 +1984,5 @@ def extract_bis_target_client(client, year):
     Returns:
         bis_target: Int of bis target (woningen) agreed with client
     """
-    bis_target = config.client_bis_target.get(client).get(year)
-    if bis_target is None:
-        return 0
-    else:
-        return bis_target
+    bis_target = config.client_bis_target.get(client).get(year, 0)
+    return bis_target
