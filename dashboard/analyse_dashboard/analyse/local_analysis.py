@@ -90,20 +90,27 @@ def force_reload(clients):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--client',
-                        choices=['kpn', 'dfn', 'tmobile'],
-                        help='Run the analysis for a specific client',
-                        )
+
     parser.add_argument('--local',
                         help='Write results to local firestore or actual firestore',
                         default=True)
     parser.add_argument('--project',
-                        required='--client' in sys.argv,
                         help='Run the analysis only for a specific project. Requires --client input.')
+    parser.add_argument('--client',
+                        choices=['kpn', 'dfn', 'tmobile'],
+                        required='--project' in sys.argv,
+                        help='Run the analysis for a specific client',
+                        )
     parser.add_argument('--force-reload',
                         action='store_const',
                         const=True,
                         help="Force reloading data from database, rather than using local pickle.")
+    parser.add_argument('--steps',
+                        choices=['1', '2', '3', '4'],
+                        default='4',
+                        help=['Run the code only up to a certain point of the process: '
+                              '1.Extract, 2.Transform, 3.Analyse, 4.Load (default)']
+                        )
     args = parser.parse_args()
     local = args.local
     project = args.project
@@ -115,9 +122,11 @@ if __name__ == "__main__":
         clients = ['kpn', 'tmobile', 'dfn']
 
     if args.force_reload:
-        if os.environ['FIRESTORE_EMUlATOR_HOST']:
+        if 'FIRESTORE_EMULATOR_HOST' in os.environ:
             del os.environ['FIRESTORE_EMULATOR_HOST']
         force_reload(clients)
+
+    steps = int(args.steps)
 
     if project:
         if not client:
@@ -136,4 +145,4 @@ if __name__ == "__main__":
 
     for client in clients:
         etl_process = get_etl_process(client=client, etl_type=etl_type)
-        run_client(client, etl_process)
+        run_client(client, etl_process, steps)
