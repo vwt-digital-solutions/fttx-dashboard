@@ -1877,10 +1877,10 @@ def filter_projects_complete_info(df: pd.DataFrame):
     Args:
         df: A dataframe with project info
     Returns:
-        df: A filtered dataframe with project info
+        filter: pd.Series: A series of truth values.
     """
-    df = df[~df.civiel_startdatum.isna() & ~df.total_num_has.isna()]
-    return df
+    filter = ~df.civiel_startdatum.isna() & ~df.total_num_has.isna()
+    return filter
 
 
 def extract_bis_target_overview(civiel_startdatum: dict, total_meters_bis: dict, total_num_has: dict,
@@ -1900,15 +1900,12 @@ def extract_bis_target_overview(civiel_startdatum: dict, total_meters_bis: dict,
     """
     # TODO: If statement and client parameter can be removed when DFN and TMobile provides project info
     if client in ['kpn']:
-        # Create dataframe with project info and filter complete cases
         df = combine_dicts_into_dataframe(civiel_startdatum, total_meters_bis, total_num_has, snelheid_m_week)
-        df = filter_projects_complete_info(df)
-
-        # Determine for each project target speed (woning/day) and target duration (days)
-        speed = list(map(calculate_graafsnelheid_woning_day, df.total_meters_bis, df.total_num_has, df.snelheid_m_week))
-        duration = list(map(calculate_project_duration, speed, df.total_num_has))
-
-        # Create series defining target bis (woning/date) summed over all projects
+        df = df[filter_projects_complete_info]
+        speed_graafsnelheid = convert_graafsnelheid_from_m_week_to_woning_day(df.total_meters_bis, df.total_num_has, df.snelheid_m_week)
+        speed_norm = calculate_graafsnelheid_woning_day_by_percentage_norm(df.total_num_has)
+        speed = speed_graafsnelheid.fillna(speed_norm)
+        duration = calculate_project_duration(speed, df.total_num_has)
         bis_target = sum_bis_targets_multiple_projects(df.civiel_startdatum, duration, speed)
     else:
         bis_target = None
