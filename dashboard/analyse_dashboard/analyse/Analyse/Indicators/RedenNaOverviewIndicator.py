@@ -1,13 +1,12 @@
 from Analyse.Indicators.Indicator import Indicator
 from Analyse.PieChart import PieChart
-from Analyse.Record.DictRecord import DictRecord
+from Analyse.Record.Record import Record
 
 
-class RedenNaProjectIndicator(Indicator, PieChart):
+class RedenNaOverviewIndicator(Indicator, PieChart):
     """
-    Calculates reden na pie chart for every project
+    Calculates reden na pie chart over all projects
     """
-
     def apply_business_rules(self):
         """
         For this indicator we only need the cluster column, and sleutel column to count.
@@ -23,17 +22,20 @@ class RedenNaProjectIndicator(Indicator, PieChart):
         """
         aggregate = self.aggregate(
                                     df=self.apply_business_rules(),
-                                    by=["project", "cluster_redenna"]
+                                    by="cluster_redenna"
                                   )
         return self.to_record(aggregate)
 
     def to_record(self, df):
+        """
+        Turn the data into a piechart, and then make it into a Record.
+        Args:
+            df: Clustered data to be turned into a Record
 
-        for project, df in df.groupby('project'):
-            self.to_pie_chart(df)
-            graph_name = f"pie_na_{project}"
-        dict_record = DictRecord(record=df,
-                                 collection='Data',
-                                 client=self.client,
-                                 graph_name=graph_name)
-        return dict_record
+        Returns: Record containing all data.
+        """
+        record = self.to_pie_chart(df)
+        return Record(record=record,
+                      collection='Data',
+                      client=self.client,
+                      graph_name='reden_na_overview')
