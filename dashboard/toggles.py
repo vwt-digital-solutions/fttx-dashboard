@@ -6,6 +6,7 @@ class ReleaseToggles(TogglesList):
     upload: bool
     capacity_view: bool
     overview_indicators: bool
+    leverbetrouwbaarheid: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')
