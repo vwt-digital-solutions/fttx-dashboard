@@ -43,7 +43,7 @@ class PhaseCapacity:
         """
 
         lines = []
-        lines.append(self.add_holiday_periods_to_line(self.calculate_target_line(), self.holiday_periods))
+        lines.append(self.calculate_target_line())
         lines.append(self.calculate_pocreal_line())
         lines.append(self.calculate_pocideal_line())
         lines.append(self.calculate_pocverwacht_line())
@@ -96,7 +96,7 @@ class PhaseCapacity:
             line = pocreal_line
         holiday_periods = self.slice_holiday_periods(holiday_periods=self.holiday_periods,
                                                      periods_to_remove=pocreal_line.domain.domain)
-        self.add_holiday_periods_to_line(line, holiday_periods)
+        line = self.add_holiday_periods_to_line(line, holiday_periods)
         line.name = 'poc_ideal_indicator'
         line.max_value = self.phase_data['total_units']
         return line
