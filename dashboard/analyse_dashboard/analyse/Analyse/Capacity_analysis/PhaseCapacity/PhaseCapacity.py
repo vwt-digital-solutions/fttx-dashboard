@@ -82,6 +82,8 @@ class PhaseCapacity:
             domain = DateDomain(begin=pocreal_line.domain.end, end=target_line.domain.end)
             holidays_in_date_range = self.count_holidays_in_date_range(self.holiday_periods,
                                                                        domain.domain)
+            domain = DateDomain(begin=pocreal_line.domain.end,
+                                end=target_line.domain.end - timedelta(holidays_in_date_range))
             slope = distance_to_max_value / (daysleft - holidays_in_date_range)
 
             line = pocreal_line.append(TimeseriesLine(data=slope,
