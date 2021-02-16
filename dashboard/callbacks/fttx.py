@@ -12,6 +12,7 @@ from data import collection
 from data.data import completed_status_counts, redenna_by_completed_status, \
     fetch_data_for_overview_graphs, no_graph
 from layout.components.global_info_list import global_info_list
+from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import overview_bar_chart
 from config import colors_vwt as colors
 from layout.components import redenna_status_pie
@@ -297,119 +298,117 @@ for client in config.client_config.keys():
         if toggles.overview_indicators:
             parameters_global_info_list = [
                 dict(id_="info_globaal_container0",
-                     title='Internal Target (HPend)',
-                     text=f"HPend afgesproken in {year}: ",
-                     value=str(int(collection.get_document(collection="Data",
-                                                           graph_name="target",
-                                                           client=client,
-                                                           year=year,
-                                                           frequency="Y")))
+                     title='Internal Target',
+                     text1="BIS: ",
+                     value1=str(int(collection.get_document(collection="Data",
+                                                            graph_name="target_intern_bis",
+                                                            client=client,
+                                                            year=year,
+                                                            frequency="Y"))),
+                     text2="HAS: ",
+                     value2=str(int(collection.get_document(collection="Data",
+                                                            graph_name="target",
+                                                            client=client,
+                                                            year=year,
+                                                            frequency="Y")))
                      ),
                 dict(id_="info_globaal_container0",
-                     title='Internal Target (BIS)',
-                     text=f"BIS afgesproken in {year}: ",
-                     value=str(int(collection.get_document(collection="Data",
-                                                           graph_name="target_intern_bis",
-                                                           client=client,
-                                                           year=year,
-                                                           frequency="Y")))
-                     ),
-                dict(id_="info_globaal_container0",
-                     title='Client Target (HPend)',
-                     text=f"Has afgesproken in {year}: ",
-                     value=str(int(collection.get_document(collection="Data",
-                                                           graph_name="has_target_client",
-                                                           client=client,
-                                                           year=year,
-                                                           frequency="Y")))
-                     ),
-                dict(id_="info_globaal_container0",
-                     title='Client Target (BIS)',
-                     text=f"BIS afgesproken in {year}: ",
-                     value=str(int(collection.get_document(collection="Data",
-                                                           graph_name="bis_target_client",
-                                                           client=client,
-                                                           year=year,
-                                                           frequency="Y")))
+                     title='Client Target',
+                     text1="BIS: ",
+                     value1=str(int(collection.get_document(collection="Data",
+                                                            graph_name="bis_target_client",
+                                                            client=client,
+                                                            year=year,
+                                                            frequency="Y"))),
+                     text2="HAS: ",
+                     value2=str(int(collection.get_document(collection="Data",
+                                                            graph_name="has_target_client",
+                                                            client=client,
+                                                            year=year,
+                                                            frequency="Y")))
                      ),
                 dict(id_="info_globaal_container1",
-                     title='Realisatie (HPend)',
-                     text=f"HPend gerealiseerd in {year}: ",
-                     value=str(collection.get_document(collection="Data",
-                                                       graph_name="realisatie_hpend",
-                                                       client=client,
-                                                       year=year,
-                                                       frequency="Y"))
-                     ),
-                dict(id_="info_globaal_container1",
-                     title='Realisatie (BIS)',
-                     text=f"BIS gerealiseerd in {year}: ",
-                     value=str(collection.get_document(collection="Data",
-                                                       graph_name="realisatie_bis",
-                                                       client=client,
-                                                       year=year,
-                                                       frequency="Y"))
+                     title='Realisatie',
+                     text1="BIS: ",
+                     value1=str(collection.get_document(collection="Data",
+                                                        graph_name="realisatie_bis",
+                                                        client=client,
+                                                        year=year,
+                                                        frequency="Y")),
+                     text2="HAS: ",
+                     value2=str(collection.get_document(collection="Data",
+                                                        graph_name="realisatie_hpend",
+                                                        client=client,
+                                                        year=year,
+                                                        frequency="Y"))
                      ),
                 dict(id_="info_globaal_container2",
-                     title='Planning (VWT)',
-                     text="HPend gepland vanaf nu: ",
-                     value=str(int(collection.get_document(collection="Data",
-                                                           graph_name="planning_minus_HPend",
-                                                           client=client,
-                                                           year=year,
-                                                           frequency="Y")))
+                     title='Planning',
+                     text1='BIS (vanaf nu): ',
+                     value1='n.v.t.',
+                     text2="HAS (vanaf nu): ",
+                     value2=str(int(collection.get_document(collection="Data",
+                                                            graph_name="planning_minus_HPend",
+                                                            client=client,
+                                                            year=year,
+                                                            frequency="Y")))
                      if year == str(datetime.now().year) else 'n.v.t.'  # We only show planning for the current year
                      ),
                 dict(id_="info_globaal_container3",
-                     title='Voorspelling (VQD)',
-                     text="HPend voorspeld vanaf nu: ",
-                     value=str(int(collection.get_document(collection="Data",
-                                                           graph_name="voorspelling_minus_HPend",
-                                                           client=client,
-                                                           year=year,
-                                                           frequency="Y")))
+                     title='Voorspelling',
+                     text1='BIS (vanaf nu): ',
+                     value1='n.v.t.',
+                     text2="HAS(vanaf nu): ",
+                     value2=str(int(collection.get_document(collection="Data",
+                                                            graph_name="voorspelling_minus_HPend",
+                                                            client=client,
+                                                            year=year,
+                                                            frequency="Y")))
                      if client != 'tmobile' and year == str(datetime.now().year) else 'n.v.t.'
                      # We only show voorspelling for the current year and only for KPN and DFN
                      ),
                 dict(id_="info_globaal_container5",
-                     title='Werkvoorraad HAS',
-                     text=f"Werkvoorraad HAS in {year}: ",
-                     value=str(collection.get_document(collection="Data",
-                                                       graph_name="werkvoorraad_has",
-                                                       client=client,
-                                                       year=year,
-                                                       frequency="Y"))
-                     ),
-                dict(id_="info_globaal_container5",
-                     title='Werkvoorraad BIS',
-                     text=f"Werkvoorraad BIS in {year}: ",
-                     value=str(collection.get_document(collection="Data",
-                                                       graph_name="werkvoorraad_bis",
-                                                       client=client,
-                                                       year=year,
-                                                       frequency="Y"))
+                     title='Werkvoorraad',
+                     text1="BIS: ",
+                     value1=str(collection.get_document(collection="Data",
+                                                        graph_name="werkvoorraad_bis",
+                                                        client=client,
+                                                        year=year,
+                                                        frequency="Y")),
+                     text2="HAS: ",
+                     value2=str(collection.get_document(collection="Data",
+                                                        graph_name="werkvoorraad_has",
+                                                        client=client,
+                                                        year=year,
+                                                        frequency="Y"))
                      ),
                 dict(id_="info_globaal_container4",
                      title='Actuele HC / HPend',
-                     text=f"HC/HPend in {year}: ",
-                     value=str(format(collection.get_document(collection="Data",
-                                                              graph_name="ratio_hc_hpend",
-                                                              client=client,
-                                                              year=year,
-                                                              frequency="Y"), '.2f'))
+                     text1='BIS: ',
+                     value1='n.v.t.',
+                     text2="HAS: ",
+                     value2=str(format(collection.get_document(collection="Data",
+                                                               graph_name="ratio_hc_hpend",
+                                                               client=client,
+                                                               year=year,
+                                                               frequency="Y"), '.2f'))
                      if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
                      ),
                 dict(id_="info_globaal_container4",
                      title='Ratio <8 weken',
-                     text=f"Ratio <8 weken in {year}: ",
-                     value=str(format(collection.get_document(collection="Data",
-                                                              graph_name="ratio_8weeks_hpend",
-                                                              client=client,
-                                                              year=year,
-                                                              frequency="Y"), '.2f'))
+                     text1='BIS: ',
+                     value1='n.v.t.',
+                     text2="HAS: ",
+                     value2=str(format(collection.get_document(collection="Data",
+                                                               graph_name="ratio_8weeks_hpend",
+                                                               client=client,
+                                                               year=year,
+                                                               frequency="Y"), '.2f'))
                      if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
                      ),
             ]
+            output = global_info_list(items=parameters_global_info_list,
+                                      className="container-display")
         else:
             parameters_global_info_list = [
                 dict(id_="info_globaal_container0",
@@ -490,8 +489,7 @@ for client in config.client_config.keys():
                      if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
                      )
             ]
+            output = global_info_list_old(items=parameters_global_info_list,
+                                          className="container-display")
 
-        return [
-            global_info_list(items=parameters_global_info_list,
-                             className="container-display")
-        ]
+        return [output]
