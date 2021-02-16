@@ -79,8 +79,11 @@ class PhaseCapacity:
         daysleft = pocreal_line.daysleft(end=target_line.domain.end)
         # normal case: when there is still work to do and there is time left before the target deadline
         if (distance_to_max_value > 0) & (daysleft > 0):
-            slope = distance_to_max_value / daysleft
             domain = DateDomain(begin=pocreal_line.domain.end, end=target_line.domain.end)
+            holidays_in_date_range = self.count_holidays_in_date_range(self.holiday_periods,
+                                                                       domain.domain)
+            slope = distance_to_max_value / (daysleft - holidays_in_date_range)
+
             line = pocreal_line.append(TimeseriesLine(data=slope,
                                                       domain=domain),
                                        skip=1)
@@ -175,6 +178,21 @@ class PhaseCapacity:
                 new_holiday_periods.append(
                     pd.date_range(base_holiday_period[0], periods_to_remove.min() + timedelta(days=-1)))
         return new_holiday_periods
+
+    @staticmethod
+    def count_holidays_in_date_range(holidays, date_range):
+        """
+        Counts the amount of holidays in a given date range
+        Args:
+            holidays: Set of date ranges which are considered holidays
+            date_range: target range in which the holidays are counted
+
+        Returns: The amount of holidays in the date range.
+        """
+        count = 0
+        for holiday in holidays:
+            count += len(set(holiday).intersection(set(date_range)))
+        return count
 
     def add_holiday_periods_to_line(self, line, sorted_holiday_periods):
         """
