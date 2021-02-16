@@ -60,6 +60,8 @@ class FttXExtract(Extract):
         logger.info("Extracting the Projects collection")
         self._extract_from_sql()
         self._extract_project_info()
+        if toggles.leverbetrouwbaarheid:
+            self._extract_leverbetrouwbaarheid_dataframe()
 
     def _extract_from_sql(self):
         logger.info("Extracting from the sql database")
@@ -119,6 +121,26 @@ where project in :projects
         for project in df.index:
             info_per_project[project] = df.loc[project].to_dict()
         self.extracted_data.project_info = info_per_project
+
+    def _extract_leverbetrouwbaarheid_dataframe(self):
+        logger.info("Extracting dataframe for leverbetrouwbaarheid")
+        sql = text("""
+select  fctl.date as last_change_in_hasdatum,
+        fctl.to_value as hasdatum_changed_to,
+        fcas.hasdatum, fcas.opleverdatum, fcas.project
+from fc_transitie_log as fctl
+left join fc_aansluitingen as fcas on fctl.sleutel = fcas.sleutel
+
+where   fctl.key = 'hasdatum'
+and     fcas.hasdatum = fcas.opleverdatum
+and     fctl.to_value = fcas.hasdatum
+and     fcas.opleverdatum >= '2021-01-01'
+and     fcas.project in :projects
+""").bindparams(bindparam('projects', expanding=True))  # nosec
+        df = pd.read_sql(sql, get_database_engine(), params={'projects': tuple(self.projects)})
+        projects_category = pd.CategoricalDtype(categories=self.projects)
+        df['project'] = df.project.astype(projects_category)
+        self.extracted_data.leverbetrouwbaarheid = df
 
 
 class PickleExtract(Extract, FttXBase):
@@ -315,8 +337,11 @@ class FttXAnalyse(FttXBase):
         self._make_records_for_dashboard_values()
         self._make_records_of_client_targets_for_dashboard_values()
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
-        self._make_records_ratio_hc_hpend_for_dashboard_values()
-        self._make_records_ratio_under_8weeks_for_dashboard_values()
+        if toggles.leverbetrouwbaarheid:
+            self._make_records_of_ratios_for_dashboard_values()
+        else:
+            self._make_records_ratio_hc_hpend_for_dashboard_values()
+            self._make_records_ratio_under_8weeks_for_dashboard_values()
         self._make_intermediate_results_ratios_project_specific_values()
         self._calculate_current_werkvoorraad()
         self._reden_na()
@@ -585,6 +610,46 @@ class FttXAnalyse(FttXBase):
                                       year=pd.Timestamp.now().strftime("%Y"),
                                       record=record))
         self.records.add("Overzicht_voorspelling_planning_per_jaar", document_list, DocumentListRecord, "Data",
+                         document_key=["client", "graph_name", "frequency", "year"])
+
+    def _make_records_of_ratios_for_dashboard_values(self):
+        """
+        Calculates the overzicht value per jaar of ratios HC/HPend, realisatie under 8 weeks and leverbetrouwbaarheid.
+        These values are extracted as pd.Series with dates, based on the underlying business rules (see the
+        function_dict). The ratios are then calculated per year (obtained from _calculate_list_of_years) and with
+        yearly frequency through the sum_over_period_to_record function. All these values are added as dictionaries
+        to a document_list, which is added to the Firestore.
+
+        Returns: a list with dictionaries containing the ratio HC/HPend
+
+        """
+        logger.info("Calculating records of ratios for dashboard overview values")
+        df = self.transformed_data.df
+        betrouwbaar_df = self.extracted_data.leverbetrouwbaarheid
+        betrouwbaar_df['verschil_dagen'] = (betrouwbaar_df.hasdatum - betrouwbaar_df.last_change_in_hasdatum).dt.days
+
+        function_dict = {
+            "ratio_hc_hpend": [extract_realisatie_hc_dates(self.transformed_data.df),
+                               extract_realisatie_hpend_dates(self.transformed_data.df)],
+            "ratio_8weeks_hpend": [df[br.aangesloten_orders_tmobile(df=df, time_window="on time")].opleverdatum,
+                                   extract_aangesloten_orders_dates(df)],
+            "ratio_leverbetrouwbaarheid": [betrouwbaar_df[betrouwbaar_df.verschil_dagen > 3].opleverdatum,
+                                           extract_realisatie_hpend_dates(df)]
+        }
+
+        document_list = []
+        for key, values in function_dict.items():
+            for year in self.intermediate_results.List_of_years:
+                record = ratio_sum_over_periods_to_record(numerator=values[0], divider=values[1],
+                                                          freq='Y', year=year)
+                if len(record) == 1:  # removes the date when summing over a year
+                    record = list(record.values())[0]
+                document_list.append(dict(client=self.client,
+                                          graph_name=key,  # output name from function_dict
+                                          frequency='Y',
+                                          year=year,
+                                          record=record))
+        self.records.add("Overzicht_ratios_per_jaar", document_list, DocumentListRecord, "Data",
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_ratio_hc_hpend_for_dashboard_values(self):
