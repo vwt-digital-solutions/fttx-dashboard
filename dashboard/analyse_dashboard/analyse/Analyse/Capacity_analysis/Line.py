@@ -48,6 +48,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
@@ -446,7 +447,7 @@ class TimeseriesLine(PointLine):
 
     def translate_x(self, delta=0):
         data = self.data
-        data.index = data.index + relativedelta(days=delta)
+        data.index = data.index + timedelta(days=delta)
         domain = self.domain.shift(delta)
         return TimeseriesLine(data=data, domain=domain)
 
