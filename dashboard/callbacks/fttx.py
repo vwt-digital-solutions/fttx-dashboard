@@ -406,6 +406,16 @@ for client in config.client_config.keys():
                                                                frequency="Y"), '.2f'))
                      if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
                      ),
+                dict(id_="info_globaal_container6",
+                     title='Leverbetrouwbaarheid',
+                     text=f"Leverbetrouwbaarheid in {year}: ",
+                     value=str(format(collection.get_document(collection="Data",
+                                                              graph_name="ratio_leverbetrouwbaarheid",
+                                                              client=client,
+                                                              year=year,
+                                                              frequency="Y"), '.2f'))
+                     if toggles.leverbetrouwbaarheid else None
+                     )
             ]
             output = global_info_list(items=parameters_global_info_list,
                                       className="container-display")
@@ -487,6 +497,16 @@ for client in config.client_config.keys():
                                                               year=year,
                                                               frequency="Y"), '.2f'))
                      if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
+                     ),
+                dict(id_="info_globaal_container6",
+                     title='Leverbetrouwbaarheid',
+                     text=f"Leverbetrouwbaarheid in {year}: ",
+                     value=str(format(collection.get_document(collection="Data",
+                                                              graph_name="ratio_leverbetrouwbaarheid",
+                                                              client=client,
+                                                              year=year,
+                                                              frequency="Y"), '.2f'))
+                     if toggles.leverbetrouwbaarheid else None
                      )
             ]
             output = global_info_list_old(items=parameters_global_info_list,
