@@ -8,11 +8,13 @@ import re
 import config
 
 
+# TODO: Documentation by Casper van Houten
 class BISExtract(Extract):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    # TODO: Documentation by Casper van Houten, better explain what this function does.
     def extract(self):
         '''
         Extract all data from BIS Excel
@@ -42,6 +44,7 @@ class BISExtract(Extract):
 
         self.extracted_data.df = df
 
+    # TODO: Documentation by Mark Bruisten
     def get_bnumber_project_mapping(self):
         sql_engine = get_database_engine()
         df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
@@ -50,14 +53,16 @@ class BISExtract(Extract):
         return mapping_dict
 
 
+# TODO: Documentation by Casper van Houten
 class BISTransform(Transform):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    # TODO: Documentation by Casper van Houten
     def transform(self, **kwargs):
         super().transform()
-        print("Transforming the data to create workable pd DataFrame")
+        logger.info("Transforming the data to create workable pd DataFrame")
         self._rename_columns()
         self._expand_dates()
         self._set_totals()
@@ -77,14 +82,18 @@ class BISTransform(Transform):
 
         self.transformed_data.df = df_renamed
 
+    # TODO: Documentation by Casper van Houten, explain the hardcoded values
     def _set_totals(self):
         self.transformed_data.totals = {}
         self.transformed_data.totals['BIS geul'] = {'KPN Spijkernisse': 70166}
         self.transformed_data.totals['tuinboringen'] = {'KPN Spijkernisse': 31826}
 
+    # TODO: Documentation by Casper van Houten
     def _expand_dates(self):
-        print('Expanding dates to create date-based index')
+        logger.info('Expanding dates to create date-based index')
 
+        # TODO: Documentation by Casper van Houten.
+        # TODO: Remove hardcoded year.
         def transform_weeknumbers(x):
             if x.startswith('2021_'):
                 return pd.to_datetime(x + '1', format='%Y_%W%w')
@@ -101,11 +110,13 @@ class BISTransform(Transform):
         self.transformed_data.df = self.transformed_data.df.reindex(df_date, fill_value=None, level=1)
 
 
+# TODO: Documentation by Casper van Houten
 class BISETL(ETL, BISExtract, BISTransform):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    # TODO: Documentation by Casper van Houten
     def perform(self):
         self.extract()
         self.transform()
