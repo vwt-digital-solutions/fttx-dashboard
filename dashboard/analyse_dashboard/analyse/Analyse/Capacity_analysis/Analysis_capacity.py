@@ -166,6 +166,7 @@ class CapacityAnalyse(ETLBase):
                                     phase_data=phase_data['geulen'],
                                     client=self.client,
                                     project=project,
+                                    holiday_periods=holiday_ranges,
                                     ).algorithm()
             pocideal_line['geulen'] = geulen.calculate_pocideal_line()
             line_record_list += geulen.get_record()
