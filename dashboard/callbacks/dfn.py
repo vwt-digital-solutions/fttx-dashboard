@@ -2,19 +2,18 @@
 # from analyse_dashboard.analyse.functions import performance_matrix, prognose_graph
 # from analyse_dashboard.analyse.functions import info_table, overview
 
+import pandas as pd
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
 
-from layout.components.indicator import indicator
-
-import pandas as pd
-# import numpy as np
-
 from app import app
-
+from app import toggles
 # update value dropdown given selection in scatter chart
 from data import collection
+from layout.components.indicator import indicator
+
+# import numpy as np
 
 client = 'dfn'
 
@@ -31,7 +30,11 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'weekHCHPend']
+    if toggles.project_bis:
+        indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'last_week_bis_realisatie', 'week_bis_realisatie',
+                           'weekHCHPend']
+    else:
+        indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'weekHCHPend']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,

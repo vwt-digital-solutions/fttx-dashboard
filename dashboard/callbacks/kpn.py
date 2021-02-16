@@ -1,6 +1,7 @@
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from google.cloud import firestore
+from app import toggles
 
 from layout.components.indicator import indicator
 
@@ -26,7 +27,11 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'weekHCHPend', 'weeknerr']
+    if toggles.project_bis:
+        indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'last_week_bis_realisatie', 'week_bis_realisatie',
+                           'weekHCHPend']
+    else:
+        indicator_types = ['lastweek_realisatie', 'weekrealisatie', 'weekHCHPend']
     indicators = collection.get_document(collection="Data",
                                          graph_name="project_indicators",
                                          project=dropdown_selection,

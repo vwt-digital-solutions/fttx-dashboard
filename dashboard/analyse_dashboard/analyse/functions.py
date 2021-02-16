@@ -799,6 +799,28 @@ def thisweek_realisatie_hpend_bullet_chart(project_df, weektarget, delta=0):
                                            subtitle=f"Target:{weektarget}")
 
 
+def week_realisatie_bullet_chart(week_realisatie, week_realisatie_day_before, week_target, week_delta=0):
+    """
+        Creates bullet chart using targets and realisaties
+    Args:
+        week_realisatie: realisatie
+        week_realisatie_day_before: int, realisatie previous day
+        week_target: int, target for the week
+        week_delta: shift weeknumber to display backwards (not sustainable in weeks 1)
+    Returns:
+        dict: A plotly bullet chart
+
+    """
+    max_value = int(max(week_target, week_realisatie, 1) * 1.1)
+    return _create_bullet_chart_realisatie(value=week_realisatie,
+                                           prev_value=week_realisatie_day_before,
+                                           max_value=max_value,
+                                           yellow_border=int(week_target * 0.9),
+                                           threshold=max(week_target, 0.01),  # 0.01 to show a 0 threshold
+                                           title=f'Bis realisatie week {int(datetime.datetime.now().strftime("%V"))-week_delta}',
+                                           subtitle=f"Bis target: {week_target}")
+
+
 def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_per_project: dict):
     """
     This function takes in a dictionary with HC/HPend ratios per project and a project of interest. It then returns
@@ -1910,6 +1932,31 @@ def extract_bis_target_overview(civiel_startdatum: dict, total_meters_bis: dict,
     else:
         bis_target = None
     return bis_target
+
+
+def extract_bis_target_project(civiel_startdatum: str, total_meters_bis: float, total_num_has: float,
+                               snelheid_m_week: float):
+    """
+    Calculates bis target series of a week.
+
+    Args:
+        civiel_startdatum: A dict with civiele startdatum for each project
+        total_meters_bis: A dict with total meter graven bis for each project
+        total_num_has: A dict with total number of huisaansluitingen for each project
+        snelheid_m_week: A dict with graafsnelheid (meters per week) specified for each project
+    Returns:
+        bis_week_target: Bis target series
+    """
+    if isinstance(civiel_startdatum, str) & ~pd.isnull(total_num_has):
+        if pd.isnull(snelheid_m_week) | pd.isnull(total_meters_bis):
+            speed = calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has)
+        else:
+            speed = convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis, total_num_has, snelheid_m_week)
+        duration = calculate_project_duration(speed, total_num_has)
+        bis_target_series = calculate_bis_target_of_project(civiel_startdatum, duration, speed)
+        return bis_target_series
+    else:
+        return pd.Series()
 
 
 def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):

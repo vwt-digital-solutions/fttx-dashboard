@@ -7,13 +7,16 @@ from Analyse.Record.IntRecord import IntRecord
 from Analyse.Record.StringRecord import StringRecord
 from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
+import business_rules as br
 from functions import error_check_FCBC, get_start_time, get_timeline, get_total_objects, \
     lastweek_realisatie_hpend_bullet_chart, \
     thisweek_realisatie_hpend_bullet_chart, \
     prognose, performance_matrix, prognose_graph, \
     make_graphics_for_ratio_hc_hpend_per_project, \
-    make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new
+    make_graphics_for_number_errors_fcbc_per_project, calculate_week_target, targets_new, \
+    extract_bis_target_project, week_realisatie_bullet_chart
 import pandas as pd
+import datetime
 
 import logging
 
@@ -191,9 +194,17 @@ class KPNAnalyse(FttXAnalyse):
 
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators and making graphic boxes for dashboard")
+        today = datetime.datetime.today()
+        day_of_week = today.weekday()
+        yesterday = today - datetime.timedelta(1)
+        next_sunday = today + datetime.timedelta(6 - day_of_week)
+        sunday_last_week = today - datetime.timedelta(day_of_week + 1)
+        sunday_two_weeks = sunday_last_week - datetime.timedelta(7)
         record = {}
         for project in self.project_list:
             project_indicators = {}
+
+            # hpend targets this week and last week
             week_target = calculate_week_target(project=project,
                                                 target_per_week=self.intermediate_results.target_per_week,
                                                 FTU0=self.transformed_data.ftu['date_FTU0'],
@@ -207,11 +218,39 @@ class KPNAnalyse(FttXAnalyse):
 
             project_df = self.transformed_data.df[self.transformed_data.df.project == project]
 
+            # bis realisatie and target dates
+            bis_realisatie_dates = project_df[br.bis_opgeleverd(project_df)].status_civiel_datum
+            bis_realisatie_dates = bis_realisatie_dates.value_counts().resample('D').sum()
+            bis_target_dates = extract_bis_target_project(
+                civiel_startdatum=self.transformed_data.get('civiel_startdatum').get(project),
+                total_meters_bis=self.transformed_data.get('total_meters_bis').get(project),
+                total_num_has=self.transformed_data.get('total_number_huisaansluitingen').get(project),
+                snelheid_m_week=self.transformed_data.get('snelheid_mpw').get(project))
+
+            # bis realisaties
+            this_week_bis_realisatie = int(bis_realisatie_dates[sunday_last_week:today].sum())
+            this_week_bis_realisatie_yesterday = int(bis_realisatie_dates[sunday_last_week:yesterday].sum())
+            last_week_bis_realisatie = int(bis_realisatie_dates[sunday_two_weeks:sunday_last_week].sum())
+
+            # bis targets
+            this_week_bis_target = int(bis_target_dates[sunday_last_week:next_sunday].sum())
+            last_week_bis_target = int(bis_target_dates[sunday_two_weeks:sunday_last_week].sum())
+
+            # graphics
             project_indicators['weekrealisatie'] = thisweek_realisatie_hpend_bullet_chart(
                 project_df, week_target)
 
             project_indicators['lastweek_realisatie'] = lastweek_realisatie_hpend_bullet_chart(
                 project_df, lastweek_target)
+
+            project_indicators['week_bis_realisatie'] = week_realisatie_bullet_chart(this_week_bis_realisatie,
+                                                                                     this_week_bis_realisatie_yesterday,
+                                                                                     this_week_bis_target)
+
+            project_indicators['last_week_bis_realisatie'] = week_realisatie_bullet_chart(last_week_bis_realisatie,
+                                                                                          None,
+                                                                                          last_week_bis_target,
+                                                                                          week_delta=1)
 
             project_indicators['weekHCHPend'] = make_graphics_for_ratio_hc_hpend_per_project(
                 project=project, ratio_HC_HPend_per_project=self.intermediate_results.ratio_HC_HPend_per_project)
