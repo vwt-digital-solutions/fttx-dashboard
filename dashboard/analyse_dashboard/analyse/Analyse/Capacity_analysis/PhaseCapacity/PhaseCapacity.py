@@ -1,9 +1,11 @@
+import copy
+
 import pandas as pd
-from datetime import timedelta
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
+from datetime import timedelta
 
 
 # TODO: Documentation by Casper van Houten
@@ -17,11 +19,12 @@ class PhaseCapacity:
     """
 
     def __init__(self, df: pd.DataFrame, phase_data: dict, client: str,
-                 project: str, pocideal_line_masterphase=None, masterphase_data=None):
+                 project: str, holiday_periods: list, pocideal_line_masterphase=None, masterphase_data=None):
         self.df = df
         self.phase_data = phase_data
         self.client = client
         self.project = project
+        self.holiday_periods = holiday_periods
         self.pocideal_line_masterphase = pocideal_line_masterphase
         self.masterphase_data = masterphase_data
         self.record_list = RecordList()
@@ -40,7 +43,7 @@ class PhaseCapacity:
         """
 
         lines = []
-        lines.append(self.calculate_target_line())
+        lines.append(self.add_holiday_periods_to_line(self.calculate_target_line(), self.holiday_periods))
         lines.append(self.calculate_pocreal_line())
         lines.append(self.calculate_pocideal_line())
         lines.append(self.calculate_pocverwacht_line())
@@ -91,6 +94,9 @@ class PhaseCapacity:
         # no more work to do, so ideal line == realised line
         else:
             line = pocreal_line
+        holiday_periods = self.slice_holiday_periods(holiday_periods=self.holiday_periods,
+                                                     periods_to_remove=pocreal_line.domain.domain)
+        self.add_holiday_periods_to_line(line, holiday_periods)
         line.name = 'poc_ideal_indicator'
         line.max_value = self.phase_data['total_units']
         return line
@@ -109,6 +115,8 @@ class PhaseCapacity:
             line = pocreal_line.append(TimeseriesLine(data=slope, domain=domain), skip=1)
         else:
             line = pocreal_line
+        holiday_periods = self.slice_holiday_periods(self.holiday_periods, pocreal_line.domain.domain)
+        line = self.add_holiday_periods_to_line(line, holiday_periods)
         line.name = 'poc_verwacht_indicator'
         line.max_value = self.phase_data['total_units']
         return line
@@ -140,7 +148,34 @@ class PhaseCapacity:
     def get_record(self, **kwargs):
         return self.record_list
 
-    #
+    @staticmethod
+    def slice_holiday_periods(holiday_periods, periods_to_remove):
+        """
+        Slice holiday periods to only contain relevant dates. Used to ensure some holidays are not counted doubly.
+        Args:
+            holiday_periods:
+            periods_to_remove:
+
+        Returns: A sliced set of holiday periods
+
+        """
+        new_holiday_periods = []
+
+        for base_holiday_period in holiday_periods:
+            min_date = base_holiday_period.min()
+            max_date = base_holiday_period.max()
+            remove_start = min_date in periods_to_remove
+            remove_end = max_date in periods_to_remove
+            if not remove_start and not remove_end:
+                new_holiday_periods.append(base_holiday_period)
+            elif remove_start and not remove_end:
+                new_holiday_periods.append(
+                    pd.date_range(periods_to_remove.max() + timedelta(days=1), base_holiday_period[-1]))
+            elif not remove_start and remove_end:
+                new_holiday_periods.append(
+                    pd.date_range(base_holiday_period[0], periods_to_remove.min() + timedelta(days=-1)))
+        return new_holiday_periods
+
     def add_holiday_periods_to_line(self, line, sorted_holiday_periods):
         """
         Function that will enhance a line to include input rest periods.
@@ -152,7 +187,7 @@ class PhaseCapacity:
         Returns:
 
         """
-        holiday_periods = sorted_holiday_periods  # Retrieve full set of defined rest dates
+        holiday_periods = copy.deepcopy(sorted_holiday_periods)  # Retrieve full set of defined rest dates
         # Main loop.
         # You have to loop over the rest periods multiple times,
         # because you are extending the timeperiod in every loop
@@ -160,7 +195,7 @@ class PhaseCapacity:
             # Find all relevant rest periods, given current dates of the line
             next_holiday_period, other_periods = self._find_next_holiday_periods_in_date_range(line.make_series().index,
                                                                                                holiday_periods)
-            if not next_holiday_period:
+            if not len(next_holiday_period):
                 break  # Stop looping if there's no rest periods left to add
             # Remove rest periods that have been added from the set that can still be added
             holiday_periods = other_periods
@@ -178,7 +213,7 @@ class PhaseCapacity:
         Returns:
 
         """
-        holiday_period_line = TimeseriesLine(pd.Series(index=holiday_period, data=0))
+        holiday_period_line = TimeseriesLine(domain=DateDomain(begin=holiday_period[0], end=holiday_period[-1]), data=0)
         before_line = line.slice(end=holiday_period.min())
         after_line = line.slice(begin=holiday_period.min()).translate_x(len(holiday_period))
         return before_line.append(holiday_period_line, skip=1, skip_base=True).append(after_line)
