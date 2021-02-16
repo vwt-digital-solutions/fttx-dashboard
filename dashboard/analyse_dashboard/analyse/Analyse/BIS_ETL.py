@@ -46,6 +46,11 @@ class BISExtract(Extract):
 
     # TODO: Documentation by Mark Bruisten
     def get_bnumber_project_mapping(self):
+        """
+        This method extracts the bnumber --> project name mapping table from the sql database.
+        Returns: a dictionary with bnumbers as keys and project names as values
+
+        """
         sql_engine = get_database_engine()
         df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
         df = df[['fiberconnect_code', 'project_naam']].dropna()
