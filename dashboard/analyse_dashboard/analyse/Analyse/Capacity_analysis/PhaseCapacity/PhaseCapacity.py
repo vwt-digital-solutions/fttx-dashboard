@@ -145,7 +145,7 @@ class PhaseCapacity:
                                            project=self.project))
 
     # TODO: Documentation by Casper van Houten
-    def get_record(self, **kwargs):
+    def get_record(self):
         return self.record_list
 
     @staticmethod
@@ -229,7 +229,7 @@ class PhaseCapacity:
         Returns:
 
         """
-        overlapping_dates = None
+        overlapping_dates = []
         while len(holidays_period) > 0:
             dates = holidays_period.pop(0)
             overlapping_dates = self._find_overlapping_dates(date_range, dates)
