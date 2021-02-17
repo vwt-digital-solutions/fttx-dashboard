@@ -1695,10 +1695,10 @@ def get_database_engine():
 def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
-    We commonly use:
-        'W-MON' for weeks starting on Monday. (label = monday)
-        'M' for month (label is the last day of the period)
-        'Y' for year (label is the last day of the period)
+    We commonly use: \n
+    -    'W-MON' for weeks starting on Monday. (label = monday)
+    -    'M' for month (label is the last day of the period)
+    -    'Y' for year (label is the last day of the period)
 
     Args:
         data: A pd.Series to sum over
