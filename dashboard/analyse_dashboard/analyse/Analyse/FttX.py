@@ -123,6 +123,14 @@ where project in :projects
         self.extracted_data.project_info = info_per_project
 
     def _extract_leverbetrouwbaarheid_dataframe(self):
+        """
+        This function extracts a pd.DataFrame from the transition log (fc_transitie_log) and the aansluitingen dataset
+        (fc_aansluitingen) that contains houses of which: \n
+        -   the hasdatum is equal to the opleverdatum.
+        -   the hasdatum has been changed to the final hasdatum.
+        -   the opleverdatum starts at 2021-01-01, to filter out a bunch of keys that were changed for the first time.
+        This DataFrame can then be used to calculate the leverbetrouwbaarheid.
+        """
         logger.info("Extracting dataframe for leverbetrouwbaarheid")
         sql = text("""
 select  fctl.date as last_change_in_hasdatum,
@@ -624,7 +632,7 @@ class FttXAnalyse(FttXBase):
         yearly frequency through the sum_over_period_to_record function. All these values are added as dictionaries
         to a document_list, which is added to the Firestore.
 
-        Returns: a list with dictionaries containing the ratio HC/HPend
+        Returns: a list with dicts containing the ratios HC/HPend, realisatie under 8 weeks and leverbetrouwbaarheid.
 
         """
         logger.info("Calculating records of ratios for dashboard overview values")
