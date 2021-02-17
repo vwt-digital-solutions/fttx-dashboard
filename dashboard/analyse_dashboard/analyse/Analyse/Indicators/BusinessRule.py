@@ -1,6 +1,6 @@
 import copy
 
-from Analyse.Indicators.Indicator import IndicatorBase
+from Analyse.Indicators.IndicatorBase import IndicatorBase
 
 
 class BusinessRule(IndicatorBase):

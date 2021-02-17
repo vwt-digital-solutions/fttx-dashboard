@@ -1,4 +1,4 @@
-from Analyse.Indicators.Indicator import IndicatorBase
+from Analyse.Indicators.IndicatorBase import IndicatorBase
 
 
 class Aggregator(IndicatorBase):

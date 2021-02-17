@@ -1,19 +1,18 @@
 from Analyse.Indicators.Indicator import Indicator
 from Analyse.PieChart import PieChart
-from Analyse.Record.DictRecord import DictRecord
+from Analyse.Record.Record import Record
 
 
-class RedenNaProjectIndicator(Indicator, PieChart):
+class RedenNaOverviewIndicator(Indicator, PieChart):
     """
-    Calculates reden na pie chart for every project
+    Calculates reden na pie chart over all projects
     """
-
     def apply_business_rules(self):
         """
         For this indicator we only need the cluster column, and sleutel column to count.
         Returns: Sliced dataframe containing only the relevant columns
         """
-        return self.df[['project', 'cluster_redenna', 'sleutel']]
+        return self.df[['cluster_redenna', 'sleutel']]
 
     def perform(self):
         """
@@ -23,16 +22,20 @@ class RedenNaProjectIndicator(Indicator, PieChart):
         """
         aggregate = self.aggregate(
                                     df=self.apply_business_rules(),
-                                    by=["project", "cluster_redenna"]
+                                    by="cluster_redenna"
                                   )
         return self.to_record(aggregate)
 
     def to_record(self, df):
-        project_dict = {}
-        for project, df in df.groupby('project'):
-            project_dict[project] = self.to_pie_chart(df)
-        dict_record = DictRecord(record=project_dict,
-                                 collection='Data',
-                                 client=self.client,
-                                 graph_name='reden_na_projects')
-        return dict_record
+        """
+        Turn the data into a piechart, and then make it into a Record.
+        Args:
+            df: Clustered data to be turned into a Record
+
+        Returns: Record containing all data.
+        """
+        record = self.to_pie_chart(df)
+        return Record(record=record,
+                      collection='Data',
+                      client=self.client,
+                      graph_name='reden_na_overview')

@@ -37,11 +37,18 @@ class LineRecord(Record):
         record_to_write['series_month'] = record.get_line_aggregate(freq='MS',
                                                                     aggregate_type='series',
                                                                     index_as_str=True).to_dict()
-        record_to_write['next_week'] = record.get_line_aggregate(freq='W-MON',
-                                                                 loffset='-1',
-                                                                 aggregate_type='value')
-        record_to_write['next_month'] = record.get_line_aggregate(freq='MS',
-                                                                  aggregate_type='value')
+        if record.name == 'werkvoorraad_absoluut_indicator':
+            record_to_write['next_week'] = record.get_line_aggregate(freq='W-MON',
+                                                                     loffset='-1',
+                                                                     aggregate_type='value_mean')
+            record_to_write['next_month'] = record.get_line_aggregate(freq='MS',
+                                                                      aggregate_type='value_mean')
+        else:
+            record_to_write['next_week'] = record.get_line_aggregate(freq='W-MON',
+                                                                     loffset='-1',
+                                                                     aggregate_type='value_sum')
+            record_to_write['next_month'] = record.get_line_aggregate(freq='MS',
+                                                                      aggregate_type='value_sum')
         return record_to_write
 
     def document_name(self, **kwargs):

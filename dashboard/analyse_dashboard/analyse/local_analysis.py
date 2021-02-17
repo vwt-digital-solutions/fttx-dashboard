@@ -2,6 +2,7 @@
 import logging
 import argparse
 import os
+import sys
 
 import config
 from Analyse.KPNDFN import DFNLocalETL, KPNETL, KPNLocalETL, DFNETL, KPNTestETL, DFNTestETL
@@ -47,17 +48,17 @@ def get_etl_process(client, etl_type='local'):
     etl_processes = {
                     'kpn': {
                             'local': KPNLocalETL,
-                            'real': KPNETL,
+                            'write_to_dev': KPNETL,
                             'reload': KPNTestETL
                             },
                     'tmobile': {
                                 'local': TMobileLocalETL,
-                                'real': TMobileETL,
+                                'write_to_dev': TMobileETL,
                                 'reload': TMobileTestETL
                                },
                     'dfn': {
                             'local': DFNLocalETL,
-                            'real': DFNETL,
+                            'write_to_dev': DFNETL,
                             'reload': DFNTestETL
                            }
                     }
@@ -89,30 +90,30 @@ def force_reload(clients):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--client', help='Run the analysis for a specific client', default=False)
-    parser.add_argument('--local',
-                        help='Write results to local firestore or actual firestore',
-                        default=True)
-    parser.add_argument('--project', help='Run the analysis only for a specific project')
+
+    parser.add_argument('--remote',
+                        help='Write results to actual firestore, otherwise use the local firestore',
+                        action='store_true')
+    parser.add_argument('--client',
+                        choices=['kpn', 'dfn', 'tmobile'],
+                        required='--project' in sys.argv,
+                        help='Run the analysis for a specific client',
+                        )
+    parser.add_argument('--project',
+                        help='Run the analysis only for a specific project. Requires --client input.')
     parser.add_argument('--force-reload',
-                        action='store_const',
-                        const=True,
+                        action='store_true',
                         help="Force reloading data from database, rather than using local pickle.")
+    parser.add_argument('--steps',
+                        choices=['1', '2', '3', '4'],
+                        default='4',
+                        help='Run the code only up to a certain point of the process: '
+                             '1.Extract, 2.Transform, 3.Analyse, 4.Load (default = 4)'
+                        )
     args = parser.parse_args()
-    local = args.local
+    remote = args.remote
     project = args.project
     client = args.client
-
-    if project:
-        if not client:
-            raise ValueError("Please select a client in combination with a project")
-        set_config_project(project, client)
-
-    if not local:
-        prompt = input("Data will be written to the development firestore, confirm that this is intentional (y/n):")
-        if prompt != 'y':
-            raise ValueError("Please run with --local is True (the default value) to write to the local firestore.")
-        etl_type = 'real'
 
     if client:
         clients = [client]
@@ -120,12 +121,27 @@ if __name__ == "__main__":
         clients = ['kpn', 'tmobile', 'dfn']
 
     if args.force_reload:
+        if 'FIRESTORE_EMULATOR_HOST' in os.environ:
+            del os.environ['FIRESTORE_EMULATOR_HOST']
         force_reload(clients)
 
-    if local:
+    steps = int(args.steps)
+
+    if project:
+        if not client:
+            raise ValueError("Please select a client in combination with a project")
+        set_config_project(project, client)
+
+    if remote:
+        prompt = input("Data will be written to the development firestore, confirm that this is intentional (y/n):")
+
+        if prompt != 'y':
+            raise ValueError("Please run without --remote to write to the local firestore.")
+        etl_type = 'write_to_dev'
+    else:
         os.environ['FIRESTORE_EMULATOR_HOST'] = 'localhost:8080'
         etl_type = 'local'
 
     for client in clients:
         etl_process = get_etl_process(client=client, etl_type=etl_type)
-        run_client(client, etl_process)
+        run_client(client, etl_process, steps)

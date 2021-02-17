@@ -31,9 +31,9 @@ def calculate_voorraadvormend(df):
 def counts_by_time_period(df: pd.DataFrame, freq: str = 'W-MON') -> dict:
     """
     Set the freq using: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
-    We commonly use:
-        'MS' for the start of the month
-        'W-MON' for weeks starting on Monday.
+    We commonly use: \n
+    -    'MS' for the start of the month
+    -    'W-MON' for weeks starting on Monday.
     """
     date_cols = [col for col in df.columns if "datum" in col or "date" in col]
 

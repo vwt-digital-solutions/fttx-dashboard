@@ -48,6 +48,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
@@ -446,7 +447,7 @@ class TimeseriesLine(PointLine):
 
     def translate_x(self, delta=0):
         data = self.data
-        data.index = data.index + relativedelta(days=delta)
+        data.index = data.index + timedelta(days=delta)
         domain = self.domain.shift(delta)
         return TimeseriesLine(data=data, domain=domain)
 
@@ -487,9 +488,17 @@ class TimeseriesLine(PointLine):
             aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum().cumsum()
             if index_as_str:
                 aggregate.index = aggregate.index.format()
-        elif aggregate_type == 'value':
+        elif aggregate_type == 'value_sum':
             series = self.make_series()
             aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
+            period_for_output = self.period_for_output(freq)
+            if period_for_output in series.index:
+                aggregate = aggregate[period_for_output]
+            else:
+                aggregate = 0
+        elif aggregate_type == 'value_mean':
+            series = self.make_series()
+            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).mean()
             period_for_output = self.period_for_output(freq)
             if period_for_output in series.index:
                 aggregate = aggregate[period_for_output]

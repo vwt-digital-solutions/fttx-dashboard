@@ -79,7 +79,7 @@ class CapacityTransform(FttXTransform):
     def fill_projectspecific_phase_config(self):
         phases_projectspecific = {}
         # Temporarily hard-coded values
-        performance_norm_config = 0.38  # based  on dates Nijmegen Dukenburg
+        performance_norm_config = 0.366  # based  on dates Nijmegen Dukenburg
         # values for Spijkernisse for the moment
 
         for project in self.transformed_data.df.project.unique():
@@ -155,7 +155,7 @@ class CapacityAnalyse(ETLBase):
         """
         Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
         """
-
+        holiday_ranges = self.transform_holiday_dates_into_ranges()
         line_record_list = RecordList()
         for project in self.config['demo_projects_capacity']:
             phase_data = self.transformed_data.project_phase_data[project]
@@ -166,6 +166,7 @@ class CapacityAnalyse(ETLBase):
                                     phase_data=phase_data['geulen'],
                                     client=self.client,
                                     project=project,
+                                    holiday_periods=holiday_ranges,
                                     ).algorithm()
             pocideal_line['geulen'] = geulen.calculate_pocideal_line()
             line_record_list += geulen.get_record()
@@ -175,6 +176,7 @@ class CapacityAnalyse(ETLBase):
                                         masterphase_data=phase_data[phase_data['schieten']['master_phase']],
                                         client=self.client,
                                         project=project,
+                                        holiday_periods=holiday_ranges,
                                         pocideal_line_masterphase=pocideal_line[phase_data['schieten']['master_phase']],
                                         ).algorithm()
             pocideal_line['schieten'] = schieten.calculate_pocideal_line()
@@ -185,6 +187,7 @@ class CapacityAnalyse(ETLBase):
                                   masterphase_data=phase_data[phase_data['lasap']['master_phase']],
                                   client=self.client,
                                   project=project,
+                                  holiday_periods=holiday_ranges,
                                   pocideal_line_masterphase=pocideal_line[phase_data['lasap']['master_phase']],
                                   ).algorithm()
             line_record_list += lasap.get_record()
@@ -195,6 +198,7 @@ class CapacityAnalyse(ETLBase):
                                   masterphase_data=phase_data[phase_data['lasdp']['master_phase']],
                                   client=self.client,
                                   project=project,
+                                  holiday_periods=holiday_ranges,
                                   pocideal_line_masterphase=pocideal_line[phase_data['lasdp']['master_phase']],
                                   ).algorithm()
             pocideal_line['lasdp'] = lasdp.calculate_pocideal_line()
@@ -205,6 +209,7 @@ class CapacityAnalyse(ETLBase):
                                       masterphase_data=phase_data[phase_data['oplever']['master_phase']],
                                       client=self.client,
                                       project=project,
+                                      holiday_periods=holiday_ranges,
                                       pocideal_line_masterphase=pocideal_line[phase_data['oplever']['master_phase']],
                                       ).algorithm()
             pocideal_line['oplever'] = oplever.calculate_pocideal_line()
@@ -212,11 +217,11 @@ class CapacityAnalyse(ETLBase):
 
         self.records = line_record_list
 
-    def get_rest_dates_as_list_of_series(self):
-        rest_dates = []
-        for rest_date in self.config['holidays_periods']:
-            rest_dates.append(pd.date_range(start=rest_date[0], end=rest_date[1], freq='D'))
-        return rest_dates
+    def transform_holiday_dates_into_ranges(self):
+        holiday_ranges = []
+        for holiday_periods in self.config['holidays_periods']:
+            holiday_ranges.append(pd.date_range(start=holiday_periods[0], end=holiday_periods[1], freq='D'))
+        return holiday_ranges
 
 
 class CapacityETL(CapacityExtract, CapacityTransform, CapacityAnalyse, CapacityLoad):
