@@ -374,7 +374,8 @@ for client in config.client_config.keys():
                                                         graph_name="werkvoorraad_bis",
                                                         client=client,
                                                         year=year,
-                                                        frequency="Y")),
+                                                        frequency="Y"))
+                     if year == str(datetime.now().year) else 'n.v.t',
                      text2="HAS: ",
                      value2=str(collection.get_document(collection="Data",
                                                         graph_name="werkvoorraad_has",

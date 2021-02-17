@@ -261,6 +261,19 @@ def bis_opgeleverd(df):
     return ~df['opleverstatus'].isin(['0', '90', '99'])
 
 
+def bis_werkvoorraad(df):
+    """
+    BIS is werkvoorraad when `opleverstatus` is 0.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing a opleverstatus column with `opleverstatussen`.
+
+    Returns:
+         pd.Series: A series of truth values.
+    """
+    return df['opleverstatus'].isin(['0'])
+
+
 def bis_niet_opgeleverd(df):
     """
     BIS is not done when `opleverstatus` is  set to 0.

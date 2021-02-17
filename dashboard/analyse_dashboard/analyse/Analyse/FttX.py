@@ -513,7 +513,6 @@ class FttXAnalyse(FttXBase):
         df = self.transformed_data.df
         # Create a dictionary that contains the output name and the appropriate mask:
         function_dict = {'realisatie_bis': df[br.bis_opgeleverd(df)].status_civiel_datum,
-                         'werkvoorraad_bis': df[br.bis_niet_opgeleverd(df)].status_civiel_datum,
                          'werkvoorraad_has': extract_werkvoorraad_has_dates(df),
                          'realisatie_hpend': extract_realisatie_hpend_dates(df),
                          'target_intern_bis': extract_bis_target_overview(
@@ -551,7 +550,7 @@ class FttXAnalyse(FttXBase):
                          document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_of_client_targets_for_dashboard_values(self):
-
+        df = self.transformed_data.df
         document_list = []
         for year in self.intermediate_results.List_of_years:
             document_list.append(dict(client=self.client,
@@ -564,8 +563,13 @@ class FttXAnalyse(FttXBase):
                                       frequency='Y',
                                       year=year,
                                       record=extract_bis_target_client(self.client, year)))
-        self.records.add("Overzicht_client_targets_per_jaar", document_list, DocumentListRecord, "Data",
-                         document_key=["client", "graph_name", "frequency", "year"])
+            document_list.append(dict(client=self.client,
+                                      graph_name='werkvoorraad_bis',
+                                      frequency='Y',
+                                      year=year,
+                                      record=len(df[br.bis_werkvoorraad(df)])))
+            self.records.add("Overzicht_client_targets_per_jaar", document_list, DocumentListRecord, "Data",
+                             document_key=["client", "graph_name", "frequency", "year"])
 
     def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
         """
