@@ -763,7 +763,7 @@ def lastweek_realisatie_hpend_bullet_chart(project_df, weektarget):
                                            max_value=max_value,
                                            yellow_border=int(weektarget * 0.9),
                                            threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                           title=f'Realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+                                           title=f'HAS realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
                                            subtitle=f"Target: {weektarget}")
 
 
@@ -795,7 +795,7 @@ def thisweek_realisatie_hpend_bullet_chart(project_df, weektarget, delta=0):
                                            max_value=max_value,
                                            yellow_border=int(weektarget * 0.9),
                                            threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                           title=f'Realisatie week {datetime.datetime.now().strftime("%V")}',
+                                           title=f'HAS realisatie week {int(datetime.datetime.now().strftime("%V"))}',
                                            subtitle=f"Target:{weektarget}")
 
 
@@ -817,7 +817,7 @@ def week_realisatie_bullet_chart(week_realisatie, week_realisatie_day_before, we
                                            max_value=max_value,
                                            yellow_border=int(week_target * 0.9),
                                            threshold=max(week_target, 0.01),  # 0.01 to show a 0 threshold
-                                           title=f'Bis realisatie week {int(datetime.datetime.now().strftime("%V"))-week_delta}',
+                                           title=f'BIS realisatie week {int(datetime.datetime.now().strftime("%V"))-week_delta}',
                                            subtitle=f"Bis target: {week_target}")
 
 
