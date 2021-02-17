@@ -88,9 +88,9 @@ def ordered(df, time_delta_days=0):
 
 def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
     """
-    Used to calculate the actieve orders for tmobile, based on the business rules:
-        - Is the df row status not equal to CANCELLED or TO_BE_CANCELLED?
-        - Is the df row type equal to AANLEG?
+    Used to calculate the actieve orders for tmobile, based on the business rules: \n
+    - Is the df row status not equal to CANCELLED or TO_BE_CANCELLED?
+    - Is the df row type equal to AANLEG?
 
     Args:
         df (pd.DataFrame): A dataframe containing a status and type column.
@@ -107,11 +107,11 @@ def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
 def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
                                time_window: str = None, order_type: str = None) -> pd.Series:
     """
-    Used to calculate the openstaande orders for tmobile, based on the business rules:
-        - Is the df row status not equal to CANCELLED, TO_BE_CANCELLED or CLOSED?
-        - Is the df row type equal to AANLEG?
-    Additionally, a time window can be set, which adds the following rules:
-        - Is the time between today and creation date less than 8 weeks ("on time", 56 days); between 8 & 12 weeks
+    Used to calculate the openstaande orders for tmobile, based on the business rules: \n
+    -   Is the df row status not equal to CANCELLED, TO_BE_CANCELLED or CLOSED?
+    -   Is the df row type equal to AANLEG?
+    Additionally, a time window can be set, which adds the following rules: \n
+    -   Is the time between today and creation date less than 8 weeks ("on time", 56 days); between 8 & 12 weeks
         ("limited time", 56 & 84 days) or above 12 weeks ("late", 84 days)?
 
     Args:
@@ -156,11 +156,11 @@ def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
 
 def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.Series:
     """
-    Used to calculate the totaal aangesloten orders for tmobile, based on the business rules:
-        - Is the df row status equal to CLOSED?
-        - Is the df row type equal to AANLEG?
-    Additionally, a time window can be set, which adds the following rule:
-        - Is the time between opleverdatum and creation date less than 8 weeks ("on time", 56 days)?
+    Used to calculate the totaal aangesloten orders for tmobile, based on the business rules: \n
+    -   Is the df row status equal to CLOSED?
+    -   Is the df row type equal to AANLEG?
+    Additionally, a time window can be set, which adds the following rule: \n
+    -   Is the time between opleverdatum and creation date less than 8 weeks ("on time", 56 days)?
     Args:
         df (pd.DataFrame): A dataframe containing a status, type, opleverdatum and creation column, of which the latter
         two contain dates.
@@ -382,12 +382,11 @@ def has_werkvoorraad(df, time_delta_days=0):
     """
     A house is in the HAS werkvoorraad when a permission has been determined and BIS infrastructure is in place.
 
-    This function determines the werkvoorraad HAS by checking each row of a DataFrame for:
-
-    - Does the df row have a schouwdatum AND is the schouwdatum earlier than today?
-    - Does the df row not have a opleverdatum OR is the opleverdatum later than today?
-    - Does the df row have a toestemming_datum?
-    - Is the df row opleverstatus not equal to 0, 90 or 99?
+    This function determines the werkvoorraad HAS by checking each row of a DataFrame for: \n
+    -   Does the df row have a schouwdatum AND is the schouwdatum earlier than today?
+    -   Does the df row not have a opleverdatum OR is the opleverdatum later than today?
+    -   Does the df row have a toestemming_datum?
+    -   Is the df row opleverstatus not equal to 0, 90 or 99?
 
     Args:
         df (pd.DataFrame): A  dataframe containing the following columns: [schouwdatum, opleverdatum,
@@ -431,11 +430,10 @@ def hpend_year(df, year=None):
 
 def target_tmobile(df):
     """
-    This BR determines the target for tmobile by checking each row of a DataFrame for:
-
-    - Does the df row have a creation (date)?
-    - Is the df row status not equal to CANCELLED or TO_BE_CANCELLED?
-    - Is the df row type equal to AANLEG?
+    This BR determines the target for tmobile by checking each row of a DataFrame for: \n
+    -   Does the df row have a creation (date)?
+    -   Is the df row status not equal to CANCELLED or TO_BE_CANCELLED?
+    -   Is the df row type equal to AANLEG?
 
     Args:
         df (pd.DataFrame): The transformed dataframe

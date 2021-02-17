@@ -414,7 +414,7 @@ for client in config.client_config.keys():
                                                               client=client,
                                                               year=year,
                                                               frequency="Y"), '.2f'))
-                     if toggles.leverbetrouwbaarheid else None
+                     if toggles.leverbetrouwbaarheid else "n.v.t."
                      )
             ]
             output = global_info_list(items=parameters_global_info_list,
@@ -506,7 +506,7 @@ for client in config.client_config.keys():
                                                               client=client,
                                                               year=year,
                                                               frequency="Y"), '.2f'))
-                     if toggles.leverbetrouwbaarheid else None
+                     if toggles.leverbetrouwbaarheid else "n.v.t."
                      )
             ]
             output = global_info_list_old(items=parameters_global_info_list,

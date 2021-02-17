@@ -13,7 +13,7 @@ class RedenNaProjectIndicator(Indicator, PieChart):
         For this indicator we only need the cluster column, and sleutel column to count.
         Returns: Sliced dataframe containing only the relevant columns
         """
-        return self.df[['cluster_redenna', 'sleutel']]
+        return self.df[['project', 'cluster_redenna', 'sleutel']]
 
     def perform(self):
         """
@@ -28,12 +28,11 @@ class RedenNaProjectIndicator(Indicator, PieChart):
         return self.to_record(aggregate)
 
     def to_record(self, df):
-
+        project_dict = {}
         for project, df in df.groupby('project'):
-            self.to_pie_chart(df)
-            graph_name = f"pie_na_{project}"
-        dict_record = DictRecord(record=df,
+            project_dict[project] = self.to_pie_chart(df)
+        dict_record = DictRecord(record=project_dict,
                                  collection='Data',
                                  client=self.client,
-                                 graph_name=graph_name)
+                                 graph_name='reden_na_projects')
         return dict_record
