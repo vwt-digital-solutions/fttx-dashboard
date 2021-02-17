@@ -92,15 +92,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--local',
-                        help='Write results to local firestore or actual firestore',
+                        help='Write results to local firestore or actual firestore (default = True)',
                         default=True)
-    parser.add_argument('--project',
-                        help='Run the analysis only for a specific project. Requires --client input.')
     parser.add_argument('--client',
                         choices=['kpn', 'dfn', 'tmobile'],
                         required='--project' in sys.argv,
                         help='Run the analysis for a specific client',
                         )
+    parser.add_argument('--project',
+                        help='Run the analysis only for a specific project. Requires --client input.')
     parser.add_argument('--force-reload',
                         action='store_const',
                         const=True,
@@ -108,8 +108,8 @@ if __name__ == "__main__":
     parser.add_argument('--steps',
                         choices=['1', '2', '3', '4'],
                         default='4',
-                        help=['Run the code only up to a certain point of the process: '
-                              '1.Extract, 2.Transform, 3.Analyse, 4.Load (default)']
+                        help='Run the code only up to a certain point of the process: '
+                             '1.Extract, 2.Transform, 3.Analyse, 4.Load (default = 4)'
                         )
     args = parser.parse_args()
     local = args.local
