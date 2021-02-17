@@ -1195,11 +1195,10 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
     Set the freq using:
     `Offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
 
-    We commonly use:
-
-        - 'W-MON' for weeks starting on Monday. (label = monday)
-        - 'M' for month (label is the last day of the period)
-        - 'Y' for year (label is the last day of the period)
+    We commonly use: \n
+    -   'W-MON' for weeks starting on Monday. (label = monday)
+    -   'M' for month (label is the last day of the period)
+    -   'Y' for year (label is the last day of the period)
 
     Args:
         df: The data set
