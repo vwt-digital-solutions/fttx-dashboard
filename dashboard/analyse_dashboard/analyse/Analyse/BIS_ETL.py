@@ -8,17 +8,18 @@ import re
 import config
 
 
-# TODO: Documentation by Casper van Houten
 class BISExtract(Extract):
+    """
+    Class that extracts meter data and adds them as attribute to the ETL class.
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    # TODO: Documentation by Casper van Houten, better explain what this function does.
     def extract(self):
-        '''
-        Extract all data from BIS Excel
-        '''
+        """
+        Extracts data for meters graven from Excels on the google cloud, and adds them tot he extracted data attribute
+        """
         print("Extracting data from Excel")
         df_list = []
         client = storage.Client()
@@ -44,7 +45,6 @@ class BISExtract(Extract):
 
         self.extracted_data.df = df
 
-    # TODO: Documentation by Mark Bruisten
     def get_bnumber_project_mapping(self):
         """
         This method extracts the bnumber --> project name mapping table from the sql database.
@@ -58,14 +58,17 @@ class BISExtract(Extract):
         return mapping_dict
 
 
-# TODO: Documentation by Casper van Houten
 class BISTransform(Transform):
-
+    """
+    Performs necessary transformation steps on extracted graven data and adds them to transformed data
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    # TODO: Documentation by Casper van Houten
     def transform(self, **kwargs):
+        """
+        Wrapper function to perform all transformation steps for meters.
+        """
         super().transform()
         logger.info("Transforming the data to create workable pd DataFrame")
         self._rename_columns()
@@ -87,23 +90,26 @@ class BISTransform(Transform):
 
         self.transformed_data.df = df_renamed
 
-    # TODO: Documentation by Casper van Houten, explain the hardcoded values
-    def _set_totals(self):
-        self.transformed_data.totals = {}
-        self.transformed_data.totals['BIS geul'] = {'KPN Spijkernisse': 70166}
-        self.transformed_data.totals['tuinboringen'] = {'KPN Spijkernisse': 31826}
-
     # TODO: Documentation by Casper van Houten
     def _expand_dates(self):
+        """
+        Expands dataframe with to be a timeseries of the complete daterange between first and last date,
+        filling missing dates with zeroes.
+        """
         logger.info('Expanding dates to create date-based index')
 
         # TODO: Documentation by Casper van Houten.
         # TODO: Remove hardcoded year.
         def transform_weeknumbers(x):
-            if x.startswith('2021_'):
-                return pd.to_datetime(x + '1', format='%Y_%W%w')
-            else:
-                return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
+            """
+            Transforms input date into a datetime object
+            Args:
+                x: input date
+
+            Returns: datetime object with the first date of the input week.
+
+            """
+            return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
 
         self.transformed_data.df['date'] = self.transformed_data.df['date'].apply(transform_weeknumbers)
         self.transformed_data.df = self.transformed_data.df.set_index(['project', 'date'])
@@ -117,11 +123,18 @@ class BISTransform(Transform):
 
 # TODO: Documentation by Casper van Houten
 class BISETL(ETL, BISExtract, BISTransform):
-
+    """
+    ETL for graven meters.
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     # TODO: Documentation by Casper van Houten
     def perform(self):
+        """
+        Performs extract and transform for bis etl, which are all ETL steps associated with BIS
+        Returns:
+
+        """
         self.extract()
         self.transform()
