@@ -73,7 +73,6 @@ class BISTransform(Transform):
         logger.info("Transforming the data to create workable pd DataFrame")
         self._rename_columns()
         self._expand_dates()
-        self._set_totals()
 
     def _rename_columns(self):
         df_renamed = pd.DataFrame()
@@ -109,7 +108,10 @@ class BISTransform(Transform):
             Returns: datetime object with the first date of the input week.
 
             """
-            return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
+            if x.startswith('2021_'):
+                return pd.to_datetime(x + '1', format='%Y_%W%w')
+            else:
+                return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
 
         self.transformed_data.df['date'] = self.transformed_data.df['date'].apply(transform_weeknumbers)
         self.transformed_data.df = self.transformed_data.df.set_index(['project', 'date'])
