@@ -149,18 +149,19 @@ class CapacityAnalyse(ETLBase):
     def analyse(self):
         self.lines_to_record()
 
-    # TODO: Capser van Houten, refactor this method. The name starts with get, this suggests that the method returns
-    #  something.
     def lines_to_record(self):
-        """
-        Main loop to make capacity objects for all projects. Will fill record dict with LineRecord objects.
+        """This functions makes the line objects required for the capacity algorithm for the phases geulen,
+        tuinschieten, lasap, lasdp and oplever for the projects specified in the list demo_projects_capacity.
+        First the required data is collected together with phase configuration data and holiday ranges. Then per phase,
+        the phase object is made with the dedicated version of the PhaseCapacity class. As a final step,
+        the line records made within the phase object are added to the line_record_list.
         """
         holiday_ranges = self.transform_holiday_dates_into_ranges()
         line_record_list = RecordList()
         for project in self.config['demo_projects_capacity']:
             phase_data = self.transformed_data.project_phase_data[project]
             df = self.dict_capacity[project]
-            pocideal_line = {}
+            poc_ideal_rate_line = {}
 
             geulen = GeulenCapacity(df=df,
                                     phase_data=phase_data['geulen'],
@@ -168,7 +169,7 @@ class CapacityAnalyse(ETLBase):
                                     project=project,
                                     holiday_periods=holiday_ranges,
                                     ).algorithm()
-            pocideal_line['geulen'] = geulen.calculate_pocideal_line()
+            poc_ideal_rate_line['geulen'] = geulen.calculate_poc_ideal_rate_line()
             line_record_list += geulen.get_record()
 
             schieten = SchietenCapacity(df=df,
@@ -177,9 +178,10 @@ class CapacityAnalyse(ETLBase):
                                         client=self.client,
                                         project=project,
                                         holiday_periods=holiday_ranges,
-                                        pocideal_line_masterphase=pocideal_line[phase_data['schieten']['master_phase']],
+                                        poc_ideal_rate_line_masterphase=poc_ideal_rate_line[
+                                            phase_data['schieten']['master_phase']],
                                         ).algorithm()
-            pocideal_line['schieten'] = schieten.calculate_pocideal_line()
+            poc_ideal_rate_line['schieten'] = schieten.calculate_poc_ideal_rate_line()
             line_record_list += schieten.get_record()
 
             lasap = LasAPCapacity(df=df,
@@ -188,10 +190,11 @@ class CapacityAnalyse(ETLBase):
                                   client=self.client,
                                   project=project,
                                   holiday_periods=holiday_ranges,
-                                  pocideal_line_masterphase=pocideal_line[phase_data['lasap']['master_phase']],
+                                  poc_ideal_rate_line_masterphase=poc_ideal_rate_line[
+                                      phase_data['lasap']['master_phase']],
                                   ).algorithm()
             line_record_list += lasap.get_record()
-            pocideal_line['lasap'] = lasap.calculate_pocideal_line()
+            poc_ideal_rate_line['lasap'] = lasap.calculate_poc_ideal_rate_line()
 
             lasdp = LasDPCapacity(df=df,
                                   phase_data=phase_data['lasdp'],
@@ -199,9 +202,10 @@ class CapacityAnalyse(ETLBase):
                                   client=self.client,
                                   project=project,
                                   holiday_periods=holiday_ranges,
-                                  pocideal_line_masterphase=pocideal_line[phase_data['lasdp']['master_phase']],
+                                  poc_ideal_rate_line_masterphase=poc_ideal_rate_line[
+                                      phase_data['lasdp']['master_phase']],
                                   ).algorithm()
-            pocideal_line['lasdp'] = lasdp.calculate_pocideal_line()
+            poc_ideal_rate_line['lasdp'] = lasdp.calculate_poc_ideal_rate_line()
             line_record_list += lasdp.get_record()
 
             oplever = OpleverCapacity(df=df,
@@ -210,9 +214,10 @@ class CapacityAnalyse(ETLBase):
                                       client=self.client,
                                       project=project,
                                       holiday_periods=holiday_ranges,
-                                      pocideal_line_masterphase=pocideal_line[phase_data['oplever']['master_phase']],
+                                      poc_ideal_rate_line_masterphase=poc_ideal_rate_line[
+                                          phase_data['oplever']['master_phase']],
                                       ).algorithm()
-            pocideal_line['oplever'] = oplever.calculate_pocideal_line()
+            poc_ideal_rate_line['oplever'] = oplever.calculate_poc_ideal_rate_line()
             line_record_list += oplever.get_record()
 
         self.records = line_record_list
