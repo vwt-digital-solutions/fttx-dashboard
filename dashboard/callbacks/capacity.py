@@ -107,6 +107,8 @@ for client in config.client_config.keys():
         if phase == 'geulen':
             work_stock_amount = None
         del timeseries['work_stock_amount']
+        timeseries['internal_target'] = timeseries.pop('target')
+        timeseries['werkvoorraad'] = timeseries.pop('work_stock')
 
         if line_graph_bool:
             color_count = 0
