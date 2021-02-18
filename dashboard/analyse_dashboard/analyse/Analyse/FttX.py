@@ -137,13 +137,11 @@ select  fctl.date as last_change_in_hasdatum,
         fctl.to_value as hasdatum_changed_to,
         fcas.hasdatum, fcas.opleverdatum, fcas.project
 from fc_transitie_log as fctl
-left join fc_aansluitingen as fcas on fctl.sleutel = fcas.sleutel
-
-where   fctl.key = 'hasdatum'
-and     fcas.hasdatum = fcas.opleverdatum
-and     fctl.to_value = fcas.hasdatum
-and     fcas.opleverdatum >= '2021-01-01'
-and     fcas.project in :projects
+inner join fc_aansluitingen as fcas on
+fctl.key = 'hasdatum' and
+fctl.project in :projects and
+fctl.sleutel = fcas.sleutel and
+fctl.to_value = fcas.hasdatum and fcas.opleverdatum >= '2021-01-01'
 """).bindparams(bindparam('projects', expanding=True))  # nosec
         df = pd.read_sql(sql, get_database_engine(), params={'projects': tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
