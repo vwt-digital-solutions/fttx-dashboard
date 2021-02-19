@@ -47,8 +47,10 @@ class BISExtract(Extract):
 
     def get_bnumber_project_mapping(self):
         """
-        This method extracts the bnumber --> project name mapping table from the sql database.
-        Returns: a dictionary with bnumbers as keys and project names as values
+        This method extracts the bnumber, project name mapping table from the sql database.
+
+        Returns:
+             dict: a dictionary with bnumbers as keys and project names as values
 
         """
         sql_engine = get_database_engine()
@@ -135,8 +137,6 @@ class BISETL(ETL, BISExtract, BISTransform):
     def perform(self):
         """
         Performs extract and transform for bis etl, which are all ETL steps associated with BIS
-        Returns:
-
         """
         self.extract()
         self.transform()
