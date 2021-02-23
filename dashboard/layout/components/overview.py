@@ -39,9 +39,13 @@ def get_html(client):
                        figure=no_graph(title="Opgegeven reden na", text='Loading...'))]
         ),
         html.Div(
-            get_performance(client),
-            className="container-display",
+            children=get_performance_graph(client),
+            className='container-display'
         ),
+        html.Div(
+            children=get_ftu_table(client),
+            className='container-display'
+        )
     ]
 
 
@@ -75,23 +79,20 @@ def get_search_bar(client, project):
     ]
 
 
-def get_performance(client):
+def get_performance_graph(client):
+    return figure(container_id="graph_speed_c",
+                  graph_id=f"project-performance-{client}",
+                  figure=collection.get_graph(client=client,
+                                              graph_name="project_performance"))
+
+
+def get_ftu_table(client):
+    print(f'CLIENT: {client}')
     ftu_data = collection.get_document(collection="Data", graph_name="project_dates", client=client)
     table = ftu_table(ftu_data, client)
-    print(f'CLIENT: {client}')
-    return [
-        figure(container_id="graph_speed_c",
-               graph_id=f"project-performance-{client}",
-               figure=collection.get_graph(client=client,
-                                           graph_name="project_performance")),
-        html.Div([
-            html.Div(
-                table,
-                id=f'FTU_table_c_{client}',
-                className="pretty_container column",
-                hidden=False,
-            )
-        ],
+    return html.Div(
+            table,
+            id=f'FTU_table_c_{client}',
             className="pretty_container column",
-        ),
-    ]
+            hidden=False,
+        )
