@@ -90,12 +90,7 @@ def get_performance(client):
                 id=f'FTU_table_c_{client}',
                 className="pretty_container column",
                 hidden=False,
-            ),
-            html.Div(id='ww_c',
-                     children=dcc.Input(id='ww', value=' ', type='text'),
-                     className="pretty_container column",
-                     hidden=False,
-                     ),
+            )
         ],
             className="pretty_container column",
         ),

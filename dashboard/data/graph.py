@@ -176,8 +176,7 @@ def ftu_table(data, client):
             css=[{
                 'selector': 'table',
                 'rule': 'width: 100%;'
-            }],
-            editable=False,
+            }]
         )
     else:
         fig = get_dummy_table()
@@ -199,7 +198,6 @@ def get_dummy_table():
         css=[{
             'selector': 'table',
             'rule': 'width: 100%;'
-        }],
-        editable=False,
+        }]
     )
     return fig
