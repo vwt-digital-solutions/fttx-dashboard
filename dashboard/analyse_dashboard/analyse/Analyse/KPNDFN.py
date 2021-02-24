@@ -1,6 +1,3 @@
-from google.cloud import firestore
-
-from Analyse.Data import Data
 from Analyse.FttX import FttXExtract, FttXTransform, FttXAnalyse, FttXETL, PickleExtract, FttXTestLoad, FttXLocalETL
 from Analyse.Record.DictRecord import DictRecord
 from Analyse.Record.IntRecord import IntRecord
@@ -31,28 +28,8 @@ class KPNDFNExtract(FttXExtract):
         self.client_name = kwargs['config'].get('name')
 
     def extract(self):
-        self._extract_project_info()
-        self._extract_planning()
         super().extract()
-
-    def _extract_project_info(self):
-        logger.info(f"Extracting FTU {self.client_name}")
-        doc = firestore.Client().collection('Data')\
-            .document(f'{self.client_name}_project_dates')\
-            .get().to_dict().get('record')
-
-        self.extracted_data.ftu = Data({'date_FTU0': doc['FTU0'], 'date_FTU1': doc['FTU1']})
-        self.extracted_data.civiel_startdatum = doc.get('Civiel startdatum')
-        self.extracted_data.total_meters_tuinschieten = doc.get('meters tuinschieten')
-        self.extracted_data.total_meters_bis = doc.get('meters BIS')
-        self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
-        self.extracted_data.snelheid_mpw = doc.get('snelheid (m/week)')
-
-        df = pd.DataFrame(doc)
-        info_per_project = {}
-        for project in df.index:
-            info_per_project[project] = df.loc[project].to_dict()
-        self.extracted_data.project_info = info_per_project
+        self._extract_planning()
 
     def _extract_planning(self):
         logger.info("Extracting Planning")
