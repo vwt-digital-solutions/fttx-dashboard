@@ -104,6 +104,21 @@ where project in :projects
         return df
 
     def _extract_project_info(self):
+        """
+        Extracts project information for all projects of a client. Project information contains
+        FTU dates, Civiel start dates, total meters of tuinschieten, total meters of bis, total number of
+        houses and desired speed in meter per week.
+
+        Sets self.extracted_data:
+        -   ftu: as dict with keys [date_FTU0, date_FTU1]
+        -   civiel_startdatum: dict with project as key and startdate as value
+        -   total_meters_tuinschieten: dict with project as key and meters as value
+        -   total_meters_bis: dict with project as key and meters as value
+        -   total_number_huisaansluitingen: dict with project as key and number as value
+        -   snelheid_mpw: with project as key and speed as value
+        -   info_per_project: dict with project as key and all of the above information as value
+        """
+
         logger.info(f"Extracting FTU {self.client_name}")
         doc = firestore.Client().collection('Data') \
             .document(f'{self.client_name}_project_dates') \
