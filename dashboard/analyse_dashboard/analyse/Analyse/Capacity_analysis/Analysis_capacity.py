@@ -52,7 +52,6 @@ class CapacityTransform(FttXTransform):
         logger.info("Transforming by using the extracted data directly. There was no previous tranformed data")
         self.transformed_data = copy.deepcopy(self.extracted_data)
         self._fix_dates()
-        self._clean_ftu_data()
         self.fill_projectspecific_phase_config()
         self.transform_bis_etl()
         self.add_bis_etl_to_transformed_data()
