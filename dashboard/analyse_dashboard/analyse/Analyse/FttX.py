@@ -191,7 +191,6 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._make_project_list()
         self._fix_dates()
-        self._add_columns()
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
@@ -243,21 +242,6 @@ class FttXTransform(Transform):
                                                                                   utc=True)
 
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
-
-    def _add_columns(self):
-        """
-        Adding columns so that the transformed data can be downloaded easily.
-        TODO: Check if this is still necessary.
-        """
-        logger.info("Adding columns to dataframe")
-        logger.info("Transforming dataframe through adding columns")
-
-        self.transformed_data.df['hpend'] = br.hpend_year(self.transformed_data.df, self.year)
-        self.transformed_data.df['homes_completed'] = br.hc_opgeleverd(self.transformed_data.df) & (
-            self.transformed_data.df.hpend)
-        self.transformed_data.df['homes_completed_total'] = br.hc_opgeleverd(self.transformed_data.df)
-        self.transformed_data.df['bis_gereed'] = br.bis_opgeleverd(self.transformed_data.df)
-        self.transformed_data.df['in_has_werkvoorraad'] = br.has_werkvoorraad(self.transformed_data.df)
 
     def _cluster_reden_na(self):
         logger.info("Transforming dataframe through adding column cluster redenna")
