@@ -134,7 +134,7 @@ class KPNAnalyse(FttXAnalyse):
                            start_time,
                            timeline,
                            total_objects,
-                           self.extracted_data.ftu['date_FTU0'])
+                           self.transformed_data.ftu['date_FTU0'])
 
         self.intermediate_results.rc1 = results.rc1
         self.intermediate_results.rc2 = results.rc2
@@ -159,8 +159,8 @@ class KPNAnalyse(FttXAnalyse):
         logger.info("Calculating targets for KPN")
         y_target_l, t_diff, target_per_week_dict = targets_new(self.intermediate_results.timeline,
                                                                self.project_list,
-                                                               self.extracted_data.ftu['date_FTU0'],
-                                                               self.extracted_data.ftu['date_FTU1'],
+                                                               self.transformed_data.ftu['date_FTU0'],
+                                                               self.transformed_data.ftu['date_FTU1'],
                                                                self.intermediate_results.total_objects)
         self.intermediate_results.y_target_l = y_target_l
         self.intermediate_results.target_per_week = target_per_week_dict
@@ -187,8 +187,8 @@ class KPNAnalyse(FttXAnalyse):
             self.intermediate_results.y_prog_l,
             self.intermediate_results.d_real_l,
             self.intermediate_results.y_target_l,
-            self.extracted_data.ftu['date_FTU0'],
-            self.extracted_data.ftu['date_FTU1']
+            self.transformed_data.ftu['date_FTU0'],
+            self.transformed_data.ftu['date_FTU1']
         )
         self.records.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
 

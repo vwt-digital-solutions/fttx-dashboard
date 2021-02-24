@@ -179,14 +179,6 @@ class FttXTransform(Transform):
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
-        self._clean_ftu_data()
-
-    def _clean_ftu_data(self):
-        for key in ['date_FTU0', 'date_FTU1']:
-            for project, date in self.extracted_data.ftu[key].items():
-                if date == '' or date == 'None':
-                    date = None
-                self.transformed_data.ftu[key][project] = date
 
     def _is_ftu_available(self, project):
         """
