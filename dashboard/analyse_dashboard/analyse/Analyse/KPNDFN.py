@@ -20,6 +20,7 @@ import logging
 logger = logging.getLogger('KPN Analyse')
 
 
+# TODO: Documentation by Andre van Turnhout
 class KPNDFNExtract(FttXExtract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -27,10 +28,12 @@ class KPNDFNExtract(FttXExtract):
         self.target_location = kwargs['config'].get("target_location")
         self.client_name = kwargs['config'].get('name')
 
+    # TODO: Documentation by Andre van Turnhout
     def extract(self):
         super().extract()
         self._extract_planning()
 
+    # TODO: Documentation by Andre van Turnhout
     def _extract_planning(self):
         logger.info("Extracting Planning")
         if self.planning_location:
@@ -40,12 +43,15 @@ class KPNDFNExtract(FttXExtract):
             self.extracted_data.planning = pd.DataFrame()
 
 
+# TODO: Documentation by Andre van Turnhout
 class KPNDFNTransform(FttXTransform):
 
+    # TODO: Documentation by Andre van Turnhout
     def transform(self):
         super().transform()
         self._transform_planning()
 
+    # TODO: Documentation by Andre van Turnhout
     def _transform_planning(self):
         logger.info("Transforming planning for KPN")
         planning_excel = self.extracted_data.get("planning", pd.DataFrame())
@@ -75,10 +81,12 @@ class KPNDFNTransform(FttXTransform):
         self.transformed_data.planning = hp
 
 
+# TODO: Documentation by Andre van Turnhout
 class KPNAnalyse(FttXAnalyse):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    # TODO: Documentation by Andre van Turnhout
     def analyse(self):
         super().analyse()
         logger.info("Analysing using the KPN protocol")
@@ -90,6 +98,7 @@ class KPNAnalyse(FttXAnalyse):
         self._calculate_project_indicators()
         self._set_filters()
 
+    # TODO: Documentation by Andre van Turnhout
     def _error_check_FCBC(self):
         logger.info("Calculating errors for KPN")
         n_errors_FCBC, errors_FC_BC = error_check_FCBC(self.transformed_data.df)
@@ -97,6 +106,7 @@ class KPNAnalyse(FttXAnalyse):
         # self.record_dict.add('errors_FC_BC', errors_FC_BC, Record, 'Data')
         self.intermediate_results.n_errors_FCBC = n_errors_FCBC
 
+    # TODO: Documentation by Casper van Houten
     def _prognose(self):
         logger.info("Calculating prognose for KPN")
 
@@ -132,6 +142,7 @@ class KPNAnalyse(FttXAnalyse):
         self.records.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.records.add('cutoff', results.cutoff, Record, 'Data')
 
+    # TODO: Documentation by Tjeerd Pols
     def _targets(self):
         logger.info("Calculating targets for KPN")
         y_target_l, t_diff, target_per_week_dict = targets_new(self.intermediate_results.timeline,
@@ -145,6 +156,7 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.t_diff = t_diff
         self.records.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
 
+    # TODO: Documentation by Andre van Turnhout
     def _performance_matrix(self):
         logger.info("Calculating performance matrix for KPN")
         graph = performance_matrix(
@@ -157,6 +169,7 @@ class KPNAnalyse(FttXAnalyse):
         )
         self.records.add('project_performance', graph, Record, 'Graphs')
 
+    # TODO: Documentation by Tjeerd Pols
     def _prognose_graph(self):
         logger.info("Calculating prognose graph for KPN")
         result_dict = prognose_graph(
@@ -169,6 +182,7 @@ class KPNAnalyse(FttXAnalyse):
         )
         self.records.add('prognose_graph_dict', result_dict, DictRecord, 'Graphs')
 
+    # TODO: Documentation by Tjeerd Pols
     def _calculate_project_indicators(self):
         logger.info("Calculating project indicators and making graphic boxes for dashboard")
         today = datetime.datetime.today()
