@@ -47,8 +47,10 @@ class BISExtract(Extract):
 
     def get_bnumber_project_mapping(self):
         """
-        This method extracts the bnumber --> project name mapping table from the sql database.
-        Returns: a dictionary with bnumbers as keys and project names as values
+        This method extracts the bnumber, project name mapping table from the sql database.
+
+        Returns:
+             dict: a dictionary with bnumbers as keys and project names as values
 
         """
         sql_engine = get_database_engine()
@@ -73,7 +75,6 @@ class BISTransform(Transform):
         logger.info("Transforming the data to create workable pd DataFrame")
         self._rename_columns()
         self._expand_dates()
-        self._set_totals()
 
     def _rename_columns(self):
         df_renamed = pd.DataFrame()
@@ -109,7 +110,10 @@ class BISTransform(Transform):
             Returns: datetime object with the first date of the input week.
 
             """
-            return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
+            if x.startswith('2021_'):
+                return pd.to_datetime(x + '1', format='%Y_%W%w')
+            else:
+                return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
 
         self.transformed_data.df['date'] = self.transformed_data.df['date'].apply(transform_weeknumbers)
         self.transformed_data.df = self.transformed_data.df.set_index(['project', 'date'])
@@ -133,8 +137,6 @@ class BISETL(ETL, BISExtract, BISTransform):
     def perform(self):
         """
         Performs extract and transform for bis etl, which are all ETL steps associated with BIS
-        Returns:
-
         """
         self.extract()
         self.transform()

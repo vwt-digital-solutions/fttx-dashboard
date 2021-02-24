@@ -104,6 +104,21 @@ where project in :projects
         return df
 
     def _extract_project_info(self):
+        """
+        Extracts project information for all projects of a client. Project information contains
+        FTU dates, Civiel start dates, total meters of tuinschieten, total meters of bis, total number of
+        houses and desired speed in meter per week.
+
+        Sets self.extracted_data:
+        -   ftu: as dict with keys [date_FTU0, date_FTU1]
+        -   civiel_startdatum: dict with project as key and startdate as value
+        -   total_meters_tuinschieten: dict with project as key and meters as value
+        -   total_meters_bis: dict with project as key and meters as value
+        -   total_number_huisaansluitingen: dict with project as key and number as value
+        -   snelheid_mpw: with project as key and speed as value
+        -   info_per_project: dict with project as key and all of the above information as value
+        """
+
         logger.info(f"Extracting FTU {self.client_name}")
         doc = firestore.Client().collection('Data') \
             .document(f'{self.client_name}_project_dates') \
@@ -137,13 +152,11 @@ select  fctl.date as last_change_in_hasdatum,
         fctl.to_value as hasdatum_changed_to,
         fcas.hasdatum, fcas.opleverdatum, fcas.project
 from fc_transitie_log as fctl
-left join fc_aansluitingen as fcas on fctl.sleutel = fcas.sleutel
-
-where   fctl.key = 'hasdatum'
-and     fcas.hasdatum = fcas.opleverdatum
-and     fctl.to_value = fcas.hasdatum
-and     fcas.opleverdatum >= '2021-01-01'
-and     fcas.project in :projects
+inner join fc_aansluitingen as fcas on
+fctl.key = 'hasdatum' and
+fctl.project in :projects and
+fctl.sleutel = fcas.sleutel and
+fctl.to_value = fcas.hasdatum and fcas.opleverdatum >= '2021-01-01'
 """).bindparams(bindparam('projects', expanding=True))  # nosec
         df = pd.read_sql(sql, get_database_engine(), params={'projects': tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
@@ -181,14 +194,6 @@ class FttXTransform(Transform):
         self._cluster_reden_na()
         self._add_status_columns()
         self._set_totals()
-        self._clean_ftu_data()
-
-    def _clean_ftu_data(self):
-        for key in ['date_FTU0', 'date_FTU1']:
-            for project, date in self.extracted_data.ftu[key].items():
-                if date == '' or date == 'None':
-                    date = None
-                self.transformed_data.ftu[key][project] = date
 
     def _is_ftu_available(self, project):
         """
@@ -219,6 +224,8 @@ class FttXTransform(Transform):
             for project in self.config['projects']:
                 if self._is_ftu_available(project):
                     project_list.append(project)
+                else:
+                    logger.warning(f'For the {project} we do not have a FTU0 date')
             self.project_list = project_list
 
     def _set_totals(self):

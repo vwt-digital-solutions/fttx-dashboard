@@ -387,6 +387,14 @@ class TimeseriesLine(PointLine):
     """
 
     def __init__(self, data, domain=None, max_value=None, *args, **kwargs):
+        """
+        Args:
+            data (pd.Series): the series is stretched along the domain when
+                              the length of the series is 1 but a longer domain is specified.
+            domain (TimeIndexSeries): defaults to None.
+            max_value (int): specifies the maximum amount of units that can be reached in a phase,
+                             defaults to None.
+        """
         super().__init__(data=data, *args, **kwargs)
         if (len(self.data) == 1) & (domain is not None):
             self.domain = domain
@@ -483,6 +491,23 @@ class TimeseriesLine(PointLine):
 
     #  this function requires a line based on speed, not distance
     def get_line_aggregate(self, freq='MS', aggregate_type='series', loffset='0', closed='left', index_as_str=False):
+        """This function takes the line specified in the object and aggregates its values to a chosen type of output.
+        The output can be a series or a value which is aggregated to a frequency of MS, W-MON or Y by the method sum
+        or mean.
+
+        Args:
+            freq (str): type of frequency for aggregation. Defaults to 'MS'.
+            aggregate_type (str): output can be aggregated as value or series. Defaults to 'series'.
+            loffset (str): the number of bins the values in the bins is shifted to the left. Defaults to '0'.
+            closed (str): boundary that belongs to the current bin. Defaults to 'left'.
+            index_as_str (bool): determines if the index of the aggregated series is formatted to string. Defaults to False.
+
+        Raises:
+            NotImplementedError: this type of aggregation is not implemented.
+
+        Returns:
+            aggregate (pd.Series or int or float)
+        """
         if aggregate_type == 'series':
             series = self.make_normalised_series(maximum=self.max_value, percentage=True)
             aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum().cumsum()
@@ -510,6 +535,17 @@ class TimeseriesLine(PointLine):
         return aggregate
 
     def period_for_output(self, freq: str):
+        """This functions returns the index of next week based on W-MON or next month based on MS.
+
+        Args:
+            freq (str): frequency for which the index of the next period has to be returned.
+
+        Raises:
+            NotImplementedError: there is no method implemented for this type of frequency.
+
+        Returns:
+            index for next period (str)
+        """
         if freq == 'MS':
             period = pd.Timestamp(pd.Timestamp.now().year, pd.Timestamp.now().month, 1) + relativedelta(months=1)
         elif freq == 'W-MON':
@@ -518,10 +554,39 @@ class TimeseriesLine(PointLine):
             raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
         return period
 
-    def distance_to_max_value(self):
-        return self.max_value - self.integrate().get_most_recent_point()
+    def distance_to_max_value(self, line_type='rate'):
+        """This function calculates the distance between the end of the line and the maximum value specified for the line.
+
+        Args:
+            line_type (str): when the line type is rate (line is expressed in rates), first the integral of the line is calculated
+            before the distance is calculated. For line type cumulative, the distance is directly calculated. Defaults to 'rate'.
+
+        Raises:
+            NotImplementedError: when there is no method implemented for given line_type.
+
+        Returns:
+            distance (float)
+        """
+        if line_type == 'rate':
+            distance = self.max_value - self.integrate().get_most_recent_point()
+        elif line_type == 'cumulative':
+            distance = self.max_value - self.get_most_recent_point()
+        else:
+            raise NotImplementedError('There is no method implemented for line_type {}'.format(line_type))
+        return distance
 
     def daysleft(self, end=None, slope=None):
+        """This function calculates the number of days between the date of the latest data point in the line and
+        the date of the intended deadline.
+
+        Args:
+            end (str or pd.DateTimeIndex): date of the intended deadline. Defaults to None.
+            slope (float or int): the daily rate to be applied between the date of the latest data point and the date
+            of the intended deadline. Defaults to None.
+
+        Returns:
+            daysleft (int)
+        """
         if end:
             if type(end) is str:
                 end = pd.to_datetime(end)

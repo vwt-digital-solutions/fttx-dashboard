@@ -1,6 +1,5 @@
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
-from google.cloud import firestore
 from app import toggles
 
 from layout.components.indicator import indicator
@@ -78,40 +77,3 @@ def update_prognose_graph(drop_selectie):
         fig_prog['data'][i]['x'] = pd.to_datetime(item['x'])
 
     return [fig_prog]
-
-
-# update FTU table for editing
-@app.callback(
-    [
-        Output(f'table_FTU_{client}', 'editable'),
-    ],
-    [
-        Input('ww', 'value'),
-    ],
-)
-def FTU_table_editable(ww):
-    return [ww == 'FttX']
-
-
-# update firestore given edit FTU table
-@app.callback(
-    [
-        Output(f'project-performance-{client}', 'figure'),
-    ],
-    [
-        Input(f'table_FTU_{client}', 'data'),
-    ],
-)
-def FTU_update(data):
-    print('start updating FTU tabel')
-    record = dict(graph_name='project_dates', client=client)
-    df = pd.DataFrame(data)
-    df.replace('', None, inplace=True)
-    updated_dict = {}
-    for col in df:
-        if col != "Project":
-            updated_dict[col] = dict(zip(df['Project'], df[col]))
-    record['record'] = updated_dict
-    firestore.Client().collection('Data').document(f'{client}_project_dates').set(record)
-    output = collection.get_graph(client=client, graph_name='project_performance')
-    return [output]

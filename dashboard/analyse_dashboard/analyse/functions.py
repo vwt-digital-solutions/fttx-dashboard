@@ -497,12 +497,12 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
             'y': list(y_prog_l[key]),
             'mode': 'lines',
             'line': dict(color=colors['yellow']),
-            'name': 'Voorspelling (VQD)',
+            'name': 'Voorspelling',
         }],
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': [FTU0_date[key], FTU1_date[key]]},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs target:'},
+                'title': {'text': 'Voortgang project vs internal target:'},
                 'showlegend': True,
                 'legend': {'x': 0, 'xanchor': 'left', 'y': 1.15},
                 'height': 450,
@@ -516,7 +516,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
                 'y': d_real_l[key]['Aantal'].to_list(),
                 'mode': 'markers',
                 'line': dict(color=colors['green']),
-                'name': 'Realisatie (FC)',
+                'name': 'Realisatie HAS',
             }]
 
         if key in y_target_l:
@@ -525,7 +525,7 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
                 'y': list(y_target_l[key]),
                 'mode': 'lines',
                 'line': dict(color=colors['lightgray']),
-                'name': 'Target',
+                'name': 'Internal Target',
             }]
         record = dict(id='project_' + key, figure=fig)
         record_dict[key] = record
@@ -594,7 +594,7 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, current_werkvoo
             'marker': {'size': 15, 'color': colors['black']}
         }],
         'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op Target', 'range': [x_min, x_max],
+                   'xaxis': {'title': 'Procent voor of achter HPEnd op Internal Target', 'range': [x_min, x_max],
                              'zeroline': False},
                    'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
                              'zeroline': False},

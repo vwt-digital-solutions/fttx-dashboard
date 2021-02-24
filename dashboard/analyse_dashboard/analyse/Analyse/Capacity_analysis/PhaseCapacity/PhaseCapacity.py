@@ -11,51 +11,61 @@ from datetime import timedelta
 # TODO: Documentation by Casper van Houten
 # TODO: Remove commented code
 class PhaseCapacity:
-    """
-
-    Args:
-        df (pd.DataFrame): One-column dataframe, should have a datetime-index
-        phases_config:
-    """
 
     def __init__(self, df: pd.DataFrame, phase_data: dict, client: str,
-                 project: str, holiday_periods: list, pocideal_line_masterphase=None, masterphase_data=None):
+                 project: str, holiday_periods: list, poc_ideal_rate_line_masterphase=None, masterphase_data=None):
+        """This class enables to calculate and make records of all lines of a phase required for the capacity algorithm
+        for a given project.
+
+        Args:
+            df (pd.DataFrame): contains the complete set of historical data within a project that is relevant
+                               for the capacity algorithm.
+            phase_data (dict): contains attributes of the phase such as its start date.
+            client (str): specifies to which client the phase belongs.
+            project (str): specifies to which project the phase belongs.
+            holiday_periods (list): specifies the holiday periods that apply to the project.
+            poc_ideal_rate_line_masterphase (object): is an object of the poc ideal rate line of the phase that
+                                                      determines the work_stock for this phase. Defaults to None.
+            masterphase_data ([type], optional): contains attributes of the phase that controls the work_stock
+                                                 for this phase. Defaults to None.
+        """
         self.df = df
         self.phase_data = phase_data
         self.client = client
         self.project = project
         self.holiday_periods = holiday_periods
-        self.pocideal_line_masterphase = pocideal_line_masterphase
+        self.poc_ideal_rate_line_masterphase = poc_ideal_rate_line_masterphase
         self.masterphase_data = masterphase_data
         self.record_list = RecordList()
 
     def algorithm(self):
         """
-        Algorithm to be ran, will contain all logic related to capacity Lines per Phase.
-        The following indicators are made:
-
-        - a target line that indicates the number of units per day that need to be produced
-          in the specific period over the duration of the project.
-
+        This functions calculates the lines required for this phase and joins them in a record list.
+        The logic that is applied per line is specified in the line specific function.
         Returns:
-             PhaseCapacity: used for Method chaining.
-
+            PhaseCapacity (object): for method chaining
         """
 
         lines = []
-        lines.append(self.calculate_target_line())
-        lines.append(self.calculate_pocreal_line())
-        lines.append(self.calculate_pocideal_line())
-        lines.append(self.calculate_pocverwacht_line())
-        if self.pocideal_line_masterphase:
-            lines.append(self.calculate_werkvoorraad_line())
-            lines.append(self.calculate_werkvoorraadabsoluut_line())
+        lines.append(self.calculate_target_rate_line())
+        lines.append(self.calculate_poc_real_rate_line())
+        lines.append(self.calculate_poc_ideal_rate_line())
+        lines.append(self.calculate_poc_verwacht_rate_line())
+        if self.poc_ideal_rate_line_masterphase:
+            lines.append(self.calculate_work_stock_rate_line())
+            lines.append(self.calculate_work_stock_amount_line())
 
         [self.line_to_record(line) for line in lines]
 
         return self
 
-    def calculate_target_line(self):
+    def calculate_target_rate_line(self):
+        """This functions calculates the target line expressed in rate per day. The line is based on the start date,
+        number of days and performance norm as specified at phase data.
+
+        Returns:
+            target rate line (object)
+        """
         intercept = self.phase_data['performance_norm_unit']
         domain = DateDomainRange(begin=self.phase_data['start_date'],
                                  n_days=self.phase_data['n_days'])
@@ -65,83 +75,128 @@ class PhaseCapacity:
                               max_value=self.phase_data['total_units'])
         return line
 
-    def calculate_pocreal_line(self):
+    def calculate_poc_real_rate_line(self):
+        """This function calculates the percentage of completion (poc) line given what has been realised so far. This line is
+        is expressed in rate per day. The line is based on the historical data of this phase in the given project.
+
+        Returns:
+            poc real rate line (object)
+        """
         ds = self.df[self.phase_data['phase_column']]
         line = TimeseriesLine(data=ds,
                               name='poc_real_indicator',
                               max_value=self.phase_data['total_units'])
         return line
 
-    def calculate_pocideal_line(self):
-        pocreal_line = self.calculate_pocreal_line()
-        target_line = self.calculate_target_line()
-        distance_to_max_value = pocreal_line.distance_to_max_value()
-        daysleft = pocreal_line.daysleft(end=target_line.domain.end)
+    def calculate_poc_ideal_rate_line(self):
+        """This function calculates the percentage of completion (poc) line given what has been realised so far and what still
+        needs to be done to make the target deadline. This line is expressed in rate per day. The line is based on the
+        poc real rate line and is extended with the daily rate that is required to make the target deadline.
+        In the calculation of the required daily rate also holiday periods with zero activity are taken into account.
+
+        Returns:
+            poc ideal rate line (object)
+        """
+        poc_real_rate_line = self.calculate_poc_real_rate_line()
+        target_rate_line = self.calculate_target_rate_line()
+        distance_to_max_value = poc_real_rate_line.distance_to_max_value()
+        daysleft = poc_real_rate_line.daysleft(end=target_rate_line.domain.end)
         # normal case: when there is still work to do and there is time left before the target deadline
         if (distance_to_max_value > 0) & (daysleft > 0):
-            domain = DateDomain(begin=pocreal_line.domain.end, end=target_line.domain.end)
+            domain = DateDomain(begin=poc_real_rate_line.domain.end, end=target_rate_line.domain.end)
             holidays_in_date_range = self.count_holidays_in_date_range(self.holiday_periods,
                                                                        domain.domain)
-            domain = DateDomain(begin=pocreal_line.domain.end,
-                                end=target_line.domain.end - timedelta(holidays_in_date_range))
+            domain = DateDomain(begin=poc_real_rate_line.domain.end,
+                                end=target_rate_line.domain.end - timedelta(holidays_in_date_range))
             slope = distance_to_max_value / (daysleft - holidays_in_date_range)
 
-            line = pocreal_line.append(TimeseriesLine(data=slope,
-                                                      domain=domain),
-                                       skip=1)
+            line = poc_real_rate_line.append(TimeseriesLine(data=slope,
+                                                            domain=domain),
+                                             skip=1)
         # exception: when there is still work to do but the target deadline has already passed
         elif (distance_to_max_value > 0) & (daysleft <= 0):
             slope = distance_to_max_value / 7  # past deadline, production needs to be finish within a week
-            domain = DateDomain(begin=pocreal_line.domain.end, end=pd.Timestamp.now() + timedelta(7))
-            line = pocreal_line.append(TimeseriesLine(data=slope,
-                                                      domain=domain),
-                                       skip=1)
+            domain = DateDomain(begin=poc_real_rate_line.domain.end, end=pd.Timestamp.now() + timedelta(7))
+            line = poc_real_rate_line.append(TimeseriesLine(data=slope,
+                                                            domain=domain),
+                                             skip=1)
         # no more work to do, so ideal line == realised line
         else:
-            line = pocreal_line
+            line = poc_real_rate_line
         holiday_periods = self.slice_holiday_periods(holiday_periods=self.holiday_periods,
-                                                     periods_to_remove=pocreal_line.domain.domain)
+                                                     periods_to_remove=poc_real_rate_line.domain.domain)
         line = self.add_holiday_periods_to_line(line, holiday_periods)
         line.name = 'poc_ideal_indicator'
         line.max_value = self.phase_data['total_units']
         return line
 
-    def calculate_pocverwacht_line(self):
-        pocreal_line = self.calculate_pocreal_line()
-        slope = pocreal_line.integrate().extrapolate(data_partition=0.5).slope
+    def calculate_poc_verwacht_rate_line(self):
+        """This function calculates the percentage of completion (poc) line given what has been realised so far and what is
+        expected that will be done given past performance. This line is expressed in rate per day. The line is based on
+        the poc real rate line and is extended with a daily rate that is based on the average performance during
+        the last months. In the calculation of the expected daily rate also holiday periods with zero activity are
+        taken into account.
+
+        Returns:
+            poc real rate line (object)
+        """
+        poc_real_rate_line = self.calculate_poc_real_rate_line()
+        slope = poc_real_rate_line.integrate().extrapolate(data_partition=0.5).slope
         # when there not enough realised data pionts, we take the ideal speed as slope
         if slope == 0:
             slope = self.phase_data['performance_norm_unit']
-        distance_to_max_value = pocreal_line.distance_to_max_value()
-        daysleft = pocreal_line.daysleft(slope=slope)
+        distance_to_max_value = poc_real_rate_line.distance_to_max_value()
+        daysleft = poc_real_rate_line.daysleft(slope=slope)
         # if there is work to do we extend the pocreal line, if not ideal line == realised line
         if distance_to_max_value > 0:
-            domain = DateDomainRange(begin=pocreal_line.domain.end, n_days=daysleft)
-            line = pocreal_line.append(TimeseriesLine(data=slope, domain=domain), skip=1)
+            domain = DateDomainRange(begin=poc_real_rate_line.domain.end, n_days=daysleft)
+            line = poc_real_rate_line.append(TimeseriesLine(data=slope, domain=domain), skip=1)
         else:
-            line = pocreal_line
-        holiday_periods = self.slice_holiday_periods(self.holiday_periods, pocreal_line.domain.domain)
+            line = poc_real_rate_line
+        holiday_periods = self.slice_holiday_periods(self.holiday_periods, poc_real_rate_line.domain.domain)
         line = self.add_holiday_periods_to_line(line, holiday_periods)
         line.name = 'poc_verwacht_indicator'
         line.max_value = self.phase_data['total_units']
         return line
 
-    def calculate_werkvoorraad_line(self):
-        if not self.pocideal_line_masterphase:
+    def calculate_work_stock_rate_line(self):
+        """This function calculates the work stock line given the poc ideal rate line of the master phase that controls the
+        work_stock for this phase. The work stock line is expressed in rate per day.
+
+        Raises:
+            ValueError: this function cannot be executed without the poc ideal rate line of the masterphase.
+
+        Returns:
+            work_stock rate line (object)
+        """
+        if not self.poc_ideal_rate_line_masterphase:
             raise ValueError
         ratio = self.phase_data['total_units'] / self.masterphase_data['total_units']
-        line = self.pocideal_line_masterphase * ratio
-        line.name = 'werkvoorraad_indicator'
+        line = self.poc_ideal_rate_line_masterphase * ratio
+        line.name = 'work_stock_indicator'
         line.max_value = self.phase_data['total_units']
         return line
 
-    def calculate_werkvoorraadabsoluut_line(self):
-        line = self.calculate_werkvoorraad_line().integrate() - self.calculate_pocideal_line().integrate()
-        line.name = 'werkvoorraad_absoluut_indicator'
+    def calculate_work_stock_amount_line(self):
+        """This function calculates the work stock amount line which specifies the total amount of work stock at
+        a given day. This line is expressed in amount per day, not in rates per day. The work stock amount line is
+        calculated by subtracting the integral of the poc ideal rate line from the integral of
+        the work_stock rate line.
+
+        Returns:
+            work stock amount line (object)
+        """
+        line = self.calculate_work_stock_rate_line().integrate() - self.calculate_poc_ideal_rate_line().integrate()
+        line.name = 'work_stock_amount_indicator'
         line.max_value = self.phase_data['total_units']
         return line
 
     def line_to_record(self, line: object):
+        """This functions takes a line object and adds it as a record to the record list.
+
+        Args:
+            line (object)
+        """
         self.record_list.append(LineRecord(record=line,
                                            collection='Lines',
                                            graph_name=f'{line.name}',

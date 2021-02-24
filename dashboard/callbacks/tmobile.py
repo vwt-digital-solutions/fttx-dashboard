@@ -3,7 +3,6 @@ import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
-from google.cloud import firestore
 
 from app import app
 from config import colors_vwt as colors
@@ -12,7 +11,6 @@ from layout.components.figure import figure
 from layout.components.graphs import pie_chart
 from layout.components.indicator import indicator
 
-import pandas as pd
 
 client = "tmobile"
 
@@ -133,41 +131,3 @@ def update_indicators(dropdown_selection):
     ]
 
     return [indicator_info, indicators]
-
-
-# update FTU table for editing
-@app.callback(
-    [
-        Output(f'table_FTU_{client}', 'editable'),
-    ],
-    [
-        Input('ww', 'value'),
-    ],
-)
-def FTU_table_editable(ww):
-    return [ww == 'FttX']
-
-
-# update firestore given edit FTU table
-@app.callback(
-    [
-        Output(f'project-performance-{client}', 'figure'),
-    ],
-    [
-        Input(f'table_FTU_{client}', 'data'),
-    ],
-)
-def FTU_update(data):
-    print('start updating FTU tabel')
-    record = dict(graph_name='project_dates', client=client)
-    df = pd.DataFrame(data)
-    df.replace('', None, inplace=True)
-    updated_dict = {}
-    for col in df:
-        if col != "Project":
-            updated_dict[col] = dict(zip(df['Project'], df[col]))
-    record['record'] = updated_dict
-    print(record)
-    firestore.Client().collection('Data').document(f'{client}_project_dates').set(record)
-    output = collection.get_graph(client=client, graph_name='project_performance')
-    return [output]

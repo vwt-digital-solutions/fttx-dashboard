@@ -86,7 +86,7 @@ class Record:
         return f"""<tr>
           <td>{document_name}</td>
           <td>{self.collection}</td>
-          <td>{self._to_document(graph_name, client)}</td>
+          <td>{self._to_document()}</td>
         </tr>"""
 
     def _repr_html_(self):

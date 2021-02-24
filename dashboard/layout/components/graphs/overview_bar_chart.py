@@ -38,11 +38,11 @@ def get_fig(data, year):
         data=[
             dict(name="Voorspelling", x=x_count, y=data.count_voorspellingdatum, customdata=date_list,
                  mode='markers', marker=dict(color=colors['yellow'], symbol='diamond', size=15)),
-            dict(name="Planning HPend", x=x_count, y=data.count_hasdatum, customdata=date_list,
+            dict(name="Planning", x=x_count, y=data.count_hasdatum, customdata=date_list,
                  type='lines', marker=dict(color=colors['red']), width=width),
             dict(name="Realisatie", x=[el + 0.5 * width for el in x_count], y=data.count_opleverdatum,
                  customdata=date_list, type='bar', marker=dict(color=colors['green']), width=width),
-            dict(name="Target", x=[el - 0.5 * width for el in x_count], y=data.count_outlookdatum,
+            dict(name="Internal target", x=[el - 0.5 * width for el in x_count], y=data.count_outlookdatum,
                  customdata=date_list, type='bar', marker=dict(color=colors['lightgray']), width=width),
             dict(name=maand_of_week, x=[n_now], y=[y_range[1]], customdata=date_list,
                  type='bar', marker=dict(color=colors['black']), width=width * 0.2),

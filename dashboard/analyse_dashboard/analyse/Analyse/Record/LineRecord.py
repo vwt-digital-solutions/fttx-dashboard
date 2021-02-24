@@ -29,6 +29,14 @@ class LineRecord(Record):
                     phase=self.phase)
 
     def _transform(self, record):
+        """This functions transforms the line object in the record to the desired aggregate for output.
+
+        Args:
+            record (object): object of a line
+
+        Returns:
+            record (dict): dictionary of aggregates required for dashboard.
+        """
         record_to_write = dict()
         record_to_write['series_week'] = record.get_line_aggregate(freq='W-MON',
                                                                    loffset='-1',
@@ -37,7 +45,7 @@ class LineRecord(Record):
         record_to_write['series_month'] = record.get_line_aggregate(freq='MS',
                                                                     aggregate_type='series',
                                                                     index_as_str=True).to_dict()
-        if record.name == 'werkvoorraad_absoluut_indicator':
+        if record.name == 'work_stock_amount_indicator':
             record_to_write['next_week'] = record.get_line_aggregate(freq='W-MON',
                                                                      loffset='-1',
                                                                      aggregate_type='value_mean')
