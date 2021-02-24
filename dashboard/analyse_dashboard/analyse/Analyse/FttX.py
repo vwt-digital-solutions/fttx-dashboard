@@ -224,6 +224,8 @@ class FttXTransform(Transform):
             for project in self.config['projects']:
                 if self._is_ftu_available(project):
                     project_list.append(project)
+                else:
+                    logger.warning(f'For the {project} we do not have a FTU0 date')
             self.project_list = project_list
 
     def _set_totals(self):
