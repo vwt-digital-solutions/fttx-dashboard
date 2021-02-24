@@ -110,6 +110,7 @@ where project in :projects
         houses and desired speed in meter per week.
 
         Sets self.extracted_data:
+
         -   ftu: as dict with keys [date_FTU0, date_FTU1]
         -   civiel_startdatum: dict with project as key and startdate as value
         -   total_meters_tuinschieten: dict with project as key and meters as value
