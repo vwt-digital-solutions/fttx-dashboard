@@ -402,7 +402,7 @@ class TimeseriesLine(PointLine):
         elif domain:
             self.domain = domain
         else:
-            self.domain = DateDomain(self.data.index[0], self.data.index[-1])
+            self.domain = DateDomain(self.data.index[0], self.data.index[-1], freq=data.index.freq)
         self.max_value = max_value
 
     # TODO: Documentation by Casper van Houten
@@ -596,3 +596,73 @@ class TimeseriesLine(PointLine):
         else:
             daysleft = None
         return daysleft
+
+    @staticmethod
+    def get_timestamp_of_period(freq: str, period='next_period'):
+        """
+        This functions returns the corresponding timestamp of past, current or next week based a frequency
+
+
+        Args:
+            freq (str): frequency used to determine the time delta used to look forward or backwards.
+                        With 'W-MON' the delta is a week, with 'MS' the delta is a month and with 'D' the delta is a day
+            period (str): period that will be returned; Last period, current period or next period.
+
+        Raises:
+            NotImplementedError: there is no method implemented for this type of frequency.
+
+        Returns:
+            Index of chosen period (pd.Timestamp)
+        """
+        period_options = {}
+        now = pd.Timestamp().now()
+        if freq == 'D':
+            period_options['last_period'] = pd.to_datetime(now.date() + relativedelta(days=-1))
+            period_options['current_period'] = pd.to_datetime(now.date() + relativedelta(days=0))
+            period_options['next_period'] = pd.to_datetime(now.date() + relativedelta(days=1))
+        elif freq == 'W-MON':
+            period_options['last_period'] = pd.to_datetime(now.date() + relativedelta(days=-7 - now.weekday()))
+            period_options['current_period'] = pd.to_datetime(now.date() + relativedelta(days=0 - now.weekday()))
+            period_options['next_period'] = pd.to_datetime(now.date() + relativedelta(days=7 - now.weekday()))
+        elif freq == 'MS':
+            period_options['last_period'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=-1)
+            period_options['current_period'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=0)
+            period_options['next_period'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=1)
+
+        else:
+            raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
+
+        period_timestamp = period_options.get(period)
+        if period_timestamp:
+            return period_timestamp
+        else:
+            raise NotImplementedError(f'The selected period "{period}" '
+                                      'is not valid. Choose "last_period", "current_period" or "next_period"')
+
+    def resample(self, freq='MS', loffset='0', closed='left', method='sum'):
+        """This function takes the line specified in the object and resamples its values.
+        The output is a TimeseriesLine.
+
+        Args:
+            freq (str): type of frequency for aggregation. Options are 'MS' and 'W-MON', default is 'MS'.
+            loffset (str): the number of bins the values in the bins is shifted to the left. Defaults to '0'.
+            closed (str): boundary that belongs to the current bin. Defaults to 'left'.
+            index_as_str (bool): determines if the index of the aggregated series is formatted to string. Defaults to False.
+            method (str): the method used to aggregate. Choose 'sum' or 'mean', defaul is 'sum'
+
+        Returns:
+            aggregate series (pd.Series)
+        """
+
+        if not (freq == 'MS' or freq == 'W-MON'):
+            raise NotImplementedError(
+                'No method implemented for frequency type {}, choose "MS" or "W-MON"'.format(freq))
+
+        series = self.make_series()
+        if method == 'sum':
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).sum()
+        elif method == 'mean':
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).mean()
+        else:
+            raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
+        return TimeseriesLine(data=aggregate)
