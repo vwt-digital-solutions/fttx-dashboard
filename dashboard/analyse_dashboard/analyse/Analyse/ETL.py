@@ -6,6 +6,13 @@ logger = logging.getLogger('ETL')
 
 
 class ETLBase:
+    """
+
+    Attributes:
+        extracted_data (Data): A data object containing the extracted data sets.
+        transformed_data (Data): A data object containing the transformed data sets.
+    """
+
     def __init__(self, **kwargs):
         self.extracted_data = Data()
         self.transformed_data = Data()
