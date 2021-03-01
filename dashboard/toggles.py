@@ -8,6 +8,7 @@ class ReleaseToggles(TogglesList):
     overview_indicators: bool
     leverbetrouwbaarheid: bool
     project_bis: bool
+    transform_line_record: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')

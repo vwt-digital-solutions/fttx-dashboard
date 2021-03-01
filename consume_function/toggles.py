@@ -7,6 +7,7 @@ class ReleaseToggles(TogglesList):
     capacity_view: bool
     overview_indicators: bool
     project_bis: bool
+    transform_line_record: bool
 
 
 toggles = ReleaseToggles('toggles.yaml')
