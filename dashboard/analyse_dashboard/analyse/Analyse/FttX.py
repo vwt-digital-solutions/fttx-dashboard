@@ -78,7 +78,7 @@ class FttXExtract(Extract, FttXBase):
         """
         logger.info("Extracting the Projects collection")
         self._extract_from_sql()
-        self._extract_project_info()
+        self.extract_project_info()
         if toggles.leverbetrouwbaarheid:
             self._extract_leverbetrouwbaarheid_dataframe()
 
