@@ -139,7 +139,7 @@ where project in :projects
         """
 
         logger.info(f"Extracting FTU {self.client_name}")
-        doc = firestore.Client().collection('Data') \
+        doc = firestore.Client().collection('ProjectInfo') \
             .document(f'{self.client_name}_project_dates') \
             .get().to_dict().get('record')
 

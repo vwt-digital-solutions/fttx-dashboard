@@ -88,7 +88,7 @@ def get_performance_graph(client):
 
 def get_ftu_table(client):
     print(f'CLIENT: {client}')
-    ftu_data = collection.get_document(collection="Data", graph_name="project_dates", client=client)
+    ftu_data = collection.get_document(collection="ProjectInfo", graph_name="project_dates", client=client)
     table = ftu_table(ftu_data, client)
     return html.Div(
             table,
