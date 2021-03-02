@@ -14,6 +14,10 @@ class ETLBase:
     """
 
     def __init__(self, **kwargs):
+        if not hasattr(self, 'config'):
+            self.config = kwargs.get("config")
+        if not self.config:
+            raise ValueError("No config provided in init")
         self.extracted_data = Data()
         self.transformed_data = Data()
         super().__init__()

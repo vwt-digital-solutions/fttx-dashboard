@@ -50,16 +50,12 @@ class FttXBase(ETLBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if not hasattr(self, 'config'):
-            self.config = kwargs.get("config")
-        if not self.config:
-            raise ValueError("No config provided in init")
         self.client = kwargs.get("client", "client_unknown")
         self.records = RecordListWrapper(client=self.client)
         self.intermediate_results = Data()
 
 
-class FttXExtract(Extract, FttXBase):
+class FttXExtract(Extract):
     """
     Extracts data that is relevant for all FttX clients.
     """
