@@ -624,3 +624,17 @@ class TimeseriesLine(PointLine):
         else:
             raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
         return TimeseriesLine(data=aggregate)
+
+    def split(self):
+        """
+        The function checks wichs years are present in the index and splits the timeseries per year
+
+        Returns: a list of TimeseriesLine objects per year
+        """
+        series = self.make_series()
+        timeseries_per_year = []
+        for year in range(series.index.min().year, (series.index.max().year + 1)):
+            year_serie = series[((series.index > pd.Timestamp(year=year, month=1, day=1)) &
+                                 (series.index < pd.Timestamp(year=year+1, month=12, day=31)))]
+            timeseries_per_year.append(TimeseriesLine(year_serie))
+        return timeseries_per_year
