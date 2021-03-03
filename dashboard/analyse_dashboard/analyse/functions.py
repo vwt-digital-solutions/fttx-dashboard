@@ -2054,17 +2054,19 @@ def get_timestamp_of_period(freq: str, period='next'):
     now = pd.Timestamp.now()
 
     if freq == 'D':
-        shift = 1
+        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-1))
+        period_options['current'] = pd.to_datetime(now.date())
+        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=1))
     elif freq == 'W-MON':
-        shift = 7
+        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-7 - now.weekday()))
+        period_options['current'] = pd.to_datetime(now.date() - relativedelta(days=now.weekday()))
+        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=7 - now.weekday()))
     elif freq == 'MS':
-        shift = 7 * 4
+        period_options['last'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=-1)
+        period_options['current'] = pd.Timestamp(now.year, now.month, 1)
+        period_options['next'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=1)
     else:
         raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
-
-    period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-shift))
-    period_options['current'] = now.date()
-    period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=shift))
 
     period_timestamp = period_options.get(period)
     if period_timestamp:

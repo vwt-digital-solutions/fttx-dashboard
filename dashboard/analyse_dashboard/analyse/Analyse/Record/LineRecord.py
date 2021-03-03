@@ -60,33 +60,19 @@ class LineRecord(Record):
                 'normalized': self.to_be_normalized,
                 'percentage': self.percentage
             }
+
+            # TODO: rename record to line if toggles has been removed for consistency. Because the input is of line TimeseriesLine
             line = record
+
             line_week = line.resample(freq='W-MON', method=self.resample_method, loffset='-1')
             line_month = line.resample(freq='MS', method=self.resample_method, loffset='-1')
 
-            last_week = get_timestamp_of_period(freq='W-MON', period='last_period')
-            record_to_write['last_week'] = line_week.make_series()[
-                last_week] if last_week in line_week.make_series().index else 0
-
-            current_week = get_timestamp_of_period(freq='W-MON', period='current_period')
-            record_to_write['current_week'] = line_week.make_series()[
-                current_week] if current_week in line_week.make_series().index else 0
-
-            next_week = get_timestamp_of_period(freq='W-MON', period='next_period')
-            record_to_write['next_week'] = line_week.make_series()[
-                next_week] if next_week in line_week.make_series().index else 0
-
-            last_month = get_timestamp_of_period(freq='MS', period='last_period')
-            record_to_write['last_month'] = line_month.make_series()[
-                last_month] if last_month in line_month.make_series().index else 0
-
-            current_month = get_timestamp_of_period(freq='MS', period='current_period')
-            record_to_write['current_month'] = line_month.make_series()[
-                current_month] if current_month in line_month.make_series().index else 0
-
-            next_month = get_timestamp_of_period(freq='MS', period='next_period')
-            record_to_write['next_month'] = line_month.make_series()[
-                next_month] if next_month in line_month.make_series().index else 0
+            record_to_write['last_week'] = self._get_value_of_period(line_week, period='last')
+            record_to_write['current_week'] = self._get_value_of_period(line_week, period='current')
+            record_to_write['next_week'] = self._get_value_of_period(line_week, period='next')
+            record_to_write['last_month'] = self._get_value_of_period(line_month, period='last')
+            record_to_write['current_month'] = self._get_value_of_period(line_month, period='current')
+            record_to_write['next_month'] = self._get_value_of_period(line_month, period='next')
 
             if self.to_be_integrated:
                 line_week = line_week.integrate()
@@ -141,3 +127,35 @@ class LineRecord(Record):
         """
 
         return f'{self.client}_{self.project}_{self.phase}_{self.graph_name}'
+
+    def _get_value_of_period(self, line, period):
+        """
+        This method returns the value of a given period base on the frequency of the given TimeseriesLine. If
+        this period does not exists in the index, the function will return 0
+        Args:
+            line: TimeseriesLine
+            period: last, current or next period to be returned
+
+        Returns: value of last, current or next period, or 0 if this period is not present in the index.
+        """
+        freq = self._get_freq_from_timeseries(line)
+        timestamp = get_timestamp_of_period(freq=freq, period=period)
+        return line.make_series()[timestamp] if timestamp in line.make_series().index else 0
+
+    @staticmethod
+    def _get_freq_from_timeseries(line):
+        """
+        Function to return frequency of TimeseriesLine
+        Args:
+            line: TimeseriesLine
+
+        Returns: frequency (str)
+
+        """
+        if 'Day' in str(line.data.index.freq):
+            freq = 'D'
+        elif 'Week' in str(line.data.index.freq):
+            freq = 'W-MON'
+        elif 'Month' in str(line.data.index.freq):
+            freq = 'MS'
+        return freq
