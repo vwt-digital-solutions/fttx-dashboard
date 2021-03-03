@@ -2035,7 +2035,7 @@ def extract_bis_target_client(client, year):
     return bis_target
 
 
-def get_timestamp_of_period(freq: str, period='next_period'):
+def get_timestamp_of_period(freq: str, period='next'):
     """
     This functions returns the corresponding timestamp of past, current or next week or month based a frequency
 
@@ -2052,25 +2052,23 @@ def get_timestamp_of_period(freq: str, period='next_period'):
     """
     period_options = {}
     now = pd.Timestamp.now()
-    if freq == 'D':
-        period_options['last_period'] = pd.to_datetime(now.date() + relativedelta(days=-1))
-        period_options['current_period'] = pd.to_datetime(now.date() + relativedelta(days=0))
-        period_options['next_period'] = pd.to_datetime(now.date() + relativedelta(days=1))
-    elif freq == 'W-MON':
-        period_options['last_period'] = pd.to_datetime(now.date() + relativedelta(days=-7 - now.weekday()))
-        period_options['current_period'] = pd.to_datetime(now.date() + relativedelta(days=0 - now.weekday()))
-        period_options['next_period'] = pd.to_datetime(now.date() + relativedelta(days=7 - now.weekday()))
-    elif freq == 'MS':
-        period_options['last_period'] = pd.Timestamp(now.date()) + relativedelta(weeks=-4)
-        period_options['current_period'] = pd.Timestamp(now.date()) + relativedelta(weeks=0)
-        period_options['next_period'] = pd.Timestamp(now.date()) + relativedelta(months=4)
 
+    if freq == 'D':
+        shift = 1
+    elif freq == 'W-MON':
+        shift = 7
+    elif freq == 'MS':
+        shift = 7 * 4
     else:
         raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
+
+    period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-shift))
+    period_options['current'] = now.date()
+    period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=shift))
 
     period_timestamp = period_options.get(period)
     if period_timestamp:
         return period_timestamp
     else:
         raise NotImplementedError(f'The selected period "{period}" '
-                                  'is not valid. Choose "last_period", "current_period" or "next_period"')
+                                  'is not valid. Choose "last", "current" or "next"')
