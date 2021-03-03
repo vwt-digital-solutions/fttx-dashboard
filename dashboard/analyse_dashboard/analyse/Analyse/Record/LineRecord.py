@@ -21,13 +21,14 @@ class LineRecord(Record):
     """
     if toggles.transform_line_record:
         def __init__(self, record, collection, client, graph_name, phase, project, resample_method='sum',
-                     to_be_integrated=True, to_be_normalized=True, percentage=True, **kwargs):
+                     to_be_integrated=True, to_be_normalized=True, percentage=True, to_be_splitted_by_year=False, **kwargs):
             self.phase = phase
             self.project = project
             self.resample_method = resample_method
             self.to_be_integrated = to_be_integrated
             self.to_be_normalized = to_be_normalized
             self.percentage = percentage
+            self.to_be_splitted_by_year = to_be_splitted_by_year
             super().__init__(record, collection, client, graph_name, **kwargs)
     else:
         def __init__(self, record, collection, client, graph_name, phase, project, **kwargs):
@@ -53,16 +54,14 @@ class LineRecord(Record):
         """
 
         if toggles.transform_line_record:
-            record_to_write = dict()
-            record_to_write['configuration'] = {
-                'resample method': self.resample_method,
-                'integrated': self.to_be_integrated,
-                'normalized': self.to_be_normalized,
-                'percentage': self.percentage
-            }
-
             # TODO: rename record to line if toggles has been removed for consistency. Because the input is of line TimeseriesLine
             line = record
+
+            record_to_write = dict()
+            record_to_write['configuration'] = {'resample method': self.resample_method,
+                                                'integrated': self.to_be_integrated,
+                                                'normalized': self.to_be_normalized,
+                                                'percentage': self.percentage}
 
             line_week = line.resample(freq='W-MON', method=self.resample_method, loffset='-1')
             line_month = line.resample(freq='MS', method=self.resample_method, loffset='-1')
@@ -74,21 +73,20 @@ class LineRecord(Record):
             record_to_write['current_month'] = self._get_value_of_period(line_month, period='current')
             record_to_write['next_month'] = self._get_value_of_period(line_month, period='next')
 
-            if self.to_be_integrated:
-                line_week = line_week.integrate()
-                line_month = line_month.integrate()
+            record_to_write['series_week'] = self.configure_series_to_write(line_week)
+            record_to_write['series_month'] = self.configure_series_to_write(line_month)
 
-            if self.to_be_normalized:
-                series_week = line_week.make_normalised_series(percentage=self.percentage)
-                series_month = line_month.make_normalised_series(percentage=self.percentage)
-            else:
-                series_week = line_week.make_series()
-                series_month = line_month.make_series()
+            if self.to_be_splitted_by_year:
+                lines_week = line_week.split_by_year()
+                lines_month = line_month.split_by_year()
+                for line in lines_week:
+                    year = line.data.index.max().year
+                    record_to_write[f'series_week_{year}'] = self.configure_series_to_write(line)
+                for line in lines_month:
+                    year = line.data.index.max().year
+                    record_to_write[f'series_month_{year}'] = self.configure_series_to_write(line)
 
-            series_week.index = series_week.index.format()
-            record_to_write['series_week'] = series_week.to_dict()
-            series_month.index = series_month.index.format()
-            record_to_write['series_month'] = series_month.to_dict()
+            # TODO: Do we also need to add the SUM per year?
 
             return record_to_write
 
@@ -114,6 +112,23 @@ class LineRecord(Record):
                 record_to_write['next_month'] = record.get_line_aggregate(freq='MS',
                                                                           aggregate_type='value_sum')
             return record_to_write
+
+    def configure_series_to_write(self, line):
+        """
+        Given a configuration, this function calculates the desired output
+        Returns: configured timeseries (dict)
+
+        """
+        if self.to_be_integrated:
+            line = line.integrate()
+
+        if self.to_be_normalized:
+            series = line.make_normalised_series(percentage=self.percentage)
+        else:
+            series = line.make_series()
+
+        series.index = series.index.format()
+        return series.to_dict()
 
     def document_name(self, **kwargs):
         """
