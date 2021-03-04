@@ -1,7 +1,7 @@
 from google.cloud import storage
 
 from Analyse.ETL import Extract, ETL, Transform, logger
-from functions import get_database_engine
+from functions import get_bnumber_project_mapping
 
 import pandas as pd
 import re
@@ -25,7 +25,7 @@ class BISExtract(Extract):
         client = storage.Client()
         bucket = config.data_bucket
         folder = config.folder_data_schaderapportages
-        mapping = self.get_bnumber_project_mapping()
+        mapping = get_bnumber_project_mapping()
         for file in client.list_blobs(bucket, prefix=folder):
             filename = file.name
             if filename[-5:] == '.xlsx':
@@ -44,20 +44,6 @@ class BISExtract(Extract):
         df = pd.concat(df_list, sort=True)
 
         self.extracted_data.df = df
-
-    def get_bnumber_project_mapping(self):
-        """
-        This method extracts the bnumber, project name mapping table from the sql database.
-
-        Returns:
-             dict: a dictionary with bnumbers as keys and project names as values
-
-        """
-        sql_engine = get_database_engine()
-        df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
-        df = df[['fiberconnect_code', 'project_naam']].dropna()
-        mapping_dict = dict(zip(df.fiberconnect_code.astype(int).astype(str), df.project_naam))
-        return mapping_dict
 
 
 class BISTransform(Transform):

@@ -29,7 +29,9 @@ from functions import extract_realisatie_hpend_dates, cluster_reden_na, \
     extract_werkvoorraad_has_dates, calculate_redenna_per_period, extract_voorspelling_dates, individual_reden_na, \
     ratio_sum_over_periods_to_record, get_database_engine, overview_reden_na, sum_over_period_to_record, \
     voorspel_and_planning_minus_HPend_sum_over_periods_to_record, extract_planning_dates, extract_target_dates, \
-    extract_aangesloten_orders_dates, extract_bis_target_overview, extract_has_target_client, extract_bis_target_client
+    extract_aangesloten_orders_dates, extract_bis_target_overview, extract_has_target_client, \
+    extract_bis_target_client, get_bnumber_project_mapping
+
 from pandas.api.types import CategoricalDtype
 
 from toggles import ReleaseToggles
@@ -63,6 +65,7 @@ class FttXExtract(Extract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.projects = self.config["projects"]
+        self.project_info_location = kwargs['config'].get("project_info_location")
         self.client_name = self.config.get('name')
 
     # TODO: Documentation by Erik van Egmond
@@ -119,6 +122,15 @@ where project in :projects
             break
         logger.info(f"Extracted {len(df)} records in {time.time() - start_time} seconds")
         return df
+
+    def fill_project_info_table(self):
+        if self.project_info_location:
+            xls = pd.ExcelFile(self.project_info_location)
+            if self.client_name == 'kpn':
+                self.test_project_info = pd.read_excel(xls, 'KPN')
+                self.mapping = get_bnumber_project_mapping()
+            else:
+                raise NotImplementedError
 
     # TODO: Documentation by Mark Bruisten
     def extract_project_info(self):

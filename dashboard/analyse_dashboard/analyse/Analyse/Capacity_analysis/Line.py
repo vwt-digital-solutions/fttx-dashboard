@@ -291,6 +291,14 @@ class PointLine(Line):
             other = other.make_series()
         return self.__class__(data=self.make_series() + other)
 
+    def add(self, other, fill_value=0):
+        if isinstance(other, Line):
+            other = other.make_series()
+        data = self.make_series().add(other, fill_value=fill_value)
+        data = data.add(pd.Series(data=fill_value, index=pd.date_range(start=data.index.min(), end=data.index.max())),
+                        fill_value=fill_value)
+        return self.__class__(data=data)
+
     def __iadd__(self, other):
         self = (self + other)
         return self
