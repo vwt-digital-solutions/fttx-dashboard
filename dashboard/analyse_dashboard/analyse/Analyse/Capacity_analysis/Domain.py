@@ -35,12 +35,12 @@ class Domain:
 
 # TODO: Documentation by Casper van Houten
 class DateDomain(Domain):
-    def __init__(self, begin, end):
+    def __init__(self, begin, end, freq='D'):
         self.begin = pd.to_datetime(begin)
         self.end = pd.to_datetime(end)
         self.domain = pd.date_range(start=begin,
                                     end=end,
-                                    freq='D'
+                                    freq=freq
                                     )
 
     # TODO: Documentation by Casper van Houten

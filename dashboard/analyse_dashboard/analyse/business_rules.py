@@ -156,11 +156,14 @@ def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
 
 def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.Series:
     """
-    Used to calculate the totaal aangesloten orders for tmobile, based on the business rules: \n
+    Used to calculate the totaal aangesloten orders for tmobile, based on the business rules:
+
     -   Is the df row status equal to CLOSED?
     -   Is the df row type equal to AANLEG?
-    Additionally, a time window can be set, which adds the following rule: \n
+    Additionally, a time window can be set, which adds the following rule:
+
     -   Is the time between opleverdatum and creation date less than 8 weeks ("on time", 56 days)?
+
     Args:
         df (pd.DataFrame): A dataframe containing a status, type, opleverdatum and creation column, of which the latter
         two contain dates.
@@ -178,7 +181,7 @@ def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.
     if time_window == 'on time':
         mask = (mask
                 &
-                ((df['opleverdatum'] - df['creation']).dt.days <= 56))
+                ((df['opleverdatum'] - df['creation']).dt.days <= 84))
 
     return mask
 

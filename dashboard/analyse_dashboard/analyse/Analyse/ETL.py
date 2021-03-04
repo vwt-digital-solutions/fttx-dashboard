@@ -6,7 +6,18 @@ logger = logging.getLogger('ETL')
 
 
 class ETLBase:
+    """
+
+    Attributes:
+        extracted_data (Data): A data object containing the extracted data sets.
+        transformed_data (Data): A data object containing the transformed data sets.
+    """
+
     def __init__(self, **kwargs):
+        if not hasattr(self, 'config'):
+            self.config = kwargs.get("config")
+        if not self.config:
+            raise ValueError("No config provided in init")
         self.extracted_data = Data()
         self.transformed_data = Data()
         super().__init__()

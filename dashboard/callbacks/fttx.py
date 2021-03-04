@@ -395,7 +395,7 @@ for client in config.client_config.keys():
                      if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
                      ),
                 dict(id_="info_globaal_container4",
-                     title='Ratio <8 weken',
+                     title='Ratio <12 weken',
                      text1='BIS gereed: ',
                      value1='n.v.t.',
                      text2="HAS geleverd: ",
@@ -404,7 +404,7 @@ for client in config.client_config.keys():
                                                                client=client,
                                                                year=year,
                                                                frequency="Y"), '.2f'))
-                     if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
+                     if client == 'tmobile' else 'n.v.t.'  # We only show Ratio 12 weeks for tmobile
                      )]
 
             if toggles.leverbetrouwbaarheid:
@@ -489,14 +489,14 @@ for client in config.client_config.keys():
                      if client != 'tmobile' else 'n.v.t.'  # We only show HC/HPend for KPN and DFN
                      ),
                 dict(id_="info_globaal_container4",
-                     title='Ratio <8 weken',
-                     text=f"Ratio <8 weken in {year}: ",
+                     title='Ratio <12 weken',
+                     text=f"Ratio <12 weken in {year}: ",
                      value=str(format(collection.get_document(collection="Data",
                                                               graph_name="ratio_8weeks_hpend",
                                                               client=client,
                                                               year=year,
                                                               frequency="Y"), '.2f'))
-                     if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <8 weeks for tmobile
+                     if client == 'tmobile' else 'n.v.t.'  # We only show Ratio <12 weeks for tmobile
                      ),
                 dict(id_="info_globaal_container6",
                      title='Leverbetrouwbaarheid',

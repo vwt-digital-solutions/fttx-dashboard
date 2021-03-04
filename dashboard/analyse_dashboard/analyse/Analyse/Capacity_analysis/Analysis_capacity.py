@@ -21,7 +21,7 @@ class CapacityExtract(FttXExtract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.client = kwargs.get('client')
-        self.bis_etl = BISETL(client=self.client)
+        self.bis_etl = BISETL(client=self.client, config=self.config)
 
     def extract(self):
         super().extract()

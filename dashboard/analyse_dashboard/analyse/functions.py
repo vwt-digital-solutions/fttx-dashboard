@@ -11,6 +11,7 @@ import pandas as pd
 import numpy as np
 from google.cloud import firestore, secretmanager
 import time
+from dateutil.relativedelta import relativedelta
 import datetime
 import math
 
@@ -1324,7 +1325,7 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
                             'font_color': 'red'},
 
         'ratio': {'title': 'Ratio op tijd gesloten orders',
-                  'subtitle': '<8 weken',
+                  'subtitle': '<12 weken',
                   'font_color': 'black',
                   'percentage': True},
         'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
@@ -2032,3 +2033,44 @@ def extract_bis_target_client(client, year):
     """
     bis_target = config.client_bis_target.get(client).get(year, 0)
     return bis_target
+
+
+def get_timestamp_of_period(freq: str, period='next'):
+    """
+    This functions returns the corresponding timestamp of past, current or next week or month based a frequency
+
+    Args:
+        freq (str): frequency used to determine the time delta used to look forward or backwards.
+                    With 'W-MON' the delta is a week, with 'MS' the delta is a month and with 'D' the delta is a day
+        period (str): period that will be returned; Last period, current period or next period.
+
+    Raises:
+        NotImplementedError: there is no method implemented for this type of frequency.
+
+    Returns:
+        Index of chosen period (pd.Timestamp)
+    """
+    period_options = {}
+    now = pd.Timestamp.now()
+
+    if freq == 'D':
+        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-1))
+        period_options['current'] = pd.to_datetime(now.date())
+        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=1))
+    elif freq == 'W-MON':
+        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-7 - now.weekday()))
+        period_options['current'] = pd.to_datetime(now.date() - relativedelta(days=now.weekday()))
+        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=7 - now.weekday()))
+    elif freq == 'MS':
+        period_options['last'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=-1)
+        period_options['current'] = pd.Timestamp(now.year, now.month, 1)
+        period_options['next'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=1)
+    else:
+        raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
+
+    period_timestamp = period_options.get(period)
+    if period_timestamp:
+        return period_timestamp
+    else:
+        raise NotImplementedError(f'The selected period "{period}" '
+                                  'is not valid. Choose "last", "current" or "next"')

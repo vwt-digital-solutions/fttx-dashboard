@@ -6,6 +6,9 @@ from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 from datetime import timedelta
+from toggles import ReleaseToggles
+
+toggles = ReleaseToggles('toggles.yaml')
 
 
 # TODO: Documentation by Casper van Houten
@@ -197,12 +200,29 @@ class PhaseCapacity:
         Args:
             line (object)
         """
-        self.record_list.append(LineRecord(record=line,
-                                           collection='Lines',
-                                           graph_name=f'{line.name}',
-                                           phase=self.phase_data['name'],
-                                           client=self.client,
-                                           project=self.project))
+        if toggles.transform_line_record:
+            if line.name == 'work_stock_amount_indicator':
+                self.record_list.append(LineRecord(record=line,
+                                                   collection='Lines',
+                                                   graph_name=f'{line.name}',
+                                                   phase=self.phase_data['name'],
+                                                   client=self.client,
+                                                   project=self.project,
+                                                   resample_method='mean'))
+            else:
+                self.record_list.append(LineRecord(record=line,
+                                                   collection='Lines',
+                                                   graph_name=f'{line.name}',
+                                                   phase=self.phase_data['name'],
+                                                   client=self.client,
+                                                   project=self.project))
+        else:
+            self.record_list.append(LineRecord(record=line,
+                                               collection='Lines',
+                                               graph_name=f'{line.name}',
+                                               phase=self.phase_data['name'],
+                                               client=self.client,
+                                               project=self.project))
 
     # TODO: Documentation by Casper van Houten
     def get_record(self):

@@ -8,23 +8,26 @@ from Analyse.Record.RecordList import RecordList
 
 class InternalTargetIndicator(LineIndicator):
 
-    def transform_dates_to_line(self, project):
-        if (self.dates['date_FTU0'][project] is not None) & \
-           (self.dates['date_FTU1'][project] is not None) & \
-           (self.totals[project] is not None):
-            slope = self.totals[project] / (pd.to_datetime(self.dates['date_FTU1'][project]) -
-                                            pd.to_datetime(self.dates['date_FTU0'][project])).days
-            domain = DateDomain(begin=self.dates['date_FTU0'][project], end=self.dates['date_FTU1'][project])
+    def transform_dates_to_line(self, project_info):
+        if (project_info['FTU0'] is not None) & \
+           (project_info['FTU1'] is not None) & \
+           (project_info['huisaansluitingen'] is not None):
+            slope = project_info['huisaansluitingen'] / (pd.to_datetime(project_info['FTU1']) -
+                                                         pd.to_datetime(project_info['FTU0'])).days
+            domain = DateDomain(begin=project_info['FTU0'], end=project_info['FTU1'])
         else:
             slope = 0
-            domain = None
-        line = TimeseriesLine(data=slope, domain=domain, name='InternalTargetLine', max_value=self.totals[project])
+            domain = DateDomain(begin=pd.Timestamp.now(), end=pd.Timestamp.now())
+        line = TimeseriesLine(data=slope,
+                              domain=domain,
+                              name='InternalTargetLine',
+                              max_value=project_info['huisaansluitingen'])
         return line
 
     def perform(self):
         record_list = RecordList()
-        for project in self.dates['date_FTU0']:
-            line = self.transform_dates_to_line(project)
+        for project in self.project_info:
+            line = self.transform_dates_to_line(self.project_info[project])
             record_list.append(self.to_record(line, project))
         return record_list
 

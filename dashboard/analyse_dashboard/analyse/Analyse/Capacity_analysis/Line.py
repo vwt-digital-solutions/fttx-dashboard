@@ -402,7 +402,7 @@ class TimeseriesLine(PointLine):
         elif domain:
             self.domain = domain
         else:
-            self.domain = DateDomain(self.data.index[0], self.data.index[-1])
+            self.domain = DateDomain(self.data.index[0], self.data.index[-1], freq=data.index.freq)
         self.max_value = max_value
 
     # TODO: Documentation by Casper van Houten
@@ -596,3 +596,45 @@ class TimeseriesLine(PointLine):
         else:
             daysleft = None
         return daysleft
+
+    def resample(self, freq='MS', method='sum', loffset='0', closed='left'):
+        """This function takes the line specified in the object and resamples its values.
+        The output is a TimeseriesLine.
+
+        Args:
+            freq (str): type of frequency for aggregation. Options are 'MS' and 'W-MON', default is 'MS'.
+            loffset (str): the number of bins the values in the bins is shifted to the left. Defaults to '0'.
+            closed (str): boundary that belongs to the current bin. Defaults to 'left'.
+            index_as_str (bool): determines if the index of the aggregated series is formatted to string. Defaults to False.
+            method (str): the method used to aggregate. Choose 'sum' or 'mean', defaul is 'sum'
+
+        Returns:
+            aggregate series (pd.Series)
+        """
+
+        if not (freq == 'MS' or freq == 'W-MON'):
+            raise NotImplementedError(
+                'No method implemented for frequency type {}, choose "MS" or "W-MON"'.format(freq))
+
+        series = self.make_series()
+        if method == 'sum':
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).sum()
+        elif method == 'mean':
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).mean()
+        else:
+            raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
+        return TimeseriesLine(data=aggregate)
+
+    def split_by_year(self):
+        """
+        The function checks wichs years are present in the index and splits the timeseries per year
+
+        Returns: a list of TimeseriesLine objects per year
+        """
+        series = self.make_series()
+        timeseries_per_year = []
+        for year in range(series.index.min().year, (series.index.max().year + 1)):
+            year_serie = series[((series.index >= pd.Timestamp(year=year, month=1, day=1)) &
+                                 (series.index <= pd.Timestamp(year=year, month=12, day=31)))]
+            timeseries_per_year.append(TimeseriesLine(year_serie))
+        return timeseries_per_year
