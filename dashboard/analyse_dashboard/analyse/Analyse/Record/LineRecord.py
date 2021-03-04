@@ -63,12 +63,14 @@ class LineRecord(Record):
                                                 'normalized': self.to_be_normalized,
                                                 'percentage': self.percentage}
 
-            line_week = line.resample(freq='W-MON', method=self.resample_method, loffset='-1')
-            line_month = line.resample(freq='MS', method=self.resample_method, loffset='-1')
+            line_week = line.resample(freq='W-MON', method=self.resample_method)
+            line_month = line.resample(freq='MS', method=self.resample_method)
+            line_4_weeks = line.resample(freq='4W-MON', method=self.resample_method)
 
             record_to_write['last_week'] = self._get_value_of_period(line_week, period='last')
             record_to_write['current_week'] = self._get_value_of_period(line_week, period='current')
             record_to_write['next_week'] = self._get_value_of_period(line_week, period='next')
+            record_to_write['next_4_weeks'] = self._get_value_of_period(line_4_weeks, period='next')
             record_to_write['last_month'] = self._get_value_of_period(line_month, period='last')
             record_to_write['current_month'] = self._get_value_of_period(line_month, period='current')
             record_to_write['next_month'] = self._get_value_of_period(line_month, period='next')
@@ -77,6 +79,8 @@ class LineRecord(Record):
             record_to_write['series_month'] = self.configure_series_to_write(line_month)
 
             if self.to_be_splitted_by_year:
+                line_year = line.resample(freq='YS', method=self.resample_method)
+                record_to_write['series_year'] = self.configure_series_to_write(line_year)
                 lines_week = line_week.split_by_year()
                 lines_month = line_month.split_by_year()
                 for line in lines_week:
@@ -85,8 +89,6 @@ class LineRecord(Record):
                 for line in lines_month:
                     year = line.data.index.max().year
                     record_to_write[f'series_month_{year}'] = self.configure_series_to_write(line)
-
-            # TODO: Do we also need to add the SUM per year?
 
             return record_to_write
 
@@ -169,8 +171,12 @@ class LineRecord(Record):
         """
         if 'Day' in str(line.data.index.freq):
             freq = 'D'
+        elif 'Weeks' in str(line.data.index.freq):
+            freq = '4W-MON'
         elif 'Week' in str(line.data.index.freq):
             freq = 'W-MON'
         elif 'Month' in str(line.data.index.freq):
             freq = 'MS'
+        else:
+            raise ValueError(f'The frequency {line.data.index.freq} is not configured')
         return freq
