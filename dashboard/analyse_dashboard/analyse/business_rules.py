@@ -181,7 +181,7 @@ def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.
     if time_window == 'on time':
         mask = (mask
                 &
-                ((df['opleverdatum'] - df['creation']).dt.days <= 56))
+                ((df['opleverdatum'] - df['creation']).dt.days <= 84))
 
     return mask
 
