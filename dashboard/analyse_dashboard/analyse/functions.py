@@ -2065,7 +2065,6 @@ def get_timestamp_of_period(freq: str, period='next'):
         period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-28 - now.weekday()))
         period_options['current'] = pd.to_datetime(now.date() - relativedelta(days=now.weekday()))
         period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=28 - now.weekday()))
-        print(period_options['next'])
     elif freq == 'MS':
         period_options['last'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=-1)
         period_options['current'] = pd.Timestamp(now.year, now.month, 1)
