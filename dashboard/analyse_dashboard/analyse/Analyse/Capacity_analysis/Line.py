@@ -597,7 +597,7 @@ class TimeseriesLine(PointLine):
             daysleft = None
         return daysleft
 
-    def resample(self, freq='MS', method='sum', loffset='0', closed='left'):
+    def resample(self, freq='MS', method='sum', label='left', closed='left'):
         """This function takes the line specified in the object and resamples its values.
         The output is a TimeseriesLine.
 
@@ -620,11 +620,11 @@ class TimeseriesLine(PointLine):
         if method == 'sum':
             aggregate = series.resample(freq,
                                         closed=closed,
-                                        loffset=loffset + freq).sum()
+                                        label=label).sum()
         elif method == 'mean':
             aggregate = series.resample(freq,
                                         closed=closed,
-                                        loffset=loffset + freq).mean()
+                                        label=label).mean()
         else:
             raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
         return TimeseriesLine(data=aggregate)

@@ -1,6 +1,8 @@
 from Analyse.Record.Record import Record
 from functions import get_timestamp_of_period
 from toggles import ReleaseToggles
+import pandas as pd
+from dateutil.relativedelta import relativedelta
 
 toggles = ReleaseToggles('toggles.yaml')
 
@@ -63,16 +65,17 @@ class LineRecord(Record):
                                                 'normalized': self.to_be_normalized,
                                                 'percentage': self.percentage}
 
-            line_week = line.resample(freq='W-MON', method=self.resample_method, loffset='-1')
-            line_month = line.resample(freq='MS', method=self.resample_method, loffset='0')
+            line_week = line.resample(freq='W-MON', method=self.resample_method)
+            line_month = line.resample(freq='MS', method=self.resample_method)
 
             record_to_write['last_week'] = self._get_value_of_period(line_week, period='last')
             record_to_write['current_week'] = self._get_value_of_period(line_week, period='current')
             record_to_write['next_week'] = self._get_value_of_period(line_week, period='next')
-            # record_to_write['next_4_weeks'] = self._get_value_of_period(line_4_weeks, period='next')
             record_to_write['last_month'] = self._get_value_of_period(line_month, period='last')
             record_to_write['current_month'] = self._get_value_of_period(line_month, period='current')
             record_to_write['next_month'] = self._get_value_of_period(line_month, period='next')
+
+            record_to_write['next_4_weeks'] = self.calculate_value_for_next_4_weeks(line_week)
 
             record_to_write['series_week'] = self.configure_series_to_write(line_week)
             record_to_write['series_month'] = self.configure_series_to_write(line_month)
@@ -157,6 +160,22 @@ class LineRecord(Record):
         freq = self._get_freq_from_timeseries(line)
         timestamp = get_timestamp_of_period(freq=freq, period=period)
         return line.make_series()[timestamp] if timestamp in line.make_series().index else 0
+
+    def calculate_value_for_next_4_weeks(self, line_week):
+        """
+        This function calculates the sum of the upcomming 4 weeks starting next monday.
+        Args:
+            line_week (Line): resample weekly W-MON line
+
+        Returns: Work to do for the next upcomming 4 weeks
+
+        """
+        weekday = pd.Timestamp.today().weekday()
+        timestamp_4_weeks = pd.Timestamp.today() - relativedelta(days=weekday) + relativedelta(weeks=4)
+        line_week_series = line_week.make_series()
+        value_next_4_weeks = line_week_series[(line_week_series.index > pd.Timestamp.today()) &
+                                              (line_week_series.index <= timestamp_4_weeks)].sum()
+        return value_next_4_weeks
 
     @staticmethod
     def _get_freq_from_timeseries(line):
