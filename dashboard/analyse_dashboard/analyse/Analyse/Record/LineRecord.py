@@ -63,14 +63,13 @@ class LineRecord(Record):
                                                 'normalized': self.to_be_normalized,
                                                 'percentage': self.percentage}
 
-            line_week = line.resample(freq='W-MON', method=self.resample_method)
-            line_month = line.resample(freq='MS', method=self.resample_method)
-            line_4_weeks = line.resample(freq='4W-MON', method=self.resample_method)
+            line_week = line.resample(freq='W-MON', method=self.resample_method, loffset='-1')
+            line_month = line.resample(freq='MS', method=self.resample_method, loffset='0')
 
             record_to_write['last_week'] = self._get_value_of_period(line_week, period='last')
             record_to_write['current_week'] = self._get_value_of_period(line_week, period='current')
             record_to_write['next_week'] = self._get_value_of_period(line_week, period='next')
-            record_to_write['next_4_weeks'] = self._get_value_of_period(line_4_weeks, period='next')
+            # record_to_write['next_4_weeks'] = self._get_value_of_period(line_4_weeks, period='next')
             record_to_write['last_month'] = self._get_value_of_period(line_month, period='last')
             record_to_write['current_month'] = self._get_value_of_period(line_month, period='current')
             record_to_write['next_month'] = self._get_value_of_period(line_month, period='next')
@@ -171,8 +170,6 @@ class LineRecord(Record):
         """
         if 'Day' in str(line.data.index.freq):
             freq = 'D'
-        elif 'Weeks' in str(line.data.index.freq):
-            freq = '4W-MON'
         elif 'Week' in str(line.data.index.freq):
             freq = 'W-MON'
         elif 'Month' in str(line.data.index.freq):

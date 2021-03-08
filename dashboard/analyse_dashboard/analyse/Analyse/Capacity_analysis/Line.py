@@ -597,7 +597,7 @@ class TimeseriesLine(PointLine):
             daysleft = None
         return daysleft
 
-    def resample(self, freq='MS', method='sum', closed='left'):
+    def resample(self, freq='MS', method='sum', loffset='0', closed='left'):
         """This function takes the line specified in the object and resamples its values.
         The output is a TimeseriesLine.
 
@@ -612,19 +612,19 @@ class TimeseriesLine(PointLine):
             aggregate series (pd.Series)
         """
 
-        if not (freq == 'MS' or freq == 'W-MON' or freq == '4W-MON' or freq == 'YS'):
+        if not (freq == 'MS' or freq == 'W-MON' or freq == 'YS'):
             raise NotImplementedError('No method implemented for frequency type {}, '
-                                      'choose "D", "W-MON", "4W-MON" or "MS"'.format(freq))
+                                      'choose "D", "W-MON" or "MS"'.format(freq))
 
         series = self.make_series()
         if method == 'sum':
             aggregate = series.resample(freq,
                                         closed=closed,
-                                        origin=str(pd.Timestamp.today())).sum()
+                                        loffset=loffset + freq).sum()
         elif method == 'mean':
             aggregate = series.resample(freq,
                                         closed=closed,
-                                        origin=str(pd.Timestamp.today())).mean()
+                                        loffset=loffset + freq).mean()
         else:
             raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
         return TimeseriesLine(data=aggregate)
