@@ -152,11 +152,9 @@ where project in :projects
         self.extracted_data.total_number_huisaansluitingen = doc.get('huisaansluitingen')
         self.extracted_data.snelheid_mpw = doc.get('snelheid (m/week)')
 
-        df = pd.DataFrame(doc)
-        info_per_project = {}
-        for project in df.index:
-            info_per_project[project] = df.loc[project].to_dict()
-        self.extracted_data.project_info = info_per_project
+        # from_dict sets none values as np.nan
+        self.extracted_data.project_info =\
+            pd.DataFrame.from_dict(doc, orient='columns').fillna(999).replace({999: None}).to_dict(orient='index')
 
     def _extract_leverbetrouwbaarheid_dataframe(self):
         """
