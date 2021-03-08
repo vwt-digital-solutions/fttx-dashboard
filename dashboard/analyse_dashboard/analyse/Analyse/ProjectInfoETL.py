@@ -132,7 +132,7 @@ class ProjectInfoTransform(Transform):
                 df_table_now.loc[bnummer_to_projectname[bnummer]] = df_table_excel.loc[bnummer]
 
         df_table_now['snelheid (m/week)'] = df_table_now['meters BIS'] /\
-            (df_table_now['FTU1'] - df_table_now['FTU0']).dt.days
+            (df_table_now['FTU1'] - df_table_now['FTU0']).dt.days * 7
         df_table_now.loc[~df_table_now['snelheid (m/week)'].isna(), 'snelheid (m/week)'] =\
             df_table_now[~df_table_now['snelheid (m/week)'].isna()]['snelheid (m/week)'].astype(int)
 
