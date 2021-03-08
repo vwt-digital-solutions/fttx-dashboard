@@ -1,10 +1,16 @@
-from Analyse.Indicators.IndicatorBase import IndicatorBase
+from abc import ABC, abstractmethod
 
 
-class Indicator(IndicatorBase):
+class Indicator(ABC):
 
+    def __init__(self, df, client):
+        self.df = df
+        self.client = client
+
+    @abstractmethod
     def perform(self):
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def to_record(self, df):
-        raise NotImplementedError
+        ...
