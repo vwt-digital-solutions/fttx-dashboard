@@ -251,7 +251,7 @@ class FttXTransform(Transform):
                 if self._is_ftu_available(project):
                     project_list.append(project)
                 else:
-                    logger.warning(f'For the {project} we do not have a FTU0 date')
+                    logger.info(f'For the {project} we do not have a FTU0 date')
             self.project_list = project_list
 
     # TODO: Documentation by Mark Bruisten
