@@ -1,7 +1,7 @@
 from google.cloud import storage
 
 from Analyse.ETL import Extract, ETL, Transform, logger
-from functions import get_bnumber_project_mapping
+from functions import get_map_bnumber_vs_project_from_sql
 
 import pandas as pd
 import re
@@ -25,7 +25,7 @@ class BISExtract(Extract):
         client = storage.Client()
         bucket = config.data_bucket
         folder = config.folder_data_schaderapportages
-        mapping = get_bnumber_project_mapping()
+        mapping = get_map_bnumber_vs_project_from_sql()
         for file in client.list_blobs(bucket, prefix=folder):
             filename = file.name
             if filename[-5:] == '.xlsx':
@@ -34,7 +34,7 @@ class BISExtract(Extract):
                                    sheet_name='Productie',
                                    skiprows=list(range(0, 12)))
                 b_number = re.findall(r"B\d*", filename)[0][1:]  # find b-number (B + fiberconnect project number)
-                project = mapping.get(b_number)
+                project = mapping.loc[b_number]
                 if project:
                     df['project'] = project
                     df_list.append(df)

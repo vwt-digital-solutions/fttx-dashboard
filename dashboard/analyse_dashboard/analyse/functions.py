@@ -157,19 +157,21 @@ def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     return y_target_l, t_diff, target_per_week_dict
 
 
-def get_bnumber_project_mapping():
+def get_map_bnumber_vs_project_from_sql():
     """
     This method extracts the bnumber, project name mapping table from the sql database.
 
     Returns:
-            dict: a dictionary with bnumbers as keys and project names as values
+            pd.DataFrame: a dataframe with bnumbers as keys and project names as values
 
     """
     sql_engine = get_database_engine()
     df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
-    df = df[['fiberconnect_code', 'project_naam']].dropna()
-    mapping_dict = dict(zip(df.fiberconnect_code.astype(int).astype(str), df.project_naam))
-    return mapping_dict
+    ds_mapping = df[['fiberconnect_code', 'project_naam']].dropna().set_index('fiberconnect_code')
+    ds_mapping.index = ds_mapping.index.astype(int).astype(str)
+    ds_mapping = ds_mapping[~ds_mapping.duplicated()].rename(columns={'project_naam': 'project'})
+    ds_mapping.index.name = 'bnummer'
+    return ds_mapping
 
 
 # TODO: check if this can be removed. It does not seem to be used.
