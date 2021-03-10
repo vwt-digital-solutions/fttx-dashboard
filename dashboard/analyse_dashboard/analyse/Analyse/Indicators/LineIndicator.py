@@ -6,7 +6,7 @@ class LineIndicator(Indicator):
     Barebones indicator class containing standard functionality that every type of Indicator will be able to do.
     """
 
-    def __init__(self, client, project_info, df):
+    def __init__(self, client, project_info, df=None):
         self.client = client
         self.project_info = project_info
         self.df = df

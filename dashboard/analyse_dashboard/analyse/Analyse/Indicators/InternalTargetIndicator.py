@@ -1,4 +1,5 @@
 import pandas as pd
+from datetime import timedelta
 from Analyse.Indicators.LineIndicator import LineIndicator
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomain
@@ -19,7 +20,7 @@ class InternalTargetIndicator(LineIndicator):
         line_client.max_value = total_amount_client
         record_list.append(self.to_record(line_client, project='client_aggregate'))
 
-        return record_list
+        return record_list, line_client
 
     def initialize_line_client(self, project_info):
         first_FTU0_client = min([dict['FTU0'] for dict in self.project_info.values() if dict['FTU0']])
@@ -36,7 +37,8 @@ class InternalTargetIndicator(LineIndicator):
            (project_info['huisaansluitingen'] is not None):
             slope = project_info['huisaansluitingen'] / (pd.to_datetime(project_info['FTU1']) -
                                                          pd.to_datetime(project_info['FTU0'])).days
-            domain = DateDomain(begin=project_info['FTU0'], end=project_info['FTU1'])
+            domain = DateDomain(begin=project_info['FTU0'],
+                                end=pd.to_datetime(project_info['FTU1']) - timedelta(days=1))
         else:
             slope = 0
             domain = DateDomain(begin=pd.Timestamp.now(), end=pd.Timestamp.now())
