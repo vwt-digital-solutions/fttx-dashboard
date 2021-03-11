@@ -12,13 +12,13 @@ class LineIndicator(Indicator):
     Barebones indicator class containing standard functionality that every type of Indicator will be able to do.
     """
 
-    def __init__(self, client, project_info, type_start_date, type_end_date, type_total_amount, df=None):
+    def __init__(self, client, project_info):
         self.client = client
         self.project_info = project_info
-        self.type_start_date = type_start_date
-        self.type_end_date = type_end_date
-        self.type_total_amount = type_total_amount
-        self.df = df
+        self.type_start_date = None
+        self.type_end_date = None
+        self.type_total_amount = None
+        self.df = None
 
     def _make_project_lines_from_dates_in_project_info(self):
         lines = []
