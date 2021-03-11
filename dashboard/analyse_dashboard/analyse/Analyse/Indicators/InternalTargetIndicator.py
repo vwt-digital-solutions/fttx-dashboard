@@ -7,6 +7,7 @@ class InternalTargetIndicator(LineIndicator):
         self.type_start_date = 'FTU0'
         self.type_end_date = 'FTU1'
         self.type_total_amount = 'huisaansluitingen'
+        self.indicator_name = 'InternalTargetLine'
 
     def perform(self):
         list_project_lines = self._make_project_lines_from_dates_in_project_info()

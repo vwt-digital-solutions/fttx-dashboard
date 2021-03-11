@@ -18,6 +18,7 @@ class LineIndicator(Indicator):
         self.type_start_date = None
         self.type_end_date = None
         self.type_total_amount = None
+        self.indicator_name = None
         self.df = None
 
     def _make_project_lines_from_dates_in_project_info(self):
@@ -34,7 +35,7 @@ class LineIndicator(Indicator):
                 domain = DateDomain(begin=pd.Timestamp.now(), end=pd.Timestamp.now())
             lines.append(TimeseriesLine(data=slope,
                                         domain=domain,
-                                        name='InternalTargetLine',
+                                        name=self.indicator_name,
                                         max_value=total_amount,
                                         project=project))
         return lines
