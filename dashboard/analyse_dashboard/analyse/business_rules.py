@@ -290,7 +290,7 @@ def bis_niet_opgeleverd(df):
     return df['opleverstatus'].isin(['0', '90', '99'])
 
 
-def hc_opgeleverd(df):
+def hc_opgeleverd(df, time_delta_days=0):
     """
     HC (Homes Connected) is done when `opleverstatus` is  set to 2.
 
@@ -300,7 +300,10 @@ def hc_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'] == '2'
+    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series=df.opleverdatum,
+                                                                      time_delta_days=time_delta_days)
+    mask = mask & (df.opleverstatus == '2')
+    return mask
 
 
 def hp_opgeleverd(df):
