@@ -12,5 +12,5 @@ class Indicator(ABC):
         ...
 
     @abstractmethod
-    def to_record(self, df):
+    def _make_list_of_records_from_list_of_lines(self, df):
         ...

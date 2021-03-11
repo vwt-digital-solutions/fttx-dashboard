@@ -394,7 +394,7 @@ class TimeseriesLine(PointLine):
     A point line is a collection of datapoints on a shared datetime index.
     """
 
-    def __init__(self, data, domain=None, max_value=None, *args, **kwargs):
+    def __init__(self, data, domain=None, max_value=None, project=None, *args, **kwargs):
         """
         Args:
             data (pd.Series): the series is stretched along the domain when
@@ -402,6 +402,7 @@ class TimeseriesLine(PointLine):
             domain (TimeIndexSeries): defaults to None.
             max_value (int): specifies the maximum amount of units that can be reached in a phase,
                              defaults to None.
+            project (str): specifies to which project the line belongs
         """
         super().__init__(data=data, *args, **kwargs)
         if (len(self.data) == 1) & (domain is not None):
@@ -412,6 +413,7 @@ class TimeseriesLine(PointLine):
         else:
             self.domain = DateDomain(self.data.index[0], self.data.index[-1], freq=data.index.freq)
         self.max_value = max_value
+        self.project = project
 
     # TODO: Documentation by Casper van Houten
     def make_series(self):
