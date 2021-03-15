@@ -93,9 +93,18 @@ where project in :projects
         df['project'] = df.project.astype(projects_category)
         self.extracted_data.df = df
 
-    # TODO: Documentation by Casper van Houten
     @staticmethod
     def _extract_project(project_name, cursor=None):
+        """
+        Extracts FC data from a specific project on the firestore
+
+        Args:
+            project_name: Project that data will be extracted for.
+            cursor: Lines to skip at the start of project data
+
+        Returns: Dataframe with extracted project data.
+
+        """
         start_time = time.time()
         logger.info(f"Extracting {project_name}...")
         collection = firestore.Client().collection('Projects')
@@ -122,7 +131,6 @@ where project in :projects
         logger.info(f"Extracted {len(df)} records in {time.time() - start_time} seconds")
         return df
 
-    # TODO: Documentation by Mark Bruisten
     def extract_project_info(self):
         """
         Extracts project information for all projects of a client. Project information contains
@@ -217,10 +225,10 @@ class FttXTransform(Transform):
         self._add_status_columns()
         self._set_totals()
 
-    # TODO: remove return Mark Bruisten
     def _is_ftu_available(self, project):
         """
         This functions checks whether a FTU0 date is available
+
         Args:
             project: the project name
 
@@ -234,7 +242,6 @@ class FttXTransform(Transform):
             available = True
         return available
 
-    # TODO: remove return Mark Bruisten
     def _make_project_list(self):
         """
         This functions returns a list of projects that have at least a FTU0 date.
@@ -256,6 +263,12 @@ class FttXTransform(Transform):
 
     # TODO: Documentation by Mark Bruisten
     def _set_totals(self):
+        """
+        Sets total amount of connections per project in transformed_data dictionary.
+
+        Returns:
+
+        """
         self.transformed_data.totals = {}
         for project, project_df in self.transformed_data.df.groupby('project'):
             self.transformed_data.totals[project] = len(project_df)
@@ -273,6 +286,12 @@ class FttXTransform(Transform):
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(lambda x: x.dt.tz_convert(None))
 
     def _cluster_reden_na(self):
+        """
+        Add cluster redenna column to transformed data df
+
+        Returns:
+
+        """
         logger.info("Transforming dataframe through adding column cluster redenna")
         clus = self.config['clusters_reden_na']
         self.transformed_data.df.loc[:, 'cluster_redenna'] = self.transformed_data.df['redenna'].apply(
@@ -362,8 +381,12 @@ class FttXAnalyse(FttXBase):
         self.records = RecordListWrapper(self.client)
         self.intermediate_results = Data()
 
-    # TODO: Documentation by Andre van Turnhout
     def analyse(self):
+        """
+        Main loop for FTTX analyse, runs a set of functions on transformed data that will result in a set of
+        firestore records.
+
+        """
         logger.info("Analysing using the FttX protocol")
         self._calculate_list_of_years()
         self._make_records_for_dashboard_values()
@@ -429,8 +452,12 @@ class FttXAnalyse(FttXBase):
         self.records.add("Progress_over_time", document_list, DocumentListRecord, "Data",
                          document_key=["client", "project", 'data_set'])
 
-    # TODO: Documentation by Andre van Turnhout
     def _progress_per_phase(self):
+        """
+        Calculates the progress per phase for the phases civiel, montage, schouwen, hc, hp and hp end, as well
+        as the totals per project. These results are put in a record and added to the records attribute of the class.
+
+        """
         logger.info("Calculating project progress per phase")
 
         progress_df = pd.concat(
@@ -463,13 +490,9 @@ class FttXAnalyse(FttXBase):
         self.records.add("Progress", documents, DocumentListRecord, "Data",
                          document_key=["client", "project", 'data_set'])
 
-    # TODO: remove return Tjeerd Pols
     def _calculate_list_of_years(self):
         """
         Calculates a list of years per client based on the dates that are found in the date columns.
-
-        Returns:
-            list: a list of years (as individual strings), sorted per year
 
         """
         logger.info("Calculating list of years")
@@ -492,6 +515,11 @@ class FttXAnalyse(FttXBase):
 
     # TODO: Documentation by Casper van Houten
     def _reden_na(self):
+        """
+        Calculates records for reden na, reden_na_overview and reden_na_projects, and adds them to the records stored
+        in the class.
+
+        """
         logger.info("Calculating reden na graphs")
         overview_record = overview_reden_na(self.transformed_data.df)
         record_dict = individual_reden_na(self.transformed_data.df)
@@ -500,6 +528,11 @@ class FttXAnalyse(FttXBase):
 
     # TODO: Documentation by Casper van Houten
     def _set_filters(self):
+        """
+        Sets the set of projects that should be shown in the dashboard as record, so that it can be retrieved from the
+        firestore.
+
+        """
         self.records.add("project_names", create_project_filter(self.transformed_data.df), ListRecord, "Data")
 
     # TODO: Documentation by Erik van Egmond
@@ -521,8 +554,12 @@ class FttXAnalyse(FttXBase):
                 .to_dict(orient='records')
         self.records.add('completed_status_counts', status_counts_dict, DictRecord, 'Data')
 
-    # TODO: Documentation by Casper van Houten
     def _calculate_redenna_per_period(self):
+        """
+        Calculates reden_na per periods for weeks, months, and years over all projects,
+        based on hasdatum. Adds week, months and years all to sepearte records.
+
+        """
         logger.info("Calculating redenna per period (week & month)")
         by_week = calculate_redenna_per_period(df=self.transformed_data.df,
                                                date_column="hasdatum",
@@ -539,7 +576,6 @@ class FttXAnalyse(FttXBase):
                                                freq="Y")
         self.records.add('redenna_by_year', by_year, Record, 'Data')
 
-    # TODO: remove return Tjeerd Pols
     def _make_records_for_dashboard_values(self):
         """
         Calculates the overzicht values per jaar of simple KPI's that do not contain a ratio or need a subtraction.
@@ -547,9 +583,6 @@ class FttXAnalyse(FttXBase):
         in function_dict). The values are then calculated per year (obtained from _calculate_list_of_years) and per
         period ('W-MON', 'M', 'Y') through the sum_over_period_to_record function. All these values are added as
         dictionaries to a document_list, which is added to the Firestore.
-
-        Returns:
-             list: a list with dictionaries containing the relevant values
 
         """
         logger.info("Calculating records for dashboard overview values")
@@ -615,7 +648,6 @@ class FttXAnalyse(FttXBase):
             self.records.add("Overzicht_client_targets_per_jaar", document_list, DocumentListRecord, "Data",
                              document_key=["client", "graph_name", "frequency", "year"])
 
-    # TODO: remove return Tjeerd Pols
     def _make_records_of_voorspelling_and_planning_for_dashboard_values(self):
         """
         Calculates the overzicht values per jaar of voorspelling and planning, from which the HPend values are
@@ -628,8 +660,6 @@ class FttXAnalyse(FttXBase):
         Line 547 contains a temporary fix pending a new project structure. In this line, only "opgeleverdatum" values
         with ~hasdatum.isna() are returned. In a new structure, these loops can be replaced with business rule
         has_ingeplanned.
-
-        Returns: a list with dictionaries containing the values for voorspelling and planning
 
         """
         logger.info("Calculating voorspelling and planning records for dashboard overview values")
@@ -670,8 +700,6 @@ class FttXAnalyse(FttXBase):
         yearly frequency through the sum_over_period_to_record function. All these values are added as dictionaries
         to a document_list, which is added to the Firestore.
 
-        Returns: a list with dicts containing the ratios HC/HPend, realisatie under 8 weeks and leverbetrouwbaarheid.
-
         """
         logger.info("Calculating records of ratios for dashboard overview values")
         df = self.transformed_data.df
@@ -711,8 +739,6 @@ class FttXAnalyse(FttXBase):
         frequency through the sum_over_period_to_record function. All these values are added as dictionaries to a
         document_list, which is added to the Firestore.
 
-        Returns: a list with dictionaries containing the ratio HC/HPend
-
         """
         logger.info("Calculating record of ratio HC/HPend for dashboard overview values")
         realisatie_hc = extract_realisatie_hc_dates(self.transformed_data.df)
@@ -741,8 +767,6 @@ class FttXAnalyse(FttXBase):
         extract_aangesloten_orders_dates). The ratio under 8 weeks is then calculated per year (obtained from
         _calculate_list_of_years) and per period ('W-MON', 'M', 'Y') through the sum_over_period_to_record function.
         All these values are added as dictionaries to a document_list, which is added to the Firestore.
-
-        Returns: a list with dictionaries containing the ratio under 8 weeks
 
         """
         logger.info("Calculating record of ratio <8 weeks for dashboard overview values")
@@ -774,8 +798,6 @@ class FttXAnalyse(FttXBase):
         called below). The values are then calculated per project (obtained from df.groupby('project')) with the
         calculate_ratio function OR set into a dictionary to work with calculate_projectindicators_tmobile.
         All these values are added into a dictionary with integers per project, which is added to intermediate_results.
-
-        Returns: dictionaries with the values per project
 
         """
         logger.info("Calculating intermediate results of ratios and HAS werkvoorraad for project specific values")
@@ -817,8 +839,6 @@ class FttXAnalyse(FttXBase):
     def calculate_ratio(self, project, numerator, divider):
         """
         Calculates the ratio between the length of two pd.Series objects, filtered by a specific project.
-
-        Returns: a ratio between two pd.Series as an integer
 
         """
         project_dates_numerator = numerator[numerator.project == project].drop(labels='project', axis=1)
