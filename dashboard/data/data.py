@@ -133,7 +133,7 @@ def redenna_by_completed_status(project_name, client, click_filter=None, ):
     return None, None
 
 
-def completed_status_counts(project_name, client, click_filter=None):
+def completed_status_counts(project_name, client, click_filter=None):  # noqa: C901
     StatusCountDataFrames = namedtuple("StatusCountDataFrames",
                                        ["laagbouw", "hoogbouw"])  # Used to return a named tuple
 

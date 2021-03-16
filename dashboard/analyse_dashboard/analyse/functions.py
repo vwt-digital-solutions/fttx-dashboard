@@ -187,7 +187,7 @@ def get_cumsum_of_col(df: pd.DataFrame, column):
 
 
 # TODO: Documentation by Andre van Turnhout
-def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
+def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
     x_prog = np.array(list(range(0, len(x_d))))
     cutoff = 85
 

@@ -132,7 +132,7 @@ where fca.sleutel = '{sleutel}'
     yield get_aansluiting
 
 
-def prepare_records(records):
+def prepare_records(records):  # noqa: C901
     logging.info("Preparing records")
     updated_records = []
     updated_log = []
