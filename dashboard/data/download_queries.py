@@ -67,7 +67,7 @@ order by fc.creation
     """).bindparams(project=project)  # nosec
 
 
-@validate_project
+@validate_project  # noqa: C901
 def project_redenna(project,
                     schouw_status=None,
                     bis_status=None,

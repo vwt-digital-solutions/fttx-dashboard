@@ -18,7 +18,7 @@ from config import colors_vwt as colors
 from layout.components import redenna_status_pie
 from datetime import datetime
 
-for client in config.client_config.keys():
+for client in config.client_config.keys():  # noqa: C901
     @app.callback(
         [
             Output(f"{client}-overview", 'style')

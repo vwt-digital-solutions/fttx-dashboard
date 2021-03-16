@@ -10,7 +10,7 @@ from data.data import no_graph
 from layout.components.graphs.grouped_bar_chart import get_fig
 import plotly.graph_objects as go
 
-for client in config.client_config.keys():
+for client in config.client_config.keys():  # noqa: C901
     @app.callback(
         [
             Output(f"finance-warnings-{client}", 'children')
