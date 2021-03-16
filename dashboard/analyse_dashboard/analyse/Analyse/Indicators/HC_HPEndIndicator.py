@@ -27,6 +27,12 @@ class HcHpEndIndicator(TimeseriesIndicator, DateAggregator):
         return df
 
     def perform(self):
+        """
+        Main perform to do all necessary calculations for HC/HPend indicator.
+
+        Returns: List of Records with HC/HPend ratio per project.
+
+        """
         df = self.aggregate(df=self.apply_business_rules())
         df['ratio'] = (df['HC'] / df['HPend']).fillna(0)
         return self.to_record(df.unstack('project')['ratio'])
