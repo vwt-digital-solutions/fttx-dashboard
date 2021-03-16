@@ -57,6 +57,7 @@ class LineRecord(Record):
 
         if toggles.transform_line_record:
             # TODO: rename record to line if toggles has been removed for consistency. Because the input is of line TimeseriesLine
+            # TODO: remove line.get_line_aggregate() if toggle is removed. Check if other functions are unused afterwards
             line = record
 
             record_to_write = dict()
@@ -86,10 +87,10 @@ class LineRecord(Record):
                 lines_week = line_week.split_by_year()
                 lines_month = line_month.split_by_year()
                 for line in lines_week:
-                    year = line.data.index.max().year
+                    year = line.get_extreme_period_of_series('year', 'max')
                     record_to_write[f'series_week_{year}'] = self.configure_series_to_write(line)
                 for line in lines_month:
-                    year = line.data.index.max().year
+                    year = line.get_extreme_period_of_series('year', 'min')
                     record_to_write[f'series_month_{year}'] = self.configure_series_to_write(line)
 
             return record_to_write

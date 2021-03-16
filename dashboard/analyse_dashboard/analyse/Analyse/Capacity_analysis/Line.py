@@ -648,8 +648,36 @@ class TimeseriesLine(PointLine):
         """
         series = self.make_series()
         timeseries_per_year = []
-        for year in range(series.index.min().year, (series.index.max().year + 1)):
+        for year in range(self.get_extreme_period_of_series('year', 'min'),
+                          self.get_extreme_period_of_series('year', 'max') + 1):
             year_serie = series[((series.index >= pd.Timestamp(year=year, month=1, day=1)) &
                                  (series.index <= pd.Timestamp(year=year, month=12, day=31)))]
             timeseries_per_year.append(TimeseriesLine(year_serie))
         return timeseries_per_year
+
+    def get_extreme_period_of_series(self, period, extreme='min'):
+        """
+        This function returns the first year, month or day present in a TimeseriesLine
+        Args:
+            period: str {year, month, day}: period to be returned
+            extreme: str {min, max}: minimal or maximum to be returned
+
+        Returns: int: returns the first or last day, month of year present in a TimeseriesLine
+
+        """
+        series = self.make_series()
+        if extreme == 'min':
+            extreme_date = series.index.min()
+        elif extreme == 'max':
+            extreme_date = series.index.max()
+        else:
+            raise ValueError(f'This extreme "{extreme}" is not configured, pick "min" / "max"')
+
+        if period == 'year':
+            return extreme_date.year
+        elif period == 'month':
+            return extreme_date.month
+        elif period == 'day':
+            return extreme_date.day
+        else:
+            raise ValueError(f'This period "{period}" is not configured, pick "year" / "month" / "day"')

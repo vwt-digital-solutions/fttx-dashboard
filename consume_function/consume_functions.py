@@ -16,24 +16,12 @@ import numpy as np
 db = firestore.Client()
 
 
-def process_asbuilt(records, topic_config):
-    logging.info("Processing asbuilt")
-    update_date_document_name = topic_config.get('update_date_document')
-    table = topic_config.get('sql_table')
-    write_records_to_sql(records=records,
-                         table=table,
-                         update_date_document_name=update_date_document_name)
-
-
 def process_fiberconnect(records, topic_config):
     logging.info("Processing fiber connect")
-    update_date_document_name = topic_config.get('update_date_document')
     records, logs = prepare_records(records)
-    table = topic_config.get('sql_table')
     write_logs_to_sql(logs)
     write_records_to_sql(records=records,
-                         table=table,
-                         update_date_document_name=update_date_document_name)
+                         topic_config=topic_config)
 
 
 def parse_request(request):
@@ -68,10 +56,12 @@ def write_logs_to_sql(logs):
         log_df.to_sql('fc_transitie_log', con=sqlEngine, index=False, if_exists='append')
 
 
-def write_records_to_sql(records, table, update_date_document_name):
-    logging.info(f"Writing {len(records)} to {table}")
+def write_records_to_sql(records, topic_config):
+    name = topic_config.get('name')
+    update_date_document_name = topic_config.get('update_date_document')
+    table = topic_config.get('sql_table')
+    logging.info(f"Processing {name}, writing {len(records)} to {table}")
     df = pd.DataFrame(records).replace({np.nan: None})
-
     datums = [col for col in df.columns if "datum" in col]
     df[datums] = df[datums].apply(
         lambda x: x.dt.strftime("%Y-%m-%d %H:%M-%S") if hasattr(x, 'dt') else pd.Series([None] * len(df)))
