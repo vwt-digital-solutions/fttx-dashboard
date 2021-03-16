@@ -1,4 +1,8 @@
+import pandas as pd
 from Analyse.Indicators.LineIndicator import LineIndicator
+from Analyse.Capacity_analysis.Line import TimeseriesLine
+from Analyse.Capacity_analysis.Domain import DateDomain
+from datetime import timedelta
 
 
 class InternalTargetIndicator(LineIndicator):
@@ -9,8 +13,19 @@ class InternalTargetIndicator(LineIndicator):
         self.type_total_amount = 'huisaansluitingen'
         self.indicator_name = 'InternalTargetLine'
 
-    def perform(self):
-        list_project_lines = self._make_project_lines_from_dates_in_project_info()
-        list_lines = self._add_client_aggregate_line_to_list_of_project_lines(list_project_lines)
-        list_line_records = self._make_list_of_records_from_list_of_lines(list_lines)
-        return list_line_records
+    def _make_project_line(self, project):
+        start_project = self.project_info[project][self.type_start_date]
+        end_project = self.project_info[project][self.type_end_date]
+        total_amount = self.project_info[project][self.type_total_amount]
+        if start_project and end_project and total_amount:
+            slope = total_amount / (pd.to_datetime(end_project) - pd.to_datetime(start_project)).days
+            domain = DateDomain(begin=start_project, end=pd.to_datetime(end_project) - timedelta(days=1))
+            line = TimeseriesLine(data=slope,
+                                  domain=domain,
+                                  name=self.indicator_name,
+                                  max_value=total_amount,
+                                  project=project)
+        else:
+            line = None
+
+        return line

@@ -577,12 +577,15 @@ class TimeseriesLine(PointLine):
         Returns:
             distance (float)
         """
-        if line_type == 'rate':
-            distance = self.max_value - self.integrate().get_most_recent_point()
-        elif line_type == 'cumulative':
-            distance = self.max_value - self.get_most_recent_point()
+        if self.max_value:
+            if line_type == 'rate':
+                distance = self.max_value - self.integrate().get_most_recent_point()
+            elif line_type == 'cumulative':
+                distance = self.max_value - self.get_most_recent_point()
+            else:
+                raise NotImplementedError('There is no method implemented for line_type {}'.format(line_type))
         else:
-            raise NotImplementedError('There is no method implemented for line_type {}'.format(line_type))
+            raise ValueError
         return distance
 
     def daysleft(self, end=None, slope=None):
@@ -598,10 +601,8 @@ class TimeseriesLine(PointLine):
             daysleft (int)
         """
         if end:
-            if type(end) is str:
-                end = pd.to_datetime(end)
-            daysleft = (end - self.domain.end).days
-        elif slope:
+            daysleft = (pd.to_datetime(end) - self.domain.end).days
+        elif (slope is not None) & (self.distance_to_max_value() is not None):
             daysleft = int(self.distance_to_max_value() / slope)
         else:
             daysleft = None
