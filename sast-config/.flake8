@@ -1,4 +1,0 @@
-[flake8]
-ignore = C901
-max-line-length = 139
-exclude = .node_modules
