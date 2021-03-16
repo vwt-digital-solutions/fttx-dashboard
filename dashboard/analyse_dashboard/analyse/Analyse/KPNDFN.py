@@ -137,7 +137,7 @@ class KPNAnalyse(FttXAnalyse):
         self.records.add('d_real_l_r', d_real_l_r, ListRecord, 'Data')
         d_real_l_ri = {k: v.index for k, v in self.intermediate_results.d_real_l.items()}
         self.records.add('d_real_l_ri', d_real_l_ri, ListRecord, 'Data')
-        self.records.add('y_prog_l', self.intermediate_results.y_prog_l, ListRecord, 'Data')
+        # self.records.add('y_prog_l', self.intermediate_results.y_prog_l, ListRecord, 'Data')
         self.records.add('x_prog', results.x_prog, IntRecord, 'Data')
         self.records.add('t_shift', results.t_shift, StringRecord, 'Data')
         self.records.add('cutoff', results.cutoff, Record, 'Data')
@@ -154,7 +154,7 @@ class KPNAnalyse(FttXAnalyse):
         self.intermediate_results.target_per_week = target_per_week_dict
 
         self.intermediate_results.t_diff = t_diff
-        self.records.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
+        # self.records.add('y_target_l', self.intermediate_results.y_target_l, ListRecord, 'Data')
 
     # TODO: Documentation by Andre van Turnhout
     def _performance_matrix(self):
