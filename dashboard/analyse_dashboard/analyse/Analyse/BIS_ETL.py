@@ -35,8 +35,7 @@ class BISExtract(Extract):
                                    skiprows=list(range(0, 12)))
                 b_number = re.findall(r"B\d*", filename)[0][1:]  # find b-number (B + fiberconnect project number)
                 if b_number in list(mapping.index):
-                    project = mapping.loc[b_number]
-                    df['project'] = project
+                    df['project'] = mapping.at[b_number, 'project']
                     df_list.append(df)
                 else:
                     logger.error(f'Cannot map b-number to project name: {b_number}')
