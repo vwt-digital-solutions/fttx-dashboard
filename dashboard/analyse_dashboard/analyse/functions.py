@@ -162,16 +162,15 @@ def get_map_bnumber_vs_project_from_sql():
     This method extracts the bnumber, project name mapping table from the sql database.
 
     Returns:
-            dict: a dictionary with bnumbers as keys and project names as values
+            pd.DataFrame: a dataframe with bnumbers as keys and project names as values
 
     """
     sql_engine = get_database_engine()
     df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
-    ds_mapping = df[['fiberconnect_code', 'project_naam']].dropna()
-    ds_mapping['fiberconnect_code'] = ds_mapping['fiberconnect_code'].astype(int).astype(str)
-    ds_mapping = ds_mapping[~ds_mapping.duplicated()].rename(columns={'project_naam': 'project',
-                                                                      'fiberconnect_code': 'bnummer'})
-    ds_mapping = dict(zip(ds_mapping.bnummer, ds_mapping.project))
+    ds_mapping = df[['fiberconnect_code', 'project_naam']].dropna().set_index('fiberconnect_code')
+    ds_mapping.index = ds_mapping.index.astype(int).astype(str)
+    ds_mapping = ds_mapping[~ds_mapping.duplicated()].rename(columns={'project_naam': 'project'})
+    ds_mapping.index.name = 'bnummer'
     return ds_mapping
 
 
