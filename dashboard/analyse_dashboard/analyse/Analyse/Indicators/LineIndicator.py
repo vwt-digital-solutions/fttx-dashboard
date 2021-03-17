@@ -14,7 +14,6 @@ class LineIndicator(Indicator):
         self.type_start_date = None
         self.type_end_date = None
         self.type_total_amount = None
-        self.indicator_name = None
         self.df = None
 
     def perform(self):

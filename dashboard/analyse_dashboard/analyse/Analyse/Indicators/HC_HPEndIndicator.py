@@ -2,7 +2,7 @@ import business_rules as br
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Aggregators.DateAggregator import DateAggregator
 import copy
-from Analyse.Capacity_analysis.Line import TimeseriesLine
+from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine
 from Analyse.Record.LineRecord import LineRecord
 
 
@@ -33,9 +33,16 @@ class HcHpEndIndicator(TimeseriesIndicator, DateAggregator):
         Returns: List of Records with HC/HPend ratio per project.
 
         """
-        df = self.aggregate(df=self.apply_business_rules())
+        df = self.aggregate(self.apply_business_rules())
         df['ratio'] = (df['HC'] / df['HPend']).fillna(0)
-        return self.to_record(df.unstack('project')['ratio'])
+        records = []
+        lines = []
+        for project, timeseries in df.groupby(level=0)['ratio']:
+            if len(timeseries):
+                line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
+                lines.append(line)
+                records.append(self.to_record(line, project))
+        return lines
 
     def aggregate(self, df):
         """
@@ -50,14 +57,10 @@ class HcHpEndIndicator(TimeseriesIndicator, DateAggregator):
         Returns: Aggregated dataframe
 
         """
-        summed_df = super().aggregate(df=df,
-                                      by=['opleverdatum', 'project'],
-                                      agg_function='sum').swaplevel(0, 1).sort_index()
-        cumsum_df = summed_df.groupby(level=0).cumsum().groupby(['project']).ffill()
-        filled_df = cumsum_df[['HC', 'HPend']].fillna(0)
-        return filled_df
+        summed_df = df.groupby(['project', 'opleverdatum']).agg({'HC': 'sum', 'HPend': 'sum'})
+        return summed_df.groupby(level=0).cumsum()
 
-    def to_record(self, df):
+    def to_record(self, line, project):
         """
         Loops over all projects in the dataframe column-wise, turns them into TimeseriesLines
         and turns the Lines into records.
@@ -68,16 +71,11 @@ class HcHpEndIndicator(TimeseriesIndicator, DateAggregator):
         Returns: List of LineRecords.
 
         """
-        # Easier to wrap making of lines into the record-making, as the project is readily available.
-        line_records = []
-        for project, data in df.iteritems():
-            line = TimeseriesLine(data=data).differentiate()
-            line_records.append(LineRecord(record=line,
-                                           collection='Lines',
-                                           graph_name='HcHpEndRatio',
-                                           phase='oplever',
-                                           client=self.client,
-                                           project=project,
-                                           to_be_integrated=True,
-                                           to_be_splitted_by_year=True))
-        return line_records
+        return LineRecord(record=line,
+                          collection='Lines',
+                          graph_name='HcHpEndRatio',
+                          phase='oplever',
+                          client=self.client,
+                          project=project,
+                          to_be_integrated=True,
+                          to_be_splitted_by_year=True)
