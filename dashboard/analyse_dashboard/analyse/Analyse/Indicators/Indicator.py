@@ -10,7 +10,3 @@ class Indicator(ABC):
     @abstractmethod
     def perform(self):
         ...
-
-    @abstractmethod
-    def _add_line_to_list_of_records(self, df):
-        ...
