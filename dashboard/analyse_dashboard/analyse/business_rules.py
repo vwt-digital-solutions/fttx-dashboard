@@ -306,7 +306,7 @@ def hc_opgeleverd(df, time_delta_days=0):
     return mask
 
 
-def hp_opgeleverd(df):
+def hp_opgeleverd(df, time_delta_days=0):
     """
     HP (Homes Passed) is done when `opleverstatus` is **not** set to 2 and `opleverdatum` is not NA.
     Status 2 means a home is connected (see BR hc_opgeleverd).
@@ -318,9 +318,10 @@ def hp_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return ((df['opleverstatus'] != '2')
-            &
-            (~df['opleverdatum'].isna()))
+    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series=df.opleverdatum,
+                                                                      time_delta_days=time_delta_days)
+    mask = (mask & (df['opleverstatus'] != '2'))
+    return mask
 
 
 def has_ingeplanned(df):
@@ -334,9 +335,8 @@ def has_ingeplanned(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (df['opleverdatum'].isna()
-            &
-            ~df['hasdatum'].isna())
+    mask = ((df['opleverdatum'].isna() & ~df['hasdatum'].isna()) | (df['opleverdatum'] > pd.Timestamp.now()))
+    return mask
 
 
 def has_niet_opgeleverd(df):
