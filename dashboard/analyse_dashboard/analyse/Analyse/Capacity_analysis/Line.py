@@ -681,3 +681,17 @@ class TimeseriesLine(PointLine):
             return extreme_date.day
         else:
             raise ValueError(f'This period "{period}" is not configured, pick "year" / "month" / "day"')
+
+
+class TimeSeriesSpeedLine(TimeseriesLine):
+
+    def make_series(self):
+        filled_data = self.data.reindex(self.domain.domain, fill_value=0)
+        return filled_data
+
+
+class TimeseriesDistanceLine(TimeseriesLine):
+
+    def make_series(self):
+        filled_data = self.data.reindex(self.domain.domain, method='ffill')
+        return filled_data
