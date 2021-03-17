@@ -157,6 +157,23 @@ def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     return y_target_l, t_diff, target_per_week_dict
 
 
+def get_map_bnumber_vs_project_from_sql():
+    """
+    This method extracts the bnumber, project name mapping table from the sql database.
+
+    Returns:
+            pd.DataFrame: a dataframe with bnumbers as keys and project names as values
+
+    """
+    sql_engine = get_database_engine()
+    df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
+    ds_mapping = df[['fiberconnect_code', 'project_naam']].dropna().set_index('fiberconnect_code')
+    ds_mapping.index = ds_mapping.index.astype(int).astype(str)
+    ds_mapping = ds_mapping[~ds_mapping.duplicated()].rename(columns={'project_naam': 'project'})
+    ds_mapping.index.name = 'bnummer'
+    return ds_mapping
+
+
 # TODO: check if this can be removed. It does not seem to be used.
 def get_cumsum_of_col(df: pd.DataFrame, column):
     # Can we make it generic by passing column, or does df need to be filtered beforehand?
@@ -170,7 +187,7 @@ def get_cumsum_of_col(df: pd.DataFrame, column):
 
 
 # TODO: Documentation by Andre van Turnhout
-def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):
+def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
     x_prog = np.array(list(range(0, len(x_d))))
     cutoff = 85
 
@@ -2061,10 +2078,6 @@ def get_timestamp_of_period(freq: str, period='next'):
         period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-7 - now.weekday()))
         period_options['current'] = pd.to_datetime(now.date() - relativedelta(days=now.weekday()))
         period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=7 - now.weekday()))
-    elif freq == '4W-MON':
-        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-28 - now.weekday()))
-        period_options['current'] = pd.to_datetime(now.date() - relativedelta(days=now.weekday()))
-        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=28 - now.weekday()))
     elif freq == 'MS':
         period_options['last'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=-1)
         period_options['current'] = pd.Timestamp(now.year, now.month, 1)

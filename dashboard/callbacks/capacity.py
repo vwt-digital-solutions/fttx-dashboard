@@ -16,7 +16,7 @@ import pandas as pd
 
 colors = config.colors_vwt
 
-for client in config.client_config.keys():
+for client in config.client_config.keys():  # noqa: C901
     @app.callback(
         Output(f'capacity-phase-geulen-{client}', 'n_clicks'),
         [

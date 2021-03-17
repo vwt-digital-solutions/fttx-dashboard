@@ -291,6 +291,14 @@ class PointLine(Line):
             other = other.make_series()
         return self.__class__(data=self.make_series() + other)
 
+    def add(self, other, fill_value=0):
+        if isinstance(other, Line):
+            other = other.make_series()
+        data = self.make_series().add(other, fill_value=fill_value)
+        data = data.add(pd.Series(data=fill_value, index=pd.date_range(start=data.index.min(), end=data.index.max())),
+                        fill_value=fill_value)
+        return self.__class__(data=data)
+
     def __iadd__(self, other):
         self = (self + other)
         return self
@@ -386,7 +394,7 @@ class TimeseriesLine(PointLine):
     A point line is a collection of datapoints on a shared datetime index.
     """
 
-    def __init__(self, data, domain=None, max_value=None, *args, **kwargs):
+    def __init__(self, data, domain=None, max_value=None, project=None, *args, **kwargs):
         """
         Args:
             data (pd.Series): the series is stretched along the domain when
@@ -394,6 +402,7 @@ class TimeseriesLine(PointLine):
             domain (TimeIndexSeries): defaults to None.
             max_value (int): specifies the maximum amount of units that can be reached in a phase,
                              defaults to None.
+            project (str): specifies to which project the line belongs
         """
         super().__init__(data=data, *args, **kwargs)
         if (len(self.data) == 1) & (domain is not None):
@@ -404,6 +413,7 @@ class TimeseriesLine(PointLine):
         else:
             self.domain = DateDomain(self.data.index[0], self.data.index[-1], freq=data.index.freq)
         self.max_value = max_value
+        self.project = project
 
     # TODO: Documentation by Casper van Houten
     def make_series(self):
@@ -567,12 +577,15 @@ class TimeseriesLine(PointLine):
         Returns:
             distance (float)
         """
-        if line_type == 'rate':
-            distance = self.max_value - self.integrate().get_most_recent_point()
-        elif line_type == 'cumulative':
-            distance = self.max_value - self.get_most_recent_point()
+        if self.max_value:
+            if line_type == 'rate':
+                distance = self.max_value - self.integrate().get_most_recent_point()
+            elif line_type == 'cumulative':
+                distance = self.max_value - self.get_most_recent_point()
+            else:
+                raise NotImplementedError('There is no method implemented for line_type {}'.format(line_type))
         else:
-            raise NotImplementedError('There is no method implemented for line_type {}'.format(line_type))
+            raise ValueError
         return distance
 
     def daysleft(self, end=None, slope=None):
@@ -588,16 +601,14 @@ class TimeseriesLine(PointLine):
             daysleft (int)
         """
         if end:
-            if type(end) is str:
-                end = pd.to_datetime(end)
-            daysleft = (end - self.domain.end).days
-        elif slope:
+            daysleft = (pd.to_datetime(end) - self.domain.end).days
+        elif (slope is not None) & (self.distance_to_max_value() is not None):
             daysleft = int(self.distance_to_max_value() / slope)
         else:
             daysleft = None
         return daysleft
 
-    def resample(self, freq='MS', method='sum', closed='left'):
+    def resample(self, freq='MS', method='sum', label='left', closed='left'):
         """This function takes the line specified in the object and resamples its values.
         The output is a TimeseriesLine.
 
@@ -612,19 +623,19 @@ class TimeseriesLine(PointLine):
             aggregate series (pd.Series)
         """
 
-        if not (freq == 'MS' or freq == 'W-MON' or freq == '4W-MON' or freq == 'YS'):
+        if not (freq == 'MS' or freq == 'W-MON' or freq == 'YS'):
             raise NotImplementedError('No method implemented for frequency type {}, '
-                                      'choose "D", "W-MON", "4W-MON" or "MS"'.format(freq))
+                                      'choose "D", "W-MON" or "MS"'.format(freq))
 
         series = self.make_series()
         if method == 'sum':
             aggregate = series.resample(freq,
                                         closed=closed,
-                                        origin=str(pd.Timestamp.today())).sum()
+                                        label=label).sum()
         elif method == 'mean':
             aggregate = series.resample(freq,
                                         closed=closed,
-                                        origin=str(pd.Timestamp.today())).mean()
+                                        label=label).mean()
         else:
             raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
         return TimeseriesLine(data=aggregate)
@@ -637,8 +648,36 @@ class TimeseriesLine(PointLine):
         """
         series = self.make_series()
         timeseries_per_year = []
-        for year in range(series.index.min().year, (series.index.max().year + 1)):
+        for year in range(self.get_extreme_period_of_series('year', 'min'),
+                          self.get_extreme_period_of_series('year', 'max') + 1):
             year_serie = series[((series.index >= pd.Timestamp(year=year, month=1, day=1)) &
                                  (series.index <= pd.Timestamp(year=year, month=12, day=31)))]
             timeseries_per_year.append(TimeseriesLine(year_serie))
         return timeseries_per_year
+
+    def get_extreme_period_of_series(self, period, extreme='min'):
+        """
+        This function returns the first year, month or day present in a TimeseriesLine
+        Args:
+            period: str {year, month, day}: period to be returned
+            extreme: str {min, max}: minimal or maximum to be returned
+
+        Returns: int: returns the first or last day, month of year present in a TimeseriesLine
+
+        """
+        series = self.make_series()
+        if extreme == 'min':
+            extreme_date = series.index.min()
+        elif extreme == 'max':
+            extreme_date = series.index.max()
+        else:
+            raise ValueError(f'This extreme "{extreme}" is not configured, pick "min" / "max"')
+
+        if period == 'year':
+            return extreme_date.year
+        elif period == 'month':
+            return extreme_date.month
+        elif period == 'day':
+            return extreme_date.day
+        else:
+            raise ValueError(f'This period "{period}" is not configured, pick "year" / "month" / "day"')

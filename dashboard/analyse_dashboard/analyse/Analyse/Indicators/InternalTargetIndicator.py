@@ -2,39 +2,30 @@ import pandas as pd
 from Analyse.Indicators.LineIndicator import LineIndicator
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomain
-from Analyse.Record.LineRecord import LineRecord
-from Analyse.Record.RecordList import RecordList
+from datetime import timedelta
 
 
 class InternalTargetIndicator(LineIndicator):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.type_start_date = 'FTU0'
+        self.type_end_date = 'FTU1'
+        self.type_total_amount = 'huisaansluitingen'
+        self.indicator_name = 'InternalTargetLine'
 
-    def transform_dates_to_line(self, project_info):
-        if (project_info['FTU0'] is not None) & \
-           (project_info['FTU1'] is not None) & \
-           (project_info['huisaansluitingen'] is not None):
-            slope = project_info['huisaansluitingen'] / (pd.to_datetime(project_info['FTU1']) -
-                                                         pd.to_datetime(project_info['FTU0'])).days
-            domain = DateDomain(begin=project_info['FTU0'], end=project_info['FTU1'])
+    def _make_project_line(self, project):
+        start_project = self.project_info[project][self.type_start_date]
+        end_project = self.project_info[project][self.type_end_date]
+        total_amount = self.project_info[project][self.type_total_amount]
+        if start_project and end_project and total_amount:
+            slope = total_amount / (pd.to_datetime(end_project) - pd.to_datetime(start_project)).days
+            domain = DateDomain(begin=start_project, end=pd.to_datetime(end_project) - timedelta(days=1))
+            line = TimeseriesLine(data=slope,
+                                  domain=domain,
+                                  name=self.indicator_name,
+                                  max_value=total_amount,
+                                  project=project)
         else:
-            slope = 0
-            domain = DateDomain(begin=pd.Timestamp.now(), end=pd.Timestamp.now())
-        line = TimeseriesLine(data=slope,
-                              domain=domain,
-                              name='InternalTargetLine',
-                              max_value=project_info['huisaansluitingen'])
+            line = None
+
         return line
-
-    def perform(self):
-        record_list = RecordList()
-        for project in self.project_info:
-            line = self.transform_dates_to_line(self.project_info[project])
-            record_list.append(self.to_record(line, project))
-        return record_list
-
-    def to_record(self, line, project):
-        return LineRecord(record=line,
-                          collection='Lines',
-                          graph_name=f'{line.name}',
-                          phase='oplever',
-                          client=self.client,
-                          project=project)

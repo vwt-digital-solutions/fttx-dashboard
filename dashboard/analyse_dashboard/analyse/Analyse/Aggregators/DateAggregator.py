@@ -5,10 +5,10 @@ import pandas as pd
 class DateAggregator(Aggregator):
 
     @staticmethod
-    def aggregate(df, by, agg_function='count', freq='D'):
+    def aggregate(df, by, agg_function='count'):
 
         by[0] = pd.Grouper(key=by[0],
-                           freq=freq,
+                           freq='D',
                            closed='left',
                            label="left")
 

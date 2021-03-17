@@ -36,7 +36,7 @@ opleverstatussen is a list that contains all possible opleverstatussen.
 """
 
 
-def is_date_set(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
+def make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
     """
     A function that creates a mask for the supplied series that lists which dates are before today's date minus the
     time_delta_days.
@@ -60,7 +60,7 @@ def is_date_set(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
 def geschouwed(df, time_delta_days=0):
     """
     A house is geschouwed when the schouwdatum is not NA and before or on today - time_delta_days.
-    This function uses :meth:`is_date_set`.
+    This function uses :meth:`make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta`.
 
     Args:
         df (pd.DataFrame): A dataframe containing a schouwdatum column with dates.
@@ -69,7 +69,7 @@ def geschouwed(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    return is_date_set(df.schouwdatum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.schouwdatum, time_delta_days=time_delta_days)
 
 
 def ordered(df, time_delta_days=0):
@@ -83,7 +83,7 @@ def ordered(df, time_delta_days=0):
     Returns:
              pd.Series: A series of truth values.
     """
-    return is_date_set(df.toestemming_datum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.toestemming_datum, time_delta_days=time_delta_days)
 
 
 def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
@@ -290,7 +290,7 @@ def bis_niet_opgeleverd(df):
     return df['opleverstatus'].isin(['0', '90', '99'])
 
 
-def hc_opgeleverd(df):
+def hc_opgeleverd(df, time_delta_days=0):
     """
     HC (Homes Connected) is done when `opleverstatus` is  set to 2.
 
@@ -300,10 +300,13 @@ def hc_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'] == '2'
+    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series=df.opleverdatum,
+                                                                      time_delta_days=time_delta_days)
+    mask = mask & (df.opleverstatus == '2')
+    return mask
 
 
-def hp_opgeleverd(df):
+def hp_opgeleverd(df, time_delta_days=0):
     """
     HP (Homes Passed) is done when `opleverstatus` is **not** set to 2 and `opleverdatum` is not NA.
     Status 2 means a home is connected (see BR hc_opgeleverd).
@@ -315,9 +318,10 @@ def hp_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return ((df['opleverstatus'] != '2')
-            &
-            (~df['opleverdatum'].isna()))
+    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series=df.opleverdatum,
+                                                                      time_delta_days=time_delta_days)
+    mask = (mask & (df['opleverstatus'] != '2'))
+    return mask
 
 
 def has_ingeplanned(df):
@@ -331,9 +335,8 @@ def has_ingeplanned(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (df['opleverdatum'].isna()
-            &
-            ~df['hasdatum'].isna())
+    mask = ((df['opleverdatum'].isna() & ~df['hasdatum'].isna()) | (df['opleverdatum'] > pd.Timestamp.now()))
+    return mask
 
 
 def has_niet_opgeleverd(df):
@@ -363,13 +366,13 @@ def hpend(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    return opgeleverd(df, time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.opleverdatum, time_delta_days=time_delta_days)
 
 
 def opgeleverd(df, time_delta_days=0):
     """
     A home is completed when `opleverdatum` is not NA and before or on today - time_delta_days.
-    This function uses :meth:`is_date_set`.
+    This function uses :meth:`make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta`.
 
     Args:
         df (pd.DataFrame): A dataframe containing a opleverdatum column with dates.
@@ -378,7 +381,7 @@ def opgeleverd(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    return is_date_set(df.opleverdatum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.opleverdatum, time_delta_days=time_delta_days)
 
 
 def has_werkvoorraad(df, time_delta_days=0):

@@ -1,7 +1,4 @@
-from Analyse.Indicators.IndicatorBase import IndicatorBase
-
-
-class Aggregator(IndicatorBase):
+class Aggregator():
 
     @staticmethod
     def aggregate(df, by, agg_function='count'):

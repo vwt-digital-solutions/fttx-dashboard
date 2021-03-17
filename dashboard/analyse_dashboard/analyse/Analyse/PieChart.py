@@ -1,10 +1,10 @@
-from Analyse.Indicators.IndicatorBase import IndicatorBase
+from Analyse.Indicators.Indicator import Indicator
 # Todo: Move the dependence on color to front-end
 import config
 colors = config.colors_vwt
 
 
-class PieChart(IndicatorBase):
+class PieChart(Indicator):
 
     @staticmethod
     def get_pie_layout():
