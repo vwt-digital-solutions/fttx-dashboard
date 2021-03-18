@@ -34,15 +34,13 @@ class HcHpEndIndicator(TimeseriesIndicator, DateAggregator):
 
         """
         df = self.aggregate(self.apply_business_rules())
-        df['ratio'] = (df['HC'] / df['HPend']).fillna(0)
+        df['ratio'] = (df['HC'] / df['HPend'])
         records = []
-        lines = []
         for project, timeseries in df.groupby(level=0)['ratio']:
             if len(timeseries):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
-                lines.append(line)
                 records.append(self.to_record(line, project))
-        return lines
+        return records
 
     def aggregate(self, df):
         """
