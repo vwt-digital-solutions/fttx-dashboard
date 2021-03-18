@@ -711,13 +711,14 @@ def concat(line_list, name=None, project=None):
     """
     if len(line_list) < sum([isinstance(item, Line) for item in line_list]):
         raise TypeError("Concat only works on instances of Line object")
-    linetype = list[0].__class__
+    linetype = line_list[0].__class__
     if len(line_list) < sum([item.__class__ == linetype for item in line_list]):
         raise TypeError("All lines should be of same type")
     total_line = line_list[0]
 
-    for line in line_list[1:]:
-        total_line = total_line.add(line)
+    if len(line_list) > 1:
+        for line in line_list[1:]:
+            total_line = total_line.add(line)
 
     if name:
         total_line.name = name

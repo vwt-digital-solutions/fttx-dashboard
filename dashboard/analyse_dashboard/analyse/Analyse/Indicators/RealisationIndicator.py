@@ -1,10 +1,10 @@
 import business_rules as br
 import copy
-import pandas as pd
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
+from Analyse.Capacity_analysis.Line import concat
 
 
 class RealisationIndicator(TimeseriesIndicator):
@@ -14,10 +14,10 @@ class RealisationIndicator(TimeseriesIndicator):
     Also makes a LineRecords for the aggregate of the project lines for a given client
     """
 
-    def __init__(self, project_info, project=None, make_into_records=True, **kwargs):
+    def __init__(self, project_info, return_lines=False, **kwargs):
         super().__init__(**kwargs)
         self.project_info = project_info
-        self.project = project
+        self.return_lines = return_lines
         self.type_total_amount = 'huisaansluitingen'
         self.indicator_name = 'RealisationIndicator'
 
@@ -45,34 +45,25 @@ class RealisationIndicator(TimeseriesIndicator):
                             by=['project', 'opleverdatum'],
                             agg_function='size')
 
-        if self.make_into_records:
-            result_list = RecordList()
-        else:
-            result_list = []
-
-        line_client = None
-        if self.project:
-            if self.project in df.index:
-                ds = df.loc[self.project]
-            else:
-                ds = pd.Series()
-            data_for_loop = pd.concat({self.project: ds}, names=['project']).groupby(level=0)
-        else:
-            data_for_loop = df.groupby(level=0)
-        for project, timeseries in data_for_loop:
+        line_list = []
+        record_list = RecordList()
+        for project, timeseries in df.groupby(level=0):
             if len(timeseries):
                 line_project = TimeseriesLine(data=timeseries.droplevel(0),
                                               name=self.indicator_name,
                                               max_value=self.project_info[project][self.type_total_amount],
                                               project=project)
-                if self.make_into_records:
-                    result_list.append(self.to_record(self.line_project))
-                else:
-                    result_list.append(line_project)
+                line_list.append(line_project)
+                record_list.append(self.to_record(line_project))
 
-                line_client = self._add_line_to_line_client_aggregate(self.line_project, line_client)
-        result_list.append(self.to_record(line_client))
-        return result_list
+        if line_list:
+            line_client = concat(line_list, name=self.indicator_name, project=self.client)
+            line_list.append(line_client)
+            record_list.append(self.to_record(line_client))
+        output_list = record_list
+        if self.return_lines:
+            output_list = line_list
+        return output_list
 
     def to_record(self, line):
         if line:
@@ -89,13 +80,3 @@ class RealisationIndicator(TimeseriesIndicator):
         else:
             record = None
         return record
-
-    def _add_line_to_line_client_aggregate(self, line, line_client=None):
-        if line_client and line:
-            line_client = line_client.add(line, fill_value=0)
-        elif line:
-            line_client = line
-        if line_client:
-            line_client.name = self.indicator_name
-            line_client.project = self.client
-        return line_client
