@@ -24,6 +24,22 @@ def process_fiberconnect(records, topic_config):
                          topic_config=topic_config)
 
 
+def process_default(records, topic_config):
+    logging.info('Processing default')
+    df = pd.DataFrame(records).replace({np.nan: None})
+    datums = [col for col in df.columns if "datum" in col]
+    for datum in datums:
+        df[datum] = df[datum].apply(pd.to_datetime,
+                                    infer_datetime_format=True,
+                                    errors="coerce",
+                                    utc=True)
+        df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
+
+    df.to_dict(orient='records')
+    write_records_to_sql(records=records,
+                         topic_config=topic_config)
+
+
 def parse_request(request):
     envelope = json.loads(request.data.decode('utf-8'))
     bytes = base64.b64decode(envelope['message']['data'])
