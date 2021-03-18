@@ -2,6 +2,7 @@ import business_rules as br
 from Analyse.Indicators.LineIndicator import LineIndicator
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange
+from Analyse.Indicators.RealisationIndicator import RealisationIndicator
 
 
 class PrognoseIndicator(LineIndicator):
@@ -15,7 +16,10 @@ class PrognoseIndicator(LineIndicator):
 
     def _make_project_line(self, project):
         # TODO: deze functie straks vervangen met realisatieindicator
-        realisation_rate_line = self._calculate_realisation_rate_line(project)
+        realisation_rate_line = RealisationIndicator(project=project,
+                                                     project_info=self.project_info,
+                                                     df=self.df,
+                                                     client=self.client).perform().line_project
         if realisation_rate_line:
             if len(realisation_rate_line.data) >= 2:
                 mean_rate, _ = realisation_rate_line.integrate().linear_regression(data_partition=0.5)
@@ -58,15 +62,3 @@ class PrognoseIndicator(LineIndicator):
     def _calculate_mean_realisation_rate_client(self):
         df = self.df[br.hpend(self.df)]
         return df.groupby(['project', 'opleverdatum']).size().mean()
-
-    def _calculate_realisation_rate_line(self, project):
-        df = self.df[self.df.project == project]
-        ds = df[br.hpend].opleverdatum
-        ds_counted = ds.groupby(ds).count()
-        if ds_counted.empty:
-            line = None
-        else:
-            line = TimeseriesLine(data=ds_counted,
-                                  max_value=self.project_info[project][self.type_total_amount],
-                                  project=project)
-        return line

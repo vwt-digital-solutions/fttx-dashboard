@@ -52,7 +52,11 @@ class RealisationIndicator(TimeseriesIndicator):
 
         line_client = None
         if self.project:
-            data_for_loop = pd.concat({self.project: df.loc[self.project]}, names=['project']).groupby(level=0)
+            if self.project in df.index:
+                ds = df.loc[self.project]
+            else:
+                ds = pd.Series()
+            data_for_loop = pd.concat({self.project: ds}, names=['project']).groupby(level=0)
         else:
             data_for_loop = df.groupby(level=0)
         for project, timeseries in data_for_loop:
