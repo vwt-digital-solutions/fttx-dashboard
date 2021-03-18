@@ -50,6 +50,7 @@ class KPNDFNTransform(FttXTransform):
     def transform(self):
         super().transform()
         self._transform_planning()
+        self._transform_planning_new()
 
     # TODO: Documentation by Andre van Turnhout
     def _transform_planning(self):
@@ -79,6 +80,57 @@ class KPNDFNTransform(FttXTransform):
         else:
             hp = {}
         self.transformed_data.planning = hp
+
+    def _transform_planning_new(self):
+        """
+        This function extracts the planned number of HPend and HPCiviel / per project / per week from a excel. This
+        Excel file is used by the projectleaders and updated monthly.
+
+        The extracted planning is in the form of a pd.DataFrame with index=[project, date] and columns=[hpend, hpciviel]
+
+        """
+        logging.info("Transforming planning for KPN")
+        planning_excel = self.extracted_data.get("planning", pd.DataFrame())
+        if not planning_excel.empty:
+            # Extract planning from the excel
+            planning_excel.rename(columns={'Unnamed: 1': 'project'}, inplace=True)
+            df = planning_excel.iloc[:, 20:72].copy()
+            df.columns = df.loc[0, :]
+
+            df['project'] = planning_excel['project'].fillna(method='ffill').astype(str)
+            df['soort_hp'] = planning_excel.iloc[:, 17].str.lower().str.strip().fillna('hp end').copy()
+            df.fillna(0, inplace=True)
+            df['project'].replace(self.config.get('project_names_planning_map'), inplace=True)
+
+            # split hpend and hp_civiel
+            df_hpend = df[((df.soort_hp == 'hp end') | (df.soort_hp == 'status 16'))].copy()
+            df_hpciviel = df[df.soort_hp == 'hp civiel'].copy()
+
+            # transform the planning into pd.Datafram with index(project, date) and columns(hpend, hpciviel)
+            final_hpend = pd.DataFrame()
+            final_hpciviel = pd.DataFrame()
+            for project in self.project_list:
+                if project in df_hpend.project.unique():
+                    df_project = df_hpend[df_hpend.project == project].iloc[0][0:-2].copy().reset_index()
+                    df_project.columns = ['date', 'number']
+                    df_project['project'] = project
+                    df_project = df_project.groupby(['project', 'date']).sum()
+                    final_hpend = final_hpend.append(df_project)
+                if project in df_hpciviel.project.unique():
+                    df_project = df_hpciviel[df_hpciviel.project == project].iloc[0][0:-2].copy().reset_index()
+                    df_project.columns = ['date', 'number']
+                    df_project['project'] = project
+                    df_project = df_project.groupby(['project', 'date']).sum()
+                    final_hpciviel = final_hpciviel.append(df_project)
+
+            final = final_hpciviel.merge(final_hpend, on=['project', 'date'], how='outer').fillna(0).rename(
+                columns={'number_x': 'hp civiel', 'number_y': 'hp end'})
+            total = final.reset_index().groupby('date')[['hp civiel', 'hp end']].sum().reset_index()
+            total['project'] = 'Total'
+            total = total.groupby(['project', 'date']).sum()
+            final = final.append(total)
+
+        self.transformed_data.planning_new = final
 
 
 # TODO: Documentation by Andre van Turnhout
