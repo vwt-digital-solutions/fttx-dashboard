@@ -14,7 +14,7 @@ class RealisationIndicator(TimeseriesIndicator):
     Also makes a LineRecords for the aggregate of the project lines for a given client
     """
 
-    def __init__(self, project_info, project=None, **kwargs):
+    def __init__(self, project_info, project=None, make_into_records=True, **kwargs):
         super().__init__(**kwargs)
         self.project_info = project_info
         self.project = project
@@ -44,7 +44,12 @@ class RealisationIndicator(TimeseriesIndicator):
         df = self.aggregate(df=self.apply_business_rules(),
                             by=['project', 'opleverdatum'],
                             agg_function='size')
-        record_list = RecordList()
+
+        if self.make_into_records:
+            result_list = RecordList()
+        else:
+            result_list = []
+
         line_client = None
         if self.project:
             data_for_loop = pd.concat({self.project: df.loc[self.project]}, names=['project']).groupby(level=0)
@@ -52,14 +57,18 @@ class RealisationIndicator(TimeseriesIndicator):
             data_for_loop = df.groupby(level=0)
         for project, timeseries in data_for_loop:
             if len(timeseries):
-                self.line_project = TimeseriesLine(data=timeseries.droplevel(0),
-                                                   name=self.indicator_name,
-                                                   max_value=self.project_info[project][self.type_total_amount],
-                                                   project=project)
-                record_list.append(self.to_record(self.line_project))
+                line_project = TimeseriesLine(data=timeseries.droplevel(0),
+                                              name=self.indicator_name,
+                                              max_value=self.project_info[project][self.type_total_amount],
+                                              project=project)
+                if self.make_into_records:
+                    result_list.append(self.to_record(self.line_project))
+                else:
+                    result_list.append(line_project)
+
                 line_client = self._add_line_to_line_client_aggregate(self.line_project, line_client)
-        record_list.append(self.to_record(line_client))
-        return record_list
+        result_list.append(self.to_record(line_client))
+        return result_list
 
     def to_record(self, line):
         if line:
