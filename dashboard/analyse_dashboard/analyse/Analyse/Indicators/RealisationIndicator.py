@@ -52,12 +52,12 @@ class RealisationIndicator(TimeseriesIndicator):
             data_for_loop = df.groupby(level=0)
         for project, timeseries in data_for_loop:
             if len(timeseries):
-                line_project = TimeseriesLine(data=timeseries.droplevel(0),
-                                              name=self.indicator_name,
-                                              max_value=self.project_info[project][self.type_total_amount],
-                                              project=project)
-                record_list.append(self.to_record(line_project))
-                line_client = self._add_line_to_line_client_aggregate(line_project, line_client)
+                self.line_project = TimeseriesLine(data=timeseries.droplevel(0),
+                                                   name=self.indicator_name,
+                                                   max_value=self.project_info[project][self.type_total_amount],
+                                                   project=project)
+                record_list.append(self.to_record(self.line_project))
+                line_client = self._add_line_to_line_client_aggregate(self.line_project, line_client)
         record_list.append(self.to_record(line_client))
         return record_list
 
