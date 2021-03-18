@@ -695,3 +695,33 @@ class TimeseriesDistanceLine(TimeseriesLine):
     def make_series(self):
         filled_data = self.data.reindex(self.domain.domain, method='ffill')
         return filled_data
+
+
+def concat(line_list, name=None, project=None):
+    """
+    Concats a list of Lines of the same class into one total Line, using the add functionality, and returns it.
+
+    Args:
+        line_list: list of Line-type objects
+        name: name to be given to the resulting line
+        project: project to be assigned to resulting line.
+
+    Returns: aggregated Line-object of input type.
+
+    """
+    if len(line_list) < sum([isinstance(item, Line) for item in line_list]):
+        raise TypeError("Concat only works on instances of Line object")
+    linetype = list[0].__class__
+    if len(line_list) < sum([item.__class__ == linetype for item in line_list]):
+        raise TypeError("All lines should be of same type")
+    total_line = line_list[0]
+
+    for line in line_list[1:]:
+        total_line = total_line.add(line)
+
+    if name:
+        total_line.name = name
+    if project:
+        total_line.project = project
+
+    return total_line
