@@ -21,9 +21,9 @@ class LineIndicator(Indicator):
         line_client_aggregate = None
         for project in self.project_info:
             line_project = self._make_project_line(project)
-            self._add_line_to_list_of_records(line_project, record_list)
+            record_list.append(self.to_record(line_project))
             line_client_aggregate = self._add_line_to_line_client_aggregate(line_project, line_client_aggregate)
-        self._add_line_to_list_of_records(line_client_aggregate, record_list)
+        record_list.append(self.to_record(line_client_aggregate))
         return record_list
 
     def _make_project_line(self):
@@ -39,15 +39,18 @@ class LineIndicator(Indicator):
             line_client.project = self.client
         return line_client
 
-    def _add_line_to_list_of_records(self, line, record_list):
+    def to_record(self, line):
         if line:
-            record_list.append(LineRecord(record=line,
-                                          collection='Lines',
-                                          graph_name=f'{line.name}',
-                                          phase='oplever',
-                                          client=self.client,
-                                          project=line.project,
-                                          to_be_integrated=False,
-                                          to_be_normalized=False,
-                                          to_be_splitted_by_year=True,
-                                          percentage=False))
+            record = LineRecord(record=line,
+                                collection='Lines',
+                                graph_name=f'{line.name}',
+                                phase='oplever',
+                                client=self.client,
+                                project=line.project,
+                                to_be_integrated=False,
+                                to_be_normalized=False,
+                                to_be_splitted_by_year=True,
+                                percentage=False)
+        else:
+            record = None
+        return record

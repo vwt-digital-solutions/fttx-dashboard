@@ -56,23 +56,26 @@ class RealisationIndicator(TimeseriesIndicator):
                                               name=self.indicator_name,
                                               max_value=self.project_info[project][self.type_total_amount],
                                               project=project)
-                self._add_line_to_list_of_records(line_project, record_list)
+                record_list.append(self.to_record(line_project))
                 line_client = self._add_line_to_line_client_aggregate(line_project, line_client)
-        self._add_line_to_list_of_records(line_client, record_list)
+        record_list.append(self.to_record(line_client))
         return record_list
 
-    def _add_line_to_list_of_records(self, line, record_list):
+    def to_record(self, line):
         if line:
-            record_list.append(LineRecord(record=line,
-                                          collection='Lines',
-                                          graph_name=f'{line.name}',
-                                          phase='oplever',
-                                          client=self.client,
-                                          project=line.project,
-                                          to_be_integrated=False,
-                                          to_be_normalized=False,
-                                          to_be_splitted_by_year=True,
-                                          percentage=False))
+            record = LineRecord(record=line,
+                                collection='Lines',
+                                graph_name=f'{line.name}',
+                                phase='oplever',
+                                client=self.client,
+                                project=line.project,
+                                to_be_integrated=False,
+                                to_be_normalized=False,
+                                to_be_splitted_by_year=True,
+                                percentage=False)
+        else:
+            record = None
+        return record
 
     def _add_line_to_line_client_aggregate(self, line, line_client=None):
         if line_client and line:
