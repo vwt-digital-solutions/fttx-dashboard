@@ -1,6 +1,7 @@
 from Analyse.Indicators.Indicator import Indicator
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
+from Analyse.Capacity_analysis.Line import concat
 
 
 class LineIndicator(Indicator):
@@ -17,40 +18,29 @@ class LineIndicator(Indicator):
         self.df = None
 
     def perform(self):
+        line_list = []
         record_list = RecordList()
-        line_client_aggregate = None
         for project in self.project_info:
             line_project = self._make_project_line(project)
-            record_list.append(self.to_record(line_project))
-            line_client_aggregate = self._add_line_to_line_client_aggregate(line_project, line_client_aggregate)
-        record_list.append(self.to_record(line_client_aggregate))
+            if line_project:
+                line_list.append(line_project)
+                record_list.append(self.to_record(line_project))
+        line_client = concat(line_list, name=self.indicator_name, project=self.client)
+        line_list.append(line_client)
+        record_list.append(self.to_record(line_client))
         return record_list
 
     def _make_project_line(self):
         return None
 
-    def _add_line_to_line_client_aggregate(self, line, line_client=None):
-        if line_client and line:
-            line_client = line_client.add(line, fill_value=0)
-        elif line:
-            line_client = line
-        if line_client:
-            line_client.name = self.indicator_name
-            line_client.project = self.client
-        return line_client
-
     def to_record(self, line):
-        if line:
-            record = LineRecord(record=line,
-                                collection='Lines',
-                                graph_name=f'{line.name}',
-                                phase='oplever',
-                                client=self.client,
-                                project=line.project,
-                                to_be_integrated=False,
-                                to_be_normalized=False,
-                                to_be_splitted_by_year=True,
-                                percentage=False)
-        else:
-            record = None
-        return record
+        return LineRecord(record=line,
+                          collection='Lines',
+                          graph_name=f'{line.name}',
+                          phase='oplever',
+                          client=self.client,
+                          project=line.project,
+                          to_be_integrated=False,
+                          to_be_normalized=False,
+                          to_be_splitted_by_year=True,
+                          percentage=False)
