@@ -15,50 +15,55 @@ class PrognoseIndicator(LineIndicator):
         self.mean_realisation_rate_client = self._calculate_mean_realisation_rate_client()
 
     def _make_project_line(self, project):
-        # TODO: deze functie straks vervangen met realisatieindicator
-        realisation_rate_line = RealisationIndicator(project=project,
-                                                     project_info=self.project_info,
-                                                     df=self.df,
-                                                     client=self.client).perform().line_project
+        start_date = self.project_info[project][self.type_start_date]
+        total_amount = self.project_info[project][self.type_total_amount]
+        realisation_rate_line = RealisationIndicator(project_info=self.project_info,
+                                                     df=self.df[self.df.project == project],
+                                                     client=self.client,
+                                                     return_lines=True).perform()
+        if realisation_rate_line:
+            realisation_rate_line = realisation_rate_line[0]
+        else:
+            realisation_rate_line = None
+        mean_rate = self.mean_realisation_rate_client
         if realisation_rate_line:
             if len(realisation_rate_line.data) >= 2:
                 mean_rate, _ = realisation_rate_line.integrate().linear_regression(data_partition=0.5)
-            else:
-                mean_rate = self.mean_realisation_rate_client
-            start_date = realisation_rate_line.domain.end
-            distance_to_max_value = realisation_rate_line.distance_to_max_value()
-            if distance_to_max_value:
-                n_days = distance_to_max_value / mean_rate
-                n_days_int = int(n_days)
-                domain = DateDomainRange(begin=start_date, n_days=n_days_int)
-                # small correction so that the predicted amount == total amount on the last day
-                mean_rate_corrected = mean_rate + (n_days - n_days_int) * mean_rate / n_days_int
-                line = realisation_rate_line.append(TimeseriesLine(data=mean_rate_corrected,
-                                                                   domain=domain), skip=1)
-                line.name = self.indicator_name
-                line.max_value = realisation_rate_line.max_value
-                line.project = realisation_rate_line.project
-            else:
-                line = realisation_rate_line
+
+        if realisation_rate_line and total_amount:
+            extrapolated_rate_line = self._make_extrapolated_line(realisation_rate_line, mean_rate, total_amount)
+            line = realisation_rate_line.append(extrapolated_rate_line, skip=1)
+            line.name = self.indicator_name
+            line.max_value = total_amount
+            line.project = project
+        elif realisation_rate_line and not total_amount:
+            line = realisation_rate_line
+        elif not realisation_rate_line and start_date and total_amount:
+            n_days = total_amount / mean_rate
+            n_days_int = int(n_days)
+            domain = DateDomainRange(begin=start_date, n_days=n_days_int - 1)
+            # small correction so that the predicted amount == total amount on the last day
+            mean_rate_corrected = mean_rate + (n_days - n_days_int) * mean_rate / n_days_int
+            line = TimeseriesLine(data=mean_rate_corrected,
+                                  domain=domain,
+                                  name=self.indicator_name,
+                                  max_value=total_amount,
+                                  project=project)
         else:
-            start_date = self.project_info[project][self.type_start_date]
-            total_amount = self.project_info[project][self.type_total_amount]
-            mean_rate = self.mean_realisation_rate_client
-            if start_date and total_amount:
-                n_days = total_amount / mean_rate
-                n_days_int = int(n_days)
-                domain = DateDomainRange(begin=start_date, n_days=n_days_int - 1)
-                # small correction so that the predicted amount == total amount on the last day
-                mean_rate_corrected = mean_rate + (n_days - n_days_int) * mean_rate / n_days_int
-                line = TimeseriesLine(data=mean_rate_corrected,
-                                      domain=domain,
-                                      name=self.indicator_name,
-                                      max_value=total_amount,
-                                      project=project)
-            else:
-                line = None
+            line = None
         return line
 
     def _calculate_mean_realisation_rate_client(self):
         df = self.df[br.hpend(self.df)]
         return df.groupby(['project', 'opleverdatum']).size().mean()
+
+    def _make_extrapolated_line(self, realisation_rate_line, mean_rate, total_amount):
+        start_date = realisation_rate_line.domain.end
+        distance_to_max_value = total_amount - realisation_rate_line.integrate().get_most_recent_point()
+        n_days = distance_to_max_value / mean_rate
+        n_days_int = int(n_days)
+        domain = DateDomainRange(begin=start_date, n_days=n_days_int)
+        # small correction so that the predicted amount == total amount on the last day
+        mean_rate_corrected = mean_rate + (n_days - n_days_int) * mean_rate / n_days_int
+        line = TimeseriesLine(data=mean_rate_corrected, domain=domain)
+        return line
