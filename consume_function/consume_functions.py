@@ -35,7 +35,7 @@ def process_default(records, topic_config):
                                     utc=True)
         df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
 
-    df.to_dict(orient='records')
+    records = df.to_dict(orient='records')
     write_records_to_sql(records=records,
                          topic_config=topic_config)
 
