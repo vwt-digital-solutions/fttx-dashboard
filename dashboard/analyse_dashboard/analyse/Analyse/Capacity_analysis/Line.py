@@ -352,13 +352,13 @@ class PointLine(Line):
         """
         raise NotImplementedError
 
-    def integrate(self):
+    def integrate(self, **kwargs):
         """
         https://en.wikipedia.org/wiki/Numerical_integration
         """
         # Temporarily use old cumsum method to mimic old implementation
         integral = self.make_series().cumsum()
-        return PointLine(data=integral)
+        return PointLine(data=integral, **kwargs)
 
     # TODO: Documentation by Casper van Houten
     def linear_regression(self, data_partition=None):
@@ -377,7 +377,7 @@ class PointLine(Line):
         slope, intersect = np.polyfit(index, data, 1)
         return slope, intersect
 
-    def differentiate(self):
+    def differentiate(self, **kwargs):
         """
         Calculates difference between previous datapoint on line.
 
@@ -386,7 +386,7 @@ class PointLine(Line):
         """
         difference = self.make_series().diff()
         difference[0] = self.make_series()[0]
-        return self.__class__(data=difference)
+        return self.__class__(data=difference, **kwargs)
 
 
 class TimeseriesLine(PointLine):
@@ -421,12 +421,14 @@ class TimeseriesLine(PointLine):
         return filled_data
 
     # TODO: Documentation by Casper van Houten
-    def extrapolate(self, data_partition=None):
+    def extrapolate(self, data_partition=None, **kwargs):
         slope, intercept = self.linear_regression(data_partition)
         domain = DateDomain(self.data.index[0], self.data.index[-1])
         return LinearLine(slope=slope,
                           intercept=intercept,
-                          domain=domain)
+                          domain=domain,
+                          **kwargs
+                          )
 
     def integrate(self):
         """
@@ -436,7 +438,7 @@ class TimeseriesLine(PointLine):
         integral = self.make_series().cumsum()
         return TimeseriesLine(data=integral)
 
-    def append(self, other, skip=0, skip_base=False):
+    def append(self, other, skip=0, skip_base=False, **kwargs):
         """
 
         Args:
@@ -461,22 +463,22 @@ class TimeseriesLine(PointLine):
         if len(intersect):
             raise ValueError(f"Cannot append Lines that have overlapping indices: {intersect}")
 
-        return TimeseriesLine(series.add(other_series, fill_value=0))
+        return TimeseriesLine(series.add(other_series, fill_value=0), **kwargs)
 
-    def translate_x(self, delta=0):
+    def translate_x(self, delta=0, **kwargs):
         data = self.data
         data.index = data.index + timedelta(days=delta)
         domain = self.domain.shift(delta)
-        return TimeseriesLine(data=data, domain=domain)
+        return TimeseriesLine(data=data, domain=domain, **kwargs)
 
-    def slice(self, begin=None, end=None):
+    def slice(self, begin=None, end=None, **kwargs):
         if begin is None:
             begin = self.domain.begin
         if end is None:
             end = self.domain.end
         data = self.make_series()[begin:end]
         domain = DateDomain(begin, end)
-        return TimeseriesLine(data, domain)
+        return TimeseriesLine(data, domain, **kwargs)
 
     def linear_regression(self, data_partition=None):
         """
