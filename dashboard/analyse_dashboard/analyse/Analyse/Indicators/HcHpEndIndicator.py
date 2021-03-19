@@ -2,7 +2,7 @@ import business_rules as br
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Aggregators.DateAggregator import DateAggregator
 import copy
-from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine
+from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine, concat
 from Analyse.Record.LineRecord import LineRecord
 
 
@@ -36,10 +36,14 @@ class HcHpEndIndicator(TimeseriesIndicator, DateAggregator):
         df = self.aggregate(self.apply_business_rules())
         df['ratio'] = (df['HC'] / df['HPend'])
         records = []
+        client_lines = []
         for project, timeseries in df.groupby(level=0)['ratio']:
             if len(timeseries):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
+                client_lines.append(line)
                 records.append(self.to_record(line, project))
+        provider_aggregate_line = concat(client_lines)
+        records.append(self.to_record(provider_aggregate_line))
         return records
 
     def aggregate(self, df):
