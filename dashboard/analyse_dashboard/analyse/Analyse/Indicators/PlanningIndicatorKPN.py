@@ -6,7 +6,7 @@ from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 
 
-class PlanningIndicator(TimeseriesIndicator):
+class PlanningIndicatorKPN(TimeseriesIndicator):
     """
     Base class for the planning indicator
     """
@@ -75,7 +75,7 @@ class PlanningIndicator(TimeseriesIndicator):
         return record
 
 
-class PlanningIndicatorHPEnd(PlanningIndicator):
+class PlanningHPEndIndicatorKPN(PlanningIndicatorKPN):
     """
     Calculates the HPEnd planning for KPN projects
     """
@@ -92,7 +92,7 @@ class PlanningIndicatorHPEnd(PlanningIndicator):
         return df
 
 
-class PlanningIndicatorHPCiviel(PlanningIndicator):
+class PlanningHPCivielIndicatorKPN(PlanningIndicatorKPN):
     """
     Calculates the HPCiviel planning for KPN projects
     """
