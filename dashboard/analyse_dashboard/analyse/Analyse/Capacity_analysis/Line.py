@@ -124,6 +124,9 @@ class Line:
         """
         raise NotImplementedError
 
+    def __len__(self):
+        return len(self.make_series())
+
     def __add__(self, other):
         raise NotImplementedError
 

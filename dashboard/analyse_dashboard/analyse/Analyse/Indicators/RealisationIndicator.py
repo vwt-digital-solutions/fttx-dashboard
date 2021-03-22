@@ -47,23 +47,24 @@ class RealisationIndicator(TimeseriesIndicator):
 
         line_list = []
         record_list = RecordList()
-        for project, timeseries in df.groupby(level=0):
-            if len(timeseries):
-                line_project = TimeseriesLine(data=timeseries.droplevel(0),
-                                              name=self.indicator_name,
-                                              max_value=self.project_info[project][self.type_total_amount],
-                                              project=project)
-                line_list.append(line_project)
-                record_list.append(self.to_record(line_project))
+        if not df.empty:
+            for project, timeseries in df.groupby(level=0):
+                if len(timeseries):
+                    line_project = TimeseriesLine(data=timeseries.droplevel(0),
+                                                  name=self.indicator_name,
+                                                  max_value=self.project_info[project][self.type_total_amount],
+                                                  project=project)
+                    line_list.append(line_project)
+                    record_list.append(self.to_record(line_project))
 
-        if line_list:
             line_client = concat(line_list, name=self.indicator_name, project=self.client)
             line_list.append(line_client)
             record_list.append(self.to_record(line_client))
-        output_list = record_list
+
         if self.return_lines:
-            output_list = line_list
-        return output_list
+            return line_list
+        else:
+            return record_list
 
     def to_record(self, line):
         if line:
