@@ -106,20 +106,21 @@ class KPNDFNTransform(FttXTransform):
             df_hpciviel = df[df.soort_hp == 'hp civiel'].copy()
 
             # transform the planning into pd.Datafram with index(project, date) and columns(hpend, hpciviel)
-            df_hpend_transformed = self._transform_planning_per_kind(df_hpend)
-            df_hpciviel_transformed = self._transform_planning_per_kind(df_hpciviel)
+            df_hpend_transformed = self._transform_planning_per_kind(df=df_hpend,
+                                                                     column_name='hp end')
+            df_hpciviel_transformed = self._transform_planning_per_kind(df=df_hpciviel,
+                                                                        column_name='hp civiel')
 
             # combine hpend and hpciviel and extract totals over all the projects together
             df_transformed_planning = df_hpciviel_transformed.merge(df_hpend_transformed,
                                                                     on=['project', 'date'],
                                                                     how='outer').fillna(0)
-            df_transformed_planning.rename(columns={'number_x': 'hp civiel', 'number_y': 'hp end'}, inplace=True)
 
             total_sum_over_projects = self._get_total_planning_of_all_projects(df_transformed_planning)
             df_transformed_planning = df_transformed_planning.append(total_sum_over_projects)
             self.transformed_data.planning_new = df_transformed_planning
 
-    def _transform_planning_per_kind(self, df):
+    def _transform_planning_per_kind(self, df, column_name):
         """
         This functions transforms a df into the right format. The input is the dataframe which holds the info on
         hpend or on hpciviel. The format returned is a dataframe with double index=[project, date] and
@@ -127,6 +128,7 @@ class KPNDFNTransform(FttXTransform):
 
         Args:
             df: pd.DataFrame: dataframe with the hpend or hpciviel data
+            column_name: str of column name to output
 
         Returns: pd.DataFrame: The planning of all the projects in a dataframe
                                with index=[project, date] and column=planning
@@ -137,6 +139,7 @@ class KPNDFNTransform(FttXTransform):
             if project in df.project.unique():
                 df_project_transformed = self._transform_planning_per_project(df, project)
                 df_transformed = df_transformed.append(df_project_transformed)
+        df_transformed.columns = [column_name]
         return df_transformed
 
     def _transform_planning_per_project(self, df, project):
