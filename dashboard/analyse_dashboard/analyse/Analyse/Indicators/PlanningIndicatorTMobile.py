@@ -18,7 +18,7 @@ class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
         Returns: Sliced dataframe containing only the relevant columns
         """
         df = copy.deepcopy(self.df)
-        df = df[br.has_ingeplanned(df)]
+        df = df[br.has_gepland(df)]
         df = df[['project', 'hasdatum']]
         return df
 
