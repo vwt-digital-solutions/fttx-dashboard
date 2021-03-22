@@ -19,6 +19,7 @@ class RealisationIndicator(TimeseriesIndicator):
         self.project_info = project_info
         self.return_lines = return_lines
         self.type_total_amount = 'huisaansluitingen'
+        self.columns = ['project', 'opleverdatum']
         self.indicator_name = 'RealisationIndicator'
 
     def apply_business_rules(self):
@@ -31,7 +32,7 @@ class RealisationIndicator(TimeseriesIndicator):
         """
         df = copy.deepcopy(self.df)
         df = df[br.hpend(df)]
-        df = df[['project', 'opleverdatum']]
+        df = df[self.columns]
         return df
 
     def perform(self):
@@ -42,7 +43,7 @@ class RealisationIndicator(TimeseriesIndicator):
 
         """
         df = self.aggregate(df=self.apply_business_rules(),
-                            by=['project', 'opleverdatum'],
+                            by=self.columns,
                             agg_function='size')
 
         line_list = []

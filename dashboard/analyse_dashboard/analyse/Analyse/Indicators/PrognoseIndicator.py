@@ -3,7 +3,7 @@ import business_rules as br
 from Analyse.Indicators.LineIndicator import LineIndicator
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange
-from Analyse.Indicators.RealisationIndicator import RealisationIndicator
+from Analyse.Indicators.RealisationHPendIndicator import RealisationHPendIndicator
 
 
 class PrognoseIndicator(LineIndicator):
@@ -18,10 +18,10 @@ class PrognoseIndicator(LineIndicator):
     def _make_project_line(self, project):
         start_date = self.project_info[project][self.type_start_date]
         total_amount = self.project_info[project][self.type_total_amount]
-        realisation_rate_line = RealisationIndicator(project_info=self.project_info,
-                                                     df=self.df[self.df.project == project],
-                                                     client=self.client,
-                                                     return_lines=True).perform()
+        realisation_rate_line = RealisationHPendIndicator(project_info=self.project_info,
+                                                          df=self.df[self.df.project == project],
+                                                          client=self.client,
+                                                          return_lines=True).perform()
         if realisation_rate_line:
             realisation_rate_line = realisation_rate_line[0]
         else:
