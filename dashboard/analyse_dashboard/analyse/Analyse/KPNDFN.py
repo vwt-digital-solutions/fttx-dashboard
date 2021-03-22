@@ -127,7 +127,7 @@ class KPNDFNTransform(FttXTransform):
         column=hpend or hpciviel
 
         Args:
-            df: pd.DataFrame: dataframe with the hpend of hpciviel data
+            df: pd.DataFrame: dataframe with the hpend or hpciviel data
 
         Returns: pd.DataFrame: The planning of all the projects in a dataframe
                                with index=[project, date] and column=planning
