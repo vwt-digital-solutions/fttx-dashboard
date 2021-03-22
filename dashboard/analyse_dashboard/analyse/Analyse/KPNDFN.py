@@ -117,8 +117,7 @@ class KPNDFNTransform(FttXTransform):
 
             total_sum_over_projects = self._get_total_planning_of_all_projects(df_transformed_planning)
             df_transformed_planning = df_transformed_planning.append(total_sum_over_projects)
-
-        self.transformed_data.planning_new = df_transformed_planning
+            self.transformed_data.planning_new = df_transformed_planning
 
     def _transform_planning_per_kind(self, df):
         """
@@ -133,7 +132,6 @@ class KPNDFNTransform(FttXTransform):
                                with index=[project, date] and column=planning
 
         """
-        # TODO: discuss with Andre if we need to pick self.projects or self.project_list
         df_transformed = pd.DataFrame()
         for project in self.projects:
             if project in df.project.unique():
