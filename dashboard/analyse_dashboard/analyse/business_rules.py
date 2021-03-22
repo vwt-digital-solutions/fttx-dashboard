@@ -356,6 +356,19 @@ def has_niet_opgeleverd(df):
             df['hasdatum'].isna())
 
 
+def has_gepland(df):
+    """
+    HAS is gepland when `hasdatum` is not NA
+
+    Args:
+        df (pd.DataFrame): A dataframe containing a hasdatum column with dates.
+
+    Returns:
+         pd.Series: A series of truth values.
+    """
+    return (~df['hasdatum'].isna())
+
+
 def hpend(df, time_delta_days=0):
     """
     A home is hpend (any kind of completed) when it is :meth:`opgeleverd`.
