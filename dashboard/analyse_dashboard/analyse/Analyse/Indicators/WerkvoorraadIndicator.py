@@ -8,6 +8,7 @@ class WerkvoorraadIndicator(DataIndicator, Aggregator):
     """
     Indicator to calculate current werkvoorraad
     """
+
     def apply_business_rules(self):
         """
         Slice all rows that are currently in werkvoorraad, and retrieve
@@ -23,6 +24,7 @@ class WerkvoorraadIndicator(DataIndicator, Aggregator):
         """
         Main loop that applies business rules, aggregates resulting frame,
         and creates records for all projects in dataframe.
+
         Returns: RecordList with werkvoorraad numbers for every project and provider total.
 
         """
