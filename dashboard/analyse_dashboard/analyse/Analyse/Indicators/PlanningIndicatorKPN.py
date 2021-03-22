@@ -46,7 +46,6 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
         data = data[data.columns[0]]
         line_project = TimeseriesLine(data=data,
                                       name=self.indicator_name,
-                                      max_value=data.max(),
                                       project=project)
         return line_project
 
