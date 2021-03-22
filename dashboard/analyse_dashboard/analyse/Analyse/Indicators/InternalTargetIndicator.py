@@ -1,5 +1,6 @@
 import pandas as pd
 import math
+from datetime import timedelta
 from Analyse.Indicators.LineIndicator import LineIndicator
 from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Capacity_analysis.Domain import DateDomainRange
@@ -10,6 +11,7 @@ class InternalTargetIndicator(LineIndicator):
         super().__init__(**kwargs)
         self.type_start_date = 'FTU0'
         self.type_end_date = 'FTU1'
+        self.n_days_shift_end_date = 0
         self.type_speed = 'snelheid (m/week)'
         self.type_total_houses = 'huisaansluitingen'
         self.type_total_meters = 'meters BIS'
@@ -18,6 +20,8 @@ class InternalTargetIndicator(LineIndicator):
     def _make_project_line(self, project):
         start_project = self.project_info[project][self.type_start_date]
         end_project = self.project_info[project][self.type_end_date]
+        if end_project:
+            end_project = (pd.to_datetime(end_project) - timedelta(self.n_days_shift_end_date)).strftime('%Y-%m-%d')
         total_houses = self.project_info[project][self.type_total_houses]
         total_meters = self.project_info[project][self.type_total_meters]
         speed_project = self.project_info[project][self.type_speed]
