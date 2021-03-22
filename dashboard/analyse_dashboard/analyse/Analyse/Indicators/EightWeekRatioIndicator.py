@@ -1,7 +1,7 @@
 import business_rules as br
-from Analyse.Indicators.RatioIndicator import RatioIndicator
 from Analyse.Aggregators.DateAggregator import DateAggregator
 import copy
+from Analyse.Indicators.RatioIndicator import RatioIndicator
 from Analyse.Record.LineRecord import LineRecord
 
 
@@ -13,23 +13,21 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
 
     def apply_business_rules(self):
         """
-        Sets HC and HPend objects as numerator and denominator columns,
-        as we will calculate ratio between these two columns.
+        HC and HPend columns are needed, as we will calculate ratio between these two columns.
         Opleverdatum and project columns are used for aggregations.
 
-        Returns: Sliced dataframe with only relevant columns, including a numerator and denominator.
+        Returns: Sliced dataframe with only relevant columns.
 
         """
         df = copy.deepcopy(self.df)
-        df['denominator'] = br.hpend(df)
-        df['numerator'] = br.hc_opgeleverd(df)
+        df['denominator'] = br.aangesloten_orders_tmobile(df)
+        df['numerator'] = br.aangesloten_orders_tmobile(df, time_window='on time')
         df = df[['numerator', 'denominator', 'project', 'opleverdatum']]
         return df
 
     def to_record(self, line, project):
         """
-        Loops over all projects in the dataframe column-wise, turns them into TimeseriesLines
-        and turns the Lines into records.
+        Turns a Line into a record
 
         Args:
             df: Aggregated dataframe with ratio's.
@@ -39,7 +37,7 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
         """
         return LineRecord(record=line,
                           collection='Lines',
-                          graph_name='HcHpEndRatio',
+                          graph_name='8_week_ratio',
                           phase='oplever',
                           client=self.client,
                           project=project,
