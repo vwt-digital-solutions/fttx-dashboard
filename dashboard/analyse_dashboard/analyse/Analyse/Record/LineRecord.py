@@ -68,6 +68,7 @@ class LineRecord(Record):
 
             line_week = line.resample(freq='W-MON', method=self.resample_method)
             line_month = line.resample(freq='MS', method=self.resample_method)
+            line_year = line.resample(freq='YS', method=self.resample_method)
 
             record_to_write['last_week'] = self._get_value_of_period(line_week, period='last')
             record_to_write['current_week'] = self._get_value_of_period(line_week, period='current')
@@ -80,10 +81,9 @@ class LineRecord(Record):
 
             record_to_write['series_week'] = self.configure_series_to_write(line_week)
             record_to_write['series_month'] = self.configure_series_to_write(line_month)
+            record_to_write['series_year'] = self.configure_series_to_write(line_year)
 
             if self.to_be_splitted_by_year:
-                line_year = line.resample(freq='YS', method=self.resample_method)
-                record_to_write['series_year'] = self.configure_series_to_write(line_year)
                 lines_week = line_week.split_by_year()
                 lines_month = line_month.split_by_year()
                 for line in lines_week:
