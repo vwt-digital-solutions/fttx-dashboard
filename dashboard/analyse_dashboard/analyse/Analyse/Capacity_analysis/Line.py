@@ -525,12 +525,12 @@ class TimeseriesLine(PointLine):
         """
         if aggregate_type == 'series':
             series = self.make_normalised_series(maximum=self.max_value, percentage=True)
-            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum().cumsum()
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).sum().cumsum()
             if index_as_str:
                 aggregate.index = aggregate.index.format()
         elif aggregate_type == 'value_sum':
             series = self.make_series()
-            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).sum()
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).sum()
             period_for_output = self.period_for_output(freq)
             if period_for_output in series.index:
                 aggregate = aggregate[period_for_output]
@@ -538,7 +538,7 @@ class TimeseriesLine(PointLine):
                 aggregate = 0
         elif aggregate_type == 'value_mean':
             series = self.make_series()
-            aggregate = series.resample(freq, loffset=loffset+freq, closed=closed).mean()
+            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).mean()
             period_for_output = self.period_for_output(freq)
             if period_for_output in series.index:
                 aggregate = aggregate[period_for_output]
@@ -655,8 +655,8 @@ class TimeseriesLine(PointLine):
         timeseries_per_year = []
         for year in range(self.get_extreme_period_of_series('year', 'min'),
                           self.get_extreme_period_of_series('year', 'max') + 1):
-            year_serie = series[((series.index >= pd.Timestamp(year=year, month=1, day=1)) &
-                                 (series.index <= pd.Timestamp(year=year, month=12, day=31)))]
+            year_serie = series[((series.index >= pd.Timestamp(year=year, month=1, day=1))
+                                 & (series.index <= pd.Timestamp(year=year, month=12, day=31)))]
             timeseries_per_year.append(TimeseriesLine(year_serie))
         return timeseries_per_year
 

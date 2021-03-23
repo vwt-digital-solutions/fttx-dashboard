@@ -46,22 +46,22 @@ def get_etl_process(client, etl_type='local'):
 
     """
     etl_processes = {
-                    'kpn': {
-                            'local': KPNLocalETL,
-                            'write_to_dev': KPNETL,
-                            'reload': KPNTestETL
-                            },
-                    'tmobile': {
-                                'local': TMobileLocalETL,
-                                'write_to_dev': TMobileETL,
-                                'reload': TMobileTestETL
-                               },
-                    'dfn': {
-                            'local': DFNLocalETL,
-                            'write_to_dev': DFNETL,
-                            'reload': DFNTestETL
-                           }
-                    }
+        'kpn': {
+            'local': KPNLocalETL,
+            'write_to_dev': KPNETL,
+            'reload': KPNTestETL
+        },
+        'tmobile': {
+            'local': TMobileLocalETL,
+            'write_to_dev': TMobileETL,
+            'reload': TMobileTestETL
+        },
+        'dfn': {
+            'local': DFNLocalETL,
+            'write_to_dev': DFNETL,
+            'reload': DFNTestETL
+        }
+    }
     return etl_processes[client][etl_type]
 
 

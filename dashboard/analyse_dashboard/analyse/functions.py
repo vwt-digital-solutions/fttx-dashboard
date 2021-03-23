@@ -510,13 +510,14 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
         else:  # most projects have not finished at FTU1 date, adding 100 days to axis:
             FTU1_date[key] = (pd.to_datetime(FTU1_date[key]) + pd.Timedelta(days=100)).strftime('%Y-%m-%d')
 
-        fig = {'data': [{
-            'x': list(x_d.strftime('%Y-%m-%d')),
-            'y': list(y_prog_l[key]),
-            'mode': 'lines',
-            'line': dict(color=colors['yellow']),
-            'name': 'Voorspelling',
-        }],
+        fig = {
+            'data': [{
+                'x': list(x_d.strftime('%Y-%m-%d')),
+                'y': list(y_prog_l[key]),
+                'mode': 'lines',
+                'line': dict(color=colors['yellow']),
+                'name': 'Voorspelling',
+            }],
             'layout': {
                 'xaxis': {'title': 'Opleverdatum [d]', 'range': [FTU0_date[key], FTU1_date[key]]},
                 'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
@@ -618,30 +619,32 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, current_werkvoo
                              'zeroline': False},
                    'showlegend': False,
                    'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
-                   'annotations': [dict(x=-12.5, y=25, ax=0, ay=40, xref="x", yref="y",
-                                        text='Verhoog schouw of BIS capaciteit', alignment='left',
-                                        showarrow=True, arrowhead=2)] +
-                                  [dict(x=12.5, y=25, ax=0, ay=40, xref="x", yref="y",
-                                        text='Verhoog schouw of BIS capaciteit', alignment='left',
-                                        showarrow=True, arrowhead=2)] +
-                                  [dict(x=-13.5, y=160, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verhoog HAS capaciteit',
-                                        alignment='left', showarrow=True, arrowhead=2)] +
-                                  [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                                        text='Verruim klantafspraak',
-                                        alignment='left', showarrow=True, arrowhead=2)] +
-                                  [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verlaag HAS capcaciteit',
-                                        alignment='right', showarrow=True, arrowhead=2)] +
-                                  [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                                        text='Verscherp klantafspraak',
-                                        alignment='right', showarrow=True, arrowhead=2)] +
-                                  [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
-                                        text='Verlaag schouw of BIS capaciteit', alignment='left',
-                                        showarrow=True, arrowhead=2)] +
-                                  [dict(x=-12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
-                                        text='Verlaag schouw of BIS capaciteit', alignment='left',
-                                        showarrow=True, arrowhead=2)],
+                   'annotations': (
+                       [dict(x=-12.5, y=25, ax=0, ay=40, xref="x", yref="y",
+                             text='Verhoog schouw of BIS capaciteit', alignment='left',
+                             showarrow=True, arrowhead=2)]
+                       + [dict(x=12.5, y=25, ax=0, ay=40, xref="x", yref="y",
+                               text='Verhoog schouw of BIS capaciteit', alignment='left',
+                               showarrow=True, arrowhead=2)]
+                       + [dict(x=-13.5, y=160, ax=-100, ay=0, xref="x", yref="y",
+                               text='Verhoog HAS capaciteit',
+                               alignment='left', showarrow=True, arrowhead=2)]
+                       + [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
+                               text='Verruim klantafspraak',
+                               alignment='left', showarrow=True, arrowhead=2)]
+                       + [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
+                               text='Verlaag HAS capcaciteit',
+                               alignment='right', showarrow=True, arrowhead=2)]
+                       + [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
+                               text='Verscherp klantafspraak',
+                               alignment='right', showarrow=True, arrowhead=2)]
+                       + [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
+                               text='Verlaag schouw of BIS capaciteit', alignment='left',
+                               showarrow=True, arrowhead=2)]
+                       + [dict(x=-12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
+                               text='Verlaag schouw of BIS capaciteit', alignment='left',
+                               showarrow=True, arrowhead=2)],
+                   ),
                    'margin': {'l': 60, 'r': 15, 'b': 40, 't': 40},
                    'plot_bgcolor': colors['plot_bgcolor'],
                    'paper_bgcolor': colors['paper_bgcolor'],
@@ -964,7 +967,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['101'] = (df.kabelid.isna() & ~df.opleverdatum.isna() & (df.postcode.isna() | df.huisnummer.isna()))
     business_rules['102'] = (df.plandatum.isna())
     business_rules['103'] = (
-            df.opleverdatum.isna() & df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99']))
+        df.opleverdatum.isna() & df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99']))
     business_rules['104'] = (df.opleverstatus.isna())
     # business_rules['114'] = (df.toestemming.isna())
     business_rules['115'] = business_rules['118'] = (df.soort_bouw.isna())  # soort_bouw hoort bij?
@@ -974,23 +977,23 @@ def error_check_FCBC(df: pd.DataFrame):
 
     business_rules['120'] = no_errors_series  # doorvoerafhankelijk niet aanwezig
     business_rules['121'] = (
-            (df.postcode.isna() & ~df.huisnummer.isna()) | (~df.postcode.isna() & df.huisnummer.isna()))
+        (df.postcode.isna() & ~df.huisnummer.isna()) | (~df.postcode.isna() & df.huisnummer.isna()))
     business_rules['122'] = (
         ~(
-                (
-                        df.kast.isna() &
-                        df.kastrij.isna() &
-                        df.odfpos.isna() &
-                        df.catvpos.isna() &
-                        df.odf.isna()) |
-                (
-                        ~df.kast.isna() &
-                        ~df.kastrij.isna() &
-                        ~df.odfpos.isna() &
-                        ~df.catvpos.isna() &
-                        ~df.areapop.isna() &
-                        ~df.odf.isna()
-                )
+            (
+                df.kast.isna()
+                & df.kastrij.isna()
+                & df.odfpos.isna()
+                & df.catvpos.isna()
+                & df.odf.isna())
+            | (
+                ~df.kast.isna()
+                & ~df.kastrij.isna()
+                & ~df.odfpos.isna()
+                & ~df.catvpos.isna()
+                & ~df.areapop.isna()
+                & ~df.odf.isna()
+            )
         )
     )  # kloppen deze velden?  (kast, kastrij, odfpos)
     business_rules['123'] = (df.projectcode.isna())
@@ -1063,7 +1066,7 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['702'] = (~df.odf.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99']))
     business_rules['707'] = no_errors_series  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
     business_rules['708'] = (df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) | (
-            df.opleverstatus.isin(['91']) & ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))
+        df.opleverstatus.isin(['91']) & ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))
     # business_rules['709'] = ((df.ODF + df.ODFpos).duplicated(keep='last'))  # klopt dit?
     business_rules['710'] = ~df.kabelid.isna() & ~df.adres.isna() & (df.kabelid + df.adres).duplicated(keep=False)
     # business_rules['711'] = (~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999']))  # wanneer PoP 999?
@@ -1076,8 +1079,8 @@ def error_check_FCBC(df: pd.DataFrame):
     business_rules['719'] = no_errors_series  # kan alleen gecheckt worden met geschiedenis
     business_rules['721'] = no_errors_series  # niet te checken, geen Doorvoerafhankelijkheid in FC dump
     business_rules['723'] = (df.redenna.isin(['R15', 'R16', 'R17']) & ~df.opleverstatus.isin(['90'])) | (
-            df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(['91'])) | (
-                                    df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))
+        df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(['91'])) | (
+        df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))
     business_rules['724'] = (~df.opleverdatum.isna() & df.redenna.isin(['R0', 'R19', 'R22']))
     business_rules['725'] = no_errors_series  # geen zicht op vraagbundelingsproject of niet
     business_rules['726'] = no_errors_series  # niet te checken, geen HLopleverdatum aanwezig
@@ -1745,7 +1748,7 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
         data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
         if not data[~data.isna()].empty:
             data_counted = (data_filler + data.resample(freq, closed=closed_side, label=label_side).sum()[
-                                          period[0]:period[1]]).fillna(0)
+                            period[0]:period[1]]).fillna(0)
         else:
             data_counted = data_filler
     else:

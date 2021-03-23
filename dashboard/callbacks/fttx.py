@@ -151,15 +151,17 @@ for client in config.client_config.keys():  # noqa: C901
         redenna_dict = dict(sorted(redenna_by_period.get(last_day_of_period, dict()).items()))
 
         if redenna_dict:
-            return pie_chart.get_html(labels=list(redenna_dict.keys()),
-                                      values=list(redenna_dict.values()),
-                                      title=title_text,
-                                      colors=[
-                                         colors['green'],
-                                         colors['yellow'],
-                                         colors['red'],
-                                         colors['vwt_blue'],
-                                     ])
+            return pie_chart.get_html(
+                labels=list(redenna_dict.keys()),
+                values=list(redenna_dict.values()),
+                title=title_text,
+                colors=[
+                    colors['green'],
+                    colors['yellow'],
+                    colors['red'],
+                    colors['vwt_blue'],
+                ]
+            )
         else:
             return no_graph(title=title_text, text='No Data')
 
@@ -273,10 +275,10 @@ for client in config.client_config.keys():  # noqa: C901
             redenna_pie = redenna_status_pie.get_fig(redenna_counts,
                                                      title="Opgegeven reden na",
                                                      colors=[
-                                                        colors['green'],
-                                                        colors['yellow'],
-                                                        colors['red'],
-                                                        colors['vwt_blue']
+                                                         colors['green'],
+                                                         colors['yellow'],
+                                                         colors['red'],
+                                                         colors['vwt_blue']
                                                      ])
             if click_filter:
                 download_url = f'/dash/project_redenna_download?project={project_name}&{urlencode(click_filter)}'

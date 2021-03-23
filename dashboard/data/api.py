@@ -26,7 +26,7 @@ def get(path):
         return response.json().get('results')
 
 
-@cache.memoize(timeout=60*10)
+@cache.memoize(timeout=60 * 10)
 def cachable_request(url: str, headers: dict) -> Response:
     """
     A cacheable request is a wrapper around the request.get() that uses the url and the headers as caching key

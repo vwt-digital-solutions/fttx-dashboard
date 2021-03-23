@@ -91,8 +91,8 @@ def get_ftu_table(client):
     ftu_data = collection.get_document(collection="ProjectInfo", graph_name="project_dates", client=client)
     table = ftu_table(ftu_data, client)
     return html.Div(
-            table,
-            id=f'FTU_table_c_{client}',
-            className="pretty_container column",
-            hidden=False,
-        )
+        table,
+        id=f'FTU_table_c_{client}',
+        className="pretty_container column",
+        hidden=False,
+    )

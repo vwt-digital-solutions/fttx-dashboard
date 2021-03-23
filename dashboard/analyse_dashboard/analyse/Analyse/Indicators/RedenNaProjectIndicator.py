@@ -22,9 +22,9 @@ class RedenNaProjectDataIndicator(TimeseriesIndicator, PieChart):
 
         """
         aggregate = self.aggregate(
-                                    df=self.apply_business_rules(),
-                                    by=["project", "cluster_redenna"]
-                                  )
+            df=self.apply_business_rules(),
+            by=["project", "cluster_redenna"]
+        )
         return self.to_record(aggregate)
 
     def to_record(self, df):
