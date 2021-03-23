@@ -65,14 +65,15 @@ class BISTransform(Transform):
         df_renamed = pd.DataFrame()
         df_renamed = df_renamed.append(self.extracted_data.df, ignore_index=True)
         df_renamed = df_renamed.rename(columns={
-                                'Kalender weeknummer': 'date',
-                                '# Meters BIS geul': 'meters_bis_geul',
-                                '# Meters tuinboringen': 'meters_tuinboring',
-                                '# Huisaansluitingen': 'aantal_has',
-                                '# BIS ploegen': 'aantal_bis_ploegen',
-                                '# Tuinploegen': 'aantal_tuin_ploegen',
-                                '# HAS ploegen': 'aantal_has_ploegen',
-                                'Bijzonderheden': 'bijzonderheden'})
+            'Kalender weeknummer': 'date',
+            '# Meters BIS geul': 'meters_bis_geul',
+            '# Meters tuinboringen': 'meters_tuinboring',
+            '# Huisaansluitingen': 'aantal_has',
+            '# BIS ploegen': 'aantal_bis_ploegen',
+            '# Tuinploegen': 'aantal_tuin_ploegen',
+            '# HAS ploegen': 'aantal_has_ploegen',
+            'Bijzonderheden': 'bijzonderheden'
+        })
 
         self.transformed_data.df = df_renamed
 
@@ -104,8 +105,8 @@ class BISTransform(Transform):
         self.transformed_data.df = self.transformed_data.df.set_index(['project', 'date'])
 
         df_date = pd.date_range(start=self.transformed_data.df.index.get_level_values(1).min(),
-                                end=(self.transformed_data.df.index.get_level_values(1).max() +
-                                     pd.to_timedelta(6, unit='d')),
+                                end=(self.transformed_data.df.index.get_level_values(1).max()
+                                     + pd.to_timedelta(6, unit='d')),
                                 freq='D')
         self.transformed_data.df = self.transformed_data.df.reindex(df_date, fill_value=None, level=1)
 

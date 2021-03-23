@@ -78,7 +78,7 @@ def test_opgeleverd_with_date(df, time_delta_days):
     if not df.empty:
         df['opgeleverd'] = opgeleverd
         assert (
-                (~df.opleverdatum.isna() & (df.opleverdatum <= time_point)) == df.opgeleverd
+            (~df.opleverdatum.isna() & (df.opleverdatum <= time_point)) == df.opgeleverd
         ).all()
 
 
@@ -90,7 +90,7 @@ def test_is_date_set(test_series: pd.Series, time_delta_days: int):
     assert len(test_series) == len(opgeleverd)
     if not test_series.empty:
         assert (
-                (~test_series.isna() & (test_series <= time_point)) == opgeleverd
+            (~test_series.isna() & (test_series <= time_point)) == opgeleverd
         ).all()
 
 

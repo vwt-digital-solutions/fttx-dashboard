@@ -174,8 +174,8 @@ class LineRecord(Record):
         weekday = pd.Timestamp.today().weekday()
         timestamp_4_weeks = pd.Timestamp.today() - relativedelta(days=weekday) + relativedelta(weeks=4)
         line_week_series = line_week.make_series()
-        value_next_4_weeks = line_week_series[(line_week_series.index > pd.Timestamp.today()) &
-                                              (line_week_series.index <= timestamp_4_weeks)].sum()
+        value_next_4_weeks = line_week_series[(line_week_series.index > pd.Timestamp.today())
+                                              & (line_week_series.index <= timestamp_4_weeks)].sum()
         return value_next_4_weeks
 
     @staticmethod

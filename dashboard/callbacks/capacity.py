@@ -47,11 +47,8 @@ for client in config.client_config.keys():  # noqa: C901
         [
             Input(f'capacity-phase-{phase}-{client}', 'n_clicks') for phase in
             config.capacity_phases.keys()
-        ] +
-        [
-            Input(f"frequency-selector-{client}", 'value'),
-            Input(f'project-dropdown-{client}', 'value')
-        ],
+        ] + [Input(f"frequency-selector-{client}", 'value'),
+             Input(f'project-dropdown-{client}', 'value')],
         [
             State(f"memory_phase_{client}", "data")
         ]

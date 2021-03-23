@@ -18,8 +18,7 @@ def indicator(value, previous_value=None, title="", sub_title="", font_color=Non
     indicator_args = dict(
         value=value,
         number=dict(valueformat=".2%") if percentage else dict(valueformat=':'),
-        title={
-                "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"},
+        title={"text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"},
         mode='number'
     )
 

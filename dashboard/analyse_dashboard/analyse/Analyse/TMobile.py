@@ -99,40 +99,40 @@ class TMobileAnalyse(FttXAnalyse):
         # Starting with orders that are patch only, followed by HC aanleg:
         function_dict = {
             'openstaand_patch_only_on_time': [
-             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='patch only')][
-                ['creation', 'project', 'cluster_redenna']],
-             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='patch only', time_delta_days=7)][
-                ['creation', 'project']]
+                df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='patch only')][
+                    ['creation', 'project', 'cluster_redenna']],
+                df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='patch only', time_delta_days=7)][
+                    ['creation', 'project']]
             ],
             'openstaand_patch_only_limited': [
-             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='patch only')][
-                ['creation', 'project', 'cluster_redenna']],
-             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='patch only', time_delta_days=7)][
-                ['creation', 'project']]
+                df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='patch only')][
+                    ['creation', 'project', 'cluster_redenna']],
+                df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='patch only', time_delta_days=7)][
+                    ['creation', 'project']]
             ],
             'openstaand_patch_only_late': [
-             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='patch only')][
-                ['creation', 'project', 'cluster_redenna']],
-             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='patch only', time_delta_days=7)][
-                ['creation', 'project']]
+                df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='patch only')][
+                    ['creation', 'project', 'cluster_redenna']],
+                df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='patch only', time_delta_days=7)][
+                    ['creation', 'project']]
             ],
             'openstaand_hc_aanleg_on_time': [
-             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='hc aanleg')][
-                ['creation', 'project', 'cluster_redenna']],
-             df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='hc aanleg', time_delta_days=7)][
-                ['creation', 'project']]
+                df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='hc aanleg')][
+                    ['creation', 'project', 'cluster_redenna']],
+                df[br.openstaande_orders_tmobile(df=df, time_window='on time', order_type='hc aanleg', time_delta_days=7)][
+                    ['creation', 'project']]
             ],
             'openstaand_hc_aanleg_limited': [
-             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='hc aanleg')][
-                ['creation', 'project', 'cluster_redenna']],
-             df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='hc aanleg', time_delta_days=7)][
-                ['creation', 'project']]
+                df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='hc aanleg')][
+                    ['creation', 'project', 'cluster_redenna']],
+                df[br.openstaande_orders_tmobile(df=df, time_window='limited', order_type='hc aanleg', time_delta_days=7)][
+                    ['creation', 'project']]
             ],
             'openstaand_hc_aanleg_late': [
-             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='hc aanleg')][
-                ['creation', 'project', 'cluster_redenna']],
-             df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='hc aanleg', time_delta_days=7)][
-                ['creation', 'project']]
+                df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='hc aanleg')][
+                    ['creation', 'project', 'cluster_redenna']],
+                df[br.openstaande_orders_tmobile(df=df, time_window='late', order_type='hc aanleg', time_delta_days=7)][
+                    ['creation', 'project']]
             ]
         }
 
