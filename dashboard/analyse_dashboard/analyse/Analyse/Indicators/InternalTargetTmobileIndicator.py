@@ -58,7 +58,6 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
                     record_list.append(self.to_record(line_project))
 
             line_client = concat(line_list, name=self.indicator_name, project=self.client)
-            line_list.append(line_client)
             record_list.append(self.to_record(line_client))
 
         return record_list

@@ -116,8 +116,6 @@ class KPNDFNTransform(FttXTransform):
                                                                     on=['project', 'date'],
                                                                     how='outer').fillna(0)
 
-            total_sum_over_projects = self._get_total_planning_of_all_projects(df_transformed_planning)
-            df_transformed_planning = df_transformed_planning.append(total_sum_over_projects)
             self.transformed_data.planning_new = df_transformed_planning
 
     def _transform_planning_per_kind(self, df, column_name):
@@ -157,22 +155,6 @@ class KPNDFNTransform(FttXTransform):
         df_project['project'] = project
         df_project = df_project.groupby(['project', 'date']).sum()
         return df_project
-
-    def _get_total_planning_of_all_projects(self, df):
-        """
-
-        Args:
-            df: pd.DataFrame: The planning of all the projects in a dataframe with index=[project, date]
-                and columns=[hpend, hpciviel]
-
-        Returns: pd.DataFrame: The combined planning of all the project in a dataframe with index[project, data]
-                 and columns=[hpend, hpciviel]
-
-        """
-        total_sum = df.reset_index().groupby('date')[['hp civiel', 'hp end']].sum().reset_index()
-        total_sum['project'] = 'total'
-        total_sum = total_sum.groupby(['project', 'date']).sum()
-        return total_sum
 
 
 # TODO: Documentation by Andre van Turnhout

@@ -4,6 +4,7 @@ from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
+from Analyse.Capacity_analysis.Line import concat
 
 
 class PlanningIndicatorKPN(TimeseriesIndicator):
@@ -11,9 +12,9 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
     Base class for the planning indicator
     """
 
-    def __init__(self, indicator_name, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.indicator_name = indicator_name
+        self.indicator_name = 'PlanningIndicatorKPN'
 
     def perform(self):
         """
@@ -24,12 +25,19 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
         """
         df = self.apply_business_rules()
 
+        line_list = []
         record_list = RecordList()
-        for project, df in df.groupby(level=0):
-            if len(df):
-                line_project = self._make_project_line(project=project,
-                                                       df=df)
-                record_list.append(self.to_record(line_project))
+        if not df.empty:
+            for project, df in df.groupby(level=0):
+                if len(df):
+                    line_project = self._make_project_line(project=project,
+                                                           df=df)
+                    line_list.append(line_project)
+                    record_list.append(self.to_record(line_project))
+
+            line_client = concat(line_list, name=self.indicator_name, project=self.client)
+            record_list.append(self.to_record(line_client))
+
         return record_list
 
     def _make_project_line(self, project, df):
@@ -79,6 +87,10 @@ class PlanningHPEndIndicatorKPN(PlanningIndicatorKPN):
     Calculates the HPEnd planning for KPN projects
     """
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.indicator_name = 'PlanningHPEndIndicatorKPN'
+
     def apply_business_rules(self):
         """
         Only the 'hp end' column is needed
@@ -95,6 +107,10 @@ class PlanningHPCivielIndicatorKPN(PlanningIndicatorKPN):
     """
     Calculates the HPCiviel planning for KPN projects
     """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.indicator_name = 'PlanningHPCivielIndicatorKPN'
 
     def apply_business_rules(self):
         """
