@@ -5,7 +5,7 @@ from Analyse.Indicators.RatioIndicator import RatioIndicator
 from Analyse.Record.LineRecord import LineRecord
 
 
-class HcHpEndIndicator(RatioIndicator, DateAggregator):
+class EightWeekRatioIndicator(RatioIndicator, DateAggregator):
     """
     Indicator to calculate HC/HPend ratios cumulative over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
@@ -41,5 +41,5 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
                           phase='oplever',
                           client=self.client,
                           project=project,
-                          to_be_integrated=True,
-                          to_be_splitted_by_year=True)
+                          resample_method='mean',
+                          to_be_integrated=True)

@@ -1,6 +1,6 @@
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Aggregators.DateAggregator import DateAggregator
-from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine, concat
+from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine
 
 
 class RatioIndicator(TimeseriesIndicator, DateAggregator):
@@ -28,9 +28,14 @@ class RatioIndicator(TimeseriesIndicator, DateAggregator):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
                 client_lines.append(line)
                 records.append(self.to_record(line, project))
-        provider_aggregate_line = concat(client_lines)
-        records.append(self.to_record(provider_aggregate_line))
+        records.append(self.to_record(self._make_provider_level_line(df), 'overview'))
         return records
+
+    @staticmethod
+    def _make_provider_level_line(df):
+        df = df.droplevel(0).groupby('opleverdatum').sum()
+        ratio = df['numerator'] / df['denominator']
+        return TimeseriesDistanceLine(ratio).differentiate()
 
     def aggregate(self, df):
         """

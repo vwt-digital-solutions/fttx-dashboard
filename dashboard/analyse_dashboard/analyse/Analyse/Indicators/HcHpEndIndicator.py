@@ -43,5 +43,4 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
                           phase='oplever',
                           client=self.client,
                           project=project,
-                          to_be_integrated=True,
-                          to_be_splitted_by_year=True)
+                          to_be_integrated=True)
