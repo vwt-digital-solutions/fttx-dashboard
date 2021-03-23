@@ -5,7 +5,7 @@ from Analyse.Indicators.RatioIndicator import RatioIndicator
 from Analyse.Record.LineRecord import LineRecord
 
 
-class EightWeekRatioIndicator(RatioIndicator, DateAggregator):
+class TwelveWeekRatioIndicator(RatioIndicator, DateAggregator):
     """
     Indicator to calculate HC/HPend ratios cumulative over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
