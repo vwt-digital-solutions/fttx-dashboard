@@ -1,3 +1,4 @@
+import copy
 from Analyse.Indicators.ActualIndicator import ActualIndicator
 import business_rules as br
 from Analyse.Aggregators.Aggregator import Aggregator
@@ -5,11 +6,11 @@ from Analyse.Aggregators.Aggregator import Aggregator
 
 class WerkvoorraadIndicator(ActualIndicator, Aggregator):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.graph_name = 'werkvoorraad'
 
     def apply_business_rules(self):
@@ -20,5 +21,6 @@ class WerkvoorraadIndicator(ActualIndicator, Aggregator):
         Returns: DataFrame with relevant rows and columns.
 
         """
-        df = self.df[br.has_werkvoorraad(self.df)]
-        return df[['project', 'sleutel']]
+        df = copy.deepcopy(self.df)
+        df['werkvoorraad'] = br.has_werkvoorraad(df)
+        return df[['project', 'werkvoorraad']]

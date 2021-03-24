@@ -102,6 +102,55 @@ def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
             & (df.type.isin(['AANLEG', 'Aanleg'])))
 
 
+def open_order_tmobile(df: pd.DataFrame):
+    """
+        Used to calculate the openstaande orders for tmobile, based on the business rules: \n
+    -   Is the df row status not equal to CANCELLED, TO_BE_CANCELLED or CLOSED?
+    -   Is the df row type equal to AANLEG?
+    Args:
+         df (pd.DataFrame): A dataframe containing a status, type and creation column, of which creation contains dates.
+
+    Returns: pd.Series: A series of truth values.
+
+    """
+    return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
+            &
+            (df.type.isin(['AANLEG', 'Aanleg'])))
+
+
+def add_time_window(df, mask, time_window, time_delta_days=0):
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    if time_window == 'on time':
+        mask = (mask
+                &
+                ((time_point - df['creation']).dt.days <= 56))
+    elif time_window == 'limited':
+        mask = (mask
+                &
+                (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
+    elif time_window == 'late':
+        mask = (mask
+                &
+                ((time_point - df['creation']).dt.days > 84))
+    return mask
+
+
+def hc_patch_only_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
+    mask = (open_order_tmobile(df) &
+            (df.plan_type == 'Zonder klantafspraak'))
+    if time_window:
+        mask = add_time_window(df, mask, time_window, time_delta_days)
+    return mask
+
+
+def hc_aanleg_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
+    mask = (open_order_tmobile(df) &
+            (df.plan_type != 'Zonder klantafspraak'))
+    if time_window:
+        mask = add_time_window(df, mask, time_window, time_delta_days)
+    return mask
+
+
 def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
                                time_window: str = None, order_type: str = None) -> pd.Series:
     """

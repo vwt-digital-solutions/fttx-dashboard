@@ -5,7 +5,8 @@ from Analyse.Record.Record import Record
 
 class ActualIndicator(DataIndicator, Aggregator):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.collection = 'Data'
         self.graph_name = None
 
@@ -19,16 +20,17 @@ class ActualIndicator(DataIndicator, Aggregator):
 
         """
         df = self.aggregate(df=self.apply_business_rules(),
-                            by='project')['sleutel']
+                            by='project',
+                            agg_function='sum')
         return self.to_record(df)
 
     def to_record(self, series):
         if not self.graph_name:
             raise NotImplementedError("Please use child class, graph name is derived from there.")
 
-        result_dict = series.to_dict()
+        result_dict = series.to_dict('index')
         result_dict['overview'] = series.sum()
         return Record(record=result_dict,
                       collection=self.collection,
                       client=self.client,
-                      graph_name='HCopen')
+                      graph_name=self.graph_name)
