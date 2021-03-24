@@ -3,7 +3,7 @@ from Analyse.PieChart import PieChart
 from Analyse.Record.DictRecord import DictRecord
 
 
-class RedenNaProjectDataIndicator(TimeseriesIndicator, PieChart):
+class RedenNaProjectIndicator(TimeseriesIndicator, PieChart):
     """
     Calculates reden na pie chart for every project
     """

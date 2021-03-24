@@ -34,9 +34,10 @@ class FttXIndicatorAnalyse(FttXBase):
 class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
 
     def analyse(self):
+        super().analyse()
         df = self.transformed_data.df
         self.records.append(WerkvoorraadIndicator(df=df, client=self.client))
-        self.records.append(InternalTargetIndicator(df=df, client=self.client))
+        self.records.append(InternalTargetIndicator(project_info=self.project_info, client=self.client))
 
 
 class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
@@ -54,9 +55,9 @@ class KPNDFNIndicatorETL(FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNDF
     ...
 
 
-class TmobileIndicatorETL(FttXIndicatorAnalyse, TMobileTransform, TmobileIndicatorAnalyse):
+class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAnalyse):
     ...
 
 
-class KPNIndicatorTestETL(FttXTestLoad, KPNDFNIndicatorAnalyse):
+class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNDFNIndicatorAnalyse):
     ...
