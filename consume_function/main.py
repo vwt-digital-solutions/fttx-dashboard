@@ -12,7 +12,7 @@ def handler(request):
         logging.info(f'Read message from subscription {subscription}')
         if topic_config.get('name') == 'fiberconnect':
             process_fiberconnect(records, topic_config)
-        elif topic_config.get('name') == 'asbuilt-meters' or topic_config.get('name') == 'baan-realisation':
+        elif topic_config.get('name') in ['asbuilt-meters', 'baan-realisation', 'baan_budget']:
             process_default(records, topic_config)
 
     except Exception as e:
