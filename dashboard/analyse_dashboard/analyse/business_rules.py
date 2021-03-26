@@ -114,38 +114,34 @@ def open_order_tmobile(df: pd.DataFrame):
 
     """
     return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
-            &
-            (df.type.isin(['AANLEG', 'Aanleg'])))
+            & (df.type.isin(['AANLEG', 'Aanleg'])))
 
 
 def add_time_window(df, mask, time_window, time_delta_days=0):
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
     if time_window == 'on time':
         mask = (mask
-                &
-                ((time_point - df['creation']).dt.days <= 56))
+                & ((time_point - df['creation']).dt.days <= 56))
     elif time_window == 'limited':
         mask = (mask
-                &
-                (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
+                & (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
     elif time_window == 'late':
         mask = (mask
-                &
-                ((time_point - df['creation']).dt.days > 84))
+                & ((time_point - df['creation']).dt.days > 84))
     return mask
 
 
 def hc_patch_only_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
-    mask = (open_order_tmobile(df) &
-            (df.plan_type == 'Zonder klantafspraak'))
+    mask = (open_order_tmobile(df)
+            & (df.plan_type == 'Zonder klantafspraak'))
     if time_window:
         mask = add_time_window(df, mask, time_window, time_delta_days)
     return mask
 
 
 def hc_aanleg_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
-    mask = (open_order_tmobile(df) &
-            (df.plan_type != 'Zonder klantafspraak'))
+    mask = (open_order_tmobile(df)
+            & (df.plan_type != 'Zonder klantafspraak'))
     if time_window:
         mask = add_time_window(df, mask, time_window, time_delta_days)
     return mask
