@@ -1,6 +1,7 @@
-from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Aggregators.DateAggregator import DateAggregator
 from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine
+from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
+from Analyse.Record.RecordList import RecordList
 
 
 class RatioIndicator(TimeseriesIndicator, DateAggregator):
@@ -20,21 +21,21 @@ class RatioIndicator(TimeseriesIndicator, DateAggregator):
 
         """
         df = self.aggregate(self.apply_business_rules())
-        df['ratio'] = (df['numerator'] / df['denominator'])
-        records = []
+        df["ratio"] = df["numerator"] / df["denominator"]
+        records = RecordList()
         client_lines = []
-        for project, timeseries in df.groupby(level=0)['ratio']:
+        for project, timeseries in df.groupby(level=0)["ratio"]:
             if len(timeseries):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
                 client_lines.append(line)
                 records.append(self.to_record(line, project))
-        records.append(self.to_record(self._make_provider_level_line(df), 'overview'))
+        records.append(self.to_record(self._make_provider_level_line(df), "overview"))
         return records
 
     @staticmethod
     def _make_provider_level_line(df):
-        df = df.droplevel(0).groupby('opleverdatum').sum()
-        ratio = df['numerator'] / df['denominator']
+        df = df.droplevel(0).groupby("opleverdatum").sum()
+        ratio = df["numerator"] / df["denominator"]
         return TimeseriesDistanceLine(ratio).differentiate()
 
     def aggregate(self, df):
@@ -50,7 +51,9 @@ class RatioIndicator(TimeseriesIndicator, DateAggregator):
         Returns: Aggregated dataframe
 
         """
-        summed_df = df.groupby(['project', 'opleverdatum']).agg({'numerator': 'sum', 'denominator': 'sum'})
+        summed_df = df.groupby(["project", "opleverdatum"]).agg(
+            {"numerator": "sum", "denominator": "sum"}
+        )
         return summed_df.groupby(level=0).cumsum()
 
     def to_record(self, line, project):
