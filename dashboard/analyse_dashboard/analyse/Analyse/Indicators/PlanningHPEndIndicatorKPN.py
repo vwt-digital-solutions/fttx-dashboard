@@ -10,7 +10,7 @@ class PlanningHPEndIndicatorKPN(PlanningIndicatorKPN):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.indicator_name = "PlanningHPEndIndicatorKPN"
+        self.indicator_name = "PlanningHPendIndicatorKPN"
 
     def apply_business_rules(self):
         """

@@ -29,7 +29,9 @@ class RatioIndicator(TimeseriesIndicator, DateAggregator):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
                 client_lines.append(line)
                 records.append(self.to_record(line, project))
-        records.append(self.to_record(self._make_provider_level_line(df), "overview"))
+        records.append(
+            self.to_record(self._make_provider_level_line(df), "client_aggregate")
+        )
         return records
 
     @staticmethod

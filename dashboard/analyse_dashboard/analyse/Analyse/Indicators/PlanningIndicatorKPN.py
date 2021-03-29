@@ -32,7 +32,7 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
                     record_list.append(self.to_record(line_project))
 
             line_client = concat(
-                line_list, name=self.indicator_name, project=self.client
+                line_list, name=self.indicator_name, project="client_aggregate"
             )
             record_list.append(self.to_record(line_client))
 
@@ -67,7 +67,7 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
         if line:
             record = LineRecord(
                 record=line,
-                collection="Lines",
+                collection="Indicators",
                 graph_name=f"{line.name}",
                 phase="oplever",
                 client=self.client,

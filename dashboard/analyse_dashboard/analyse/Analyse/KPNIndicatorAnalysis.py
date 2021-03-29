@@ -118,7 +118,11 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
 
 
 class FttXIndicatorETL(ETL, FttXExtract, FttXIndicatorAnalyse, FttXTransform, FttXLoad):
-    ...
+    def perform(self):
+        self.extract()
+        self.transform()
+        self.analyse()
+        self.load()
 
 
 class KPNDFNIndicatorETL(

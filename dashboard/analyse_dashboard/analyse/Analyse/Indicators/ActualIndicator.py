@@ -6,7 +6,7 @@ from Analyse.Record.Record import Record
 class ActualIndicator(DataIndicator, Aggregator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.collection = "Data"
+        self.collection = "Indicators"
         self.graph_name = None
 
     def perform(self):
@@ -30,7 +30,7 @@ class ActualIndicator(DataIndicator, Aggregator):
             )
 
         result_dict = series.to_dict("index")
-        result_dict["overview"] = series.sum().to_dict()
+        result_dict["client_aggregate"] = series.sum().to_dict()
         return Record(
             record=result_dict,
             collection=self.collection,

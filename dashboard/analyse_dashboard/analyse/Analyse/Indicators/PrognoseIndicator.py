@@ -13,7 +13,7 @@ class PrognoseIndicator(LineIndicator):
         super().__init__(**kwargs)
         self.type_start_date = "FTU0"
         self.type_total_amount = "huisaansluitingen"
-        self.indicator_name = "PrognoseIndicator"
+        self.indicator_name = "PrognoseHPendIndicator"
         self.df = df
         self.mean_realisation_rate_client = (
             self._calculate_mean_realisation_rate_client()
