@@ -4,10 +4,9 @@ from Analyse.Record.Record import Record
 
 
 class ActualIndicator(DataIndicator, Aggregator):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.collection = 'Data'
+        self.collection = "Data"
         self.graph_name = None
 
     def perform(self):
@@ -19,18 +18,22 @@ class ActualIndicator(DataIndicator, Aggregator):
         to_record.
 
         """
-        df = self.aggregate(df=self.apply_business_rules(),
-                            by='project',
-                            agg_function='sum')
+        df = self.aggregate(
+            df=self.apply_business_rules(), by="project", agg_function="sum"
+        )
         return self.to_record(df)
 
     def to_record(self, series):
         if not self.graph_name:
-            raise NotImplementedError("Please use child class, graph name is derived from there.")
+            raise NotImplementedError(
+                "Please use child class, graph name is derived from there."
+            )
 
-        result_dict = series.to_dict('index')
-        result_dict['overview'] = series.sum()
-        return Record(record=result_dict,
-                      collection=self.collection,
-                      client=self.client,
-                      graph_name=self.graph_name)
+        result_dict = series.to_dict("index")
+        result_dict["overview"] = series.sum().to_dict()
+        return Record(
+            record=result_dict,
+            collection=self.collection,
+            client=self.client,
+            graph_name=self.graph_name,
+        )
