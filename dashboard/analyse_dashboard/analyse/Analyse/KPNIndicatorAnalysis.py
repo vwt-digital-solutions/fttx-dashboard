@@ -1,6 +1,9 @@
+import logging
+import os
+
 from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
-                          FttXTransform)
+                          FttXTransform, PickleExtract)
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HcHpEndIndicator import HcHpEndIndicator
 from Analyse.Indicators.HcPatch import HcPatch
@@ -30,6 +33,8 @@ from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
 from Analyse.Record.RecordList import RecordList
 from Analyse.TMobile import TMobileTransform
+
+logger = logging.getLogger("FttX Indicator Analyse")
 
 
 class FttXIndicatorAnalyse(FttXBase):
@@ -127,4 +132,26 @@ class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAn
 
 
 class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNDFNIndicatorAnalyse):
+    ...
+
+
+class FttXIndicatorLocalETL(PickleExtract, FttXIndicatorETL):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def load(self):
+        if "FIRESTORE_EMULATOR_HOST" in os.environ:
+            logger.info("Loading into emulated firestore")
+            super().load()
+        else:
+            logger.warning(
+                "Attempting to load with a local ETL process but no emulator is configured. Loading aborted."
+            )
+
+
+class KPNDFNIndicatorLocalETL(KPNDFNIndicatorETL, FttXIndicatorLocalETL):
+    ...
+
+
+class TmobileIndicatorLocalETL(FttXIndicatorLocalETL, TmobileIndicatorETL):
     ...
