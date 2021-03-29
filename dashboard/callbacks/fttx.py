@@ -369,10 +369,10 @@ for client in config.client_config.keys():  # noqa: C901
             for line_name, func, title in line_names:
                 value = func(
                     collection.get_document(
-                        collection="Lines",
+                        collection="Indicators",
                         line=line_name,
                         client=client,
-                        project=client,
+                        project="client_aggregate",
                     )
                 )
                 if title not in parameters_global_info_list:
