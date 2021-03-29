@@ -1,13 +1,13 @@
-import business_rules as br
 import copy
+
+import business_rules as br
+from Analyse.Capacity_analysis.Line import TimeseriesLine, concat
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
-from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
-from Analyse.Capacity_analysis.Line import concat
 
 
-class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
+class PlanningIndicatorTMobile(TimeseriesIndicator):
     """
     Calculates TMobile planning
     """
@@ -19,7 +19,7 @@ class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
         """
         df = copy.deepcopy(self.df)
         df = df[br.has_gepland(df)]
-        df = df[['project', 'hasdatum']]
+        df = df[["project", "hasdatum"]]
         return df
 
     def perform(self):
@@ -29,9 +29,11 @@ class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
         Returns: List of Records with lines per project and client_line for overall planning.
 
         """
-        df = self.aggregate(df=self.apply_business_rules(),
-                            by=['project', 'hasdatum'],
-                            agg_function='size')
+        df = self.aggregate(
+            df=self.apply_business_rules(),
+            by=["project", "hasdatum"],
+            agg_function="size",
+        )
 
         line_list = []
         record_list = RecordList()
@@ -42,7 +44,7 @@ class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
                     record_list.append(self.to_record(line_project))
                     line_list.append(line_project)
 
-            line_client = concat(line_list, name='planning', project=self.client)
+            line_client = concat(line_list, name="planning", project=self.client)
             record_list.append(self.to_record(line_client))
 
         return record_list
@@ -58,9 +60,7 @@ class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
 
         """
         data = df.droplevel(level=0)
-        return TimeseriesLine(data=data,
-                              name='planning',
-                              project=project)
+        return TimeseriesLine(data=data, name="planning", project=project)
 
     def to_record(self, line):
         """
@@ -71,16 +71,18 @@ class PlanningHPEndIndicatorTmobile(TimeseriesIndicator):
         Returns: Record containing all data.
         """
         if line:
-            record = LineRecord(record=line,
-                                collection='Lines',
-                                graph_name=f'{line.name}',
-                                phase='oplever',
-                                client=self.client,
-                                project=line.project,
-                                to_be_integrated=False,
-                                to_be_normalized=False,
-                                to_be_splitted_by_year=True,
-                                percentage=False)
+            record = LineRecord(
+                record=line,
+                collection="Lines",
+                graph_name=f"{line.name}",
+                phase="oplever",
+                client=self.client,
+                project=line.project,
+                to_be_integrated=False,
+                to_be_normalized=False,
+                to_be_splitted_by_year=True,
+                percentage=False,
+            )
         else:
             record = None
         return record
