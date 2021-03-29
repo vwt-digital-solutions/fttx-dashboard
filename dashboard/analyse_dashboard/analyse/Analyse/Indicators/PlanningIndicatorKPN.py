@@ -1,10 +1,7 @@
-import copy
-
-from Analyse.Capacity_analysis.Line import TimeseriesLine
+from Analyse.Capacity_analysis.Line import TimeseriesLine, concat
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
-from Analyse.Capacity_analysis.Line import concat
 
 
 class PlanningIndicatorKPN(TimeseriesIndicator):
@@ -14,7 +11,7 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.indicator_name = 'PlanningIndicatorKPN'
+        self.indicator_name = "PlanningIndicatorKPN"
 
     def perform(self):
         """
@@ -30,12 +27,13 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
         if not df.empty:
             for project, df in df.groupby(level=0):
                 if len(df):
-                    line_project = self._make_project_line(project=project,
-                                                           df=df)
+                    line_project = self._make_project_line(project=project, df=df)
                     line_list.append(line_project)
                     record_list.append(self.to_record(line_project))
 
-            line_client = concat(line_list, name=self.indicator_name, project=self.client)
+            line_client = concat(
+                line_list, name=self.indicator_name, project=self.client
+            )
             record_list.append(self.to_record(line_client))
 
         return record_list
@@ -52,9 +50,9 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
         """
         data = df.droplevel(level=0)
         data = data[data.columns[0]]
-        line_project = TimeseriesLine(data=data,
-                                      name=self.indicator_name,
-                                      project=project)
+        line_project = TimeseriesLine(
+            data=data, name=self.indicator_name, project=project
+        )
         return line_project
 
     def to_record(self, line):
@@ -67,58 +65,18 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
 
         """
         if line:
-            record = LineRecord(record=line,
-                                collection='Lines',
-                                graph_name=f'{line.name}',
-                                phase='oplever',
-                                client=self.client,
-                                project=line.project,
-                                to_be_integrated=False,
-                                to_be_normalized=False,
-                                to_be_splitted_by_year=True,
-                                percentage=False)
+            record = LineRecord(
+                record=line,
+                collection="Lines",
+                graph_name=f"{line.name}",
+                phase="oplever",
+                client=self.client,
+                project=line.project,
+                to_be_integrated=False,
+                to_be_normalized=False,
+                to_be_splitted_by_year=True,
+                percentage=False,
+            )
         else:
             record = None
         return record
-
-
-class PlanningHPEndIndicatorKPN(PlanningIndicatorKPN):
-    """
-    Calculates the HPEnd planning for KPN projects
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.indicator_name = 'PlanningHPEndIndicatorKPN'
-
-    def apply_business_rules(self):
-        """
-        Only the 'hp end' column is needed
-
-        Returns: Sliced dataframe with only relevant columns.
-
-        """
-        df = copy.deepcopy(self.df)
-        df = df[['hp end']]
-        return df
-
-
-class PlanningHPCivielIndicatorKPN(PlanningIndicatorKPN):
-    """
-    Calculates the HPCiviel planning for KPN projects
-    """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.indicator_name = 'PlanningHPCivielIndicatorKPN'
-
-    def apply_business_rules(self):
-        """
-        Only the 'hp civiel' column is needed
-
-        Returns: Sliced dataframe with only relevant columns.
-
-        """
-        df = copy.deepcopy(self.df)
-        df = df[['hp civiel']]
-        return df
