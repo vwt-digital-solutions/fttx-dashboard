@@ -4,6 +4,8 @@ Finance_ETL.py
 
 The ETL process for FttX Finance analyse.
 """
+import copy
+
 from sqlalchemy import bindparam, text
 
 from Analyse.ETL import Extract, ETL, Transform, Load, ETLBase, logger
@@ -71,24 +73,51 @@ class FinanceExtract(Extract):
 
 
 class FinanceTransform(Transform):
+    """
+    Transforms extracted data that is necesarry for the financial analyses
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def transform(self):
+        """
+        Main tranform function that transfroms the extracted data and assigns it to
+        transformed_data
+        """
         super().transform()
         self.transform_baan_budget()
         self.transform_baan_realisation()
         self.transform_categorisering()
 
     def transform_baan_budget(self):
-        self.transformed_data.baan_budget = pd.DataFrame()
+        """
+        Funtion that transforms the Baan budget table and assigns the right datatype
+        """
+        logger.info('Transforming Baan Budget ...')
+        df = copy.deepcopy(self.extracted_data.baan_budget)
+        df.bedrag = df.bedrag.astype(float)
+        self.transformed_data.baan_budget = df
 
     def transform_baan_realisation(self):
-        self.transformed_data.baan_realisation = pd.DataFrame()
+        """
+        Funtion that transforms the Baan realisation table and assigns the right datatype
+        """
+        logger.info('Transforming Baan Realisation ...')
+        df = copy.deepcopy(self.extracted_data.baan_realisation)
+        df.bedrag = df.bedrag.astype(float)
+        self.transformed_data.baan_realisation = df
 
     def transform_categorisering(self):
-        self.transformed_data.categorisation = pd.DataFrame()
+        """
+        Funtion that transforms the Categorisation table and assigns the right datatype
+        """
+        df = copy.deepcopy(self.extracted_data.categorisation)
+        df.rename(columns={'artikelcode': 'kostendrager'}, inplace=True)
+        df.kostendrager = df.kostendrager.str.strip()
+        df[['categorie', 'sub_categorie']] = df[['categorie', 'sub_categorie']].apply(lambda x: x.str.strip())
+        df[['categorie', 'sub_categorie']] = df[['categorie', 'sub_categorie']].apply(lambda x: x.str.lower())
+        self.transformed_data.categorisation = df
 
 
 class FinanceAnalyse(ETLBase):
