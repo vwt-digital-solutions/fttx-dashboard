@@ -46,4 +46,5 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
             client=self.client,
             project=project,
             to_be_integrated=True,
+            percentage=False,
         )

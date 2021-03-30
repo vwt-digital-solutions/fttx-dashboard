@@ -332,16 +332,25 @@ for client in config.client_config.keys():  # noqa: C901
         if not year:
             raise PreventUpdate
 
-        def extract_value_type1(value):
+        def extract_value_type1():
+            value = collection.get_document(
+                collection="Indicators",
+                line=line_name,
+                client=client,
+                project="client_aggregate",
+            )
             if value:
                 value = str(int(value["series_year"][year + "-01-01"]))
             else:
                 value = "n.v.t."
             return value
 
-        def extract_value_type2(value):
+        def extract_value_type2():
+            value = collection.get_document(
+                collection="Indicators", graph_name=line_name, client=client
+            )
             if value:
-                value = str(int(value["series_year"][year + "-01-01"]))
+                value = str(int(value["client_aggregate"]["werkvoorraad"]))
             else:
                 value = "n.v.t."
             return value
@@ -367,14 +376,7 @@ for client in config.client_config.keys():  # noqa: C901
             ]
             parameters_global_info_list = {}
             for line_name, func, title in line_names:
-                value = func(
-                    collection.get_document(
-                        collection="Indicators",
-                        line=line_name,
-                        client=client,
-                        project="client_aggregate",
-                    )
-                )
+                value = func()
                 if title not in parameters_global_info_list:
                     parameters_global_info_list[title] = dict(
                         id_="",
