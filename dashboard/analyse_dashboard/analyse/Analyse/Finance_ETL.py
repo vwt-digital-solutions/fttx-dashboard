@@ -30,11 +30,11 @@ class FinanceExtract(Extract):
         certain costs.
         """
         super().extract()
-        self.extracted_data.baan_budget = self.extract_sql_table('baan_budget')
-        self.extracted_data.baan_realisation = self.extract_sql_table('baan_realisation')
-        self.extract_categorisering()
+        self.extracted_data.baan_budget = self._extract_sql_table('baan_budget')
+        self.extracted_data.baan_realisation = self._extract_sql_table('baan_realisation')
+        self._extract_categorisering()
 
-    def extract_sql_table(self, table):
+    def _extract_sql_table(self, table):
         """
         Extracts sql table
         Args:
@@ -59,7 +59,7 @@ class FinanceExtract(Extract):
         df["project_naam"] = df['project_naam'].astype(projects_category)
         return df
 
-    def extract_categorisering(self):
+    def _extract_categorisering(self):
         """
         Extracts the categorisation from the sql database
 
@@ -86,11 +86,11 @@ class FinanceTransform(Transform):
         transformed_data
         """
         super().transform()
-        self.transform_categorisering()
-        self.transform_baan_budget()
-        self.transform_baan_realisation()
+        self._transform_categorisering()
+        self._transform_baan_budget()
+        self._transform_baan_realisation()
 
-    def transform_categorisering(self):
+    def _transform_categorisering(self):
         """
         Funtion that transforms the Categorisation table and assigns the right datatype
         """
@@ -101,17 +101,17 @@ class FinanceTransform(Transform):
         df[['categorie', 'sub_categorie']] = df[['categorie', 'sub_categorie']].apply(lambda x: x.str.lower())
         self.transformed_data.categorisation = df
 
-    def transform_baan_budget(self):
+    def _transform_baan_budget(self):
         """
         Funtion that transforms the Baan budget table, add categorisation and assigns the right datatype
         """
         logger.info('Transforming Baan Budget ...')
         df = copy.deepcopy(self.extracted_data.baan_budget)
         df.bedrag = df.bedrag.astype(float)
-        df = self.add_categorisation_to_baan_tables(df)
+        df = self._add_categorisation_to_baan_tables(df)
         self.transformed_data.baan_budget = df
 
-    def transform_baan_realisation(self):
+    def _transform_baan_realisation(self):
         """
         Funtion that transforms the Baan realisation table, add categorisation and assigns the right datatype
         """
@@ -119,10 +119,10 @@ class FinanceTransform(Transform):
         df = copy.deepcopy(self.extracted_data.baan_realisation)
         df.kostensoort = df.kostensoort.str.strip()
         df.bedrag = df.bedrag.astype(float)
-        df = self.add_categorisation_to_baan_tables(df)
+        df = self._add_categorisation_to_baan_tables(df)
         self.transformed_data.baan_realisation = df
 
-    def add_categorisation_to_baan_tables(self, df):
+    def _add_categorisation_to_baan_tables(self, df):
         """
         Function to merge categorisation on the Baan tables
         Args:
