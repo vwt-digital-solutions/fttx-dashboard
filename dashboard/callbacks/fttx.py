@@ -347,10 +347,10 @@ for client in config.client_config.keys():  # noqa: C901
                     "PlanningHPcivielIndicatorKPN",
                     "PlanningHPendIndicatorKPN",
                 ],
-                "Voorspelling": ["notavailableyet", "PrognoseHPendIndicator"],
-                "Werkvoorraad": ["notrelevant", "WerkvoorraadHPendIndicator"],
-                "Actuele HC / HPend": ["notrelevant", "HcHpEndRatio"],
-                "Ratio <12 weken": ["notrelevant", "12_week_ratio"],
+                "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
+                "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+                "Actuele HC / HPend": ["linenotavailable", "HcHpEndRatio"],
+                "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
             }
             parameters_global_info_list = []
             for title in lines_for_in_boxes:
