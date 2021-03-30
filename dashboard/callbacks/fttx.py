@@ -332,73 +332,52 @@ for client in config.client_config.keys():  # noqa: C901
         if not year:
             raise PreventUpdate
 
-        def extract_value_type1():
-            value = collection.get_document(
-                collection="Indicators",
-                line=line_name,
-                client=client,
-                project="client_aggregate",
-            )
-            if value:
-                value = value["series_year"][year + "-01-01"]
-                if int(value) != 0:
-                    value = str(int(value))
-                else:
-                    value = str(round(value, 2))
-            else:
-                value = "n.v.t."
-            return value
-
-        def extract_value_type2():
-            value = collection.get_document(
-                collection="Indicators", graph_name=line_name, client=client
-            )
-            if value:
-                value = value["client_aggregate"]["werkvoorraad"]
-                if int(value) != 0:
-                    value = str(int(value))
-                else:
-                    value = str(round(value, 2))
-            else:
-                value = "n.v.t."
-            return value
-
         if toggles.transform_frontend_newindicator:
-            line_names = [
-                ("InternalTargetHPcivielLine", extract_value_type1, "Internal Target"),
-                ("InternalTargetHPendLine", extract_value_type1, "Internal Target"),
-                ("ClientTargetHPcivielLine", extract_value_type2, "Client Target"),
-                ("ClientTargetHPendLine", extract_value_type2, "Client Target"),
-                ("RealisationHPcivielIndicator", extract_value_type1, "Realisatie"),
-                ("RealisationHPendIndicator", extract_value_type1, "Realisatie"),
-                ("PlanningHPcivielIndicatorKPN", extract_value_type1, "Planning"),
-                ("PlanningHPendIndicatorKPN", extract_value_type1, "Planning"),
-                ("notavailableyet", extract_value_type1, "Voorspelling"),
-                ("PrognoseHPendIndicator", extract_value_type1, "Voorspelling"),
-                ("notrelevant", extract_value_type2, "Werkvoorraad"),
-                ("WerkvoorraadHPendIndicator", extract_value_type2, "Werkvoorraad"),
-                ("notrelevant", extract_value_type1, "Actuele HC / HPend"),
-                ("HcHpEndRatio", extract_value_type1, "Actuele HC / HPend"),
-                ("notrelevant", extract_value_type1, "Ratio <12 weken"),
-                ("12_week_ratio", extract_value_type1, "Ratio <12 weken"),
-            ]
-            parameters_global_info_list = {}
-            for line_name, func, title in line_names:
-                value = func()
-                if title not in parameters_global_info_list:
-                    parameters_global_info_list[title] = dict(
+            lines_for_in_boxes = {
+                "Internal Target": [
+                    "InternalTargetHPcivielLine",
+                    "InternalTargetHPendLine",
+                ],
+                "Client Target": ["ClientTargetHPcivielLine", "ClientTargetHPendLine"],
+                "Realisatie": [
+                    "RealisationHPcivielIndicator",
+                    "RealisationHPendIndicator",
+                ],
+                "Planning": [
+                    "PlanningHPcivielIndicatorKPN",
+                    "PlanningHPendIndicatorKPN",
+                ],
+                "Voorspelling": ["notavailableyet", "PrognoseHPendIndicator"],
+                "Werkvoorraad": ["notrelevant", "WerkvoorraadHPendIndicator"],
+                "Actuele HC / HPend": ["notrelevant", "HcHpEndRatio"],
+                "Ratio <12 weken": ["notrelevant", "12_week_ratio"],
+            }
+            parameters_global_info_list = []
+            for title in lines_for_in_boxes:
+                value1 = collection.get_year_value_from_document(
+                    collection="Indicators",
+                    year=year,
+                    line=lines_for_in_boxes[title][0],
+                    client=client,
+                    project="client_aggregate",
+                )
+                value2 = collection.get_year_value_from_document(
+                    collection="Indicators",
+                    year=year,
+                    line=lines_for_in_boxes[title][1],
+                    client=client,
+                    project="client_aggregate",
+                )
+                parameters_global_info_list.append(
+                    dict(
                         id_="",
                         title=title,
                         text1="HPciviel: ",
                         text2="HPend: ",
-                        value1=value,
-                        value2="0",
+                        value1=value1,
+                        value2=value2,
                     )
-                else:
-                    parameters_global_info_list[title]["value2"] = value
-            parameters_global_info_list = [
-                el for el in parameters_global_info_list.values()
-            ]
+                )
             output = global_info_list(
                 items=parameters_global_info_list, className="container-display"
             )

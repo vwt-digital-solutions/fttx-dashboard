@@ -1,6 +1,7 @@
-from data import api, data
-from urllib import parse
 import logging
+from urllib import parse
+
+from data import api, data
 
 
 def get_document(collection, **filters):
@@ -25,8 +26,10 @@ def get_document(collection, **filters):
         logging.warning(f"Query {url} did not return any results.")
         return {}
     if len(result) > 1:
-        logging.warning(f"Query {url} resulted in {len(result)} results, only the first is returned")
-    return result[0].get('record', 'n.v.t.')
+        logging.warning(
+            f"Query {url} resulted in {len(result)} results, only the first is returned"
+        )
+    return result[0].get("record", "n.v.t.")
 
 
 def get_graph(**filters):
@@ -40,4 +43,13 @@ def get_graph(**filters):
     Returns:
         dict: The graph in the document
     """
-    return get_document(collection="Graphs", **filters).get('figure', data.no_graph())
+    return get_document(collection="Graphs", **filters).get("figure", data.no_graph())
+
+
+def get_year_value_from_document(collection, year, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        value = str(int(doc["series_year"][year + "-01-01"]))
+    else:
+        value = "n.v.t."
+    return value
