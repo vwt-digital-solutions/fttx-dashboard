@@ -1,6 +1,11 @@
+import pandas as pd
+
 from Analyse.Aggregators.Aggregator import Aggregator
+from Analyse.Capacity_analysis.Domain import DateDomain
+from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Indicators.DataIndicator import DataIndicator
-from Analyse.Record.Record import Record
+from Analyse.Record.LineRecord import LineRecord
+from Analyse.Record.RecordList import RecordList
 
 
 class ActualIndicator(DataIndicator, Aggregator):
@@ -18,22 +23,42 @@ class ActualIndicator(DataIndicator, Aggregator):
         to_record.
 
         """
-        df = self.aggregate(
+        series = self.aggregate(
             df=self.apply_business_rules(), by="project", agg_function="sum"
         )
-        return self.to_record(df)
+        records = RecordList()
+        for project, value in series.iterrows():
+            project_line = self.create_line(value)
+            records.append(self.to_record(project, project_line))
+        aggregate_line = self.create_line(series.sum())
+        records.append(self.to_record("client_aggregate", aggregate_line))
+        return records
 
-    def to_record(self, series):
+    @staticmethod
+    def create_line(value):
+        """
+        Creates a timseriesline from a single data point, on todays date.
+
+        Args:
+            value: value to be made into a timeseriesline
+
+        Returns: a TimeseriesLine with index today and one value
+
+        """
+        domain = DateDomain(pd.datetime.today(), pd.datetime.today())
+        return TimeseriesLine(domain=domain, data=value)
+
+    def to_record(self, project, line):
         if not self.graph_name:
             raise NotImplementedError(
                 "Please use child class, graph name is derived from there."
             )
-
-        result_dict = series.to_dict("index")
-        result_dict["client_aggregate"] = series.sum().to_dict()
-        return Record(
-            record=result_dict,
-            collection=self.collection,
-            client=self.client,
+        return LineRecord(
+            line,
+            collection="Lines",
             graph_name=self.graph_name,
+            to_be_normalized=False,
+            phase="oplever",
+            project=project,
+            client=self.client,
         )
