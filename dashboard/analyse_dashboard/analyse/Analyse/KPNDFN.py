@@ -194,7 +194,7 @@ class KPNAnalyse(FttXAnalyse):
         self._error_check_FCBC()
         self._prognose()
         self._targets()
-        self._performance_matrix()
+        # self._performance_matrix()
         self._prognose_graph()
         self._calculate_project_indicators()
         self._set_filters()
