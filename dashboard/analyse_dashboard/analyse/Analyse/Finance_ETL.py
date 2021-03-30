@@ -68,7 +68,7 @@ class FinanceExtract(Extract):
         """
 
         logger.info("Extracting categorisation from the sql database")
-        df = pd.read_excel(self.config['categorisation'], index=False)
+        df = pd.read_excel(self.config['categorisation'])
         self.extracted_data.categorisation = df
 
 
