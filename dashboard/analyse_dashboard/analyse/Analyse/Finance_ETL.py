@@ -54,7 +54,7 @@ class FinanceExtract(Extract):
         ).bindparams(bindparam("projects", expanding=True))
         df = pd.read_sql(sql, get_database_engine(), params={"table": table, "projects": tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
-        df["project"] = df.project.astype(projects_category)
+        df["project_naam"] = df['project_naam'].astype(projects_category)
         return df
 
     def extract_categorisering(self):
