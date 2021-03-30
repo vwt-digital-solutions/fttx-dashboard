@@ -340,7 +340,11 @@ for client in config.client_config.keys():  # noqa: C901
                 project="client_aggregate",
             )
             if value:
-                value = str(int(value["series_year"][year + "-01-01"]))
+                value = value["series_year"][year + "-01-01"]
+                if int(value) != 0:
+                    value = str(int(value))
+                else:
+                    value = str(round(value, 2))
             else:
                 value = "n.v.t."
             return value
@@ -350,7 +354,11 @@ for client in config.client_config.keys():  # noqa: C901
                 collection="Indicators", graph_name=line_name, client=client
             )
             if value:
-                value = str(int(value["client_aggregate"]["werkvoorraad"]))
+                value = value["client_aggregate"]["werkvoorraad"]
+                if int(value) != 0:
+                    value = str(int(value))
+                else:
+                    value = str(round(value, 2))
             else:
                 value = "n.v.t."
             return value

@@ -47,4 +47,5 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
             project=project,
             to_be_integrated=True,
             percentage=False,
+            to_be_normalized=False,
         )
