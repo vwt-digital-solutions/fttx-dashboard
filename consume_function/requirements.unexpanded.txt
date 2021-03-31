@@ -18,7 +18,7 @@ requests==2.22.0
 rsa==4.7.2
 six==1.14.0
 urllib3==1.25.8
-pyyaml==5.3.1
+pyyaml==5.4
 featuretoggles==1.0.1
 mysql-connector-python==8.0.22
 PyMySQL==0.10.1
