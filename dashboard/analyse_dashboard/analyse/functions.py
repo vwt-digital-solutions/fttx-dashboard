@@ -5,23 +5,36 @@ functions.py
 A big collection of functions used in the analysis.
 """
 
-from collections import defaultdict
-
-import pandas as pd
-import numpy as np
-from google.cloud import firestore, secretmanager
-import time
-from dateutil.relativedelta import relativedelta
 import datetime
 import math
+import time
+from collections import defaultdict, namedtuple
 
+import numpy as np
+import pandas as pd
+from dateutil.relativedelta import relativedelta
+from google.cloud import firestore, secretmanager
 from sqlalchemy import create_engine
 
 import business_rules as br
 import config
-from collections import namedtuple
 
 colors = config.colors_vwt
+
+
+def round_(data):
+    if isinstance(data, float):
+        if (data > -1) & (data < 1):
+            data = int(data * 10 ** 2) / 10 ** 2
+        else:
+            data = int(data)
+    elif isinstance(data, pd.Series):
+        if (data.max() >= -1) & (data.max() <= 1):
+            data = (data * 10 ** 2).astype(int) / 10 ** 2
+        else:
+            data = data.astype(int)
+
+    return data
 
 
 def get_start_time(df: pd.DataFrame) -> dict:
@@ -39,7 +52,9 @@ def get_start_time(df: pd.DataFrame) -> dict:
     for project, project_df in df.groupby("project"):
         start_time = project_df.opleverdatum.min()
         if start_time is pd.NaT:
-            start_time_by_project[project] = pd.to_datetime(pd.Timestamp.now().strftime('%Y-%m-%d'))
+            start_time_by_project[project] = pd.to_datetime(
+                pd.Timestamp.now().strftime("%Y-%m-%d")
+            )
         else:
             start_time_by_project[project] = start_time
     return start_time_by_project
@@ -54,13 +69,17 @@ def get_timeline(time_sequence) -> pd.DatetimeIndex:
     Returns:a daterange, ranging from input to 2000 days after input date.
 
     """
-    x_axis = pd.date_range(min(time_sequence.values()), periods=2000 + 1, freq='D')
+    x_axis = pd.date_range(min(time_sequence.values()), periods=2000 + 1, freq="D")
     return x_axis
 
 
 # TODO: Documentation by Andre van Turnhout
-def get_total_objects(df):  # Don't think this is necessary to calculate at this point, should be done later.
-    total_objects = df[['sleutel', 'project']].groupby(by="project").count().to_dict()['sleutel']
+def get_total_objects(
+    df,
+):  # Don't think this is necessary to calculate at this point, should be done later.
+    total_objects = (
+        df[["sleutel", "project"]].groupby(by="project").count().to_dict()["sleutel"]
+    )
     # This hardcoded stuff can lead to unexpected behaviour. Should this still be in here?
     # total_objects['Bergen op Zoom Noord Halsteren'] = 9465  # not yet in FC, total from excel bouwstromen
     # total_objects['Den Haag Bezuidenhout'] = 9488  # not yet in FC, total from excel bouwstromen
@@ -129,12 +148,14 @@ def targets_new(x_d, list_of_projects, date_FTU0, date_FTU1, total_objects):
     t_diff = {}
     target_per_week_dict = {}
     for key in list_of_projects:
-        if date_FTU0[key] or date_FTU0[key] != '':
+        if date_FTU0[key] or date_FTU0[key] != "":
             t_start = x_prog[x_d == date_FTU0[key]][0]
             if date_FTU1[key]:
                 t_max = x_prog[x_d == date_FTU1[key]][0]
             else:
-                t_max = t_start + 100  # TODO: this is the ideal norm of 1%, we need to get this from the config
+                t_max = (
+                    t_start + 100
+                )  # TODO: this is the ideal norm of 1%, we need to get this from the config
             t_diff[key] = t_max - t_start - 14  # two weeks round up
             slope_of_line = 100 / t_diff[key]  # target naar KPN is 100% HPend
         else:  # incomplete information on FTU dates
@@ -166,11 +187,17 @@ def get_map_bnumber_vs_project_from_sql():
 
     """
     sql_engine = get_database_engine()
-    df = pd.read_sql('fc_baan_project_nr_name_map', sql_engine)
-    ds_mapping = df[['fiberconnect_code', 'project_naam']].dropna().set_index('fiberconnect_code')
+    df = pd.read_sql("fc_baan_project_nr_name_map", sql_engine)
+    ds_mapping = (
+        df[["fiberconnect_code", "project_naam"]]
+        .dropna()
+        .set_index("fiberconnect_code")
+    )
     ds_mapping.index = ds_mapping.index.astype(int).astype(str)
-    ds_mapping = ds_mapping[~ds_mapping.duplicated()].rename(columns={'project_naam': 'project'})
-    ds_mapping.index.name = 'bnummer'
+    ds_mapping = ds_mapping[~ds_mapping.duplicated()].rename(
+        columns={"project_naam": "project"}
+    )
+    ds_mapping.index.name = "bnummer"
     return ds_mapping
 
 
@@ -180,7 +207,11 @@ def get_cumsum_of_col(df: pd.DataFrame, column):
     filtered_df = df[~df[column].isna()]
 
     # Maybe we can move the rename of this column to preprocessing?
-    agg_df = filtered_df.groupby([column]).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
+    agg_df = (
+        filtered_df.groupby([column])
+        .agg({"sleutel": "count"})
+        .rename(columns={"sleutel": "Aantal"})
+    )
     cumulative_df = agg_df.cumsum()
 
     return cumulative_df
@@ -196,11 +227,19 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
     d_real_l = {}
     t_shift = {}
     y_prog_l = {}
-    for project, project_df in df.groupby(by="project"):  # to calculate prognoses for projects in FC
-        d_real = project_df[~project_df['opleverdatum'].isna()]  # todo opgeleverd gebruken?
+    for project, project_df in df.groupby(
+        by="project"
+    ):  # to calculate prognoses for projects in FC
+        d_real = project_df[
+            ~project_df["opleverdatum"].isna()
+        ]  # todo opgeleverd gebruken?
         if not d_real.empty:
-            d_real = d_real.groupby(['opleverdatum']).agg({'sleutel': 'count'}).rename(columns={'sleutel': 'Aantal'})
-            d_real.index = pd.to_datetime(d_real.index, format='%Y-%m-%d')
+            d_real = (
+                d_real.groupby(["opleverdatum"])
+                .agg({"sleutel": "count"})
+                .rename(columns={"sleutel": "Aantal"})
+            )
+            d_real.index = pd.to_datetime(d_real.index, format="%Y-%m-%d")
             d_real = d_real.sort_index()
             d_real = d_real[d_real.index < pd.Timestamp.now()]
 
@@ -220,8 +259,12 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
             if (len(d_rc2) > 1) & (len(d_rc1) > 1):
                 rc2[project], b2 = np.polyfit(d_rc2.index, d_rc2, 1)
                 y_prog2 = b2[0] + rc2[project][0] * x_prog
-                x_i, y_i = get_intersect([x_prog[0], y_prog1[0]], [x_prog[-1], y_prog1[-1]],
-                                         [x_prog[0], y_prog2[0]], [x_prog[-1], y_prog2[-1]])
+                x_i, y_i = get_intersect(
+                    [x_prog[0], y_prog1[0]],
+                    [x_prog[-1], y_prog1[-1]],
+                    [x_prog[0], y_prog2[0]],
+                    [x_prog[-1], y_prog2[-1]],
+                )
                 y_prog_l[project][x_prog >= x_i] = y_prog2[x_prog >= x_i]
             # if (len(d_rc2) > 1) & (len(d_rc1) <= 1):
             #     rc1[project], b1 = np.polyfit(d_rc2.index, d_rc2, 1)
@@ -232,15 +275,23 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
     if rc2:
         rc2_mean = sum(rc2.values()) / len(rc2.values())
     else:
-        rc2_mean = 0.5 * rc1_mean  # temp assumption that after cutoff value effectivity of has process decreases by 50%
+        rc2_mean = (
+            0.5 * rc1_mean
+        )  # temp assumption that after cutoff value effectivity of has process decreases by 50%
 
     for project, project_df in df.groupby(by="project"):
-        if (project in rc1) & (project not in rc2):  # the case of 2 realisation dates, rc1 but no rc2
+        if (project in rc1) & (
+            project not in rc2
+        ):  # the case of 2 realisation dates, rc1 but no rc2
             if max(y_prog_l[project]) > cutoff:
                 b2_mean = cutoff - (rc2_mean * x_prog[y_prog_l[project] >= cutoff][0])
                 y_prog2 = b2_mean + rc2_mean * x_prog
-                y_prog_l[project][y_prog_l[project] >= cutoff] = y_prog2[y_prog_l[project] >= cutoff]
-        if (project in d_real_l) & (project not in y_prog_l):  # the case of only 1 realisation date
+                y_prog_l[project][y_prog_l[project] >= cutoff] = y_prog2[
+                    y_prog_l[project] >= cutoff
+                ]
+        if (project in d_real_l) & (
+            project not in y_prog_l
+        ):  # the case of only 1 realisation date
             b1_mean = -(rc1_mean * t_shift[project])
             y_prog1 = b1_mean + rc1_mean * x_prog
             b2_mean = cutoff - (rc2_mean * x_prog[y_prog1 >= cutoff][0])
@@ -248,11 +299,13 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
             y_prog_l[project] = y_prog1.copy()
             y_prog_l[project][y_prog1 >= cutoff] = y_prog2[y_prog1 >= cutoff]
         if project not in d_real_l:  # the case of no realisation date
-            t_shift[project] = x_prog[x_d == pd.Timestamp.now().strftime('%Y-%m-%d')][0]
+            t_shift[project] = x_prog[x_d == pd.Timestamp.now().strftime("%Y-%m-%d")][0]
             if project in date_FTU0:
                 if not pd.isnull(date_FTU0[project]):
                     t_shift[project] = x_prog[x_d == date_FTU0[project]][0]
-            b1_mean = -(rc1_mean * (t_shift[project] + 14))  # to include delay of two week
+            b1_mean = -(
+                rc1_mean * (t_shift[project] + 14)
+            )  # to include delay of two week
             y_prog1 = b1_mean + rc1_mean * x_prog
             b2_mean = cutoff - (rc2_mean * x_prog[y_prog1 >= cutoff][0])
             y_prog2 = b2_mean + rc2_mean * x_prog
@@ -263,7 +316,10 @@ def prognose(df: pd.DataFrame, t_s, x_d, tot_l, date_FTU0):  # noqa: C901
         y_prog_l[project][y_prog_l[project] > 100] = 100
         y_prog_l[project][y_prog_l[project] < 0] = 0
 
-    PrognoseResult = namedtuple("PrognoseResult", ['rc1', 'rc2', 'd_real_l', 'y_prog_l', 'x_prog', 't_shift', 'cutoff'])
+    PrognoseResult = namedtuple(
+        "PrognoseResult",
+        ["rc1", "rc2", "d_real_l", "y_prog_l", "x_prog", "t_shift", "cutoff"],
+    )
     return PrognoseResult(rc1, rc2, d_real_l, y_prog_l, x_prog, t_shift, cutoff)
 
 
@@ -504,49 +560,64 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
     record_dict = {}
     for key in y_prog_l:
         if not FTU0_date[key]:  # TODO: Fix this -> replace with self.project_list
-            FTU0_date[key] = '2020-01-01'
-        if not FTU1_date[key]:  # some project do not have a FTU1 date assigned (yet), set project length to 100 days:
-            FTU1_date[key] = (pd.to_datetime(FTU0_date[key]) + pd.Timedelta(days=100)).strftime('%Y-%m-%d')
+            FTU0_date[key] = "2020-01-01"
+        if not FTU1_date[
+            key
+        ]:  # some project do not have a FTU1 date assigned (yet), set project length to 100 days:
+            FTU1_date[key] = (
+                pd.to_datetime(FTU0_date[key]) + pd.Timedelta(days=100)
+            ).strftime("%Y-%m-%d")
         else:  # most projects have not finished at FTU1 date, adding 100 days to axis:
-            FTU1_date[key] = (pd.to_datetime(FTU1_date[key]) + pd.Timedelta(days=100)).strftime('%Y-%m-%d')
+            FTU1_date[key] = (
+                pd.to_datetime(FTU1_date[key]) + pd.Timedelta(days=100)
+            ).strftime("%Y-%m-%d")
 
         fig = {
-            'data': [{
-                'x': list(x_d.strftime('%Y-%m-%d')),
-                'y': list(y_prog_l[key]),
-                'mode': 'lines',
-                'line': dict(color=colors['yellow']),
-                'name': 'Voorspelling',
-            }],
-            'layout': {
-                'xaxis': {'title': 'Opleverdatum [d]', 'range': [FTU0_date[key], FTU1_date[key]]},
-                'yaxis': {'title': 'Opgeleverd HPend [%]', 'range': [0, 110]},
-                'title': {'text': 'Voortgang project vs internal target:'},
-                'showlegend': True,
-                'legend': {'x': 0, 'xanchor': 'left', 'y': 1.15},
-                'height': 450,
-                'plot_bgcolor': colors['plot_bgcolor'],
-                'paper_bgcolor': colors['paper_bgcolor'],
+            "data": [
+                {
+                    "x": list(x_d.strftime("%Y-%m-%d")),
+                    "y": list(y_prog_l[key]),
+                    "mode": "lines",
+                    "line": dict(color=colors["yellow"]),
+                    "name": "Voorspelling",
+                }
+            ],
+            "layout": {
+                "xaxis": {
+                    "title": "Opleverdatum [d]",
+                    "range": [FTU0_date[key], FTU1_date[key]],
+                },
+                "yaxis": {"title": "Opgeleverd HPend [%]", "range": [0, 110]},
+                "title": {"text": "Voortgang project vs internal target:"},
+                "showlegend": True,
+                "legend": {"x": 0, "xanchor": "left", "y": 1.15},
+                "height": 450,
+                "plot_bgcolor": colors["plot_bgcolor"],
+                "paper_bgcolor": colors["paper_bgcolor"],
             },
         }
         if key in d_real_l:
-            fig['data'] = fig['data'] + [{
-                'x': list(x_d[d_real_l[key].index.to_list()].strftime('%Y-%m-%d')),
-                'y': d_real_l[key]['Aantal'].to_list(),
-                'mode': 'markers',
-                'line': dict(color=colors['green']),
-                'name': 'Realisatie HAS',
-            }]
+            fig["data"] = fig["data"] + [
+                {
+                    "x": list(x_d[d_real_l[key].index.to_list()].strftime("%Y-%m-%d")),
+                    "y": d_real_l[key]["Aantal"].to_list(),
+                    "mode": "markers",
+                    "line": dict(color=colors["green"]),
+                    "name": "Realisatie HAS",
+                }
+            ]
 
         if key in y_target_l:
-            fig['data'] = fig['data'] + [{
-                'x': list(x_d.strftime('%Y-%m-%d')),
-                'y': list(y_target_l[key]),
-                'mode': 'lines',
-                'line': dict(color=colors['lightgray']),
-                'name': 'Internal Target',
-            }]
-        record = dict(id='project_' + key, figure=fig)
+            fig["data"] = fig["data"] + [
+                {
+                    "x": list(x_d.strftime("%Y-%m-%d")),
+                    "y": list(y_target_l[key]),
+                    "mode": "lines",
+                    "line": dict(color=colors["lightgray"]),
+                    "name": "Internal Target",
+                }
+            ]
+        record = dict(id="project_" + key, figure=fig)
         record_dict[key] = record
     return record_dict
 
@@ -570,87 +641,217 @@ def performance_matrix(x_d, y_target_l, d_real_l, tot_l, t_diff, current_werkvoo
         names += [key]
 
     x_max = 30  # + max([abs(min(x)), abs(max(x))])
-    x_min = - x_max
-    y_min = - 30
+    x_min = -x_max
+    y_min = -30
     y_max = 250  # + max([abs(min(y)), abs(max(y))])
     y_voorraad_p = 90
-    fig = {'data': [
-        {
-            'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, x_min],
-            'y': [y_min, y_min, y_voorraad_p, y_voorraad_p],
-            'name': 'Trace 2',
-            'mode': 'lines',
-            'fill': 'toself',
-            'opacity': 1,
-            'line': {'color': colors['red']}
+    fig = {
+        "data": [
+            {
+                "x": [x_min, 1 / 70 * x_min, 1 / 70 * x_min, x_min],
+                "y": [y_min, y_min, y_voorraad_p, y_voorraad_p],
+                "name": "Trace 2",
+                "mode": "lines",
+                "fill": "toself",
+                "opacity": 1,
+                "line": {"color": colors["red"]},
+            },
+            {
+                "x": [
+                    1 / 70 * x_min,
+                    1 / 70 * x_max,
+                    1 / 70 * x_max,
+                    15,
+                    15,
+                    1 / 70 * x_min,
+                ],
+                "y": [y_min, y_min, y_voorraad_p, y_voorraad_p, 150, 150],
+                "name": "Trace 2",
+                "mode": "lines",
+                "fill": "toself",
+                "opacity": 1,
+                "line": {"color": colors["green"]},
+            },
+            {
+                "x": [
+                    x_min,
+                    1 / 70 * x_min,
+                    1 / 70 * x_min,
+                    15,
+                    15,
+                    1 / 70 * x_max,
+                    1 / 70 * x_max,
+                    x_max,
+                    x_max,
+                    x_min,
+                    x_min,
+                    1 / 70 * x_min,
+                ],
+                "y": [
+                    y_voorraad_p,
+                    y_voorraad_p,
+                    150,
+                    150,
+                    y_voorraad_p,
+                    y_voorraad_p,
+                    y_min,
+                    y_min,
+                    y_max,
+                    y_max,
+                    y_voorraad_p,
+                    y_voorraad_p,
+                ],
+                "name": "Trace 2",
+                "mode": "lines",
+                "fill": "toself",
+                "opacity": 1,
+                "line": {"color": colors["yellow"]},
+            },
+            {
+                "x": x,
+                "y": y,
+                "text": names,
+                "name": "Trace 1",
+                "mode": "markers",
+                "marker": {"size": 15, "color": colors["black"]},
+            },
+        ],
+        "layout": {
+            "clickmode": "event+select",
+            "xaxis": {
+                "title": "Procent voor of achter HPEnd op Internal Target",
+                "range": [x_min, x_max],
+                "zeroline": False,
+            },
+            "yaxis": {
+                "title": "Procent voor of achter op verwachte werkvoorraad",
+                "range": [y_min, y_max],
+                "zeroline": False,
+            },
+            "showlegend": False,
+            "title": {
+                "text": "Krijg alle projecten in het groene vlak door de pijlen te volgen"
+            },
+            "annotations": (
+                [
+                    dict(
+                        x=-12.5,
+                        y=25,
+                        ax=0,
+                        ay=40,
+                        xref="x",
+                        yref="y",
+                        text="Verhoog schouw of BIS capaciteit",
+                        alignment="left",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=12.5,
+                        y=25,
+                        ax=0,
+                        ay=40,
+                        xref="x",
+                        yref="y",
+                        text="Verhoog schouw of BIS capaciteit",
+                        alignment="left",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=-13.5,
+                        y=160,
+                        ax=-100,
+                        ay=0,
+                        xref="x",
+                        yref="y",
+                        text="Verhoog HAS capaciteit",
+                        alignment="left",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=-13.5,
+                        y=40,
+                        ax=-100,
+                        ay=0,
+                        xref="x",
+                        yref="y",
+                        text="Verruim klantafspraak",
+                        alignment="left",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=13.5,
+                        y=160,
+                        ax=100,
+                        ay=0,
+                        xref="x",
+                        yref="y",
+                        text="Verlaag HAS capcaciteit",
+                        alignment="right",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=13.5,
+                        y=40,
+                        ax=100,
+                        ay=0,
+                        xref="x",
+                        yref="y",
+                        text="Verscherp klantafspraak",
+                        alignment="right",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=12.5,
+                        y=185,
+                        ax=0,
+                        ay=-40,
+                        xref="x",
+                        yref="y",
+                        text="Verlaag schouw of BIS capaciteit",
+                        alignment="left",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ]
+                + [
+                    dict(
+                        x=-12.5,
+                        y=185,
+                        ax=0,
+                        ay=-40,
+                        xref="x",
+                        yref="y",
+                        text="Verlaag schouw of BIS capaciteit",
+                        alignment="left",
+                        showarrow=True,
+                        arrowhead=2,
+                    )
+                ],
+            ),
+            "margin": {"l": 60, "r": 15, "b": 40, "t": 40},
+            "plot_bgcolor": colors["plot_bgcolor"],
+            "paper_bgcolor": colors["paper_bgcolor"],
         },
-        {
-            'x': [1 / 70 * x_min, 1 / 70 * x_max, 1 / 70 * x_max, 15, 15, 1 / 70 * x_min],
-            'y': [y_min, y_min, y_voorraad_p, y_voorraad_p, 150, 150],
-            'name': 'Trace 2',
-            'mode': 'lines',
-            'fill': 'toself',
-            'opacity': 1,
-            'line': {'color': colors['green']}
-        },
-        {
-            'x': [x_min, 1 / 70 * x_min, 1 / 70 * x_min, 15, 15, 1 / 70 * x_max,
-                  1 / 70 * x_max, x_max, x_max, x_min, x_min, 1 / 70 * x_min],
-            'y': [y_voorraad_p, y_voorraad_p, 150, 150, y_voorraad_p, y_voorraad_p,
-                  y_min, y_min, y_max, y_max, y_voorraad_p, y_voorraad_p],
-            'name': 'Trace 2',
-            'mode': 'lines',
-            'fill': 'toself',
-            'opacity': 1,
-            'line': {'color': colors['yellow']}
-        },
-        {
-            'x': x,
-            'y': y,
-            'text': names,
-            'name': 'Trace 1',
-            'mode': 'markers',
-            'marker': {'size': 15, 'color': colors['black']}
-        }],
-        'layout': {'clickmode': 'event+select',
-                   'xaxis': {'title': 'Procent voor of achter HPEnd op Internal Target', 'range': [x_min, x_max],
-                             'zeroline': False},
-                   'yaxis': {'title': 'Procent voor of achter op verwachte werkvoorraad', 'range': [y_min, y_max],
-                             'zeroline': False},
-                   'showlegend': False,
-                   'title': {'text': 'Krijg alle projecten in het groene vlak door de pijlen te volgen'},
-                   'annotations': (
-                       [dict(x=-12.5, y=25, ax=0, ay=40, xref="x", yref="y",
-                             text='Verhoog schouw of BIS capaciteit', alignment='left',
-                             showarrow=True, arrowhead=2)]
-                       + [dict(x=12.5, y=25, ax=0, ay=40, xref="x", yref="y",
-                               text='Verhoog schouw of BIS capaciteit', alignment='left',
-                               showarrow=True, arrowhead=2)]
-                       + [dict(x=-13.5, y=160, ax=-100, ay=0, xref="x", yref="y",
-                               text='Verhoog HAS capaciteit',
-                               alignment='left', showarrow=True, arrowhead=2)]
-                       + [dict(x=-13.5, y=40, ax=-100, ay=0, xref="x", yref="y",
-                               text='Verruim klantafspraak',
-                               alignment='left', showarrow=True, arrowhead=2)]
-                       + [dict(x=13.5, y=160, ax=100, ay=0, xref="x", yref="y",
-                               text='Verlaag HAS capcaciteit',
-                               alignment='right', showarrow=True, arrowhead=2)]
-                       + [dict(x=13.5, y=40, ax=100, ay=0, xref="x", yref="y",
-                               text='Verscherp klantafspraak',
-                               alignment='right', showarrow=True, arrowhead=2)]
-                       + [dict(x=12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
-                               text='Verlaag schouw of BIS capaciteit', alignment='left',
-                               showarrow=True, arrowhead=2)]
-                       + [dict(x=-12.5, y=185, ax=0, ay=-40, xref="x", yref="y",
-                               text='Verlaag schouw of BIS capaciteit', alignment='left',
-                               showarrow=True, arrowhead=2)],
-                   ),
-                   'margin': {'l': 60, 'r': 15, 'b': 40, 't': 40},
-                   'plot_bgcolor': colors['plot_bgcolor'],
-                   'paper_bgcolor': colors['paper_bgcolor'],
-                   }
     }
-    record = dict(id='project_performance', figure=fig)
+    record = dict(id="project_performance", figure=fig)
     return record
 
 
@@ -664,7 +865,7 @@ def create_project_filter(df: pd.DataFrame):
         list[dict]: A list of dictionaries with the projects with the following shape
         {'label': project, 'value': project}
     """
-    filters = [{'label': x, 'value': x} for x in df.project.cat.categories]
+    filters = [{"label": x, "value": x} for x in df.project.cat.categories]
     record = dict(filters=filters)
     return record
 
@@ -684,11 +885,17 @@ def get_intersect(a1, a2, b1, b2):
     l2 = np.cross(h[2], h[3])  # get second line
     x, y, z = np.cross(l1, l2)  # point of intersection
     if z == 0:  # lines are parallel
-        return (float('inf'), float('inf'))
+        return (float("inf"), float("inf"))
     return (x / z, y / z)
 
 
-def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1: dict, time_delta_days: int = 0) -> int:
+def calculate_week_target(
+    project: str,
+    target_per_week: dict,
+    FTU0: dict,
+    FTU1: dict,
+    time_delta_days: int = 0,
+) -> int:
     """
     Calculates the target per week for a project. Based on the richtings_coefficient and total_objects calculated
     in functions.py: targets().
@@ -710,9 +917,13 @@ def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1:
             FTU1[project] = pd.Timestamp(FTU0[project]) + pd.Timedelta(days=100)
             FTU1[project] = FTU1[project].strftime("%Y-%m-%d")
 
-        if (pd.to_datetime(FTU0[project]) < (pd.Timestamp.now() - pd.Timedelta(days=time_delta_days))) \
-                & \
-                ((pd.Timestamp.now() - pd.Timedelta(days=time_delta_days)) < pd.to_datetime(FTU1[project])):
+        if (
+            pd.to_datetime(FTU0[project])
+            < (pd.Timestamp.now() - pd.Timedelta(days=time_delta_days))
+        ) & (
+            (pd.Timestamp.now() - pd.Timedelta(days=time_delta_days))
+            < pd.to_datetime(FTU1[project])
+        ):
             target = int(round(target_per_week[project]))
         else:
             target = 0
@@ -721,13 +932,15 @@ def calculate_week_target(project: str, target_per_week: dict, FTU0: dict, FTU1:
     return target
 
 
-def _create_bullet_chart_realisatie(value: float,
-                                    prev_value: float,
-                                    max_value: float,
-                                    yellow_border: float,
-                                    threshold: float,
-                                    title: str = "",
-                                    subtitle: str = ""):
+def _create_bullet_chart_realisatie(
+    value: float,
+    prev_value: float,
+    max_value: float,
+    yellow_border: float,
+    threshold: float,
+    title: str = "",
+    subtitle: str = "",
+):
     """
     Creates a bullet chart to be rendered by `Plotly <https://plotly.com/python/indicator/#bullet-gauge>`_.
 
@@ -743,22 +956,27 @@ def _create_bullet_chart_realisatie(value: float,
     Returns:
         dict: A plotly graph object
     """
-    return dict(counts=value,
-                counts_prev=prev_value,
-                title=title,
-                subtitle=subtitle,
-                font_color='green',
-                gauge={
-                    'shape': "bullet",
-                    'axis': {'range': [0, max_value]},
-                    'threshold': {
-                        'line': {'color': "red", 'width': 2},
-                        'thickness': 0.75,
-                        'value': threshold},
-                    'steps': [
-                        {'range': [0, yellow_border], 'color': "yellow"},
-                        {'range': [yellow_border, max_value], 'color': "lightgreen"}]},
-                id=None)
+    return dict(
+        counts=value,
+        counts_prev=prev_value,
+        title=title,
+        subtitle=subtitle,
+        font_color="green",
+        gauge={
+            "shape": "bullet",
+            "axis": {"range": [0, max_value]},
+            "threshold": {
+                "line": {"color": "red", "width": 2},
+                "thickness": 0.75,
+                "value": threshold,
+            },
+            "steps": [
+                {"range": [0, yellow_border], "color": "yellow"},
+                {"range": [yellow_border, max_value], "color": "lightgreen"},
+            ],
+        },
+        id=None,
+    )
 
 
 def lastweek_realisatie_hpend_bullet_chart(project_df, weektarget):
@@ -779,13 +997,15 @@ def lastweek_realisatie_hpend_bullet_chart(project_df, weektarget):
     realisatie = int(realisatie_end_week - realisatie_beginning_week)
 
     max_value = int(max(weektarget, realisatie, 1) * 1.1)
-    return _create_bullet_chart_realisatie(value=realisatie,
-                                           prev_value=None,
-                                           max_value=max_value,
-                                           yellow_border=int(weektarget * 0.9),
-                                           threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                           title=f'HAS realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
-                                           subtitle=f"Target: {weektarget}")
+    return _create_bullet_chart_realisatie(
+        value=realisatie,
+        prev_value=None,
+        max_value=max_value,
+        yellow_border=int(weektarget * 0.9),
+        threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+        title=f'HAS realisatie week {int(datetime.datetime.now().strftime("%V")) - 1}',
+        subtitle=f"Target: {weektarget}",
+    )
 
 
 def thisweek_realisatie_hpend_bullet_chart(project_df, weektarget, delta=0):
@@ -808,19 +1028,25 @@ def thisweek_realisatie_hpend_bullet_chart(project_df, weektarget, delta=0):
     realisatie_this_week = int(realisatie_today - realisatie_beginning_week)
 
     realisatie_yesterday = br.opgeleverd(project_df, 1 + delta).sum()
-    realisatie_this_week_yesterday = int(realisatie_yesterday - realisatie_beginning_week)
+    realisatie_this_week_yesterday = int(
+        realisatie_yesterday - realisatie_beginning_week
+    )
 
     max_value = int(max(weektarget, realisatie_this_week, 1) * 1.1)
-    return _create_bullet_chart_realisatie(value=realisatie_this_week,
-                                           prev_value=realisatie_this_week_yesterday,
-                                           max_value=max_value,
-                                           yellow_border=int(weektarget * 0.9),
-                                           threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
-                                           title=f'HAS realisatie week {int(datetime.datetime.now().strftime("%V"))}',
-                                           subtitle=f"Target:{weektarget}")
+    return _create_bullet_chart_realisatie(
+        value=realisatie_this_week,
+        prev_value=realisatie_this_week_yesterday,
+        max_value=max_value,
+        yellow_border=int(weektarget * 0.9),
+        threshold=max(weektarget, 0.01),  # 0.01 to show a 0 threshold
+        title=f'HAS realisatie week {int(datetime.datetime.now().strftime("%V"))}',
+        subtitle=f"Target:{weektarget}",
+    )
 
 
-def week_realisatie_bullet_chart(week_realisatie, week_realisatie_day_before, week_target, week_delta=0):
+def week_realisatie_bullet_chart(
+    week_realisatie, week_realisatie_day_before, week_target, week_delta=0
+):
     """
         Creates bullet chart using targets and realisaties
     Args:
@@ -833,16 +1059,20 @@ def week_realisatie_bullet_chart(week_realisatie, week_realisatie_day_before, we
 
     """
     max_value = int(max(week_target, week_realisatie, 1) * 1.1)
-    return _create_bullet_chart_realisatie(value=week_realisatie,
-                                           prev_value=week_realisatie_day_before,
-                                           max_value=max_value,
-                                           yellow_border=int(week_target * 0.9),
-                                           threshold=max(week_target, 0.01),  # 0.01 to show a 0 threshold
-                                           title=f'BIS realisatie week {int(datetime.datetime.now().strftime("%V"))-week_delta}',
-                                           subtitle=f"Bis target: {week_target}")
+    return _create_bullet_chart_realisatie(
+        value=week_realisatie,
+        prev_value=week_realisatie_day_before,
+        max_value=max_value,
+        yellow_border=int(week_target * 0.9),
+        threshold=max(week_target, 0.01),  # 0.01 to show a 0 threshold
+        title=f'BIS realisatie week {int(datetime.datetime.now().strftime("%V"))-week_delta}',
+        subtitle=f"Bis target: {week_target}",
+    )
 
 
-def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_per_project: dict):
+def make_graphics_for_ratio_hc_hpend_per_project(
+    project: str, ratio_HC_HPend_per_project: dict
+):
     """
     This function takes in a dictionary with HC/HPend ratios per project and a project of interest. It then returns
     a dictionary that has all the graphical layout components necessary to plot the HC/HPend value on the dashboard.
@@ -857,29 +1087,35 @@ def make_graphics_for_ratio_hc_hpend_per_project(project: str, ratio_HC_HPend_pe
     """
     counts = round(ratio_HC_HPend_per_project[project], 2)
 
-    return dict(title='HC / HPend',
-                subtitle='',
-                counts=counts,
-                counts_prev=None,
-                font_color='green',
-                gauge={
-                    'axis': {'range': [None, 1], 'tickwidth': 1, 'tickcolor': "green"},
-                    'bar': {'color': "darkgreen"},
-                    'bgcolor': "white",
-                    'borderwidth': 2,
-                    'bordercolor': "gray",
-                    'steps': [
-                        {'range': [0, .6], 'color': 'yellow'},
-                        {'range': [.6, 1], 'color': 'lightgreen'}],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': .9}
-                },
-                id=None)
+    return dict(
+        title="HC / HPend",
+        subtitle="",
+        counts=counts,
+        counts_prev=None,
+        font_color="green",
+        gauge={
+            "axis": {"range": [None, 1], "tickwidth": 1, "tickcolor": "green"},
+            "bar": {"color": "darkgreen"},
+            "bgcolor": "white",
+            "borderwidth": 2,
+            "bordercolor": "gray",
+            "steps": [
+                {"range": [0, 0.6], "color": "yellow"},
+                {"range": [0.6, 1], "color": "lightgreen"},
+            ],
+            "threshold": {
+                "line": {"color": "red", "width": 4},
+                "thickness": 0.75,
+                "value": 0.9,
+            },
+        },
+        id=None,
+    )
 
 
-def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors_per_project: dict):
+def make_graphics_for_number_errors_fcbc_per_project(
+    project: str, number_errors_per_project: dict
+):
     """
     This function takes in a dictionary with the number of errors between FiberConnect (FC) and KPN's Beschikbaarheid
     Checker (BC) per project and a project of interest. It then returns a dictionary that has all the graphical layout
@@ -893,12 +1129,14 @@ def make_graphics_for_number_errors_fcbc_per_project(project: str, number_errors
         a dictionary that contains the graphical layout to plot this value on the dashboard
 
     """
-    return dict(counts=number_errors_per_project[project],
-                counts_prev=None,
-                title='Errors FC- BC',
-                subtitle='',
-                font_color='green',
-                id=None)
+    return dict(
+        counts=number_errors_per_project[project],
+        counts_prev=None,
+        title="Errors FC- BC",
+        subtitle="",
+        font_color="green",
+        id=None,
+    )
 
 
 def calculate_current_werkvoorraad(df: pd.DataFrame):
@@ -912,11 +1150,14 @@ def calculate_current_werkvoorraad(df: pd.DataFrame):
         dict: A dictionary with the project as key and the werkvoorraad as the value.
     """
     # todo add in_has_werkvoorraad column in etl and use that column
-    return df[br.has_werkvoorraad(df)] \
-        .groupby(by="project") \
-        .count() \
-        .reset_index()[['project', "sleutel"]] \
-        .set_index("project").to_dict()['sleutel']
+    return (
+        df[br.has_werkvoorraad(df)]
+        .groupby(by="project")
+        .count()
+        .reset_index()[["project", "sleutel"]]
+        .set_index("project")
+        .to_dict()["sleutel"]
+    )
 
 
 # TODO: Documentation by Andre van Turnhout. Perhaps remove?
@@ -925,20 +1166,25 @@ def empty_collection(subset):
     for key in subset:
         i = 0
         for ii in range(0, 20):
-            docs = firestore.Client().collection('Projects').where('project', '==', key).limit(1000).stream()
+            docs = (
+                firestore.Client()
+                .collection("Projects")
+                .where("project", "==", key)
+                .limit(1000)
+                .stream()
+            )
             for doc in docs:
                 doc.reference.delete()
                 i += 1
             print(i)
-        print(key + ' ' + str((time.time() - t_start) / 60) + ' min ' + str(i))
+        print(key + " " + str((time.time() - t_start) / 60) + " min " + str(i))
 
 
 # TODO: Documentation by Andre van Turnhout. Perhaps remove?
 def add_token_mapbox(token):
     # TODO, remove if in secrets
-    record = dict(id='token_mapbox',
-                  token=token)
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+    record = dict(id="token_mapbox", token=token)
+    firestore.Client().collection("Graphs").document(record["id"]).set(record)
 
 
 def set_date_update(client=None):
@@ -953,9 +1199,9 @@ def set_date_update(client=None):
     Returns: timestamp store in a document for the last correct run of the analysis
 
     """
-    id_ = f'update_date_{client}' if client else 'update_date'
-    record = dict(id=id_, date=pd.datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ'))
-    firestore.Client().collection('Graphs').document(record['id']).set(record)
+    id_ = f"update_date_{client}" if client else "update_date"
+    record = dict(id=id_, date=pd.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+    firestore.Client().collection("Graphs").document(record["id"]).set(record)
 
 
 # TODO: Documentation by Andre van Turnhout
@@ -964,58 +1210,112 @@ def error_check_FCBC(df: pd.DataFrame):
 
     no_errors_series = pd.Series([False]).repeat(len(df)).values
 
-    business_rules['101'] = (df.kabelid.isna() & ~df.opleverdatum.isna() & (df.postcode.isna() | df.huisnummer.isna()))
-    business_rules['102'] = (df.plandatum.isna())
-    business_rules['103'] = (
-        df.opleverdatum.isna() & df.opleverstatus.isin(['2', '10', '90', '91', '96', '97', '98', '99']))
-    business_rules['104'] = (df.opleverstatus.isna())
+    business_rules["101"] = (
+        df.kabelid.isna()
+        & ~df.opleverdatum.isna()
+        & (df.postcode.isna() | df.huisnummer.isna())
+    )
+    business_rules["102"] = df.plandatum.isna()
+    business_rules["103"] = df.opleverdatum.isna() & df.opleverstatus.isin(
+        ["2", "10", "90", "91", "96", "97", "98", "99"]
+    )
+    business_rules["104"] = df.opleverstatus.isna()
     # business_rules['114'] = (df.toestemming.isna())
-    business_rules['115'] = business_rules['118'] = (df.soort_bouw.isna())  # soort_bouw hoort bij?
-    business_rules['116'] = (df.ftu_type.isna())
-    business_rules['117'] = (df['toelichting_status'].isna() & df.opleverstatus.isin(['4', '12']))
-    business_rules['119'] = (df['toelichting_status'].isna() & df.redenna.isin(['R8', 'R9', 'R17']))
+    business_rules["115"] = business_rules[
+        "118"
+    ] = df.soort_bouw.isna()  # soort_bouw hoort bij?
+    business_rules["116"] = df.ftu_type.isna()
+    business_rules["117"] = df["toelichting_status"].isna() & df.opleverstatus.isin(
+        ["4", "12"]
+    )
+    business_rules["119"] = df["toelichting_status"].isna() & df.redenna.isin(
+        ["R8", "R9", "R17"]
+    )
 
-    business_rules['120'] = no_errors_series  # doorvoerafhankelijk niet aanwezig
-    business_rules['121'] = (
-        (df.postcode.isna() & ~df.huisnummer.isna()) | (~df.postcode.isna() & df.huisnummer.isna()))
-    business_rules['122'] = (
-        ~(
-            (
-                df.kast.isna()
-                & df.kastrij.isna()
-                & df.odfpos.isna()
-                & df.catvpos.isna()
-                & df.odf.isna())
-            | (
-                ~df.kast.isna()
-                & ~df.kastrij.isna()
-                & ~df.odfpos.isna()
-                & ~df.catvpos.isna()
-                & ~df.areapop.isna()
-                & ~df.odf.isna()
-            )
+    business_rules["120"] = no_errors_series  # doorvoerafhankelijk niet aanwezig
+    business_rules["121"] = (df.postcode.isna() & ~df.huisnummer.isna()) | (
+        ~df.postcode.isna() & df.huisnummer.isna()
+    )
+    business_rules["122"] = ~(
+        (
+            df.kast.isna()
+            & df.kastrij.isna()
+            & df.odfpos.isna()
+            & df.catvpos.isna()
+            & df.odf.isna()
+        )
+        | (
+            ~df.kast.isna()
+            & ~df.kastrij.isna()
+            & ~df.odfpos.isna()
+            & ~df.catvpos.isna()
+            & ~df.areapop.isna()
+            & ~df.odf.isna()
         )
     )  # kloppen deze velden?  (kast, kastrij, odfpos)
-    business_rules['123'] = (df.projectcode.isna())
-    business_rules['301'] = (~df.opleverdatum.isna() & df.opleverstatus.isin(['0', '14']))
-    business_rules['303'] = (df.kabelid.isna() & (df.postcode.isna() | df.huisnummer.isna()))
-    business_rules['304'] = no_errors_series  # geen column Kavel...
-    business_rules['306'] = (~df.kabelid.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99']))
-    business_rules['308'] = no_errors_series  # geen HLopleverdatum...
-    business_rules['309'] = no_errors_series  # geen doorvoerafhankelijk aanwezig...
+    business_rules["123"] = df.projectcode.isna()
+    business_rules["301"] = ~df.opleverdatum.isna() & df.opleverstatus.isin(["0", "14"])
+    business_rules["303"] = df.kabelid.isna() & (
+        df.postcode.isna() | df.huisnummer.isna()
+    )
+    business_rules["304"] = no_errors_series  # geen column Kavel...
+    business_rules["306"] = ~df.kabelid.isna() & df.opleverstatus.isin(
+        ["90", "91", "96", "97", "98", "99"]
+    )
+    business_rules["308"] = no_errors_series  # geen HLopleverdatum...
+    business_rules["309"] = no_errors_series  # geen doorvoerafhankelijk aanwezig...
 
-    business_rules['310'] = no_errors_series  # (~df.KabelID.isna() & df.Areapop.isna())  # strengID != KabelID?
-    business_rules['311'] = (df.redenna.isna() & ~df.opleverstatus.isin(['2', '10', '50']))
-    business_rules['501'] = ~df.postcode.str.match(r"\d{4}[a-zA-Z]{2}").fillna(False)
-    business_rules['502'] = no_errors_series  # niet te checken, geen toegang tot CLR
-    business_rules['503'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
-    business_rules['504'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
-    business_rules['506'] = (~df.opleverstatus.isin(
-        ['0', '1', '2', '4', '5', '6', '7,' '8', '9', '10', '11', '12', '13', '14', '15', '30', '31', '33', '34', '35',
-         '50', '90', '91', '96', '97', '98', '99']))
-    business_rules['508'] = no_errors_series  # niet te checken, geen toegang tot Areapop
+    business_rules[
+        "310"
+    ] = no_errors_series  # (~df.KabelID.isna() & df.Areapop.isna())  # strengID != KabelID?
+    business_rules["311"] = df.redenna.isna() & ~df.opleverstatus.isin(
+        ["2", "10", "50"]
+    )
+    business_rules["501"] = ~df.postcode.str.match(r"\d{4}[a-zA-Z]{2}").fillna(False)
+    business_rules["502"] = no_errors_series  # niet te checken, geen toegang tot CLR
+    business_rules[
+        "503"
+    ] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
+    business_rules[
+        "504"
+    ] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
+    business_rules["506"] = ~df.opleverstatus.isin(
+        [
+            "0",
+            "1",
+            "2",
+            "4",
+            "5",
+            "6",
+            "7," "8",
+            "9",
+            "10",
+            "11",
+            "12",
+            "13",
+            "14",
+            "15",
+            "30",
+            "31",
+            "33",
+            "34",
+            "35",
+            "50",
+            "90",
+            "91",
+            "96",
+            "97",
+            "98",
+            "99",
+        ]
+    )
+    business_rules[
+        "508"
+    ] = no_errors_series  # niet te checken, geen toegang tot Areapop
 
-    def check_numeric_and_lenght(series: pd.Series, min_length=1, max_length=100, fillna=True):
+    def check_numeric_and_lenght(
+        series: pd.Series, min_length=1, max_length=100, fillna=True
+    ):
         """
         Checks if the number of digits is within a range. Empty values will be evaluated the fillna parameter describes.
         Args:
@@ -1027,73 +1327,155 @@ def error_check_FCBC(df: pd.DataFrame):
         Returns:
 
         """
-        return (series.str.len() > max_length) | (series.str.len() < min_length) | ~(
-            series.str.isnumeric().fillna(fillna))
+        return (
+            (series.str.len() > max_length)
+            | (series.str.len() < min_length)
+            | ~(series.str.isnumeric().fillna(fillna))
+        )
 
-    business_rules['509'] = check_numeric_and_lenght(df.kastrij, max_length=2)
-    business_rules['510'] = check_numeric_and_lenght(df.kast, max_length=4)
-    business_rules['511'] = check_numeric_and_lenght(df.odf, max_length=5)
-    business_rules['512'] = check_numeric_and_lenght(df.odfpos, max_length=2)
-    business_rules['513'] = check_numeric_and_lenght(df.catv, max_length=5)
-    business_rules['514'] = check_numeric_and_lenght(df.catvpos, max_length=3)
+    business_rules["509"] = check_numeric_and_lenght(df.kastrij, max_length=2)
+    business_rules["510"] = check_numeric_and_lenght(df.kast, max_length=4)
+    business_rules["511"] = check_numeric_and_lenght(df.odf, max_length=5)
+    business_rules["512"] = check_numeric_and_lenght(df.odfpos, max_length=2)
+    business_rules["513"] = check_numeric_and_lenght(df.catv, max_length=5)
+    business_rules["514"] = check_numeric_and_lenght(df.catvpos, max_length=3)
 
-    business_rules['516'] = no_errors_series  # cannot check
-    business_rules['517'] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
-    business_rules['518'] = (~df.toestemming.isin(['Ja', 'Nee', np.nan, None]))
-    business_rules['519'] = (~df.soort_bouw.isin(['Laag', 'Hoog', 'Duplex', 'Woonboot', 'Onbekend']))
-    business_rules['520'] = ((df.ftu_type.isna() & df.opleverstatus.isin(['2', '10'])) | (~df.ftu_type.isin(
-        ['FTU_GN01', 'FTU_GN02', 'FTU_PF01', 'FTU_PF02', 'FTU_TY01', 'FTU_ZS_GN01', 'FTU_TK01', 'Onbekend'])))
-    business_rules['521'] = (df.toelichting_status.str.len() < 3)
-    business_rules['522'] = no_errors_series  # Civieldatum not present in our FC dump
-    business_rules['524'] = no_errors_series  # Kavel not present in our FC dump
-    business_rules['527'] = no_errors_series  # HL opleverdatum not present in our FC dump
-    business_rules['528'] = (~df.redenna.isin(
-        [np.nan, None, 'R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9', 'R10', 'R11', 'R12', 'R13', 'R14',
-         'R15',
-         'R16', 'R17', 'R18', 'R19', 'R20', 'R21', 'R22']))
-    business_rules['531'] = no_errors_series  # strengID niet aanwezig in deze FCdump
+    business_rules["516"] = no_errors_series  # cannot check
+    business_rules[
+        "517"
+    ] = no_errors_series  # date is already present in different format...yyyy-mm-dd??
+    business_rules["518"] = ~df.toestemming.isin(["Ja", "Nee", np.nan, None])
+    business_rules["519"] = ~df.soort_bouw.isin(
+        ["Laag", "Hoog", "Duplex", "Woonboot", "Onbekend"]
+    )
+    business_rules["520"] = (
+        df.ftu_type.isna() & df.opleverstatus.isin(["2", "10"])
+    ) | (
+        ~df.ftu_type.isin(
+            [
+                "FTU_GN01",
+                "FTU_GN02",
+                "FTU_PF01",
+                "FTU_PF02",
+                "FTU_TY01",
+                "FTU_ZS_GN01",
+                "FTU_TK01",
+                "Onbekend",
+            ]
+        )
+    )
+    business_rules["521"] = df.toelichting_status.str.len() < 3
+    business_rules["522"] = no_errors_series  # Civieldatum not present in our FC dump
+    business_rules["524"] = no_errors_series  # Kavel not present in our FC dump
+    business_rules[
+        "527"
+    ] = no_errors_series  # HL opleverdatum not present in our FC dump
+    business_rules["528"] = ~df.redenna.isin(
+        [
+            np.nan,
+            None,
+            "R0",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "R5",
+            "R6",
+            "R7",
+            "R8",
+            "R9",
+            "R10",
+            "R11",
+            "R12",
+            "R13",
+            "R14",
+            "R15",
+            "R16",
+            "R17",
+            "R18",
+            "R19",
+            "R20",
+            "R21",
+            "R22",
+        ]
+    )
+    business_rules["531"] = no_errors_series  # strengID niet aanwezig in deze FCdump
     # if df[~df.CATVpos.isin(['999'])].shape[0] > 0:
     #     business_rules['532'] = [df.sleutel[el] for el in df.ODFpos.index
     #                                 if ((int(df.CATVpos[el]) - int(df.ODFpos[el]) != 1) &
     #                                     (int(df.CATVpos[el]) != '999')) |
     #                                    (int(df.ODFpos[el]) % 2 == [])]
-    business_rules['533'] = no_errors_series  # Doorvoerafhankelijkheid niet aanwezig in deze FCdump
-    business_rules['534'] = no_errors_series  # geen toegang tot CLR om te kunnen checken
-    business_rules['535'] = df.toelichting_status.str.contains(",").fillna(False)
-    business_rules['536'] = df.kabelid.str.len() < 3
-    business_rules['537'] = no_errors_series  # Blok not present in our FC dump
-    business_rules['701'] = no_errors_series  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
-    business_rules['702'] = (~df.odf.isna() & df.opleverstatus.isin(['90', '91', '96', '97', '98', '99']))
-    business_rules['707'] = no_errors_series  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
-    business_rules['708'] = (df.opleverstatus.isin(['90']) & ~df.redenna.isin(['R15', 'R16', 'R17'])) | (
-        df.opleverstatus.isin(['91']) & ~df.redenna.isin(['R12', 'R13', 'R14', 'R21']))
+    business_rules[
+        "533"
+    ] = no_errors_series  # Doorvoerafhankelijkheid niet aanwezig in deze FCdump
+    business_rules[
+        "534"
+    ] = no_errors_series  # geen toegang tot CLR om te kunnen checken
+    business_rules["535"] = df.toelichting_status.str.contains(",").fillna(False)
+    business_rules["536"] = df.kabelid.str.len() < 3
+    business_rules["537"] = no_errors_series  # Blok not present in our FC dump
+    business_rules[
+        "701"
+    ] = no_errors_series  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
+    business_rules["702"] = ~df.odf.isna() & df.opleverstatus.isin(
+        ["90", "91", "96", "97", "98", "99"]
+    )
+    business_rules[
+        "707"
+    ] = no_errors_series  # Kan niet gecheckt worden, hebben we vorige waarde voor nodig...
+    business_rules["708"] = (
+        df.opleverstatus.isin(["90"]) & ~df.redenna.isin(["R15", "R16", "R17"])
+    ) | (df.opleverstatus.isin(["91"]) & ~df.redenna.isin(["R12", "R13", "R14", "R21"]))
     # business_rules['709'] = ((df.ODF + df.ODFpos).duplicated(keep='last'))  # klopt dit?
-    business_rules['710'] = ~df.kabelid.isna() & ~df.adres.isna() & (df.kabelid + df.adres).duplicated(keep=False)
+    business_rules["710"] = (
+        ~df.kabelid.isna()
+        & ~df.adres.isna()
+        & (df.kabelid + df.adres).duplicated(keep=False)
+    )
     # business_rules['711'] = (~df.CATV.isin(['999']) | ~df.CATVpos.isin(['999']))  # wanneer PoP 999?
-    business_rules['713'] = no_errors_series  # type bouw zit niet in onze FC dump
+    business_rules["713"] = no_errors_series  # type bouw zit niet in onze FC dump
     # if df[df.ODF.isin(['999']) & df.ODFpos.isin(['999']) & df.CATVpos.isin(['999']) & df.CATVpos.isin(['999'])].shape[0] > 0:
     #     business_rules['714'] = df[~df.ODF.isin(['999']) | ~df.ODFpos.isin(['999']) | ~df.CATVpos.isin(['999']) |
     #                                 ~df.CATVpos.isin(['999'])].sleutel.to_list()
-    business_rules['716'] = no_errors_series  # niet te checken, geen toegang tot SIMA
-    business_rules['717'] = no_errors_series  # type bouw zit niet in onze FC dump
-    business_rules['719'] = no_errors_series  # kan alleen gecheckt worden met geschiedenis
-    business_rules['721'] = no_errors_series  # niet te checken, geen Doorvoerafhankelijkheid in FC dump
-    business_rules['723'] = (df.redenna.isin(['R15', 'R16', 'R17']) & ~df.opleverstatus.isin(['90'])) | (
-        df.redenna.isin(['R12', 'R12', 'R14', 'R21']) & ~df.opleverstatus.isin(['91'])) | (
-        df.opleverstatus.isin(['90']) & df.redenna.isin(['R2', 'R11']))
-    business_rules['724'] = (~df.opleverdatum.isna() & df.redenna.isin(['R0', 'R19', 'R22']))
-    business_rules['725'] = no_errors_series  # geen zicht op vraagbundelingsproject of niet
-    business_rules['726'] = no_errors_series  # niet te checken, geen HLopleverdatum aanwezig
-    business_rules['727'] = df.opleverstatus.isin(['50'])
-    business_rules['728'] = no_errors_series  # voorkennis nodig over poptype
+    business_rules["716"] = no_errors_series  # niet te checken, geen toegang tot SIMA
+    business_rules["717"] = no_errors_series  # type bouw zit niet in onze FC dump
+    business_rules[
+        "719"
+    ] = no_errors_series  # kan alleen gecheckt worden met geschiedenis
+    business_rules[
+        "721"
+    ] = no_errors_series  # niet te checken, geen Doorvoerafhankelijkheid in FC dump
+    business_rules["723"] = (
+        (df.redenna.isin(["R15", "R16", "R17"]) & ~df.opleverstatus.isin(["90"]))
+        | (
+            df.redenna.isin(["R12", "R12", "R14", "R21"])
+            & ~df.opleverstatus.isin(["91"])
+        )
+        | (df.opleverstatus.isin(["90"]) & df.redenna.isin(["R2", "R11"]))
+    )
+    business_rules["724"] = ~df.opleverdatum.isna() & df.redenna.isin(
+        ["R0", "R19", "R22"]
+    )
+    business_rules[
+        "725"
+    ] = no_errors_series  # geen zicht op vraagbundelingsproject of niet
+    business_rules[
+        "726"
+    ] = no_errors_series  # niet te checken, geen HLopleverdatum aanwezig
+    business_rules["727"] = df.opleverstatus.isin(["50"])
+    business_rules["728"] = no_errors_series  # voorkennis nodig over poptype
 
-    business_rules['729'] = no_errors_series  # kan niet checken, vorige staat FC voor nodig
-    business_rules['90x'] = no_errors_series  # kan niet checken, extra info over bestand nodig!
+    business_rules[
+        "729"
+    ] = no_errors_series  # kan niet checken, vorige staat FC voor nodig
+    business_rules[
+        "90x"
+    ] = no_errors_series  # kan niet checken, extra info over bestand nodig!
 
     errors_FC_BC = defaultdict(dict)
 
     for err_no, mask in business_rules.items():
-        g_df = df[mask].groupby(by="project")['sleutel'].apply(list)
+        g_df = df[mask].groupby(by="project")["sleutel"].apply(list)
         for p, sleutels in g_df.items():
             errors_FC_BC[p][err_no] = sleutels
 
@@ -1133,22 +1515,26 @@ def pie_chart_reden_na(df_na, key):
     Returns: Record to be written to the firestore, along with the name of the document.
 
     """
-    counts = df_na[['cluster_redenna', 'sleutel']].groupby("cluster_redenna").count().reset_index()
+    counts = (
+        df_na[["cluster_redenna", "sleutel"]]
+        .groupby("cluster_redenna")
+        .count()
+        .reset_index()
+    )
     labels = counts.cluster_redenna.to_list()
     values = counts.sleutel.to_list()
 
     data = {
-        'labels': labels,
-        'values': values,
-        'marker': {
-            'colors':
-                [
-                    colors['vwt_blue'],
-                    colors['yellow'],
-                    colors['red'],
-                    colors['green']
-                ]
-        }
+        "labels": labels,
+        "values": values,
+        "marker": {
+            "colors": [
+                colors["vwt_blue"],
+                colors["yellow"],
+                colors["red"],
+                colors["green"],
+            ]
+        },
     }
     document = f"pie_na_{key}"
     return data, document
@@ -1164,7 +1550,7 @@ def overview_reden_na(df: pd.DataFrame):
     Returns: Record to be written to the firestore.
 
     """
-    data, document = pie_chart_reden_na(df, 'overview')
+    data, document = pie_chart_reden_na(df, "overview")
     layout = get_pie_layout()
     fig = dict(data=data, layout=layout)
     record = dict(id=document, figure=fig)
@@ -1197,18 +1583,20 @@ def get_pie_layout():
     """
     layout = {
         #   'clickmode': 'event+select',
-        'showlegend': True,
-        'autosize': True,
-        'margin': {'l': 50, 'r': 50, 'b': 100, 't': 100},
-        'title': {'text': 'Opgegeven reden na'},
-        'height': 500,
-        'plot_bgcolor': colors['plot_bgcolor'],
-        'paper_bgcolor': colors['paper_bgcolor'],
+        "showlegend": True,
+        "autosize": True,
+        "margin": {"l": 50, "r": 50, "b": 100, "t": 100},
+        "title": {"text": "Opgegeven reden na"},
+        "height": 500,
+        "plot_bgcolor": colors["plot_bgcolor"],
+        "paper_bgcolor": colors["paper_bgcolor"],
     }
     return layout
 
 
-def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum', freq: str = 'W-MON') -> dict:
+def calculate_redenna_per_period(
+    df: pd.DataFrame, date_column: str = "hasdatum", freq: str = "W-MON"
+) -> dict:
     """
     Calculates the number of each reden na cluster (as defined in the config) grouped by
     the date of the 'date_column'. The date is grouped in buckets of the period. For example by week or month.
@@ -1231,25 +1619,34 @@ def calculate_redenna_per_period(df: pd.DataFrame, date_column: str = 'hasdatum'
         and the clusters with their occurrence counts as value.
 
     """
-    if freq == 'W-MON':
-        label_side = 'left'
-        closed_side = 'left'
-    if freq == 'M' or freq == 'Y':
-        label_side = 'right'
-        closed_side = 'right'
+    if freq == "W-MON":
+        label_side = "left"
+        closed_side = "left"
+    if freq == "M" or freq == "Y":
+        label_side = "right"
+        closed_side = "right"
 
-    redenna_period_df = df[['cluster_redenna', date_column, 'project']] \
-        .groupby(by=[pd.Grouper(key=date_column,
-                                freq=freq,
-                                closed=closed_side,  # closed end of the interval, see:
-                                # (https://en.wikipedia.org/wiki/Interval_(mathematics)#Terminology)
-                                label=label_side  # label specifies whether the result is labeled
-                                # with the beginning or the end of the interval.
-                                ),
-                     "cluster_redenna",
-                     ]
-                 ).count().unstack().fillna(0).project
-    redenna_period_df.index = redenna_period_df.index.strftime('%Y-%m-%d')
+    redenna_period_df = (
+        df[["cluster_redenna", date_column, "project"]]
+        .groupby(
+            by=[
+                pd.Grouper(
+                    key=date_column,
+                    freq=freq,
+                    closed=closed_side,  # closed end of the interval, see:
+                    # (https://en.wikipedia.org/wiki/Interval_(mathematics)#Terminology)
+                    label=label_side  # label specifies whether the result is labeled
+                    # with the beginning or the end of the interval.
+                ),
+                "cluster_redenna",
+            ]
+        )
+        .count()
+        .unstack()
+        .fillna(0)
+        .project
+    )
+    redenna_period_df.index = redenna_period_df.index.strftime("%Y-%m-%d")
     return redenna_period_df.to_dict(orient="index")
 
 
@@ -1268,10 +1665,7 @@ def rules_to_state(rules_list, state_list):
     if len(rules_list) != len(state_list):
         raise ValueError("The number of rules must be equal to the number of states")
     calculation_df = pd.concat(rules_list, axis=1).astype(int)
-    state = calculation_df.apply(
-        lambda x: state_list[list(x).index(True)],
-        axis=1
-    )
+    state = calculation_df.apply(lambda x: state_list[list(x).index(True)], axis=1)
     return state
 
 
@@ -1288,35 +1682,50 @@ def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
     Returns:
 
     """
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    time_point = pd.Timestamp.today() - pd.Timedelta(days=time_delta_days)
     mask = ~br.opgeleverd(df, time_delta_days) & br.toestemming_bekend(df)
-    toestemming_df = df[mask][['toestemming', 'toestemming_datum', 'opleverdatum', 'cluster_redenna']]
+    toestemming_df = df[mask][
+        ["toestemming", "toestemming_datum", "opleverdatum", "cluster_redenna"]
+    ]
 
-    toestemming_df['waiting_time'] = (time_point - toestemming_df.toestemming_datum).dt.days / 7
-    toestemming_df['bins'] = pd.cut(toestemming_df.waiting_time,
-                                    bins=[-np.inf, 0, 8, 12, np.inf],
-                                    labels=['before_order', 'on_time', 'limited_time', 'late'])
+    toestemming_df["waiting_time"] = (
+        time_point - toestemming_df.toestemming_datum
+    ).dt.days / 7
+    toestemming_df["bins"] = pd.cut(
+        toestemming_df.waiting_time,
+        bins=[-np.inf, 0, 8, 12, np.inf],
+        labels=["before_order", "on_time", "limited_time", "late"],
+    )
     return toestemming_df
 
 
 # TODO: Documentation by Andre van Turnhout  -> can this be removed?
 def count_toestemming(toestemming_df):
-    toestemming_df = toestemming_df.rename(columns={'bins': "counts"})
+    toestemming_df = toestemming_df.rename(columns={"bins": "counts"})
     counts = toestemming_df.counts.value_counts()
     return counts
 
 
 # TODO: Documentation by Andre van Turnhout  -> can this be removed?
 def wait_bin_cluster_redenna(df):
-    wait_bin_cluster_redenna_df = df[['wait_category', 'cluster_redenna', 'toestemming']].groupby(
-        by=['wait_category', 'cluster_redenna']).count()
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(columns={"toestemming": "count"})
-    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={'count': 0})
+    wait_bin_cluster_redenna_df = (
+        df[["wait_category", "cluster_redenna", "toestemming"]]
+        .groupby(by=["wait_category", "cluster_redenna"])
+        .count()
+    )
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.rename(
+        columns={"toestemming": "count"}
+    )
+    wait_bin_cluster_redenna_df = wait_bin_cluster_redenna_df.fillna(value={"count": 0})
     return wait_bin_cluster_redenna_df
 
 
-def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_project: dict,
-                                        time_windows_per_project: dict, ratio_under_8weeks_per_project: dict):
+def calculate_projectindicators_tmobile(
+    df: pd.DataFrame,
+    has_werkvoorraad_per_project: dict,
+    time_windows_per_project: dict,
+    ratio_under_8weeks_per_project: dict,
+):
     """
     This function takes in the transformed_data DataFrame and three dictionairies, containing the HAS werkvoorrraad,
     openstaande orders per timewindow and ratio <8 weeks aangesloten orders values per project, respectively. The
@@ -1334,52 +1743,112 @@ def calculate_projectindicators_tmobile(df: pd.DataFrame, has_werkvoorraad_per_p
 
     """
     markup_dict = {
-        'on_time-patch_only': {'title': 'Openstaand patch only op tijd',
-                               'subtitle': '< 8 weken',
-                               'font_color': 'green'},
-        'limited-patch_only': {'title': 'Openstaand patch only beperkte tijd',
-                               'subtitle': '> 8 weken < 12 weken',
-                               'font_color': 'orange'},
-        'late-patch_only': {'title': 'Openstaand patch only te laat',
-                            'subtitle': '> 12 weken',
-                            'font_color': 'red'},
-
-        'ratio': {'title': 'Ratio op tijd gesloten orders',
-                  'subtitle': '<12 weken',
-                  'font_color': 'black',
-                  'percentage': True},
-        'before_order': {'title': '', 'subtitle': '', 'font_color': ''},
-        'ready_for_has': {'title': "Werkvoorraad HAS"},
-
-        'on_time-hc_aanleg': {'title': 'Openstaand HC aanleg op tijd',
-                              'subtitle': '< 8 weken',
-                              'font_color': 'green'},
-        'limited-hc_aanleg': {'title': 'Openstaand HC aanleg beperkte tijd',
-                              'subtitle': '> 8 weken < 12 weken',
-                              'font_color': 'orange'},
-        'late-hc_aanleg': {'title': 'Openstaand HC aanleg te laat',
-                           'subtitle': '> 12 weken',
-                           'font_color': 'red'}
+        "on_time-patch_only": {
+            "title": "Openstaand patch only op tijd",
+            "subtitle": "< 8 weken",
+            "font_color": "green",
+        },
+        "limited-patch_only": {
+            "title": "Openstaand patch only beperkte tijd",
+            "subtitle": "> 8 weken < 12 weken",
+            "font_color": "orange",
+        },
+        "late-patch_only": {
+            "title": "Openstaand patch only te laat",
+            "subtitle": "> 12 weken",
+            "font_color": "red",
+        },
+        "ratio": {
+            "title": "Ratio op tijd gesloten orders",
+            "subtitle": "<12 weken",
+            "font_color": "black",
+            "percentage": True,
+        },
+        "before_order": {"title": "", "subtitle": "", "font_color": ""},
+        "ready_for_has": {"title": "Werkvoorraad HAS"},
+        "on_time-hc_aanleg": {
+            "title": "Openstaand HC aanleg op tijd",
+            "subtitle": "< 8 weken",
+            "font_color": "green",
+        },
+        "limited-hc_aanleg": {
+            "title": "Openstaand HC aanleg beperkte tijd",
+            "subtitle": "> 8 weken < 12 weken",
+            "font_color": "orange",
+        },
+        "late-hc_aanleg": {
+            "title": "Openstaand HC aanleg te laat",
+            "subtitle": "> 12 weken",
+            "font_color": "red",
+        },
     }
 
     counts_by_project = {}
-    for project, project_df in df.groupby(by='project'):
+    for project, project_df in df.groupby(by="project"):
         counts_by_project[project] = {}
 
-        counts_by_project[project].update({'ready_for_has': has_werkvoorraad_per_project[project]})
-        counts_by_project[project].update({'late-patch_only': time_windows_per_project[project]['openstaand_patch_only_late']})
-        counts_by_project[project].update({'on_time-patch_only': time_windows_per_project[project]['openstaand_patch_only_on_time']})
-        counts_by_project[project].update({'limited-patch_only': time_windows_per_project[project]['openstaand_patch_only_limited']})
-        counts_by_project[project].update({'before_order': {'counts': 0,
-                                                            'counts_prev': 0,
-                                                            'cluster_redenna': {'HC': 0,
-                                                                                'geplande aansluiting': 0,
-                                                                                'permissieobstructies': 0,
-                                                                                'technische obstructies': 0}}})
-        counts_by_project[project].update({'ratio': {'counts': ratio_under_8weeks_per_project[project]}})
-        counts_by_project[project].update({'late-hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_late']})
-        counts_by_project[project].update({'on_time-hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_on_time']})
-        counts_by_project[project].update({'limited-hc_aanleg': time_windows_per_project[project]['openstaand_hc_aanleg_limited']})
+        counts_by_project[project].update(
+            {"ready_for_has": has_werkvoorraad_per_project[project]}
+        )
+        counts_by_project[project].update(
+            {
+                "late-patch_only": time_windows_per_project[project][
+                    "openstaand_patch_only_late"
+                ]
+            }
+        )
+        counts_by_project[project].update(
+            {
+                "on_time-patch_only": time_windows_per_project[project][
+                    "openstaand_patch_only_on_time"
+                ]
+            }
+        )
+        counts_by_project[project].update(
+            {
+                "limited-patch_only": time_windows_per_project[project][
+                    "openstaand_patch_only_limited"
+                ]
+            }
+        )
+        counts_by_project[project].update(
+            {
+                "before_order": {
+                    "counts": 0,
+                    "counts_prev": 0,
+                    "cluster_redenna": {
+                        "HC": 0,
+                        "geplande aansluiting": 0,
+                        "permissieobstructies": 0,
+                        "technische obstructies": 0,
+                    },
+                }
+            }
+        )
+        counts_by_project[project].update(
+            {"ratio": {"counts": ratio_under_8weeks_per_project[project]}}
+        )
+        counts_by_project[project].update(
+            {
+                "late-hc_aanleg": time_windows_per_project[project][
+                    "openstaand_hc_aanleg_late"
+                ]
+            }
+        )
+        counts_by_project[project].update(
+            {
+                "on_time-hc_aanleg": time_windows_per_project[project][
+                    "openstaand_hc_aanleg_on_time"
+                ]
+            }
+        )
+        counts_by_project[project].update(
+            {
+                "limited-hc_aanleg": time_windows_per_project[project][
+                    "openstaand_hc_aanleg_limited"
+                ]
+            }
+        )
 
         for indicator, markup in markup_dict.items():
             counts_by_project[project][indicator].update(markup)
@@ -1418,6 +1887,7 @@ def calculate_oplevertijd(row):
         oplevertijd = np.nan
     return oplevertijd
 
+
 # def calculate_bis_gereed(df):
 #     df_copy = df.copy()
 #     df_copy = df_copy.loc[(df_copy.opleverdatum >= pd.Timestamp('2020-01-01')) | (df_copy.opleverdatum.isna())]
@@ -1441,7 +1911,9 @@ def multi_index_to_dict(df):
     return project_dict
 
 
-def extract_werkvoorraad_has_dates(df: pd.DataFrame, time_delta_days: int = 0, add_project_column: bool = False):
+def extract_werkvoorraad_has_dates(
+    df: pd.DataFrame, time_delta_days: int = 0, add_project_column: bool = False
+):
     """
     This function extracts the werkvoorraad HAS dates per client from their transformed dataframes, based on the BR:
     has_werkvoorraad (see BR) and the latest date between: schouwdatum, toestemming_datum and status_civiel_datum.
@@ -1457,15 +1929,17 @@ def extract_werkvoorraad_has_dates(df: pd.DataFrame, time_delta_days: int = 0, a
     """
     if add_project_column:
         time_dataseries = df[br.has_werkvoorraad(df, time_delta_days)][
-            ['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
-        time_dataseries.name = 'werkvoorraad_has_datum'
+            ["schouwdatum", "toestemming_datum", "status_civiel_datum"]
+        ].max(axis=1)
+        time_dataseries.name = "werkvoorraad_has_datum"
         project_dataseries = df[br.has_werkvoorraad(df, time_delta_days)].project
         df = pd.concat([time_dataseries, project_dataseries], axis=1)
         return df
     else:
         ds = df[br.has_werkvoorraad(df, time_delta_days)][
-            ['schouwdatum', 'toestemming_datum', 'status_civiel_datum']].max(axis=1)
-        ds.name = 'werkvoorraad_has_datum'
+            ["schouwdatum", "toestemming_datum", "status_civiel_datum"]
+        ].max(axis=1)
+        ds.name = "werkvoorraad_has_datum"
         return ds
 
 
@@ -1483,7 +1957,7 @@ def extract_realisatie_hpend_dates(df: pd.DataFrame, add_project_column: bool = 
 
     """
     if add_project_column:
-        return df[br.hpend(df)][['opleverdatum', 'project']]
+        return df[br.hpend(df)][["opleverdatum", "project"]]
     else:
         return df[br.hpend(df)].opleverdatum
 
@@ -1502,7 +1976,7 @@ def extract_aangesloten_orders_dates(df: pd.DataFrame) -> pd.Series:
         pd.Series
 
     """
-    if 'ordered' in df.columns:
+    if "ordered" in df.columns:
         return df[br.aangesloten_orders_tmobile(df)].opleverdatum
     else:
         return df[br.hpend(df)].opleverdatum
@@ -1522,7 +1996,7 @@ def extract_realisatie_hc_dates(df: pd.DataFrame, add_project_column: bool = Fal
 
     """
     if add_project_column:
-        return df[br.hc_opgeleverd(df)][['opleverdatum', 'project']]
+        return df[br.hc_opgeleverd(df)][["opleverdatum", "project"]]
     else:
         return df[br.hc_opgeleverd(df)].opleverdatum
 
@@ -1542,16 +2016,18 @@ def extract_voorspelling_dates(df: pd.DataFrame, ftu=None, totals=None) -> pd.Se
          A pd.Series object
 
     """
-    if ftu and any(ftu.get('date_FTU0', {}).values()):
+    if ftu and any(ftu.get("date_FTU0", {}).values()):
         return extract_voorspelling_dates_kpn(
             df=df,
             start_time=get_start_time(df),
             timeline=get_timeline(get_start_time(df)),
             totals=totals,
-            ftu=ftu['date_FTU0']
+            ftu=ftu["date_FTU0"],
         )
     else:
-        df_prog = pd.DataFrame(index=get_timeline(get_start_time(df)), columns=['prognose'], data=0)
+        df_prog = pd.DataFrame(
+            index=get_timeline(get_start_time(df)), columns=["prognose"], data=0
+        )
         return df_prog.prognose
 
 
@@ -1570,19 +2046,21 @@ def extract_voorspelling_dates_kpn(df: pd.DataFrame, start_time, timeline, total
     Returns:
 
     """
-    result = prognose(df,
-                      start_time,
-                      timeline,
-                      totals,
-                      ftu)
-    df_prog = pd.DataFrame(index=timeline, columns=['prognose'], data=0)
+    result = prognose(df, start_time, timeline, totals, ftu)
+    df_prog = pd.DataFrame(index=timeline, columns=["prognose"], data=0)
     for key in result.y_prog_l:
         amounts = result.y_prog_l[key] / 100 * totals[key]
-        df_prog += pd.DataFrame(index=timeline, columns=['prognose'], data=amounts).diff().fillna(0)
+        df_prog += (
+            pd.DataFrame(index=timeline, columns=["prognose"], data=amounts)
+            .diff()
+            .fillna(0)
+        )
     return df_prog.prognose
 
 
-def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None) -> pd.Series:
+def extract_planning_dates(
+    df: pd.DataFrame, client: str, planning: dict = None
+) -> pd.Series:
     """
     This function extracts the planning dates per client from their transformed dataframes. For KPN a planning column
     can be supplied, which is obtained from an excel sheet from Wout.
@@ -1597,8 +2075,10 @@ def extract_planning_dates(df: pd.DataFrame, client: str, planning: dict = None)
 
     """
     use_kpn_planning_excel = True
-    if planning and client == 'kpn' and use_kpn_planning_excel is True:
-        return extract_planning_dates_kpn(data=planning['HPendT'], timeline=get_timeline(get_start_time(df)))
+    if planning and client == "kpn" and use_kpn_planning_excel is True:
+        return extract_planning_dates_kpn(
+            data=planning["HPendT"], timeline=get_timeline(get_start_time(df))
+        )
     else:
         return df[~df.hasdatum.isna()].hasdatum
 
@@ -1615,12 +2095,19 @@ def extract_planning_dates_kpn(data: list, timeline: pd.DatetimeIndex):
     Returns: a pd.DataFrame containing the planning values per day.
 
     """
-    df = pd.DataFrame(index=timeline, columns=['planning_kpn'], data=0)
+    df = pd.DataFrame(index=timeline, columns=["planning_kpn"], data=0)
     if data:
-        planning_df = pd.DataFrame(index=pd.date_range(start='2021-01-04', periods=len(data), freq='W-MON'),
-                                   columns=['planning_kpn'], data=data)
-        planning_df = planning_df / 5  # divides the weekly values to daily values: no work is done in the weekend
-        planning_df = planning_df.resample('D').ffill(limit=4)  # upsamples the weekly values into daily values
+        planning_df = pd.DataFrame(
+            index=pd.date_range(start="2021-01-04", periods=len(data), freq="W-MON"),
+            columns=["planning_kpn"],
+            data=data,
+        )
+        planning_df = (
+            planning_df / 5
+        )  # divides the weekly values to daily values: no work is done in the weekend
+        planning_df = planning_df.resample("D").ffill(
+            limit=4
+        )  # upsamples the weekly values into daily values
         df = df.add(planning_df, fill_value=0)
     return df.planning_kpn
 
@@ -1640,13 +2127,14 @@ def extract_target_dates(df: pd.DataFrame, project_list, ftu=None, totals=None):
         pd.Series
 
     """
-    if ftu and any(ftu.get('date_FTU0', {}).values()):
+    if ftu and any(ftu.get("date_FTU0", {}).values()):
         return extract_target_dates_kpn(
             timeline=get_timeline(get_start_time(df)),
             totals=totals,
             project_list=project_list,
-            ftu0=ftu['date_FTU0'],
-            ftu1=ftu['date_FTU1'])
+            ftu0=ftu["date_FTU0"],
+            ftu1=ftu["date_FTU1"],
+        )
     else:
         return df[br.target_tmobile(df)].creation
 
@@ -1667,18 +2155,22 @@ def extract_target_dates_kpn(timeline, totals, project_list, ftu0, ftu1):
 
     """
     y_target_l, _, _ = targets_new(timeline, project_list, ftu0, ftu1, totals)
-    df_target = pd.DataFrame(index=timeline, columns=['target'], data=0)
+    df_target = pd.DataFrame(index=timeline, columns=["target"], data=0)
     for key in y_target_l:
         amounts = y_target_l[key] / 100 * totals[key]
-        df_target += pd.DataFrame(index=timeline, columns=['target'], data=amounts).diff().fillna(0)
+        df_target += (
+            pd.DataFrame(index=timeline, columns=["target"], data=amounts)
+            .diff()
+            .fillna(0)
+        )
     return df_target.target
 
 
-def get_secret(project_id, secret_id, version_id='latest'):
+def get_secret(project_id, secret_id, version_id="latest"):
     client = secretmanager.SecretManagerServiceClient()
     name = client.secret_version_path(project_id, secret_id, version_id)
     response = client.access_secret_version(name)
-    payload = response.payload.data.decode('UTF-8')
+    payload = response.payload.data.decode("UTF-8")
     return payload
 
 
@@ -1690,23 +2182,27 @@ def get_database_engine():
         An SQLAlchemy Engine instance
     """
 
-    if 'db_ip' in config.database:
-        SACN = 'mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}'.format(
-            config.database['db_user'],
-            get_secret(config.database['project_id'], config.database['secret_name']),
-            config.database['db_ip'],
-            config.database['db_name'],
-            config.database['server_ca'],
-            config.database['client_ca'],
-            config.database['client_key']
+    if "db_ip" in config.database:
+        SACN = "mysql+mysqlconnector://{}:{}@{}:3306/{}?charset=utf8&ssl_ca={}&ssl_cert={}&ssl_key={}".format(
+            config.database["db_user"],
+            get_secret(config.database["project_id"], config.database["secret_name"]),
+            config.database["db_ip"],
+            config.database["db_name"],
+            config.database["server_ca"],
+            config.database["client_ca"],
+            config.database["client_key"],
         )
     else:
-        SACN = 'mysql+pymysql://{}:{}@/{}?unix_socket=/cloudsql/{}:europe-west1:{}'.format(
-            config.database['db_user'],
-            get_secret(config.database['project_id'], config.database['secret_name']),
-            config.database['db_name'],
-            config.database['project_id'],
-            config.database['instance_id']
+        SACN = (
+            "mysql+pymysql://{}:{}@/{}?unix_socket=/cloudsql/{}:europe-west1:{}".format(
+                config.database["db_user"],
+                get_secret(
+                    config.database["project_id"], config.database["secret_name"]
+                ),
+                config.database["db_name"],
+                config.database["project_id"],
+                config.database["instance_id"],
+            )
         )
 
     return create_engine(SACN, pool_recycle=3600)
@@ -1733,27 +2229,39 @@ def sum_over_period(data: pd.Series, freq: str, period=None) -> pd.Series:
     if data is None:
         data = pd.Series()
 
-    if freq == 'W-MON':  # interval labels: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.resample.html
-        label_side = 'left'
-        closed_side = 'left'
-    if freq == 'M' or freq == 'Y':
-        label_side = 'right'
-        closed_side = 'right'
+    if (
+        freq == "W-MON"
+    ):  # interval labels: https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.resample.html
+        label_side = "left"
+        closed_side = "left"
+    if freq == "M" or freq == "Y":
+        label_side = "right"
+        closed_side = "right"
 
     if not data[~data.isna()].empty:
         if not isinstance(data.index[0], pd.Timestamp):
             data = data.groupby(data).count()
 
     if period:
-        data_filler = pd.Series(index=pd.date_range(start=period[0], end=period[1], freq=freq), name=data.name, data=0)
+        data_filler = pd.Series(
+            index=pd.date_range(start=period[0], end=period[1], freq=freq),
+            name=data.name,
+            data=0,
+        )
         if not data[~data.isna()].empty:
-            data_counted = (data_filler + data.resample(freq, closed=closed_side, label=label_side).sum()[
-                            period[0]:period[1]]).fillna(0)
+            p0 = period[0]
+            p1 = period[1]
+            data_counted = (
+                data_filler
+                + data.resample(freq, closed=closed_side, label=label_side).sum()[p0:p1]
+            ).fillna(0)
         else:
             data_counted = data_filler
     else:
         if not data[~data.isna()].empty:
-            data_counted = data.resample(freq, closed=closed_side, label=label_side).sum()
+            data_counted = data.resample(
+                freq, closed=closed_side, label=label_side
+            ).sum()
         else:
             data_counted = pd.Series()
 
@@ -1773,13 +2281,15 @@ def sum_over_period_to_record(timeseries: pd.Series, freq: str, year: str):
     Returns:
         Record: Record for the firestore
     """
-    data = sum_over_period(timeseries, freq, period=[year + '-01-01', year + '-12-31'])
+    data = sum_over_period(timeseries, freq, period=[year + "-01-01", year + "-12-31"])
     data.index = data.index.format()
     record = data.to_dict()
     return record
 
 
-def convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis: float, total_num_has: float, snelheid_m_week: float):
+def convert_graafsnelheid_from_m_week_to_woning_day(
+    total_meters_bis: float, total_num_has: float, snelheid_m_week: float
+):
     """
     Calculates target speed (woning/dag) by given graafsnelheid in meters per week, total meters bis and total
     number huisaansluitingen.
@@ -1811,7 +2321,9 @@ def calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has: float):
     return speed_woning_per_day
 
 
-def calculate_graafsnelheid_woning_day(total_meters_bis: float, total_num_has: float, snelheid_m_week: float):
+def calculate_graafsnelheid_woning_day(
+    total_meters_bis: float, total_num_has: float, snelheid_m_week: float
+):
     """
     Calculates target speed (woningen/day) either by norm percentage of total woningen or given graafsnelheid.
     Will use percentage norm for calculation if either total meters bis or graafsnelheid is not specified in project.
@@ -1826,7 +2338,9 @@ def calculate_graafsnelheid_woning_day(total_meters_bis: float, total_num_has: f
     if np.isnan(total_meters_bis) or np.isnan(snelheid_m_week):
         return calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has)
     else:
-        return convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis, total_num_has, snelheid_m_week)
+        return convert_graafsnelheid_from_m_week_to_woning_day(
+            total_meters_bis, total_num_has, snelheid_m_week
+        )
 
 
 def calculate_project_duration(snelheid_woning_day: float, total_num_has: float):
@@ -1844,7 +2358,9 @@ def calculate_project_duration(snelheid_woning_day: float, total_num_has: float)
     return duration_days
 
 
-def calculate_bis_target_of_project(civiel_startdatum: str, duration_days: float, snelheid_woning_day: float):
+def calculate_bis_target_of_project(
+    civiel_startdatum: str, duration_days: float, snelheid_woning_day: float
+):
     """
     Calculates BIS target of a project in number of woningen to pass on each date based on target speed and duration.
     First creates series with dates based on start date and duration of porject. Next, assigns snelheid_woning_day as
@@ -1857,14 +2373,19 @@ def calculate_bis_target_of_project(civiel_startdatum: str, duration_days: float
     Returns:
         target_series: A pd.Series with dates on index and woningen to pass as values
     """
-    working_dates = pd.date_range(start=civiel_startdatum, periods=math.ceil(duration_days), freq='D')
+    working_dates = pd.date_range(
+        start=civiel_startdatum, periods=math.ceil(duration_days), freq="D"
+    )
     target_series = pd.Series(index=working_dates, data=snelheid_woning_day)
     target_series.iloc[-1] = (duration_days - int(duration_days)) * snelheid_woning_day
     return target_series
 
 
-def sum_bis_targets_multiple_projects(civiel_startdatum: pd.Series, duration_days: pd.Series,
-                                      snelheid_woning_day: pd.Series):
+def sum_bis_targets_multiple_projects(
+    civiel_startdatum: pd.Series,
+    duration_days: pd.Series,
+    snelheid_woning_day: pd.Series,
+):
     """
     First, calculates BIS target of each project in number of woningen to pass on each date. Then, takes sum off BIS
     targets of all projects to determine provider level BIS target (woning/date).
@@ -1877,8 +2398,14 @@ def sum_bis_targets_multiple_projects(civiel_startdatum: pd.Series, duration_day
         series_bis_target: A pd.Series with dates on index and target woningen to pass as values
     """
     # Calculate bis target of each project
-    list_project_target = list(map(calculate_bis_target_of_project, civiel_startdatum, duration_days,
-                                   snelheid_woning_day))
+    list_project_target = list(
+        map(
+            calculate_bis_target_of_project,
+            civiel_startdatum,
+            duration_days,
+            snelheid_woning_day,
+        )
+    )
 
     # Sum bis targets of all projects
     series_bis_target = pd.Series()
@@ -1887,8 +2414,12 @@ def sum_bis_targets_multiple_projects(civiel_startdatum: pd.Series, duration_day
     return series_bis_target
 
 
-def combine_dicts_into_dataframe(civiel_startdatum: dict, total_meters_bis: dict, total_num_has: dict,
-                                 snelheid_m_week: dict):
+def combine_dicts_into_dataframe(
+    civiel_startdatum: dict,
+    total_meters_bis: dict,
+    total_num_has: dict,
+    snelheid_m_week: dict,
+):
     """
     Takes project info input as dicts and merges into a dataframe.
 
@@ -1900,14 +2431,35 @@ def combine_dicts_into_dataframe(civiel_startdatum: dict, total_meters_bis: dict
     Returns:
         df: Dataframe with project info
     """
-    df = (pd.DataFrame.from_dict(snelheid_m_week, orient='index', columns=['snelheid_m_week']).
-          merge(pd.DataFrame.from_dict(total_meters_bis, orient='index', columns=['total_meters_bis']),
-                left_index=True, right_index=True, how='outer').
-          merge(pd.DataFrame.from_dict(total_num_has, orient='index', columns=['total_num_has']),
-                left_index=True, right_index=True, how='outer').
-          merge(pd.DataFrame.from_dict(civiel_startdatum, orient='index', columns=['civiel_startdatum']),
-                left_index=True, right_index=True, how='outer')
-          )
+    df = (
+        pd.DataFrame.from_dict(
+            snelheid_m_week, orient="index", columns=["snelheid_m_week"]
+        )
+        .merge(
+            pd.DataFrame.from_dict(
+                total_meters_bis, orient="index", columns=["total_meters_bis"]
+            ),
+            left_index=True,
+            right_index=True,
+            how="outer",
+        )
+        .merge(
+            pd.DataFrame.from_dict(
+                total_num_has, orient="index", columns=["total_num_has"]
+            ),
+            left_index=True,
+            right_index=True,
+            how="outer",
+        )
+        .merge(
+            pd.DataFrame.from_dict(
+                civiel_startdatum, orient="index", columns=["civiel_startdatum"]
+            ),
+            left_index=True,
+            right_index=True,
+            how="outer",
+        )
+    )
     return df
 
 
@@ -1925,8 +2477,13 @@ def filter_projects_complete_info(df: pd.DataFrame):
     return filter
 
 
-def extract_bis_target_overview(civiel_startdatum: dict, total_meters_bis: dict, total_num_has: dict,
-                                snelheid_m_week: dict, client: str):
+def extract_bis_target_overview(
+    civiel_startdatum: dict,
+    total_meters_bis: dict,
+    total_num_has: dict,
+    snelheid_m_week: dict,
+    client: str,
+):
     """
     Calculates BIS target in number of woningen to pass on each date. First combines and filters data. Next determines
     target speed (woning/day) and target duration (days) for each project. Then calculates target woningen per date for
@@ -1941,21 +2498,33 @@ def extract_bis_target_overview(civiel_startdatum: dict, total_meters_bis: dict,
         bis_target: A pd.Series defining target bis (woning/day) for each date summed over all projects
     """
     # TODO: If statement and client parameter can be removed when DFN and TMobile provides project info
-    if client in ['kpn']:
-        df = combine_dicts_into_dataframe(civiel_startdatum, total_meters_bis, total_num_has, snelheid_m_week)
+    if client in ["kpn"]:
+        df = combine_dicts_into_dataframe(
+            civiel_startdatum, total_meters_bis, total_num_has, snelheid_m_week
+        )
         df = df[filter_projects_complete_info]
-        speed_graafsnelheid = convert_graafsnelheid_from_m_week_to_woning_day(df.total_meters_bis, df.total_num_has, df.snelheid_m_week)
-        speed_norm = calculate_graafsnelheid_woning_day_by_percentage_norm(df.total_num_has)
+        speed_graafsnelheid = convert_graafsnelheid_from_m_week_to_woning_day(
+            df.total_meters_bis, df.total_num_has, df.snelheid_m_week
+        )
+        speed_norm = calculate_graafsnelheid_woning_day_by_percentage_norm(
+            df.total_num_has
+        )
         speed = speed_graafsnelheid.fillna(speed_norm)
         duration = calculate_project_duration(speed, df.total_num_has)
-        bis_target = sum_bis_targets_multiple_projects(df.civiel_startdatum, duration, speed)
+        bis_target = sum_bis_targets_multiple_projects(
+            df.civiel_startdatum, duration, speed
+        )
     else:
         bis_target = None
     return bis_target
 
 
-def extract_bis_target_project(civiel_startdatum: str, total_meters_bis: float, total_num_has: float,
-                               snelheid_m_week: float):
+def extract_bis_target_project(
+    civiel_startdatum: str,
+    total_meters_bis: float,
+    total_num_has: float,
+    snelheid_m_week: float,
+):
     """
     Calculates bis target series of a week.
 
@@ -1971,15 +2540,21 @@ def extract_bis_target_project(civiel_startdatum: str, total_meters_bis: float, 
         if pd.isnull(snelheid_m_week) | pd.isnull(total_meters_bis):
             speed = calculate_graafsnelheid_woning_day_by_percentage_norm(total_num_has)
         else:
-            speed = convert_graafsnelheid_from_m_week_to_woning_day(total_meters_bis, total_num_has, snelheid_m_week)
+            speed = convert_graafsnelheid_from_m_week_to_woning_day(
+                total_meters_bis, total_num_has, snelheid_m_week
+            )
         duration = calculate_project_duration(speed, total_num_has)
-        bis_target_series = calculate_bis_target_of_project(civiel_startdatum, duration, speed)
+        bis_target_series = calculate_bis_target_of_project(
+            civiel_startdatum, duration, speed
+        )
         return bis_target_series
     else:
         return pd.Series()
 
 
-def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, freq: str, year: str):
+def ratio_sum_over_periods_to_record(
+    numerator: pd.Series, divider: pd.Series, freq: str, year: str
+):
     """
     Similar to sum_over_period_to_record, but it takes two timeseries and divides them before returning the record.
     This allows for the calculation of HC/HPend ratios and <8 weeks ratios
@@ -1993,16 +2568,19 @@ def ratio_sum_over_periods_to_record(numerator: pd.Series, divider: pd.Series, f
     Returns:
         Record: Record for the firestore
     """
-    data_num = sum_over_period(numerator, freq, period=[year + '-01-01', year + '-12-31'])
-    data_div = sum_over_period(divider, freq, period=[year + '-01-01', year + '-12-31'])
+    data_num = sum_over_period(
+        numerator, freq, period=[year + "-01-01", year + "-12-31"]
+    )
+    data_div = sum_over_period(divider, freq, period=[year + "-01-01", year + "-12-31"])
     data = (data_num / data_div).fillna(0)
     data.index = data.index.format()
     record = data.to_dict()
     return record
 
 
-def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.Series, realized: pd.Series, freq: str,
-                                                                 year: str):
+def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(
+    predicted: pd.Series, realized: pd.Series, freq: str, year: str
+):
     """
     Similar to sum_over_period_to_record, but it takes two timeseries and subtracts one from the other
     before returning the record. This allows for calculation of voorspelling minus HPend and planning minus HPend
@@ -2017,8 +2595,12 @@ def voorspel_and_planning_minus_HPend_sum_over_periods_to_record(predicted: pd.S
         Record for the firestore
 
     """
-    data_predicted = sum_over_period(predicted, freq, period=[year + '-01-01', year + '-12-31'])
-    data_realized = sum_over_period(realized, freq, period=[year + '-01-01', year + '-12-31'])
+    data_predicted = sum_over_period(
+        predicted, freq, period=[year + "-01-01", year + "-12-31"]
+    )
+    data_realized = sum_over_period(
+        realized, freq, period=[year + "-01-01", year + "-12-31"]
+    )
     data = (data_predicted - data_realized).fillna(0)
     data.index = data.index.format()
     record = data.to_dict()
@@ -2055,7 +2637,7 @@ def extract_bis_target_client(client, year):
     return bis_target
 
 
-def get_timestamp_of_period(freq: str, period='next'):
+def get_timestamp_of_period(freq: str, period="next"):
     """
     This functions returns the corresponding timestamp of past, current or next week or month based a frequency
 
@@ -2073,24 +2655,38 @@ def get_timestamp_of_period(freq: str, period='next'):
     period_options = {}
     now = pd.Timestamp.now()
 
-    if freq == 'D':
-        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-1))
-        period_options['current'] = pd.to_datetime(now.date())
-        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=1))
-    elif freq == 'W-MON':
-        period_options['last'] = pd.to_datetime(now.date() + relativedelta(days=-7 - now.weekday()))
-        period_options['current'] = pd.to_datetime(now.date() - relativedelta(days=now.weekday()))
-        period_options['next'] = pd.to_datetime(now.date() + relativedelta(days=7 - now.weekday()))
-    elif freq == 'MS':
-        period_options['last'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=-1)
-        period_options['current'] = pd.Timestamp(now.year, now.month, 1)
-        period_options['next'] = pd.Timestamp(now.year, now.month, 1) + relativedelta(months=1)
+    if freq == "D":
+        period_options["last"] = pd.to_datetime(now.date() + relativedelta(days=-1))
+        period_options["current"] = pd.to_datetime(now.date())
+        period_options["next"] = pd.to_datetime(now.date() + relativedelta(days=1))
+    elif freq == "W-MON":
+        period_options["last"] = pd.to_datetime(
+            now.date() + relativedelta(days=-7 - now.weekday())
+        )
+        period_options["current"] = pd.to_datetime(
+            now.date() - relativedelta(days=now.weekday())
+        )
+        period_options["next"] = pd.to_datetime(
+            now.date() + relativedelta(days=7 - now.weekday())
+        )
+    elif freq == "MS":
+        period_options["last"] = pd.Timestamp(now.year, now.month, 1) + relativedelta(
+            months=-1
+        )
+        period_options["current"] = pd.Timestamp(now.year, now.month, 1)
+        period_options["next"] = pd.Timestamp(now.year, now.month, 1) + relativedelta(
+            months=1
+        )
     else:
-        raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
+        raise NotImplementedError(
+            "There is no output period implemented for this frequency {}".format(freq)
+        )
 
     period_timestamp = period_options.get(period)
     if period_timestamp:
         return period_timestamp
     else:
-        raise NotImplementedError(f'The selected period "{period}" '
-                                  'is not valid. Choose "last", "current" or "next"')
+        raise NotImplementedError(
+            f'The selected period "{period}" '
+            'is not valid. Choose "last", "current" or "next"'
+        )

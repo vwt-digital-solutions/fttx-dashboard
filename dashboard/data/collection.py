@@ -51,7 +51,7 @@ def get_graph(**filters):
 def get_year_value_from_document(collection, year, **filters):
     doc = get_document(collection, **filters)
     if doc:
-        value = str(int(doc["series_year"][year + "-01-01"]))
+        value = str(doc["series_year"][year + "-01-01"])
     else:
         value = "n.v.t."
     return value

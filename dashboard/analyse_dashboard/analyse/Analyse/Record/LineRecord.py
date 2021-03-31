@@ -2,7 +2,7 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 from Analyse.Record.Record import Record
-from functions import get_timestamp_of_period
+from functions import get_timestamp_of_period, round_
 from toggles import ReleaseToggles
 
 toggles = ReleaseToggles("toggles.yaml")
@@ -77,7 +77,7 @@ class LineRecord(Record):
             record (dict): dictionary of aggregates required for dashboard.
         """
 
-        if True:
+        if toggles.transform_line_record:
             # TODO: rename record to line if toggles has been removed for consistency. Because the input is of line TimeseriesLine
             # TODO: remove line.get_line_aggregate() if toggle is removed. Check if other functions are unused afterwards
             line = record
@@ -176,7 +176,7 @@ class LineRecord(Record):
             series = line.make_series()
 
         series.index = series.index.format()
-        return series.to_dict()
+        return round_(series).to_dict()
 
     def document_name(self, **kwargs):
         """
@@ -204,7 +204,7 @@ class LineRecord(Record):
         freq = self._get_freq_from_timeseries(line)
         timestamp = get_timestamp_of_period(freq=freq, period=period)
         return (
-            float(line.make_series()[timestamp])
+            round_(float(line.make_series()[timestamp]))
             if timestamp in line.make_series().index
             else 0
         )
@@ -229,7 +229,7 @@ class LineRecord(Record):
                 & (line_week_series.index <= timestamp_4_weeks)
             ].sum()
         )
-        return value_next_4_weeks
+        return round_(value_next_4_weeks)
 
     @staticmethod
     def _get_freq_from_timeseries(line):
