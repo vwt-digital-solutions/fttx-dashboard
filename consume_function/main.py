@@ -1,7 +1,7 @@
 import config
 import logging
 
-from consume_functions import parse_request, process_fiberconnect, write_records_to_sql
+from consume_functions import parse_request, process_fiberconnect, process_default
 
 
 def handler(request):
@@ -12,8 +12,10 @@ def handler(request):
         logging.info(f'Read message from subscription {subscription}')
         if topic_config.get('name') == 'fiberconnect':
             process_fiberconnect(records, topic_config)
-        elif topic_config.get('name') == 'asbuilt-meters' or topic_config.get('name') == 'baan-realisation':
-            write_records_to_sql(records, topic_config)
+        elif topic_config.get('name') in ['asbuilt-meters', 'baan-realisation', 'baan-budget']:
+            process_default(records, topic_config)
+        else:
+            logging.info(f'subscription not found in consume_function: {subscription}')
 
     except Exception as e:
         logging.error(f'Extracting of data failed: {e}', exc_info=True)

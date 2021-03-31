@@ -53,8 +53,7 @@ def make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series: pd.Series
     """
     time_point: pd.Timestamp = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
     return (~series.isna()  # date must be known
-            &
-            (series <= time_point))  # the date must be before or on the day of the delta.
+            & (series <= time_point))  # the date must be before or on the day of the delta.
 
 
 def geschouwed(df, time_delta_days=0):
@@ -100,8 +99,52 @@ def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
 
     """
     return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
-            &
-            (df.type.isin(['AANLEG', 'Aanleg'])))
+            & (df.type.isin(['AANLEG', 'Aanleg'])))
+
+
+def open_order_tmobile(df: pd.DataFrame):
+    """
+        Used to calculate the openstaande orders for tmobile, based on the business rules: \n
+    -   Is the df row status not equal to CANCELLED, TO_BE_CANCELLED or CLOSED?
+    -   Is the df row type equal to AANLEG?
+    Args:
+         df (pd.DataFrame): A dataframe containing a status, type and creation column, of which creation contains dates.
+
+    Returns: pd.Series: A series of truth values.
+
+    """
+    return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
+            & (df.type.isin(['AANLEG', 'Aanleg'])))
+
+
+def add_time_window(df, mask, time_window, time_delta_days=0):
+    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    if time_window == 'on time':
+        mask = (mask
+                & ((time_point - df['creation']).dt.days <= 56))
+    elif time_window == 'limited':
+        mask = (mask
+                & (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
+    elif time_window == 'late':
+        mask = (mask
+                & ((time_point - df['creation']).dt.days > 84))
+    return mask
+
+
+def hc_patch_only_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
+    mask = (open_order_tmobile(df)
+            & (df.plan_type == 'Zonder klantafspraak'))
+    if time_window:
+        mask = add_time_window(df, mask, time_window, time_delta_days)
+    return mask
+
+
+def hc_aanleg_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
+    mask = (open_order_tmobile(df)
+            & (df.plan_type != 'Zonder klantafspraak'))
+    if time_window:
+        mask = add_time_window(df, mask, time_window, time_delta_days)
+    return mask
 
 
 def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
@@ -126,30 +169,24 @@ def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
 
     mask = ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
-            &
-            (df.type.isin(['AANLEG', 'Aanleg'])))
+            & (df.type.isin(['AANLEG', 'Aanleg'])))
 
     if order_type == 'patch only':
         mask = (mask
-                &
-                (df.plan_type == 'Zonder klantafspraak'))
+                & (df.plan_type == 'Zonder klantafspraak'))
     elif order_type == 'hc aanleg':
         mask = (mask
-                &
-                (df.plan_type != 'Zonder klantafspraak'))
+                & (df.plan_type != 'Zonder klantafspraak'))
 
     if time_window == 'on time':
         mask = (mask
-                &
-                ((time_point - df['creation']).dt.days <= 56))
+                & ((time_point - df['creation']).dt.days <= 56))
     elif time_window == 'limited':
         mask = (mask
-                &
-                (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
+                & (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
     elif time_window == 'late':
         mask = (mask
-                &
-                ((time_point - df['creation']).dt.days > 84))
+                & ((time_point - df['creation']).dt.days > 84))
 
     return mask
 
@@ -175,13 +212,11 @@ def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.
     """
 
     mask = ((df.status == 'CLOSED')
-            &
-            (df.type.isin(['AANLEG', 'Aanleg'])))
+            & (df.type.isin(['AANLEG', 'Aanleg'])))
 
     if time_window == 'on time':
         mask = (mask
-                &
-                ((df['opleverdatum'] - df['creation']).dt.days <= 84))
+                & ((df['opleverdatum'] - df['creation']).dt.days <= 84))
 
     return mask
 
@@ -351,9 +386,21 @@ def has_niet_opgeleverd(df):
          pd.Series: A series of truth values.
     """
     return (df['opleverdatum'].isna()
-            &
             # TODO is the hasdatum not the planned date? If so, 'has' can be 'niet opgeleverd' but still be planned.
-            df['hasdatum'].isna())
+            & df['hasdatum'].isna())
+
+
+def has_gepland(df):
+    """
+    HAS is gepland when `hasdatum` is not NA
+
+    Args:
+        df (pd.DataFrame): A dataframe containing a hasdatum column with dates.
+
+    Returns:
+         pd.Series: A series of truth values.
+    """
+    return (~df['hasdatum'].isna())
 
 
 def hpend(df, time_delta_days=0):
@@ -404,13 +451,10 @@ def has_werkvoorraad(df, time_delta_days=0):
     """
     time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
     return (
-            (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
-            &
-            (df.opleverdatum.isna() | (df.opleverdatum > time_point))
-            &
-            (df.toestemming == 'Ja')
-            &
-            (~df.opleverstatus.isin(['0', '90', '99']))
+        (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
+        & (df.opleverdatum.isna() | (df.opleverdatum > time_point))
+        & (df.toestemming == 'Ja')
+        & (~df.opleverstatus.isin(['0', '90', '99']))
     )
 
 
@@ -448,9 +492,7 @@ def target_tmobile(df):
         pd.Series: A series of truth values.
     """
     return (
-            (~df.creation.isna())
-            &
-            (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
-            &
-            (df.type.isin(['AANLEG', 'Aanleg']))
+        (~df.creation.isna())
+        & (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
+        & (df.type.isin(['AANLEG', 'Aanleg']))
     )

@@ -3,7 +3,7 @@ from Analyse.PieChart import PieChart
 from Analyse.Record.DictRecord import DictRecord
 
 
-class RedenNaProjectDataIndicator(TimeseriesIndicator, PieChart):
+class RedenNaProjectIndicator(TimeseriesIndicator, PieChart):
     """
     Calculates reden na pie chart for every project
     """
@@ -13,7 +13,7 @@ class RedenNaProjectDataIndicator(TimeseriesIndicator, PieChart):
         For this indicator we only need the cluster column, and sleutel column to count.
         Returns: Sliced dataframe containing only the relevant columns
         """
-        return self.df[['project', 'cluster_redenna', 'sleutel']]
+        return self.df[["project", "cluster_redenna", "sleutel"]]
 
     def perform(self):
         """
@@ -22,17 +22,18 @@ class RedenNaProjectDataIndicator(TimeseriesIndicator, PieChart):
 
         """
         aggregate = self.aggregate(
-                                    df=self.apply_business_rules(),
-                                    by=["project", "cluster_redenna"]
-                                  )
+            df=self.apply_business_rules(), by=["project", "cluster_redenna"]
+        )
         return self.to_record(aggregate)
 
     def to_record(self, df):
         project_dict = {}
-        for project, df in df.groupby('project'):
-            project_dict[project] = self.to_pie_chart(df)
-        dict_record = DictRecord(record=project_dict,
-                                 collection='Data',
-                                 client=self.client,
-                                 graph_name='reden_na_projects')
+        for project, df in df.groupby("project"):
+            project_dict[project] = self.to_pie_chart(df.droplevel(0))
+        dict_record = DictRecord(
+            record=project_dict,
+            collection="Data",
+            client=self.client,
+            graph_name="reden_na_projects",
+        )
         return dict_record

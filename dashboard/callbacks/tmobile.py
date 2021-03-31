@@ -48,15 +48,17 @@ def indicator_modal(late_clicks_hc, limited_clicks_hc, on_time_clicks_hc,
         order_type = changed_list[2]
         # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
         cluster_redenna_sorted_dict = dict(sorted(result[wait_category + "-" + order_type]['cluster_redenna'].items()))
-        figure = pie_chart.get_html(labels=list(cluster_redenna_sorted_dict.keys()),
-                                    values=list(cluster_redenna_sorted_dict.values()),
-                                    title="Reden na",
-                                    colors=[
-                                        colors['green'],
-                                        colors['yellow'],
-                                        colors['red'],
-                                        colors['vwt_blue'],
-                                    ])
+        figure = pie_chart.get_html(
+            labels=list(cluster_redenna_sorted_dict.keys()),
+            values=list(cluster_redenna_sorted_dict.values()),
+            title="Reden na",
+            colors=[
+                colors['green'],
+                colors['yellow'],
+                colors['red'],
+                colors['vwt_blue']
+            ]
+        )
 
         return [not is_open,
                 figure,

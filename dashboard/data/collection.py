@@ -1,6 +1,9 @@
-from data import api, data
-from urllib import parse
 import logging
+from urllib import parse
+
+import pandas as pd
+
+from data import api, data
 
 
 def get_document(collection, **filters):
@@ -25,8 +28,10 @@ def get_document(collection, **filters):
         logging.warning(f"Query {url} did not return any results.")
         return {}
     if len(result) > 1:
-        logging.warning(f"Query {url} resulted in {len(result)} results, only the first is returned")
-    return result[0].get('record', 'n.v.t.')
+        logging.warning(
+            f"Query {url} resulted in {len(result)} results, only the first is returned"
+        )
+    return result[0].get("record", "n.v.t.")
 
 
 def get_graph(**filters):
@@ -40,4 +45,26 @@ def get_graph(**filters):
     Returns:
         dict: The graph in the document
     """
-    return get_document(collection="Graphs", **filters).get('figure', data.no_graph())
+    return get_document(collection="Graphs", **filters).get("figure", data.no_graph())
+
+
+def get_year_value_from_document(collection, year, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        value = str(doc["series_year"][year + "-01-01"])
+    else:
+        value = "n.v.t."
+    return value
+
+
+def get_month_series_from_document(collection, year, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        series = pd.Series(doc["series_month_" + year])
+        series.index = pd.to_datetime(series.index)
+        series = pd.Series(
+            index=pd.date_range(start=year, periods=12, freq="MS"), data=0
+        ).add(series, fill_value=0)
+    else:
+        series = None
+    return series

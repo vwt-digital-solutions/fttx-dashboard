@@ -30,15 +30,19 @@ def update_output(content, name, date):
         return children
 
 
-@app.callback(Output('submit-result', 'children'),
-              [Input('upload-submit', 'n_clicks'),
-               Input("upload_modal-close", "n_clicks")],
-              [
-                  State('upload-validator', 'value'),
-                  State('upload-data', 'contents'),
-                  State('upload-data', 'filename'),
-                  State('upload-data', 'last_modified')
-              ])
+@app.callback(
+    Output('submit-result', 'children'),
+    [
+        Input('upload-submit', 'n_clicks'),
+        Input("upload_modal-close", "n_clicks")
+    ],
+    [
+        State('upload-validator', 'value'),
+        State('upload-data', 'contents'),
+        State('upload-data', 'filename'),
+        State('upload-data', 'last_modified')
+    ]
+)
 def submit_files(n_clicks, close_clicks, validator, content, name, date):
     ctx = dash.callback_context
 

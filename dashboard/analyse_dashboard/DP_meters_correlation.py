@@ -94,10 +94,10 @@ for key in d_sheets:
         z[key] = [tot_l[key] / len(df['x_locatie_dp'].unique())]
 
         m_b = []
-        ar[key] = (df['x_locatie_rol'].str.replace(',', '.').astype('float').max() -
-                   df['x_locatie_rol'].str.replace(',', '.').astype('float').min()) * \
-                  (df['y_locatie_rol'].str.replace(',', '.').astype('float').max() -
-                   df['y_locatie_rol'].str.replace(',', '.').astype('float').min())
+        ar[key] = (df['x_locatie_rol'].str.replace(',', '.').astype('float').max()
+                   - df['x_locatie_rol'].str.replace(',', '.').astype('float').min()) * \
+                  (df['y_locatie_rol'].str.replace(',', '.').astype('float').max()
+                   - df['y_locatie_rol'].str.replace(',', '.').astype('float').min())
         ar[key] = ar[key] / len(df['x_locatie_dp'].unique())
         for mask in df['x_locatie_dp'].unique():
             df_s = df[df['x_locatie_dp'] == mask]
@@ -133,7 +133,7 @@ x_c = ar
 # x_c = m_bb
 z1 = np.polyfit(list(x_c.values()), list(m_BIS_gem.values()), 1)
 x = np.array(list(range(0, int(max(x_c.values())) + 1)))
-y = z1[1] + z1[0]*x
+y = z1[1] + z1[0] * x
 # sum(list(m_BIS_gem.values())) / len(list(m_BIS_gem.values())) # gem aantal m BIS per woning
 plt.plot(list(x_c.values()), list(m_BIS_gem.values()), 'x')
 plt.plot(x, y, '-')
@@ -148,14 +148,14 @@ for key in x_c:
     e = (x_c[key] * z1[0] + z1[1]) * n_gereed_BIS[key].cumsum()[-1]  # meter BIS per woning
     dp = (e - BIS[key].cumsum()[-1]) / BIS[key].cumsum()[-1]
     dw = (e - BIS[key].cumsum()[-1]) / n_gereed_BIS[key].cumsum()[-1]
-    print(key + ' ' + str(round(abs(dp * 100))) + ' ' +
-          str(round(n_gereed_BIS[key].cumsum()[-1] / tot_l[key] * 100)))  # meet en schattigsfout !
+    print(key + ' ' + str(round(abs(dp * 100))) + ' '
+          + str(round(n_gereed_BIS[key].cumsum()[-1] / tot_l[key] * 100)))  # meet en schattigsfout !
 
 # HAS
 # x_c = m_BIS_gem.values()
 z1 = np.polyfit(list(x_c.values()), list(m_HAS_gem.values()), 1)
 x = np.array(list(range(0, int(max(x_c.values())) + 1)))
-y = z1[1] + z1[0]*x
+y = z1[1] + z1[0] * x
 # plt.plot(list(m_BIS_gem.values()), list(m_HAS_gem.values()), 'x')
 plt.plot(list(x_c.values()), list(m_HAS_gem.values()), 'x')
 plt.plot(x, y, '-')

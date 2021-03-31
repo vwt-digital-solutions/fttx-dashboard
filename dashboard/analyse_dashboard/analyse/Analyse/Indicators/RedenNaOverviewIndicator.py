@@ -3,7 +3,7 @@ from Analyse.PieChart import PieChart
 from Analyse.Record.Record import Record
 
 
-class RedenNaOverviewDataIndicator(TimeseriesIndicator, PieChart):
+class RedenNaOverviewIndicator(TimeseriesIndicator, PieChart):
     """
     Calculates reden na pie chart over all projects
     """
@@ -21,9 +21,9 @@ class RedenNaOverviewDataIndicator(TimeseriesIndicator, PieChart):
 
         """
         aggregate = self.aggregate(
-                                    df=self.apply_business_rules(),
-                                    by="cluster_redenna"
-                                  )
+            df=self.apply_business_rules(),
+            by="cluster_redenna"
+        )
         return self.to_record(aggregate)
 
     def to_record(self, df):
