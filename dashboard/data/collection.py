@@ -68,3 +68,16 @@ def get_month_series_from_document(collection, year, **filters):
     else:
         series = None
     return series
+
+
+def get_week_series_from_document(collection, year, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        series = pd.Series(doc["series_week_" + year])
+        series.index = pd.to_datetime(series.index)
+        series = pd.Series(
+            index=pd.date_range(start=year, periods=52, freq="W-MON"), data=0
+        ).add(series, fill_value=0)
+    else:
+        series = None
+    return series

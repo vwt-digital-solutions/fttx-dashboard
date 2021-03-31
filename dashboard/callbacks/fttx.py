@@ -9,9 +9,10 @@ import config
 from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
-from data.data import (
-    completed_status_counts, fetch_data_for_overview_graphs, no_graph,
-    redenna_by_completed_status)
+from data.data import (completed_status_counts, fetch_data_for_month_overview,
+                       fetch_data_for_overview_graphs,
+                       fetch_data_for_week_overview, no_graph,
+                       redenna_by_completed_status)
 from layout.components import redenna_status_pie
 from layout.components.global_info_list import global_info_list
 from layout.components.global_info_list_old import global_info_list_old
@@ -98,10 +99,7 @@ for client in config.client_config.keys():  # noqa: C901
         if year:
             if toggles.transform_frontend_newindicator:
                 output = overview_bar_chart.get_fig_new(
-                    data=fetch_data_for_overview_graphs(
-                        year=year, freq="M", period="month", client=client
-                    ),
-                    year=year,
+                    data=fetch_data_for_month_overview(year, client)
                 )
             else:
                 output = overview_bar_chart.get_fig(
@@ -119,12 +117,18 @@ for client in config.client_config.keys():  # noqa: C901
     )
     def load_week_overview_per_year(year, client=client):
         if year:
-            return overview_bar_chart.get_fig(
-                data=fetch_data_for_overview_graphs(
-                    year=year, freq="W-MON", period="week", client=client
-                ),
-                year=year,
-            )
+            if toggles.transform_frontend_newindicator:
+                output = overview_bar_chart.get_fig_new(
+                    data=fetch_data_for_week_overview(year, client)
+                )
+            else:
+                output = overview_bar_chart.get_fig(
+                    data=fetch_data_for_overview_graphs(
+                        year=year, freq="W-MON", period="week", client=client
+                    ),
+                    year=year,
+                )
+            return output
         raise PreventUpdate
 
     @app.callback(

@@ -5,19 +5,20 @@ import pandas as pd
 from config import colors_vwt as colors
 
 
-def get_fig_new(data, year):
-    x_count = list(range(1, len(data.date) + 1))
+def get_fig_new(data):
+    date_list = data.index.format()
+    x_count = list(range(1, len(date_list) + 1))
     y_range = [
         0,
         1.5
         * max(
-            max(data.count_outlookdatum),
-            max(data.count_opleverdatum),
-            max(data.count_hasdatum),
-            max(data.count_voorspellingdatum),
+            max(data.InternalTargetHPendLine),
+            max(data.RealisationHPendIndicator),
+            max(data.PlanningHPendIndicatorKPN),
+            max(data.PrognoseHPendIndicator),
         ),
     ]
-    date_list = data.date.dt.strftime("%Y-%m-%d")
+
     dutch_month_list = [
         "jan",
         "feb",
@@ -33,28 +34,22 @@ def get_fig_new(data, year):
         "dec",
     ]
 
-    if data.period.iloc[0] == "month":
+    if len(date_list) == 12:
         n_now = pd.Timestamp.now().month
         maand_of_week = "Huidige maand"
         x_tick_text = dutch_month_list
         x_range = [0.5, 12.5]
-        title = f"Jaaroverzicht {year}"
+        title = f"Jaaroverzicht {date_list[0][0:4]}"
         width = 0.2
-
-    if data.period.iloc[0] == "week":
+    else:
         n_now = pd.Timestamp.now().weekofyear
         maand_of_week = "Huidige week"
-        x_tick_text = [
-            el2 + "<br>W" + str(el)
-            for el, el2 in zip(x_count, data.date.dt.strftime("%Y-%m-%d").to_list())
-        ]
+        x_tick_text = [el2 + "<br>W" + str(el) for el, el2 in zip(x_count, date_list)]
         x_range = [n_now - 1.5, n_now + 3.5]
-        title = (
-            f"Maandoverzicht {dutch_month_list[pd.Timestamp.now().month - 1]} {year}"
-        )
+        title = f"Maandoverzicht {dutch_month_list[pd.Timestamp.now().month - 1]} {date_list[0][0:4]}"
         width = 0.08
 
-    if year != str(datetime.now().year):
+    if date_list[0][0:4] != str(datetime.now().year):
         n_now = ""
 
     output = dict(
@@ -62,7 +57,7 @@ def get_fig_new(data, year):
             dict(
                 name="Voorspelling",
                 x=x_count,
-                y=data.count_voorspellingdatum,
+                y=data.PrognoseHPendIndicator,
                 customdata=date_list,
                 mode="markers",
                 marker=dict(color=colors["yellow"], symbol="diamond", size=15),
@@ -70,7 +65,7 @@ def get_fig_new(data, year):
             dict(
                 name="Planning",
                 x=x_count,
-                y=data.count_hasdatum,
+                y=data.PlanningHPendIndicatorKPN,
                 customdata=date_list,
                 type="lines",
                 marker=dict(color=colors["red"]),
@@ -79,7 +74,7 @@ def get_fig_new(data, year):
             dict(
                 name="Realisatie",
                 x=[el + 0.5 * width for el in x_count],
-                y=data.count_opleverdatum,
+                y=data.RealisationHPendIndicator,
                 customdata=date_list,
                 type="bar",
                 marker=dict(color=colors["green"]),
@@ -88,7 +83,7 @@ def get_fig_new(data, year):
             dict(
                 name="Internal target",
                 x=[el - 0.5 * width for el in x_count],
-                y=data.count_outlookdatum,
+                y=data.InternalTargetHPendLine,
                 customdata=date_list,
                 type="bar",
                 marker=dict(color=colors["lightgray"]),
