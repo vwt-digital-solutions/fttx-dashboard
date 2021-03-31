@@ -7,12 +7,13 @@ class RedenNaOverviewIndicator(TimeseriesIndicator, PieChart):
     """
     Calculates reden na pie chart over all projects
     """
+
     def apply_business_rules(self):
         """
         For this indicator we only need the cluster column, and sleutel column to count.
         Returns: Sliced dataframe containing only the relevant columns
         """
-        return self.df[['cluster_redenna', 'sleutel']]
+        return self.df[["cluster_redenna", "sleutel"]]
 
     def perform(self):
         """
@@ -20,10 +21,7 @@ class RedenNaOverviewIndicator(TimeseriesIndicator, PieChart):
         Returns: Record reday to be written to the firestore, containing clustered data.
 
         """
-        aggregate = self.aggregate(
-            df=self.apply_business_rules(),
-            by="cluster_redenna"
-        )
+        aggregate = self.aggregate(df=self.apply_business_rules(), by="cluster_redenna")
         return self.to_record(aggregate)
 
     def to_record(self, df):
@@ -35,7 +33,9 @@ class RedenNaOverviewIndicator(TimeseriesIndicator, PieChart):
         Returns: Record containing all data.
         """
         record = self.to_pie_chart(df)
-        return Record(record=record,
-                      collection='Data',
-                      client=self.client,
-                      graph_name='reden_na_overview')
+        return Record(
+            record=record,
+            collection="Indicators",
+            client=self.client,
+            graph_name="reden_na_overview",
+        )

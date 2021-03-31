@@ -161,9 +161,16 @@ for client in config.client_config.keys():  # noqa: C901
         if not last_day_of_period and not title_text:
             return no_graph(title="Opgegeven reden na", text="Loading...")
 
-        redenna_by_period = collection.get_document(
-            collection="Data", client=client, graph_name=f"redenna_by_{period}"
-        )
+        if toggles.transform_frontend_newindicator:
+            redenna_by_period = collection.get_document(
+                collection="Indicators",
+                client=client,
+                graph_name=f"redenna_by_{period}",
+            )
+        else:
+            redenna_by_period = collection.get_document(
+                collection="Data", client=client, graph_name=f"redenna_by_{period}"
+            )
         # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
         redenna_dict = dict(
             sorted(redenna_by_period.get(last_day_of_period, dict()).items())
@@ -351,7 +358,7 @@ for client in config.client_config.keys():  # noqa: C901
                     "InternalTargetHPcivielLine",
                     "InternalTargetHPendLine",
                 ],
-                "Client Target": ["ClientTargetHPcivielLine", "ClientTargetHPendLine"],
+                "Client Target": ["ClientTarget", "ClientTarget"],
                 "Realisatie": [
                     "RealisationHPcivielIndicator",
                     "RealisationHPendIndicator",

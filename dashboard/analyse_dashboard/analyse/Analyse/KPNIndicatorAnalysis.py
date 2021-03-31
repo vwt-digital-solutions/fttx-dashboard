@@ -4,6 +4,7 @@ import os
 from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
+from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HcHpEndIndicator import HcHpEndIndicator
 from Analyse.Indicators.HcPatch import HcPatch
@@ -107,6 +108,9 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
         )
         self.records.append(
             PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+        self.records.append(
+            ClientTargetIndicator(df=None, client=self.client).perform()
         )
 
 
