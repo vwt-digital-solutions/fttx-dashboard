@@ -37,6 +37,17 @@ from Analyse.TMobile import TMobileTransform
 logger = logging.getLogger("FttX Indicator Analyse")
 
 
+class FttXIndicatorTransform(FttXTransform):
+    def transform(self):
+        super().transform()
+
+    def _add_status_columns(self):
+        return None
+
+    def _set_totals(self):
+        return None
+
+
 class FttXIndicatorAnalyse(FttXBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -117,7 +128,9 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
         )
 
 
-class FttXIndicatorETL(ETL, FttXExtract, FttXIndicatorAnalyse, FttXTransform, FttXLoad):
+class FttXIndicatorETL(
+    ETL, FttXExtract, FttXIndicatorAnalyse, FttXIndicatorTransform, FttXLoad
+):
     def perform(self):
         self.extract()
         self.transform()
