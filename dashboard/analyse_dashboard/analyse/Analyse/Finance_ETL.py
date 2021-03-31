@@ -4,6 +4,8 @@ Finance_ETL.py
 
 The ETL process for FttX Finance analyse.
 """
+import copy
+
 from sqlalchemy import bindparam, text
 
 from Analyse.ETL import Extract, ETL, Transform, Load, ETLBase, logger
@@ -28,11 +30,11 @@ class FinanceExtract(Extract):
         certain costs.
         """
         super().extract()
-        self.extracted_data.baan_budget = self.extract_sql_table('baan_budget')
-        self.extracted_data.baan_realisation = self.extract_sql_table('baan_realisation')
-        self.extract_categorisering()
+        self.extracted_data.baan_budget = self._extract_sql_table('baan_budget')
+        self.extracted_data.baan_realisation = self._extract_sql_table('baan_realisation')
+        self._extract_categorisering()
 
-    def extract_sql_table(self, table):
+    def _extract_sql_table(self, table):
         """
         Extracts sql table
         Args:
@@ -54,10 +56,10 @@ class FinanceExtract(Extract):
         ).bindparams(bindparam("projects", expanding=True))
         df = pd.read_sql(sql, get_database_engine(), params={"table": table, "projects": tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
-        df["project"] = df.project.astype(projects_category)
+        df["project_naam"] = df['project_naam'].astype(projects_category)
         return df
 
-    def extract_categorisering(self):
+    def _extract_categorisering(self):
         """
         Extracts the categorisation from the sql database
 
@@ -66,29 +68,73 @@ class FinanceExtract(Extract):
         """
 
         logger.info("Extracting categorisation from the sql database")
-        df = pd.read_excel(self.config['categorisation'], index=False)
+        df = pd.read_excel(self.config['categorisation'])
         self.extracted_data.categorisation = df
 
 
 class FinanceTransform(Transform):
+    """
+    Transforms extracted data that is necesarry for the financial analyses
+    """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def transform(self):
+        """
+        Main tranform function that transfroms the extracted data and assigns it to
+        transformed_data
+        """
         super().transform()
-        self.transform_baan_budget()
-        self.transform_baan_realisation()
-        self.transform_categorisering()
+        self._transform_categorisering()
+        self._transform_baan_budget()
+        self._transform_baan_realisation()
 
-    def transform_baan_budget(self):
-        self.transformed_data.baan_budget = pd.DataFrame()
+    def _transform_categorisering(self):
+        """
+        Funtion that transforms the Categorisation table and assigns the right datatype
+        """
+        df = copy.deepcopy(self.extracted_data.categorisation)
+        df.rename(columns={'artikelcode': 'kostendrager'}, inplace=True)
+        df.kostendrager = df.kostendrager.str.strip()
+        df[['categorie', 'sub_categorie']] = df[['categorie', 'sub_categorie']].apply(lambda x: x.str.strip())
+        df[['categorie', 'sub_categorie']] = df[['categorie', 'sub_categorie']].apply(lambda x: x.str.lower())
+        self.transformed_data.categorisation = df
 
-    def transform_baan_realisation(self):
-        self.transformed_data.baan_realisation = pd.DataFrame()
+    def _transform_baan_budget(self):
+        """
+        Funtion that transforms the Baan budget table, add categorisation and assigns the right datatype
+        """
+        logger.info('Transforming Baan Budget ...')
+        df = copy.deepcopy(self.extracted_data.baan_budget)
+        df.bedrag = df.bedrag.astype(float)
+        df = self._add_categorisation_to_baan_tables(df)
+        self.transformed_data.baan_budget = df
 
-    def transform_categorisering(self):
-        self.transformed_data.categorisation = pd.DataFrame()
+    def _transform_baan_realisation(self):
+        """
+        Funtion that transforms the Baan realisation table, add categorisation and assigns the right datatype
+        """
+        logger.info('Transforming Baan Realisation ...')
+        df = copy.deepcopy(self.extracted_data.baan_realisation)
+        df.kostensoort = df.kostensoort.str.strip()
+        df.bedrag = df.bedrag.astype(float)
+        df = self._add_categorisation_to_baan_tables(df)
+        self.transformed_data.baan_realisation = df
+
+    def _add_categorisation_to_baan_tables(self, df):
+        """
+        Function to merge categorisation on the Baan tables
+        Args:
+            df: pd.DataFrame containing data
+
+        Returns: pd.DataFrame with columns for categorisation
+
+        """
+        df = df.merge(self.transformed_data.categorisation, on='kostendrager', how='left')
+        df.sub_categorie.fillna('no_sub_category', inplace=True)
+        df.categorie.fillna('no_category', inplace=True)
+        return df
 
 
 class FinanceAnalyse(ETLBase):
@@ -104,7 +150,6 @@ class FinanceAnalyse(ETLBase):
         Returns: Indicator
         """
         logger.info(f"Analyse Finance for {self.config.get('name')}...")
-        ...
 
 
 class FinanceLoad(Load):
