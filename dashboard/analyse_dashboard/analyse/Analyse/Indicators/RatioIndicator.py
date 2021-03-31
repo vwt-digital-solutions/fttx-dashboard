@@ -20,11 +20,12 @@ class RatioIndicator(TimeseriesIndicator, DateAggregator):
         Returns: List of Records with HC/HPend ratio per project.
 
         """
-        df = self.aggregate(self.apply_business_rules())
-        df["ratio"] = df["numerator"] / df["denominator"]
+        df = self.apply_business_rules()
+        agg_df = self.aggregate(df)
+        agg_df["ratio"] = agg_df["numerator"] / agg_df["denominator"]
         records = RecordList()
         client_lines = []
-        for project, timeseries in df.groupby(level=0)["ratio"]:
+        for project, timeseries in agg_df.groupby(level=0)["ratio"]:
             if len(timeseries):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
                 client_lines.append(line)
@@ -36,7 +37,7 @@ class RatioIndicator(TimeseriesIndicator, DateAggregator):
 
     @staticmethod
     def _make_provider_level_line(df):
-        df = df.droplevel(0).groupby("opleverdatum").sum()
+        df = df.groupby("opleverdatum").sum().cumsum()
         ratio = df["numerator"] / df["denominator"]
         return TimeseriesDistanceLine(ratio).differentiate()
 

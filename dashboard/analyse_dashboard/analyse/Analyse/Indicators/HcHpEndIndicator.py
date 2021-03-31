@@ -48,4 +48,5 @@ class HcHpEndIndicator(RatioIndicator, DateAggregator):
             to_be_integrated=True,
             percentage=False,
             to_be_normalized=False,
+            to_be_splitted_by_year=True,
         )
