@@ -1,6 +1,8 @@
 import logging
 from urllib import parse
 
+import pandas as pd
+
 from data import api, data
 
 
@@ -53,3 +55,16 @@ def get_year_value_from_document(collection, year, **filters):
     else:
         value = "n.v.t."
     return value
+
+
+def get_month_series_from_document(collection, year, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        series = pd.Series(doc["series_month_" + year])
+        series.index = pd.to_datetime(series.index)
+        series = pd.Series(
+            index=pd.date_range(start=year, periods=12, freq="MS"), data=0
+        ).add(series, fill_value=0)
+    else:
+        series = None
+    return series

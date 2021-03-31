@@ -96,12 +96,21 @@ for client in config.client_config.keys():  # noqa: C901
     )
     def load_month_overview_per_year(year, client=client):
         if year:
-            return overview_bar_chart.get_fig(
-                data=fetch_data_for_overview_graphs(
-                    year=year, freq="M", period="month", client=client
-                ),
-                year=year,
-            )
+            if toggles.transform_frontend_newindicator:
+                output = overview_bar_chart.get_fig_new(
+                    data=fetch_data_for_overview_graphs(
+                        year=year, freq="M", period="month", client=client
+                    ),
+                    year=year,
+                )
+            else:
+                output = overview_bar_chart.get_fig(
+                    data=fetch_data_for_overview_graphs(
+                        year=year, freq="M", period="month", client=client
+                    ),
+                    year=year,
+                )
+            return output
         raise PreventUpdate
 
     @app.callback(

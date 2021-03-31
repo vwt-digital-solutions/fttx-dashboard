@@ -55,7 +55,7 @@ class ActualIndicator(DataIndicator, Aggregator):
             )
         return LineRecord(
             line,
-            collection="Lines",
+            collection="Indicators",
             graph_name=self.graph_name,
             to_be_normalized=False,
             phase="oplever",
