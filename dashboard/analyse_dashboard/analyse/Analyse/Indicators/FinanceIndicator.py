@@ -18,15 +18,15 @@ class FinanceIndicator(Indicator):
         for project in list(self.budget.project_naam.unique()):
             actuals, budget = self._return_data_for_project(project)
             if not actuals.empty and not budget.empty:
-                # actuals_aggregated = self._aggregate_actuals(actuals)
-                record = dict(budget=budget.to_dict(orient='records'))
-                #                             actuals=actuals.to_dict(orient='records'))
-                #                             actuals_aggregated=actuals_aggregated.to_dict(orient='records'))
+                actuals_aggregated = self._aggregate_actuals(actuals)
+                record = dict(budget=budget.to_dict(orient='records'),
+                              actuals=actuals.to_dict(orient='records'),
+                              actuals_aggregated=actuals_aggregated.to_dict(orient='records'))
                 record_list.append(self.to_record(record=record,
-                                                  collection='Finance_test',
+                                                  collection='Finance',
                                                   graph_name='finance_baan',
                                                   project=project))
-        return actuals
+        return record_list
 
     def to_record(self, record, collection, graph_name, project):
         return FinanceRecord(record=record, collection=collection, client=self.client, graph_name=graph_name,

@@ -98,19 +98,19 @@ for client in config.client_config.keys():  # noqa: C901
         assumed_expenses_df = calculate_assumed_expenses(client, project, expected_actuals_df, level, parent)
         fig = get_fig(dict(name="Begroting",
                            x=budget_df[level],
-                           y=budget_df.kostenbedrag,
+                           y=budget_df.bedrag,
                            color=config.colors_vwt['lightgray']),
                       dict(name="Prognose einde werk",
                            x=expected_actuals_df[level],
-                           y=expected_actuals_df.kostenbedrag,
+                           y=expected_actuals_df.bedrag,
                            color=config.colors_vwt['black']),
                       dict(name="Realisatie",
                            x=actuals_df[level],
-                           y=actuals_df.kostenbedrag,
+                           y=actuals_df.bedrag,
                            color=config.colors_vwt['vwt_blue']),
                       dict(name="Operationeel",
                            x=assumed_expenses_df[level],
-                           y=assumed_expenses_df.kostenbedrag,
+                           y=assumed_expenses_df.bedrag,
                            color=config.colors_vwt['darkgray'])
                       )
         return fig
@@ -126,22 +126,22 @@ for client in config.client_config.keys():  # noqa: C901
         if parent is None:
             parent = {}
 
-        budget_df = pd.DataFrame(data.get("budget", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+        budget_df = pd.DataFrame(data.get("budget", {level: [], parent.get("level"): [], 'bedrag': []}))
         expected_actuals_df = pd.DataFrame(
-            data.get("expected_actuals", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+            data.get("expected_actuals", {level: [], parent.get("level"): [], 'bedrag': []}))
         actuals_df = pd.DataFrame(
-            data.get("actuals_aggregated", {level: [], parent.get("level"): [], 'kostenbedrag': []}))
+            data.get("actuals_aggregated", {level: [], parent.get("level"): [], 'bedrag': []}))
 
         if parent:
             budget_df = budget_df[budget_df[parent.get("level")] == parent.get("value")]
             expected_actuals_df = expected_actuals_df[expected_actuals_df[parent.get("level")] == parent.get("value")]
             actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
 
-        budget_df = budget_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+        budget_df = budget_df[[level, 'bedrag']].groupby(level).sum().reset_index()
 
-        expected_actuals_df = expected_actuals_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+        expected_actuals_df = expected_actuals_df[[level, 'bedrag']].groupby(level).sum().reset_index()
 
-        actuals_df = actuals_df[[level, 'kostenbedrag']].groupby(level).sum().reset_index()
+        actuals_df = actuals_df[[level, 'bedrag']].groupby(level).sum().reset_index()
         return actuals_df, budget_df, expected_actuals_df
 
     def calculate_assumed_expenses(client, project, expected_actuals_df, level, parent: dict = None):
@@ -159,7 +159,7 @@ for client in config.client_config.keys():  # noqa: C901
         if parent:
             assumed_expenses_df = pd.Series(
                 {
-                    v[level]: v['kostenbedrag'] * progress_percent.get(
+                    v[level]: v['bedrag'] * progress_percent.get(
                         "has" if parent_value == "hpend" else parent_value,
                         0
                     )
@@ -167,9 +167,9 @@ for client in config.client_config.keys():  # noqa: C901
                 }
             ).dropna().to_frame().reset_index()
         else:
-            assumed_expenses_df = (expected_actuals_df.set_index(level).kostenbedrag * pd.Series(
+            assumed_expenses_df = (expected_actuals_df.set_index(level).bedrag * pd.Series(
                 progress_percent)).dropna().to_frame().reset_index()
-        assumed_expenses_df.columns = [level, 'kostenbedrag']
+        assumed_expenses_df.columns = [level, 'bedrag']
         return assumed_expenses_df
 
     @app.callback(
@@ -194,15 +194,15 @@ for client in config.client_config.keys():  # noqa: C901
                 if finance_data:
                     parent = dict(level='categorie', value=point.get("label"))
                     actuals_df = pd.DataFrame(
-                        finance_data.get('actuals', {parent.get("level"): [], 'kostenbedrag': []}))
+                        finance_data.get('actuals', {parent.get("level"): [], 'bedrag': []}))
                     actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
-                    time_series = actuals_df.groupby("registratiedatum")['kostenbedrag'].sum().sort_index().cumsum()
+                    time_series = actuals_df.groupby("vastlegdatum")['bedrag'].sum().sort_index().cumsum()
 
                     expected_cost = pd.DataFrame(
-                        finance_data.get('expected_actuals', {parent.get("level"): [], 'kostenbedrag': []})
+                        finance_data.get('expected_actuals', {parent.get("level"): [], 'bedrag': []})
                     )
                     expected_cost = expected_cost[
-                        expected_cost[parent.get("level")] == parent.get('value')].kostenbedrag.sum()
+                        expected_cost[parent.get("level")] == parent.get('value')].bedrag.sum()
 
                     traces = [go.Scatter(
                         x=time_series.index,

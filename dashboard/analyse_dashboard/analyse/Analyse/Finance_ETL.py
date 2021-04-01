@@ -12,6 +12,7 @@ from Analyse.ETL import Extract, ETL, Transform, Load, ETLBase, logger
 import pandas as pd
 
 from Analyse.Record.RecordList import RecordList
+from Analyse.Indicators.FinanceIndicator import FinanceIndicator
 from functions import get_database_engine
 
 
@@ -22,7 +23,7 @@ class FinanceExtract(Extract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.projects = self.config["projects"]
-        self.client_name = self.config.get("name")
+        self.client = self.config.get("name")
 
     def extract(self):
         """
@@ -174,6 +175,11 @@ class FinanceAnalyse(ETLBase):
         Returns: Indicator
         """
         logger.info(f"Analyse Finance for {self.config.get('name')}...")
+        self.records.append(
+            FinanceIndicator(client=self.client,
+                             df_budget=self.transformed_data.baan_budget,
+                             df_actuals=self.transformed_data.baan_realisation).perform()
+        )
 
 
 class FinanceLoad(Load):
