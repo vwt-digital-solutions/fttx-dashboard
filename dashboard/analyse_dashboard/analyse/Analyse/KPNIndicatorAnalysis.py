@@ -20,6 +20,7 @@ from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
     PlanningHPCivielIndicatorKPN
 from Analyse.Indicators.PlanningHPEndIndicatorKPN import \
     PlanningHPEndIndicatorKPN
+from Analyse.Indicators.PlanningIndicatorDFN import PlanningIndicatorDFN
 from Analyse.Indicators.PlanningIndicatorTMobile import \
     PlanningIndicatorTMobile
 from Analyse.Indicators.PrognoseIndicator import PrognoseIndicator
@@ -90,7 +91,7 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
         super().analyse()
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
-        planning_data = self.transformed_data.planning_new
+
         self.records.append(
             PrognoseIntegratedIndicator(
                 df=df, client=self.client, project_info=project_info
@@ -117,12 +118,7 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
             ).perform()
         )
         self.records.append(HcHpEndIndicator(df=df, client=self.client).perform())
-        self.records.append(
-            PlanningHPCivielIndicatorKPN(df=planning_data, client=self.client).perform()
-        )
-        self.records.append(
-            PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
-        )
+
         self.records.append(
             ClientTargetIndicator(df=None, client=self.client).perform()
         )
@@ -144,6 +140,25 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
         self.records.append(
             TwelveWeekRatioIndicator(df=df, client=self.client).perform()
         )
+
+
+class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
+    def analyse(self):
+        super().analyse()
+        planning_data = self.transformed_data.planning_new
+        self.records.append(
+            PlanningHPCivielIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+        self.records.append(
+            PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+
+
+class DFNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
+    def analyse(self):
+        super().analyse()
+        df = self.transformed_data.df
+        self.records.append(PlanningIndicatorDFN(df=df, client=self.client).perform())
 
 
 class FttXIndicatorETL(
