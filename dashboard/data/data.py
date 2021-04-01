@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 import config
+from app import toggles
 from data import collection
 
 
@@ -127,6 +128,64 @@ def fetch_data_for_week_overview(year, client):
         )
 
     return df
+
+
+def fetch_data_for_redenna_overview(ctx, year, client):
+    def get_date_and_period_and_title(ctx, year):
+        """
+        This function returns the settings to plot a pie chart based on annual, monthly or weekly views.
+
+        :param ctx: A dash callback, triggered by clicking in Jaaroverzicht or Maandoverzicht graphs
+        :param year: The current year, as set by the year selector dropdown
+        :return: date, period, title
+        """
+        dutch_month_list = [
+            "jan",
+            "feb",
+            "maa",
+            "apr",
+            "mei",
+            "jun",
+            "jul",
+            "aug",
+            "sep",
+            "okt",
+            "nov",
+            "dec",
+        ]
+        period, _, _ = ctx.triggered[0]["prop_id"].partition("-")
+
+        if period == "year":
+            date = f"{year}-01-01"
+            title = f"Reden na bij has ingepland voor het jaar {year}"
+        else:
+            date = ctx.triggered[0]["value"]["points"][0]["customdata"]
+            if period == "week":
+                title = f"Reden na bij has ingepland voor de week {date}"
+            if period == "month":
+                extract_month_in_dutch = dutch_month_list[int(date.split("-")[1]) - 1]
+                title = f"Reden na bij has ingepland voor de maand {extract_month_in_dutch} {year}"
+        return date, period, title
+
+    date, period, title = get_date_and_period_and_title(ctx, year)
+
+    if toggles.transform_frontend_newindicator:
+        redenna_by_period = collection.get_redenna_overview_from_document(
+            collection="Indicators",
+            date=date,
+            period=period,
+            client=client,
+            project="client_aggregate",
+        )
+    else:
+        redenna_by_period = collection.get_document(
+            collection="Data", client=client, graph_name=f"redenna_by_{period}"
+        )
+
+    # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
+    data = dict(sorted(redenna_by_period.get(date, dict()).items()))
+
+    return data, title
 
 
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):

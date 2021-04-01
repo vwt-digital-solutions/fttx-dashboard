@@ -99,3 +99,19 @@ def get_cumulative_week_series_from_document(collection, **filters):
     else:
         series = pd.Series()
     return series
+
+
+def get_redenna_overview_from_document(collection, date, period, **filters):
+    cluster_types = [
+        "HC",
+        "geplande aansluiting",
+        "permissieobstructies",
+        "technische obstructies",
+    ]
+    series_type = "series_" + period
+    pie_chart_dict = {}
+    for cluster in cluster_types:
+        filters["line"] = "RedenNAindicator_" + cluster
+        value = get_document(collection, **filters)[series_type][date]
+        pie_chart_dict[cluster] = value if value else 0
+    return {date: pie_chart_dict}
