@@ -48,7 +48,7 @@ for client in config.client_config.keys():  # noqa: C901
             Output(f"project-dropdown-{client}", "value"),
         ],
         [
-            Input(f"project-performance-{client}", "clickData"),
+            Input(f"project-performance-year-{client}", "clickData"),
             Input(f"overzicht-button-{client}", "n_clicks"),
         ],
     )
