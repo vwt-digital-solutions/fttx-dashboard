@@ -29,7 +29,6 @@ class FinanceExtract(Extract):
         Extracts the data for every project for the budget, the realisation and the categorisation to group
         certain costs.
         """
-        super().extract()
         self.extracted_data.baan_budget = self._extract_sql_table('baan_budget')
         self.extracted_data.baan_realisation = self._extract_sql_table('baan_realisation')
         self._extract_categorisering()
@@ -49,13 +48,14 @@ class FinanceExtract(Extract):
             f"""
             SELECT baan.*, fcm.project_naam
             FROM {table} baan
-            INNER JOIN fc_baan_project_nr_name_map fcm
+            LEFT JOIN fc_baan_project_nr_name_map fcm
             ON baan.project = fcm.baan_nummer
             WHERE fcm.project_naam in :projects
             """  # nosec
         ).bindparams(bindparam("projects", expanding=True))
-        df = pd.read_sql(sql, get_database_engine(), params={"table": table, "projects": tuple(self.projects)})
+        df = pd.read_sql(sql, get_database_engine(), params={"projects": tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
+        df.drop_duplicates(inplace=True)
         df["project_naam"] = df['project_naam'].astype(projects_category)
         return df
 
