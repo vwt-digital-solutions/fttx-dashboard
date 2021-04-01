@@ -171,8 +171,14 @@ class FttXIndicatorETL(
         self.load()
 
 
-class KPNDFNIndicatorETL(
-    FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNDFNIndicatorAnalyse
+class KPNIndicatorETL(
+    FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNIndicatorAnalyse
+):
+    ...
+
+
+class DFNIndicatorETL(
+    FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, DFNIndicatorAnalyse
 ):
     ...
 
@@ -181,7 +187,7 @@ class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAn
     ...
 
 
-class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNDFNIndicatorAnalyse):
+class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNIndicatorAnalyse):
     ...
 
 
@@ -199,7 +205,7 @@ class FttXIndicatorLocalETL(PickleExtract, FttXIndicatorETL):
             )
 
 
-class KPNDFNIndicatorLocalETL(KPNDFNIndicatorETL, FttXIndicatorLocalETL):
+class KPNDFNIndicatorLocalETL(KPNIndicatorETL, FttXIndicatorLocalETL):
     ...
 
 
