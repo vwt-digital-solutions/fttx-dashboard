@@ -14,7 +14,7 @@ def get_fig_new(data):
         * max(
             max(data.InternalTargetHPendLine),
             max(data.RealisationHPendIndicator),
-            max(data.PlanningHPendIndicatorKPN),
+            max(data.PlanningHPendIndicator),
             max(data.PrognoseHPendIndicator),
         ),
     ]
@@ -65,7 +65,7 @@ def get_fig_new(data):
             dict(
                 name="Planning",
                 x=x_count,
-                y=data.PlanningHPendIndicatorKPN,
+                y=data.PlanningHPendIndicator,
                 customdata=date_list,
                 type="lines",
                 marker=dict(color=colors["red"]),

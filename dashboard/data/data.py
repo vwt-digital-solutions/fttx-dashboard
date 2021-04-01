@@ -94,7 +94,7 @@ def fetch_data_for_month_overview(year, client):
     lines = [
         "InternalTargetHPendLine",
         "RealisationHPendIndicator",
-        "PlanningHPendIndicatorKPN",
+        "PlanningHPendIndicator",
         "PrognoseHPendIndicator",
     ]
     df = pd.DataFrame(index=pd.date_range(start=year, freq="MS", periods=12))
@@ -114,7 +114,7 @@ def fetch_data_for_week_overview(year, client):
     lines = [
         "InternalTargetHPendLine",
         "RealisationHPendIndicator",
-        "PlanningHPendIndicatorKPN",
+        "PlanningHPendIndicator",
         "PrognoseHPendIndicator",
     ]
     df = pd.DataFrame(index=pd.date_range(start=year, freq="W-MON", periods=52))

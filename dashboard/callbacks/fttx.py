@@ -298,8 +298,8 @@ for client in config.client_config.keys():  # noqa: C901
                     "RealisationHPendIndicator",
                 ],
                 "Planning": [
-                    "PlanningHPcivielIndicatorKPN",
-                    "PlanningHPendIndicatorKPN",
+                    "PlanningHPcivielIndicator",
+                    "PlanningHPendIndicator",
                 ],
                 "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
                 "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],

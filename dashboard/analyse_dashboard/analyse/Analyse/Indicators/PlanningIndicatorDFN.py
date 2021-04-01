@@ -12,6 +12,10 @@ class PlanningIndicatorDFN(TimeseriesIndicator):
     Calculates TMobile planning
     """
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.indicator_name = "PlanningHPendIndicator"
+
     def apply_business_rules(self):
         """
         For this indicator we only need the project and hasdatum column to count.
@@ -44,7 +48,9 @@ class PlanningIndicatorDFN(TimeseriesIndicator):
                     record_list.append(self.to_record(line_project))
                     line_list.append(line_project)
 
-            line_client = concat(line_list, name="planning", project=self.client)
+            line_client = concat(
+                line_list, name=self.indicator_name, project="client_aggregate"
+            )
             record_list.append(self.to_record(line_client))
 
         return record_list
@@ -60,7 +66,7 @@ class PlanningIndicatorDFN(TimeseriesIndicator):
 
         """
         data = df.droplevel(level=0)
-        return TimeseriesLine(data=data, name="planning", project=project)
+        return TimeseriesLine(data=data, name=self.indicator_name, project=project)
 
     def to_record(self, line):
         """
