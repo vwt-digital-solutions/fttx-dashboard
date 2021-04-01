@@ -12,6 +12,8 @@ from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
 from Analyse.Indicators.InternalTargetHPendIndicator import \
     InternalTargetHPendIndicator
+from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
+    InternalTargetHPendIntegratedIndicator
 from Analyse.Indicators.InternalTargetTmobileIndicator import \
     InternalTargetTmobileIndicator
 from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
@@ -21,10 +23,14 @@ from Analyse.Indicators.PlanningHPEndIndicatorKPN import \
 from Analyse.Indicators.PlanningIndicatorTMobile import \
     PlanningIndicatorTMobile
 from Analyse.Indicators.PrognoseIndicator import PrognoseIndicator
+from Analyse.Indicators.PrognoseIntegratedIndicator import \
+    PrognoseIntegratedIndicator
 from Analyse.Indicators.RealisationHPcivielIndicator import \
     RealisationHPcivielIndicator
 from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
+from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
+    RealisationHPendIntegratedIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.TwelveWeekRatioIndicator import \
     TwelveWeekRatioIndicator
@@ -70,6 +76,11 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
+        self.records.append(
+            RealisationHPendIntegratedIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
 
         self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
 
@@ -80,6 +91,11 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
         planning_data = self.transformed_data.planning_new
+        self.records.append(
+            PrognoseIntegratedIndicator(
+                df=df, client=self.client, project_info=project_info
+            ).perform()
+        )
         self.records.append(
             PrognoseIndicator(
                 df=df, client=self.client, project_info=project_info
@@ -92,6 +108,11 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
         )
         self.records.append(
             InternalTargetHPendIndicator(
+                project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            InternalTargetHPendIntegratedIndicator(
                 project_info=project_info, client=self.client
             ).perform()
         )
