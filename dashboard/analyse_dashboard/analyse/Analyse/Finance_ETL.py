@@ -117,8 +117,8 @@ class FinanceTransform(Transform):
         """
         logger.info('Transforming Baan Realisation ...')
         df = copy.deepcopy(self.extracted_data.baan_realisation)
-        df.kostensoort = df.kostensoort.str.strip()
-        df.bedrag = df.bedrag.astype(float)
+        df = self._remove_income_from_realisation(df)
+        df = self._transform_column_bedrag(df)
         df = self._add_categorisation_to_baan_tables(df)
         self.transformed_data.baan_realisation = df
 
@@ -134,6 +134,30 @@ class FinanceTransform(Transform):
         df = df.merge(self.transformed_data.categorisation, on='kostendrager', how='left')
         df.sub_categorie.fillna('no_sub_category', inplace=True)
         df.categorie.fillna('no_category', inplace=True)
+        return df
+
+    def _remove_income_from_realisation(self, df):
+        """
+        function to remove kostensoort 'Opbrengsten' from the dataframe
+        Args:
+            df: pd.DataFrame with data of Baan
+
+        Returns: pd.DataFrame without 'opbrengsten'
+
+        """
+        df.kostensoort = df.kostensoort.str.strip()
+        mask = (df.kostensoort != 'Opbrengsten')
+        return df[mask]
+
+    def _transform_column_bedrag(self, df):
+        """
+        Function to transform the 'bedrag' column into a postive float
+        Args:
+            df: pd.DataFrame with data of Baan
+
+        Returns: pd.DataFrame with adjusted column 'bedrag'
+        """
+        df.bedrag = df.bedrag.astype(float) * -1
         return df
 
 
