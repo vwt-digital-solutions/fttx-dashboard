@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -36,6 +37,56 @@ def no_graph(title="", text="No Data"):
             "title": title,
         }
     }
+
+
+def fetch_data_for_performance_graph(year, client):
+    list_projects = collection.get_document(
+        collection="Data", client=client, graph_name="project_names"
+    )["filters"]
+    list_projects = [el["label"] for el in list_projects]
+    this_week = (datetime.now() - timedelta(datetime.now().weekday())).strftime(
+        "%Y-%m-%d"
+    )
+
+    x = []
+    y = []
+    names = []
+    for project in list_projects:
+        realised = collection.get_cumulative_week_series_from_document(
+            collection="Indicators",
+            line="RealisationHPendIndicator",
+            client=client,
+            project=project,
+        )
+        targets = collection.get_cumulative_week_series_from_document(
+            collection="Indicators",
+            line="InternalTargetHPendLine",
+            client=client,
+            project=project,
+        )
+        werkvoorraad = collection.get_year_value_from_document(
+            collection="Indicators",
+            year=year,
+            line="WerkvoorraadHPendIndicator",
+            client=client,
+            project=project,
+        )
+        if not realised.empty and not targets.empty and (werkvoorraad > 0):
+            werkvoorraad_ideal = targets.iloc[9]  # 9 weeks of work is the ideal stock
+            total_units = targets.iloc[-1]
+            if this_week in realised.index:
+                percentage_realised = realised.loc[this_week] / total_units
+            else:
+                realised = realised.iloc[-1] / total_units
+            if this_week in targets.index:
+                percentage_target = targets.loc[this_week] / total_units
+            else:
+                percentage_target = targets.iloc[-1] / total_units
+            x += [(percentage_realised - percentage_target) * 100]
+            y += [werkvoorraad / werkvoorraad_ideal * 100]
+            names += [project]
+
+    return dict(x=x, y=y, names=names)
 
 
 def fetch_data_for_month_overview(year, client):

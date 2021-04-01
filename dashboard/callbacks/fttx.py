@@ -374,19 +374,23 @@ for client in config.client_config.keys():  # noqa: C901
             }
             parameters_global_info_list = []
             for title in lines_for_in_boxes:
-                value1 = collection.get_year_value_from_document(
-                    collection="Indicators",
-                    year=year,
-                    line=lines_for_in_boxes[title][0],
-                    client=client,
-                    project="client_aggregate",
+                value1 = str(
+                    collection.get_year_value_from_document(
+                        collection="Indicators",
+                        year=year,
+                        line=lines_for_in_boxes[title][0],
+                        client=client,
+                        project="client_aggregate",
+                    )
                 )
-                value2 = collection.get_year_value_from_document(
-                    collection="Indicators",
-                    year=year,
-                    line=lines_for_in_boxes[title][1],
-                    client=client,
-                    project="client_aggregate",
+                value2 = str(
+                    collection.get_year_value_from_document(
+                        collection="Indicators",
+                        year=year,
+                        line=lines_for_in_boxes[title][1],
+                        client=client,
+                        project="client_aggregate",
+                    )
                 )
                 parameters_global_info_list.append(
                     dict(

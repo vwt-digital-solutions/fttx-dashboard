@@ -1,4 +1,4 @@
-import logging
+# import logging
 from urllib import parse
 
 import pandas as pd
@@ -25,12 +25,12 @@ def get_document(collection, **filters):
     url = f"/{collection}?{parse.urlencode(filters)}"
     result = api.get(url)
     if not result or not len(result):
-        logging.warning(f"Query {url} did not return any results.")
+        # logging.warning(f"Query {url} did not return any results.")
         return {}
-    if len(result) > 1:
-        logging.warning(
-            f"Query {url} resulted in {len(result)} results, only the first is returned"
-        )
+    # if len(result) > 1:
+    # logging.warning(
+    # f"Query {url} resulted in {len(result)} results, only the first is returned"
+    # )
     return result[0].get("record", "n.v.t.")
 
 
@@ -51,9 +51,18 @@ def get_graph(**filters):
 def get_year_value_from_document(collection, year, **filters):
     doc = get_document(collection, **filters)
     if doc:
-        value = str(doc["series_year"][year + "-01-01"])
+        value = doc["series_year"][year + "-01-01"]
     else:
         value = "n.v.t."
+    return value
+
+
+def get_current_week_value_from_document(collection, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        value = doc["current_week"]
+    else:
+        value = 0
     return value
 
 
@@ -80,4 +89,13 @@ def get_week_series_from_document(collection, year, **filters):
         ).add(series, fill_value=0)
     else:
         series = None
+    return series
+
+
+def get_cumulative_week_series_from_document(collection, **filters):
+    doc = get_document(collection, **filters)
+    if doc:
+        series = pd.Series(doc["series_week"]).cumsum()
+    else:
+        series = pd.Series()
     return series
