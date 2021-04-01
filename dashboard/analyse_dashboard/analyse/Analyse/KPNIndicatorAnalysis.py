@@ -25,9 +25,7 @@ from Analyse.Indicators.RealisationHPcivielIndicator import \
     RealisationHPcivielIndicator
 from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
-from Analyse.Indicators.RedenNaOverviewIndicator import \
-    RedenNaOverviewIndicator
-from Analyse.Indicators.RedenNaProjectIndicator import RedenNaProjectIndicator
+from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.TwelveWeekRatioIndicator import \
     TwelveWeekRatioIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
@@ -58,12 +56,7 @@ class FttXIndicatorAnalyse(FttXBase):
     def analyse(self):
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
-        self.records.append(
-            RedenNaOverviewIndicator(df=df, client=self.client).perform()
-        )
-        self.records.append(
-            RedenNaProjectIndicator(df=df, client=self.client).perform()
-        )
+        self.records.append(RedenNaIndicator(df=df, client=self.client).perform())
 
         self.records.append(WerkvoorraadIndicator(df=df, client=self.client).perform())
 
