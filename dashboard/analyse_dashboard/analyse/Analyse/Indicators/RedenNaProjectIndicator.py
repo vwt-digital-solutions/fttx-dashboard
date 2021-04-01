@@ -32,7 +32,7 @@ class RedenNaProjectIndicator(TimeseriesIndicator, PieChart):
             project_dict[project] = self.to_pie_chart(df.droplevel(0))
         dict_record = DictRecord(
             record=project_dict,
-            collection="Indicators",
+            collection="Data",
             client=self.client,
             graph_name="reden_na_projects",
         )
