@@ -11,13 +11,15 @@ from config import colors_vwt as colors
 from data import collection
 from data.data import (completed_status_counts, fetch_data_for_month_overview,
                        fetch_data_for_overview_graphs,
+                       fetch_data_for_performance_graph,
                        fetch_data_for_week_overview, no_graph,
                        redenna_by_completed_status)
 from layout.components import redenna_status_pie
 from layout.components.global_info_list import global_info_list
 from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import (completed_status_counts_bar,
-                                      overview_bar_chart, pie_chart)
+                                      overview_bar_chart, performance_chart,
+                                      pie_chart)
 
 for client in config.client_config.keys():  # noqa: C901
 
@@ -127,6 +129,23 @@ for client in config.client_config.keys():  # noqa: C901
                         year=year, freq="W-MON", period="week", client=client
                     ),
                     year=year,
+                )
+            return output
+        raise PreventUpdate
+
+    @app.callback(
+        Output(f"project-performance-year-{client}", "figure"),
+        [Input(f"year-dropdown-{client}", "value")],
+    )
+    def load_performance_graph_per_year(year, client=client):
+        if year:
+            if toggles.transform_frontend_newindicator:
+                output = performance_chart.get_fig(
+                    fetch_data_for_performance_graph(year=year, client=client)
+                )
+            else:
+                output = collection.get_graph(
+                    client=client, graph_name="project_performance"
                 )
             return output
         raise PreventUpdate

@@ -3,12 +3,10 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 import config
-from app import toggles
 from data import collection
-from data.data import fetch_data_for_performance_graph, no_graph
+from data.data import no_graph
 from data.graph import ftu_table
 from layout.components.figure import figure
-from layout.components.graphs import performance_chart
 
 colors = config.colors_vwt
 
@@ -51,7 +49,15 @@ def get_html(client):
                 ),
             ],
         ),
-        html.Div(children=get_performance_graph(client), className="container-display"),
+        html.Div(
+            className="container-display",
+            children=[
+                figure(
+                    graph_id=f"project-performance-year-{client}",
+                    figure=no_graph(title="Jaaroverzicht", text="Loading..."),
+                )
+            ],
+        ),
         html.Div(children=get_ftu_table(client), className="container-display"),
     ]
 
@@ -96,26 +102,6 @@ def get_search_bar(client, project):
             className="one-third column",
         ),
     ]
-
-
-def get_performance_graph(client):
-    if toggles.transform_frontend_newindicator:
-        graph = figure(
-            container_id="graph_speed_c",
-            graph_id=f"project-performance-{client}",
-            figure=performance_chart.get_fig(
-                fetch_data_for_performance_graph(year="2021", client=client)
-            ),
-        )
-    else:
-        graph = figure(
-            container_id="graph_speed_c",
-            graph_id=f"project-performance-{client}",
-            figure=collection.get_graph(
-                client=client, graph_name="project_performance"
-            ),
-        )
-    return graph
 
 
 def get_ftu_table(client):
