@@ -7,6 +7,10 @@ class PrognoseIntegratedIndicator(PrognoseIndicator):
     Extension of Prognose indicator, as the integrated line is also needed in the front-end.
     """
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.indicator_name = "PrognoseHPendIndicatorIntegrated"
+
     def to_record(self, line):
         return LineRecord(
             record=line,

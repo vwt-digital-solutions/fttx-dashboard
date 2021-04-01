@@ -8,6 +8,10 @@ class RealisationHPendIntegratedIndicator(RealisationHPendIndicator):
     Extension of RealisationHPend indicator, as the integrated line is also needed in the front-end.
     """
 
+    def __init__(self, project_info, return_lines=False, **kwargs):
+        super().__init__(project_info, return_lines, **kwargs)
+        self.indicator_name = "RealisationHPendIndicatorIntegrated"
+
     def to_record(self, line):
         if line:
             record = LineRecord(
