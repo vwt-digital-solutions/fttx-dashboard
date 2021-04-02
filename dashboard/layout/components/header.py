@@ -7,11 +7,16 @@ from app import app
 
 
 def header(header_text=""):
-    data_updated_operational = update_date()[1]
-    data_processed_operational = update_date()[0]
+    update_dates = update_date()
+    data_processed_operational = update_dates[0]
+    data_updated_operational = update_dates[1]
+    data_process_finance = update_dates[2]
+    data_updated_finance = update_dates[3]
     data_update_text = f"""
-    Data binnengekomen op {data_updated_operational},
-    data laatst verwerkt op {data_processed_operational}
+    Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational},
+    en voor het laats meegenomen in de analyse op {data_processed_operational}.
+    Financele data (BAAN) is binnengekomen op {data_updated_finance},
+    en voor het laats meegenomen in de analyse op {data_process_finance}.
     """
 
     return html.Div(
@@ -47,7 +52,8 @@ def header(header_text=""):
                             dbc.Tooltip(data_update_text,
                                         id="hover",
                                         target="date_update",
-                                        placement="below"),
+                                        placement="below",
+                                        style={'font-size': 12}),
                         ],
                     )
                 ],
