@@ -202,9 +202,15 @@ for client in config.client_config.keys():  # noqa: C901
                     actuals_df = actuals_df[actuals_df[parent.get("level")] == parent.get("value")]
                     time_series = actuals_df.groupby("vastlegdatum")['bedrag'].sum().sort_index().cumsum()
 
-                    expected_cost = pd.DataFrame(
-                        finance_data.get('expected_actuals', {parent.get("level"): [], 'bedrag': []})
-                    )
+                    if 'expected_actuals' in finance_data:
+                        expected_cost = pd.DataFrame(
+                            finance_data.get('expected_actuals', {parent.get("level"): [], 'bedrag': []})
+                        )
+                    else:
+                        expected_cost = pd.DataFrame(
+                            finance_data.get('budget', {parent.get("level"): [], 'bedrag': []})
+                        )
+
                     expected_cost = expected_cost[
                         expected_cost[parent.get("level")] == parent.get('value')].bedrag.sum()
 
@@ -223,7 +229,7 @@ for client in config.client_config.keys():  # noqa: C901
                                                                 data_set="progress_over_time")
 
                         traces.append(get_progress_scatter(
-                            expected_cost if not expected_cost.empty else actuals_df,
+                            expected_cost,
                             progress_data,
                             parent.get("value"),
                             color=config.colors_vwt['darkgray']
