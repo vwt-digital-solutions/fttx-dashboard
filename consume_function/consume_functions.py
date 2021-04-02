@@ -48,21 +48,6 @@ def parse_request(request):
     return data, subscription
 
 
-def write_records_to_fs(records, collection_name, update_date_document_name=None, primary_key=None):
-    logging.info(f"Writing {len(records)} to the firestore")
-    batch = db.batch()
-
-    for i, record in enumerate(records):
-        batch.set(db.collection(collection_name).document(record[primary_key] if primary_key else None), record)
-        if (i + 1) % config.BATCH_SIZE == 0:
-            batch.commit()
-            logging.info(f'Write {i} message(s) to the firestore')
-    batch.commit()
-    db.collection('Graphs').document(update_date_document_name). \
-        set(dict(id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
-    logging.info(f'Writing message to {collection_name} finished')
-
-
 def write_logs_to_sql(logs):
     if logs:
         log_df = pd.DataFrame(logs)

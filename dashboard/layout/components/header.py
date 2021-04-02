@@ -1,4 +1,5 @@
 import dash_html_components as html
+import dash_bootstrap_components as dbc
 
 from data.graph import update_date
 
@@ -6,9 +7,12 @@ from app import app
 
 
 def header(header_text=""):
-    date_updated = update_date()[1]
-    date_processed = update_date()[0]
-    data_update_text = f"Data binnengekomen op {date_updated}, data laatst verwerkt op {date_processed}"
+    data_updated_operational = update_date()[1]
+    data_processed_operational = update_date()[0]
+    data_update_text = f"""
+    Data binnengekomen op {data_updated_operational},
+    data laatst verwerkt op {data_processed_operational}
+    """
 
     return html.Div(
         [
@@ -37,9 +41,13 @@ def header(header_text=""):
                                 style={"margin-bottom": "0px", "margin-left": "75px"},
                             ),
                             html.P(id='date_update',
-                                   children=data_update_text,
+                                   children="   Data updated",
                                    style={"margin-bottom": "0px", "margin-left": "75px"},
-                                   )
+                                   className="fa fa-info-circle"),
+                            dbc.Tooltip(data_update_text,
+                                        id="hover",
+                                        target="date_update",
+                                        placement="below"),
                         ],
                     )
                 ],

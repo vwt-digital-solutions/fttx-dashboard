@@ -40,6 +40,10 @@ app = dash.Dash(
     server=server
 )
 
+app.css.append_css(
+    {'external_url': 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'}
+)
+
 cache = Cache(app.server,
               config={'CACHE_TYPE': 'simple'}
               )
