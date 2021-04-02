@@ -95,7 +95,11 @@ for client in config.client_config.keys():  # noqa: C901
 
     def calculate_figure(client, project, data, level, parent: dict = None):
         actuals_df, budget_df, expected_actuals_df = calculate_level_costs(data, level, parent=parent)
-        assumed_expenses_df = calculate_assumed_expenses(client, project, expected_actuals_df, level, parent)
+        if not expected_actuals_df.empty:
+            assumed_expenses_df = calculate_assumed_expenses(client, project, expected_actuals_df, level, parent)
+        else:
+            assumed_expenses_df = calculate_assumed_expenses(client, project, budget_df, level, parent)
+
         fig = get_fig(dict(name="Begroting",
                            x=budget_df[level],
                            y=budget_df.bedrag,
@@ -219,7 +223,7 @@ for client in config.client_config.keys():  # noqa: C901
                                                                 data_set="progress_over_time")
 
                         traces.append(get_progress_scatter(
-                            expected_cost,
+                            expected_cost if not expected_cost.empty else actuals_df,
                             progress_data,
                             parent.get("value"),
                             color=config.colors_vwt['darkgray']

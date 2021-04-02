@@ -95,6 +95,7 @@ class FinanceTransform(Transform):
         """
         Funtion that transforms the Categorisation table and assigns the right datatype
         """
+        logger.info('Transforming categorisation ...')
         df = copy.deepcopy(self.extracted_data.categorisation)
         df.rename(columns={'artikelcode': 'kostendrager'}, inplace=True)
         df.kostendrager = df.kostendrager.str.strip()
@@ -121,6 +122,7 @@ class FinanceTransform(Transform):
         df = self._remove_income_from_realisation(df)
         df = self._transform_column_bedrag(df)
         df = self._add_categorisation_to_baan_tables(df)
+        df = self._fix_dates(df)
         self.transformed_data.baan_realisation = df
 
     def _add_categorisation_to_baan_tables(self, df):
@@ -159,6 +161,21 @@ class FinanceTransform(Transform):
         Returns: pd.DataFrame with adjusted column 'bedrag'
         """
         df.bedrag = df.bedrag.astype(float) * -1
+        return df
+
+    def _fix_dates(self, df):
+        """
+        Function to force date columns to datetime
+        Args:
+            df: pd.DataFrame including date columns
+
+        Returns: pd.DataFrame with converted datetime columns
+
+        """
+        date_columns = ['vastlegdatum']
+        df[date_columns] = df[date_columns].apply(pd.to_datetime, infer_datetime_format=True, errors="coerce", utc=True)
+        for col in date_columns:
+            df[col] = df[col].dt.strftime("%Y-%m-%d")
         return df
 
 
