@@ -23,6 +23,7 @@ class TwelveWeekRatioIndicator(RatioIndicator, DateAggregator):
         df = copy.deepcopy(self.df)
         df["denominator"] = br.aangesloten_orders_tmobile(df)
         df["numerator"] = br.aangesloten_orders_tmobile(df, time_window="on time")
+        df = df[br.aangesloten_orders_tmobile(df)]
         df = df[["numerator", "denominator", "project", "opleverdatum"]]
         return df
 
