@@ -4,6 +4,7 @@ import os
 from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
+from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HcHpEndIndicator import HcHpEndIndicator
 from Analyse.Indicators.HcPatch import HcPatch
@@ -11,22 +12,27 @@ from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
 from Analyse.Indicators.InternalTargetHPendIndicator import \
     InternalTargetHPendIndicator
+from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
+    InternalTargetHPendIntegratedIndicator
 from Analyse.Indicators.InternalTargetTmobileIndicator import \
     InternalTargetTmobileIndicator
 from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
     PlanningHPCivielIndicatorKPN
 from Analyse.Indicators.PlanningHPEndIndicatorKPN import \
     PlanningHPEndIndicatorKPN
+from Analyse.Indicators.PlanningIndicatorDFN import PlanningIndicatorDFN
 from Analyse.Indicators.PlanningIndicatorTMobile import \
     PlanningIndicatorTMobile
 from Analyse.Indicators.PrognoseIndicator import PrognoseIndicator
+from Analyse.Indicators.PrognoseIntegratedIndicator import \
+    PrognoseIntegratedIndicator
 from Analyse.Indicators.RealisationHPcivielIndicator import \
     RealisationHPcivielIndicator
 from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
-from Analyse.Indicators.RedenNaOverviewIndicator import \
-    RedenNaOverviewIndicator
-from Analyse.Indicators.RedenNaProjectIndicator import RedenNaProjectIndicator
+from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
+    RealisationHPendIntegratedIndicator
+from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.TwelveWeekRatioIndicator import \
     TwelveWeekRatioIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
@@ -57,12 +63,7 @@ class FttXIndicatorAnalyse(FttXBase):
     def analyse(self):
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
-        self.records.append(
-            RedenNaOverviewIndicator(df=df, client=self.client).perform()
-        )
-        self.records.append(
-            RedenNaProjectIndicator(df=df, client=self.client).perform()
-        )
+        self.records.append(RedenNaIndicator(df=df, client=self.client).perform())
 
         self.records.append(WerkvoorraadIndicator(df=df, client=self.client).perform())
 
@@ -76,6 +77,11 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
+        self.records.append(
+            RealisationHPendIntegratedIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
 
         self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
 
@@ -85,7 +91,12 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
         super().analyse()
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
-        planning_data = self.transformed_data.planning_new
+
+        self.records.append(
+            PrognoseIntegratedIndicator(
+                df=df, client=self.client, project_info=project_info
+            ).perform()
+        )
         self.records.append(
             PrognoseIndicator(
                 df=df, client=self.client, project_info=project_info
@@ -101,12 +112,15 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
                 project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(HcHpEndIndicator(df=df, client=self.client).perform())
         self.records.append(
-            PlanningHPCivielIndicatorKPN(df=planning_data, client=self.client).perform()
+            InternalTargetHPendIntegratedIndicator(
+                project_info=project_info, client=self.client
+            ).perform()
         )
+        self.records.append(HcHpEndIndicator(df=df, client=self.client).perform())
+
         self.records.append(
-            PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
+            ClientTargetIndicator(df=None, client=self.client).perform()
         )
 
 
@@ -128,6 +142,25 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
         )
 
 
+class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
+    def analyse(self):
+        super().analyse()
+        planning_data = self.transformed_data.planning_new
+        self.records.append(
+            PlanningHPCivielIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+        self.records.append(
+            PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+
+
+class DFNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
+    def analyse(self):
+        super().analyse()
+        df = self.transformed_data.df
+        self.records.append(PlanningIndicatorDFN(df=df, client=self.client).perform())
+
+
 class FttXIndicatorETL(
     ETL, FttXExtract, FttXIndicatorAnalyse, FttXIndicatorTransform, FttXLoad
 ):
@@ -138,8 +171,14 @@ class FttXIndicatorETL(
         self.load()
 
 
-class KPNDFNIndicatorETL(
-    FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNDFNIndicatorAnalyse
+class KPNIndicatorETL(
+    FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNIndicatorAnalyse
+):
+    ...
+
+
+class DFNIndicatorETL(
+    FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, DFNIndicatorAnalyse
 ):
     ...
 
@@ -148,7 +187,7 @@ class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAn
     ...
 
 
-class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNDFNIndicatorAnalyse):
+class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNIndicatorAnalyse):
     ...
 
 
@@ -166,7 +205,7 @@ class FttXIndicatorLocalETL(PickleExtract, FttXIndicatorETL):
             )
 
 
-class KPNDFNIndicatorLocalETL(KPNDFNIndicatorETL, FttXIndicatorLocalETL):
+class KPNDFNIndicatorLocalETL(KPNIndicatorETL, FttXIndicatorLocalETL):
     ...
 
 

@@ -9,14 +9,18 @@ import config
 from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
-from data.data import (
-    completed_status_counts, fetch_data_for_overview_graphs, no_graph,
-    redenna_by_completed_status)
+from data.data import (completed_status_counts, fetch_data_for_month_overview,
+                       fetch_data_for_overview_graphs,
+                       fetch_data_for_performance_graph,
+                       fetch_data_for_redenna_overview,
+                       fetch_data_for_week_overview, no_graph,
+                       redenna_by_completed_status)
 from layout.components import redenna_status_pie
 from layout.components.global_info_list import global_info_list
 from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import (completed_status_counts_bar,
-                                      overview_bar_chart, pie_chart)
+                                      overview_bar_chart, performance_chart,
+                                      redenna_overview_chart)
 
 for client in config.client_config.keys():  # noqa: C901
 
@@ -45,7 +49,7 @@ for client in config.client_config.keys():  # noqa: C901
             Output(f"project-dropdown-{client}", "value"),
         ],
         [
-            Input(f"project-performance-{client}", "clickData"),
+            Input(f"project-performance-year-{client}", "clickData"),
             Input(f"overzicht-button-{client}", "n_clicks"),
         ],
     )
@@ -98,10 +102,7 @@ for client in config.client_config.keys():  # noqa: C901
         if year:
             if toggles.transform_frontend_newindicator:
                 output = overview_bar_chart.get_fig_new(
-                    data=fetch_data_for_overview_graphs(
-                        year=year, freq="M", period="month", client=client
-                    ),
-                    year=year,
+                    data=fetch_data_for_month_overview(year, client)
                 )
             else:
                 output = overview_bar_chart.get_fig(
@@ -119,12 +120,35 @@ for client in config.client_config.keys():  # noqa: C901
     )
     def load_week_overview_per_year(year, client=client):
         if year:
-            return overview_bar_chart.get_fig(
-                data=fetch_data_for_overview_graphs(
-                    year=year, freq="W-MON", period="week", client=client
-                ),
-                year=year,
-            )
+            if toggles.transform_frontend_newindicator:
+                output = overview_bar_chart.get_fig_new(
+                    data=fetch_data_for_week_overview(year, client)
+                )
+            else:
+                output = overview_bar_chart.get_fig(
+                    data=fetch_data_for_overview_graphs(
+                        year=year, freq="W-MON", period="week", client=client
+                    ),
+                    year=year,
+                )
+            return output
+        raise PreventUpdate
+
+    @app.callback(
+        Output(f"project-performance-year-{client}", "figure"),
+        [Input(f"year-dropdown-{client}", "value")],
+    )
+    def load_performance_graph_per_year(year, client=client):
+        if year:
+            if toggles.transform_frontend_newindicator:
+                output = performance_chart.get_fig(
+                    fetch_data_for_performance_graph(year=year, client=client)
+                )
+            else:
+                output = collection.get_graph(
+                    client=client, graph_name="project_performance"
+                )
+            return output
         raise PreventUpdate
 
     @app.callback(
@@ -136,7 +160,7 @@ for client in config.client_config.keys():  # noqa: C901
             Input(f"year-dropdown-{client}", "value"),
         ],
     )
-    def display_click_data_per_year(
+    def update_redenna_overview_graph(
         week_click_data, month_click_data, reset, year, client=client
     ):
         """
@@ -145,91 +169,12 @@ for client in config.client_config.keys():  # noqa: C901
 
         :return: This function returns a pie chart figure.
         """
-        ctx = dash.callback_context
+        if year:
+            ctx = dash.callback_context
+            data, title = fetch_data_for_redenna_overview(ctx, year, client)
+            return redenna_overview_chart.get_fig(data, title)
 
-        if not ctx.triggered:
-            return no_graph(title="Opgegeven reden na", text="Loading...")
-
-        last_day_of_period, period, title_text = get_lastdayofperiod_and_titletext(
-            ctx, year
-        )
-
-        if not last_day_of_period and not title_text:
-            return no_graph(title="Opgegeven reden na", text="Loading...")
-
-        redenna_by_period = collection.get_document(
-            collection="Data", client=client, graph_name=f"redenna_by_{period}"
-        )
-        # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
-        redenna_dict = dict(
-            sorted(redenna_by_period.get(last_day_of_period, dict()).items())
-        )
-
-        if redenna_dict:
-            return pie_chart.get_html(
-                labels=list(redenna_dict.keys()),
-                values=list(redenna_dict.values()),
-                title=title_text,
-                colors=[
-                    colors["green"],
-                    colors["yellow"],
-                    colors["red"],
-                    colors["vwt_blue"],
-                ],
-            )
-        else:
-            return no_graph(title=title_text, text="No Data")
-
-    def get_lastdayofperiod_and_titletext(ctx, year):
-        """
-        This function returns the settings to plot a pie chart based on annual, monthly or weekly views.
-
-        :param ctx: A dash callback, triggered by clicking in Jaaroverzicht or Maandoverzicht graphs
-        :param year: The current year, as set by the year selector dropdown
-        :return: last_day_of_period, period, title_text
-        """
-        last_day_of_period = ""
-        period = ""
-        dutch_month_list = [
-            "jan",
-            "feb",
-            "maa",
-            "apr",
-            "mei",
-            "jun",
-            "jul",
-            "aug",
-            "sep",
-            "okt",
-            "nov",
-            "dec",
-        ]
-
-        for trigger in ctx.triggered:
-            period, _, _ = trigger["prop_id"].partition("-")
-
-            if period == "overview":
-                last_day_of_period = None
-                title_text = None
-                break
-            if period == "year":
-                last_day_of_period = f"{year}-12-31"
-                title_text = f"Reden na voor het jaar {year}"
-                break
-            for point in trigger["value"]["points"]:
-                last_day_of_period = point["customdata"]
-                if period == "week":
-                    title_text = f"Reden na voor de week {last_day_of_period}"
-                if period == "month":
-                    extract_month_in_dutch = dutch_month_list[
-                        int(last_day_of_period.split("-")[1]) - 1
-                    ]
-                    title_text = (
-                        f"Reden na voor de maand {extract_month_in_dutch} {year}"
-                    )
-                break
-            break
-        return last_day_of_period, period, title_text
+        raise PreventUpdate
 
     @app.callback(
         [Output(f"status-count-filter-{client}", "data")],
@@ -347,14 +292,14 @@ for client in config.client_config.keys():  # noqa: C901
                     "InternalTargetHPcivielLine",
                     "InternalTargetHPendLine",
                 ],
-                "Client Target": ["ClientTargetHPcivielLine", "ClientTargetHPendLine"],
+                "Client Target": ["ClientTarget", "ClientTarget"],
                 "Realisatie": [
                     "RealisationHPcivielIndicator",
                     "RealisationHPendIndicator",
                 ],
                 "Planning": [
-                    "PlanningHPcivielIndicatorKPN",
-                    "PlanningHPendIndicatorKPN",
+                    "PlanningHPcivielIndicator",
+                    "PlanningHPendIndicator",
                 ],
                 "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
                 "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
@@ -363,19 +308,23 @@ for client in config.client_config.keys():  # noqa: C901
             }
             parameters_global_info_list = []
             for title in lines_for_in_boxes:
-                value1 = collection.get_year_value_from_document(
-                    collection="Indicators",
-                    year=year,
-                    line=lines_for_in_boxes[title][0],
-                    client=client,
-                    project="client_aggregate",
+                value1 = str(
+                    collection.get_year_value_from_document(
+                        collection="Indicators",
+                        year=year,
+                        line=lines_for_in_boxes[title][0],
+                        client=client,
+                        project="client_aggregate",
+                    )
                 )
-                value2 = collection.get_year_value_from_document(
-                    collection="Indicators",
-                    year=year,
-                    line=lines_for_in_boxes[title][1],
-                    client=client,
-                    project="client_aggregate",
+                value2 = str(
+                    collection.get_year_value_from_document(
+                        collection="Indicators",
+                        year=year,
+                        line=lines_for_in_boxes[title][1],
+                        client=client,
+                        project="client_aggregate",
+                    )
                 )
                 parameters_global_info_list.append(
                     dict(

@@ -1,5 +1,6 @@
 import config
 from Analyse.Capacity_analysis.Analysis_capacity import CapacityETL
+from Analyse.Finance_ETL import FinanceETL
 from Analyse.KPNDFN import KPNETL, DFNETL
 from Analyse.TMobile import TMobileETL
 from functions import set_date_update
@@ -82,6 +83,18 @@ def analyse_capacity_kpn(request):
         logging.info('run done')
 
 
+def finance_analyse_kpn(request):
+    try:
+        analyseFinance('kpn')
+        set_date_update('kpn_finance')
+        return 'OK', 200
+    except Exception as e:
+        logging.exception(f'Finance analyse KPN failed {e}')
+        return 'Error', 500
+    finally:
+        logging.info('run done')
+
+
 def analyseKPN(client_name):
     kpn = KPNETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
@@ -90,6 +103,11 @@ def analyseKPN(client_name):
 def analyseCapacity(client_name):
     cpc = CapacityETL(client=client_name, config=config.client_config[client_name])
     cpc.perform()
+
+
+def analyseFinance(client_name):
+    finance = FinanceETL(client_name=client_name, config=config.client_config[client_name])
+    finance.perform()
 
 
 def analyseDFN(client_name):

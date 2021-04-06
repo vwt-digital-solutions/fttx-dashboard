@@ -150,10 +150,20 @@ def update_date():
         date_an = "[niet beschikbaar]"
 
     try:
+        date_finance_analyse = api.get('/Graphs?id=update_date_kpn_finance')[0]['date'][0:-4].replace('T', ' ')
+    except IndexError:
+        date_finance_analyse = "[niet beschikbaar]"
+
+    try:
+        date_update_baan = api.get('/Graphs?id=update_date_baan_realisation')[0]['date'][0:-4].replace('T', ' ')
+    except IndexError:
+        date_update_baan = "[niet beschikbaar]"
+
+    try:
         date_con = api.get('/Graphs?id=update_date_fiberconnect')[0]['date'][0:-4].replace('T', ' ')
     except IndexError:
         date_con = "[niet beschikbaar]"
-    return [date_an, date_con]
+    return [date_an, date_con, date_finance_analyse, date_update_baan]
 
 
 def ftu_table(data, client):

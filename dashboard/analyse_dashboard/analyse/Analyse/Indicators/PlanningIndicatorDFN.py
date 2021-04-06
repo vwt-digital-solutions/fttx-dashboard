@@ -7,7 +7,7 @@ from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 
 
-class PlanningIndicatorTMobile(TimeseriesIndicator):
+class PlanningIndicatorDFN(TimeseriesIndicator):
     """
     Calculates TMobile planning
     """

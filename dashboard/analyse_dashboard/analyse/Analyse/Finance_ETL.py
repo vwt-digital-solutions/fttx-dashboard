@@ -12,6 +12,7 @@ from Analyse.ETL import Extract, ETL, Transform, Load, ETLBase, logger
 import pandas as pd
 
 from Analyse.Record.RecordList import RecordList
+from Analyse.Indicators.FinanceIndicator import FinanceIndicator
 from functions import get_database_engine
 
 
@@ -22,14 +23,13 @@ class FinanceExtract(Extract):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.projects = self.config["projects"]
-        self.client_name = self.config.get("name")
+        self.client = self.config.get("name")
 
     def extract(self):
         """
         Extracts the data for every project for the budget, the realisation and the categorisation to group
         certain costs.
         """
-        super().extract()
         self.extracted_data.baan_budget = self._extract_sql_table('baan_budget')
         self.extracted_data.baan_realisation = self._extract_sql_table('baan_realisation')
         self._extract_categorisering()
@@ -49,13 +49,14 @@ class FinanceExtract(Extract):
             f"""
             SELECT baan.*, fcm.project_naam
             FROM {table} baan
-            INNER JOIN fc_baan_project_nr_name_map fcm
+            LEFT JOIN fc_baan_project_nr_name_map fcm
             ON baan.project = fcm.baan_nummer
             WHERE fcm.project_naam in :projects
             """  # nosec
         ).bindparams(bindparam("projects", expanding=True))
-        df = pd.read_sql(sql, get_database_engine(), params={"table": table, "projects": tuple(self.projects)})
+        df = pd.read_sql(sql, get_database_engine(), params={"projects": tuple(self.projects)})
         projects_category = pd.CategoricalDtype(categories=self.projects)
+        df.drop_duplicates(inplace=True)
         df["project_naam"] = df['project_naam'].astype(projects_category)
         return df
 
@@ -94,6 +95,7 @@ class FinanceTransform(Transform):
         """
         Funtion that transforms the Categorisation table and assigns the right datatype
         """
+        logger.info('Transforming categorisation ...')
         df = copy.deepcopy(self.extracted_data.categorisation)
         df.rename(columns={'artikelcode': 'kostendrager'}, inplace=True)
         df.kostendrager = df.kostendrager.str.strip()
@@ -117,9 +119,10 @@ class FinanceTransform(Transform):
         """
         logger.info('Transforming Baan Realisation ...')
         df = copy.deepcopy(self.extracted_data.baan_realisation)
-        df.kostensoort = df.kostensoort.str.strip()
-        df.bedrag = df.bedrag.astype(float)
+        df = self._remove_income_from_realisation(df)
+        df = self._transform_column_bedrag(df)
         df = self._add_categorisation_to_baan_tables(df)
+        df = self._fix_dates(df)
         self.transformed_data.baan_realisation = df
 
     def _add_categorisation_to_baan_tables(self, df):
@@ -136,6 +139,45 @@ class FinanceTransform(Transform):
         df.categorie.fillna('no_category', inplace=True)
         return df
 
+    def _remove_income_from_realisation(self, df):
+        """
+        function to remove kostensoort 'Opbrengsten' from the dataframe
+        Args:
+            df: pd.DataFrame with data of Baan
+
+        Returns: pd.DataFrame without 'opbrengsten'
+
+        """
+        df.kostensoort = df.kostensoort.str.strip()
+        mask = (df.kostensoort != 'Opbrengsten')
+        return df[mask]
+
+    def _transform_column_bedrag(self, df):
+        """
+        Function to transform the 'bedrag' column into a postive float
+        Args:
+            df: pd.DataFrame with data of Baan
+
+        Returns: pd.DataFrame with adjusted column 'bedrag'
+        """
+        df.bedrag = df.bedrag.astype(float) * -1
+        return df
+
+    def _fix_dates(self, df):
+        """
+        Function to force date columns to datetime
+        Args:
+            df: pd.DataFrame including date columns
+
+        Returns: pd.DataFrame with converted datetime columns
+
+        """
+        date_columns = ['vastlegdatum']
+        df[date_columns] = df[date_columns].apply(pd.to_datetime, infer_datetime_format=True, errors="coerce", utc=True)
+        for col in date_columns:
+            df[col] = df[col].dt.strftime("%Y-%m-%d")
+        return df
+
 
 class FinanceAnalyse(ETLBase):
 
@@ -150,6 +192,11 @@ class FinanceAnalyse(ETLBase):
         Returns: Indicator
         """
         logger.info(f"Analyse Finance for {self.config.get('name')}...")
+        self.records.append(
+            FinanceIndicator(client=self.client,
+                             df_budget=self.transformed_data.baan_budget,
+                             df_actuals=self.transformed_data.baan_realisation).perform()
+        )
 
 
 class FinanceLoad(Load):

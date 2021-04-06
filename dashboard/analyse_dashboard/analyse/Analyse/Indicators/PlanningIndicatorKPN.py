@@ -11,7 +11,7 @@ class PlanningIndicatorKPN(TimeseriesIndicator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.indicator_name = "PlanningIndicatorKPN"
+        self.indicator_name = "PlanningIndicator"
 
     def perform(self):
         """
