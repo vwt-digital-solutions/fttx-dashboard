@@ -8,13 +8,13 @@ from layout.components.figure import figure
 
 def financial_template(client):
 
-    datum_baan = api.get('/Graphs?id=update_date_baan_realisation')[0]['date'][0:-4].replace('T', ' ')
-    explain_barchart = f"""
+    datum_baan = api.get('/Graphs?id=update_date_baan_realisation')[0]['date'][0:-10].replace('T', ' ')
+    explain_barchart_1 = f"""
     Deze barchart geeft de financiele status weer op {datum_baan}. We zien hier wat er is begroot, hoeveel hiervan
-    gerealiseerd is, en ook hoeveel we operationeel al gedaan hebben.
-
-    De operationele voortgang is berekend door de voortgang van het aantal aangesloten huizen te vermenigvuldigen
-    met de gemiddelde kosten voor het aansluiten van een huis.
+    is gerealiseerd, en wat er operationeel is gedaan."""
+    explain_barchart_2 = """
+    De operationele voortgang is berekend door het aantal aangesloten huizen te vermenigvuldigen
+    met de gemiddelde kosten voor het aansluiten van een huis in een bepaalde categorie / sub-categorie.
     """
 
     return [
@@ -33,7 +33,9 @@ def financial_template(client):
                        graph_id=f"budget-bar-category-{client}",
                        title="Begroting/Prognose einde werk/Realisatie"
                        ),
-                dbc.Tooltip(explain_barchart,
+                dbc.Tooltip(children=[html.P(explain_barchart_1),
+                                      html.Br(),
+                                      html.P(explain_barchart_2)],
                             id=f"{client}-hover-finance-main-barchart",
                             target=f"budget-bar-category-{client}-container-title",
                             placement="below",
