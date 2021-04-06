@@ -58,6 +58,61 @@ def fetch_data_for_performance_graph(year, client):
     return dict(x=x, y=y, names=names)
 
 
+def fetch_data_for_overview_boxes(client, year):
+    lines_for_in_boxes = {
+        "Internal Target": [
+            "InternalTargetHPcivielLine",
+            "InternalTargetHPendLine",
+        ],
+        "Client Target": ["ClientTarget", "ClientTarget"],
+        "Realisatie": [
+            "RealisationHPcivielIndicator",
+            "RealisationHPendIndicator",
+        ],
+        "Planning": [
+            "PlanningHPcivielIndicator",
+            "PlanningHPendIndicator",
+        ],
+        "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
+        "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+        "Ratio HC / HPend": ["linenotavailable", "HcHpEndRatio"],
+        "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
+    }
+
+    parameters_global_info_list = []
+    for title in lines_for_in_boxes:
+        value1 = str(
+            collection.get_year_value_from_document(
+                collection="Indicators",
+                year=year,
+                line=lines_for_in_boxes[title][0],
+                client=client,
+                project="client_aggregate",
+            )
+        )
+        value2 = str(
+            collection.get_year_value_from_document(
+                collection="Indicators",
+                year=year,
+                line=lines_for_in_boxes[title][1],
+                client=client,
+                project="client_aggregate",
+            )
+        )
+        parameters_global_info_list.append(
+            dict(
+                id_="",
+                title=title,
+                text1="HPciviel: ",
+                text2="HPend: ",
+                value1=value1,
+                value2=value2,
+            )
+        )
+
+    return parameters_global_info_list
+
+
 def fetch_data_for_month_overview(year, client):
     lines = [
         "InternalTargetHPendLine",

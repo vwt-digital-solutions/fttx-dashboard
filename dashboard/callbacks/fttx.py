@@ -10,6 +10,7 @@ from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
 from data.data import (completed_status_counts, fetch_data_for_month_overview,
+                       fetch_data_for_overview_boxes,
                        fetch_data_for_overview_graphs,
                        fetch_data_for_performance_graph,
                        fetch_data_for_project_info_table,
@@ -301,57 +302,9 @@ for client in config.client_config.keys():  # noqa: C901
             raise PreventUpdate
 
         if toggles.transform_frontend_newindicator:
-            lines_for_in_boxes = {
-                "Internal Target": [
-                    "InternalTargetHPcivielLine",
-                    "InternalTargetHPendLine",
-                ],
-                "Client Target": ["ClientTarget", "ClientTarget"],
-                "Realisatie": [
-                    "RealisationHPcivielIndicator",
-                    "RealisationHPendIndicator",
-                ],
-                "Planning": [
-                    "PlanningHPcivielIndicator",
-                    "PlanningHPendIndicator",
-                ],
-                "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
-                "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
-                "Ratio HC / HPend": ["linenotavailable", "HcHpEndRatio"],
-                "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
-            }
-            parameters_global_info_list = []
-            for title in lines_for_in_boxes:
-                value1 = str(
-                    collection.get_year_value_from_document(
-                        collection="Indicators",
-                        year=year,
-                        line=lines_for_in_boxes[title][0],
-                        client=client,
-                        project="client_aggregate",
-                    )
-                )
-                value2 = str(
-                    collection.get_year_value_from_document(
-                        collection="Indicators",
-                        year=year,
-                        line=lines_for_in_boxes[title][1],
-                        client=client,
-                        project="client_aggregate",
-                    )
-                )
-                parameters_global_info_list.append(
-                    dict(
-                        id_="",
-                        title=title,
-                        text1="HPciviel: ",
-                        text2="HPend: ",
-                        value1=value1,
-                        value2=value2,
-                    )
-                )
             output = global_info_list(
-                items=parameters_global_info_list, className="container-display"
+                className="container-display",
+                items=fetch_data_for_overview_boxes(client, year),
             )
 
         elif toggles.overview_indicators:
