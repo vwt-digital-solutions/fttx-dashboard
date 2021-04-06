@@ -4,9 +4,9 @@ import dash_html_components as html
 
 import config
 from data import collection
-from data.data import no_graph
 from data.graph import ftu_table
 from layout.components.figure import figure
+from layout.components.graphs.no_graph import no_graph
 
 colors = config.colors_vwt
 

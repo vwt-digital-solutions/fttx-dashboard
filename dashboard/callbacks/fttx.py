@@ -13,7 +13,7 @@ from data.data import (completed_status_counts, fetch_data_for_month_overview,
                        fetch_data_for_overview_graphs,
                        fetch_data_for_performance_graph,
                        fetch_data_for_redenna_overview,
-                       fetch_data_for_week_overview, no_graph,
+                       fetch_data_for_week_overview,
                        redenna_by_completed_status)
 from layout.components import redenna_status_pie
 from layout.components.global_info_list import global_info_list
@@ -21,6 +21,7 @@ from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import (completed_status_counts_bar,
                                       overview_bar_chart, performance_chart,
                                       redenna_overview_chart)
+from layout.components.graphs.no_graph import no_graph
 
 for client in config.client_config.keys():  # noqa: C901
 

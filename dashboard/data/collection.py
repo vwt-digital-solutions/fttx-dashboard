@@ -3,7 +3,8 @@ from urllib import parse
 
 import pandas as pd
 
-from data import api, data
+from data import api
+from layout.components.graphs.no_graph import no_graph
 
 
 def get_document(collection, **filters):
@@ -45,7 +46,7 @@ def get_graph(**filters):
     Returns:
         dict: The graph in the document
     """
-    return get_document(collection="Graphs", **filters).get("figure", data.no_graph())
+    return get_document(collection="Graphs", **filters).get("figure", no_graph())
 
 
 def get_year_value_from_document(collection, year, **filters):
