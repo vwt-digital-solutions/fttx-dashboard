@@ -548,7 +548,7 @@ class FttXAnalyse(FttXBase):
             [
                 self.transformed_data.df.project,
                 ~self.transformed_data.df.sleutel.isna(),
-                self.transformed_data.df.status_civiel == "1",
+                self.transformed_data.df.status_civiel.str.contains("1"),
                 br.laswerk_dp_gereed(self.transformed_data.df)
                 & br.laswerk_ap_gereed(self.transformed_data.df),
                 br.geschouwed(self.transformed_data.df),
