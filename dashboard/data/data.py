@@ -78,7 +78,7 @@ def fetch_data_for_performance_graph(year, client):
             if this_week in realised.index:
                 percentage_realised = realised.loc[this_week] / total_units
             else:
-                realised = realised.iloc[-1] / total_units
+                percentage_realised = realised.iloc[-1] / total_units
             if this_week in targets.index:
                 percentage_target = targets.loc[this_week] / total_units
             else:
