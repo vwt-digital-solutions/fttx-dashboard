@@ -12,12 +12,14 @@ def header(header_text=""):
     data_updated_operational = update_dates[1]
     data_process_finance = update_dates[2]
     data_updated_finance = update_dates[3]
-    data_update_text = f"""
-    Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational},
-    en voor het laats meegenomen in de analyse op {data_processed_operational}.
-    Financele data (BAAN) is binnengekomen op {data_updated_finance},
-    en voor het laats meegenomen in de analyse op {data_process_finance}.
-    """
+    data_update_text_1 = f"""
+Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational},
+en voor het laatst meegenomen in de analyse op {data_processed_operational}.
+"""
+    data_update_text_2 = f"""
+Financiele data (BAAN) is binnengekomen op {data_updated_finance},
+en voor het laatst meegenomen in de analyse op {data_process_finance}.
+"""
 
     return html.Div(
         [
@@ -49,7 +51,9 @@ def header(header_text=""):
                                    children="   Data updated",
                                    style={"margin-bottom": "0px", "margin-left": "75px"},
                                    className="fa fa-info-circle"),
-                            dbc.Tooltip(data_update_text,
+                            dbc.Tooltip(children=[html.P(data_update_text_1),
+                                                  html.Br(),
+                                                  html.P(data_update_text_2)],
                                         id="hover",
                                         target="date_update",
                                         placement="below",
