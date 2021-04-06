@@ -12,6 +12,7 @@ from data import collection
 from data.data import (completed_status_counts, fetch_data_for_month_overview,
                        fetch_data_for_overview_graphs,
                        fetch_data_for_performance_graph,
+                       fetch_data_for_project_info_table,
                        fetch_data_for_redenna_overview,
                        fetch_data_for_week_overview,
                        redenna_by_completed_status)
@@ -20,6 +21,7 @@ from layout.components.global_info_list import global_info_list
 from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import (completed_status_counts_bar,
                                       overview_bar_chart, performance_chart,
+                                      project_info_table,
                                       redenna_overview_chart)
 from layout.components.graphs.no_graph import no_graph
 
@@ -175,6 +177,17 @@ for client in config.client_config.keys():  # noqa: C901
             data, title = fetch_data_for_redenna_overview(ctx, year, client)
             return redenna_overview_chart.get_fig(data, title)
 
+        raise PreventUpdate
+
+    @app.callback(
+        Output(f"FTU_table_c_{client}", "children"),
+        [Input(f"year-dropdown-{client}", "value")],
+    )
+    def load_project_info_table(year, client=client):
+        if year:
+            return project_info_table.get_ftu_table(
+                fetch_data_for_project_info_table(client)
+            )
         raise PreventUpdate
 
     @app.callback(

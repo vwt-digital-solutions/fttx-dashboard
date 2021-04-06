@@ -98,6 +98,12 @@ def fetch_data_for_week_overview(year, client):
     return df
 
 
+def fetch_data_for_project_info_table(client):
+    return collection.get_document(
+        collection="ProjectInfo", graph_name="project_dates", client=client
+    )
+
+
 def fetch_data_for_redenna_overview(ctx, year, client):
     def get_date_and_period_and_title(ctx, year):
         """

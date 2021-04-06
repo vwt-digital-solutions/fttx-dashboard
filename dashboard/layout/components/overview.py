@@ -4,9 +4,10 @@ import dash_html_components as html
 
 import config
 from data import collection
-from data.graph import ftu_table
 from layout.components.figure import figure
+from layout.components.graphs.dummy_table import dummy_table
 from layout.components.graphs.no_graph import no_graph
+from layout.components.table import table
 
 colors = config.colors_vwt
 
@@ -58,7 +59,15 @@ def get_html(client):
                 )
             ],
         ),
-        html.Div(children=get_ftu_table(client), className="container-display"),
+        html.Div(
+            className="container-display",
+            children=[
+                table(
+                    table_id=f"FTU_table_c_{client}",
+                    table=dummy_table(),
+                )
+            ],
+        ),
     ]
 
 
@@ -102,17 +111,3 @@ def get_search_bar(client, project):
             className="one-third column",
         ),
     ]
-
-
-def get_ftu_table(client):
-    print(f"CLIENT: {client}")
-    ftu_data = collection.get_document(
-        collection="ProjectInfo", graph_name="project_dates", client=client
-    )
-    table = ftu_table(ftu_data, client)
-    return html.Div(
-        table,
-        id=f"FTU_table_c_{client}",
-        className="pretty_container column",
-        hidden=False,
-    )
