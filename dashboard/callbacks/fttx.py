@@ -303,7 +303,7 @@ for client in config.client_config.keys():  # noqa: C901
                 ],
                 "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
                 "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
-                "Actuele HC / HPend": ["linenotavailable", "HcHpEndRatio"],
+                "Ratio HC / HPend": ["linenotavailable", "HcHpEndRatio"],
                 "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
             }
             parameters_global_info_list = []
