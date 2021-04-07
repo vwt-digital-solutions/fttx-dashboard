@@ -32,6 +32,7 @@ from Analyse.Indicators.PlanningIndicatorTMobile import \
 from Analyse.Indicators.PrognoseIndicator import PrognoseIndicator
 from Analyse.Indicators.PrognoseIntegratedIndicator import \
     PrognoseIntegratedIndicator
+from Analyse.Indicators.RealisationHCIndicator import RealisationHCIndicator
 from Analyse.Indicators.RealisationHPcivielIndicator import \
     RealisationHPcivielIndicator
 from Analyse.Indicators.RealisationHPendIndicator import \
@@ -78,6 +79,11 @@ class FttXIndicatorAnalyse(FttXBase):
         )
         self.records.append(
             RealisationHPendIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHCIndicator(
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )

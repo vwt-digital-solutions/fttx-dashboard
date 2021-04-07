@@ -75,38 +75,44 @@ def fetch_data_for_overview_boxes(client, year):
         ],
         "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
         "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
-        "Ratio HC / HPend": ["linenotavailable", "HcHpEndRatio"],
+        "Ratio HC / HPend": [
+            "linenotavailable",
+            "RealisationHCIndicator",
+            "RealisationHPendIndicator",
+        ],
         "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
     }
 
     parameters_global_info_list = []
     for title in lines_for_in_boxes:
-        value1 = str(
-            collection.get_year_value_from_document(
-                collection="Indicators",
-                year=year,
-                line=lines_for_in_boxes[title][0],
-                client=client,
-                project="client_aggregate",
+        values = []
+        for indicator in lines_for_in_boxes[title]:
+            values.append(
+                str(
+                    collection.get_year_value_from_document(
+                        collection="Indicators",
+                        year=year,
+                        line=indicator,
+                        client=client,
+                        project="client_aggregate",
+                    )
+                )
             )
-        )
-        value2 = str(
-            collection.get_year_value_from_document(
-                collection="Indicators",
-                year=year,
-                line=lines_for_in_boxes[title][1],
-                client=client,
-                project="client_aggregate",
-            )
-        )
+
+        # exception for calculation of ratio's
+        if len(values) == 3:
+            print(values[1])
+            print(values[2])
+            values[1] = str(round(int(values[1]) / int(values[2]), 2))
+
         parameters_global_info_list.append(
             dict(
                 id_="",
                 title=title,
                 text1="HPciviel: ",
                 text2="HPend: ",
-                value1=value1,
-                value2=value2,
+                value1=values[0],
+                value2=values[1],
             )
         )
 
