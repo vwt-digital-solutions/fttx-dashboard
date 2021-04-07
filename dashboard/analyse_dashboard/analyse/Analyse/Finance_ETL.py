@@ -189,7 +189,7 @@ class FinanceAnalyse(ETLBase):
 
     def analyse(self):
         """
-        Returns: Indicator
+        Main finance analyse that executes the FinanceIndicator and adds the records to self.records
         """
         logger.info(f"Analyse Finance for {self.config.get('name')}...")
         self.records.append(
@@ -200,6 +200,9 @@ class FinanceAnalyse(ETLBase):
 
 
 class FinanceLoad(Load):
+    """
+    Main finance load function that loads the self.records to the firestore
+    """
 
     def load(self):
         logger.info("Loading documents...")
@@ -207,6 +210,9 @@ class FinanceLoad(Load):
 
 
 class FinanceETL(ETL, FinanceExtract, FinanceTransform, FinanceAnalyse, FinanceLoad):
+    """
+    Main finance ETL process with the perform function that executes all the ETL steps
+    """
 
     def perform(self):
         self.extract()
