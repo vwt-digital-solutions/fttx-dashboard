@@ -46,4 +46,5 @@ class TwelveWeekRatioIndicator(RatioIndicator, DateAggregator):
             project=project,
             resample_method="mean",
             to_be_integrated=True,
+            percentage=False,
         )
