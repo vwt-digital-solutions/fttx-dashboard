@@ -4,7 +4,7 @@ import business_rules as br
 from Analyse.Indicators.RatioPartIndicator import RatioPartIndicator
 
 
-class ConnectedOnTimeOrdersTmobile(RatioPartIndicator):
+class ConnectedOnTimeOrdersTmobileIndicator(RatioPartIndicator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.graph_name = "op_tijd_aangesloten_orders_tmobile"

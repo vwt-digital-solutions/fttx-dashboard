@@ -5,9 +5,15 @@ from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
 from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
+from Analyse.Indicators.ConnectedOnTimeOrdersTmobileIndicator import \
+    ConnectedOnTimeOrdersTmobileIndicator
+from Analyse.Indicators.ConnectedOrdersTmobileIndicator import \
+    ConnectedOrdersTmobileIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
-from Analyse.Indicators.HcHpEndIndicator import HcHpEndIndicator
+from Analyse.Indicators.HcOpgeleverdIndicator import HcOpgeleverdIndicator
 from Analyse.Indicators.HcPatch import HcPatch
+from Analyse.Indicators.HpEndOpgeleverdIndicator import \
+    HpEndOpgeleverdIndicator
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
 from Analyse.Indicators.InternalTargetHPendIndicator import \
@@ -33,8 +39,6 @@ from Analyse.Indicators.RealisationHPendIndicator import \
 from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
     RealisationHPendIntegratedIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
-from Analyse.Indicators.TwelveWeekRatioIndicator import \
-    TwelveWeekRatioIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
 from Analyse.Record.RecordList import RecordList
@@ -117,10 +121,12 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
                 project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(HcHpEndIndicator(df=df, client=self.client).perform())
-
         self.records.append(
             ClientTargetIndicator(df=None, client=self.client).perform()
+        )
+        self.records.append(HcOpgeleverdIndicator(df=df, client=self.client).perform())
+        self.records.append(
+            HpEndOpgeleverdIndicator(df=df, client=self.client).perform()
         )
 
 
@@ -138,7 +144,10 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
             PlanningIndicatorTMobile(df=df, client=self.client).perform()
         )
         self.records.append(
-            TwelveWeekRatioIndicator(df=df, client=self.client).perform()
+            ConnectedOrdersTmobileIndicator(df=df, client=self.client).perform()
+        )
+        self.records.append(
+            ConnectedOnTimeOrdersTmobileIndicator(df=df, client=self.client).perform()
         )
 
 
