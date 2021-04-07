@@ -1,13 +1,14 @@
 from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 from Analyse.Record.LineRecord import LineRecord
+from Analyse.Record.RecordList import RecordList
 
 
 class RatioPartIndicator(TimeseriesIndicator):
     def perform(self):
         df = self.apply_business_rules()
         agg_df = self.aggregate(df)
-        records = []
+        records = RecordList()
         for project, timeseries in agg_df.groupby(level=0)["indicator"]:
             if len(timeseries):
                 line = TimeseriesDistanceLine(timeseries.droplevel(0)).differentiate()
