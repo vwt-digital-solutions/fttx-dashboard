@@ -60,7 +60,7 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
                     record_list.append(self.to_record(line_project))
 
             line_client = concat(
-                line_list, name=self.indicator_name, project=self.client
+                line_list, name=self.indicator_name, project="client_aggregate"
             )
             record_list.append(self.to_record(line_client))
 
@@ -74,7 +74,7 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
                 graph_name=f"{line.name}",
                 phase="oplever",
                 client=self.client,
-                project=line.project,
+                project="client_aggregate",
                 to_be_integrated=False,
                 to_be_normalized=False,
                 to_be_splitted_by_year=True,
