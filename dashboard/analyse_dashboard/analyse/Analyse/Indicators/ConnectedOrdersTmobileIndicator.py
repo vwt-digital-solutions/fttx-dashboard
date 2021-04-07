@@ -5,7 +5,7 @@ from Analyse.Aggregators.DateAggregator import DateAggregator
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
 
 
-class ConnectedOrdersTmobile(TimeseriesIndicator, DateAggregator):
+class ConnectedOrdersTmobileIndicator(TimeseriesIndicator, DateAggregator):
     """
     Indicator to calculate HC/HPend ratios cumulative over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
