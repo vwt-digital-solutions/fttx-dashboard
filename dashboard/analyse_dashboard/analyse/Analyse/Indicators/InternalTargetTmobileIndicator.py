@@ -74,7 +74,7 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
                 graph_name=f"{line.name}",
                 phase="oplever",
                 client=self.client,
-                project="client_aggregate",
+                project=line.project,
                 to_be_integrated=False,
                 to_be_normalized=False,
                 to_be_splitted_by_year=True,

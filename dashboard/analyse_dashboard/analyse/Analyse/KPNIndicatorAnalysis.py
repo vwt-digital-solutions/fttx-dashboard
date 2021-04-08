@@ -127,6 +127,7 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
 
 class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
     def analyse(self):
+        super().analyse()
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
         self.records.append(

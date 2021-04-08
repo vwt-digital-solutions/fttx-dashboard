@@ -54,7 +54,6 @@ def fetch_data_for_performance_graph(year, client):
             x += [(percentage_realised - percentage_target) * 100]
             y += [werkvoorraad / werkvoorraad_ideal * 100]
             names += [project]
-
     return dict(x=x, y=y, names=names)
 
 
