@@ -123,9 +123,6 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(
-            ClientTargetIndicator(df=None, client=self.client).perform()
-        )
 
 
 class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
@@ -162,6 +159,9 @@ class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
         )
         self.records.append(
             PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+        self.records.append(
+            ClientTargetIndicator(df=None, client=self.client).perform()
         )
 
 
