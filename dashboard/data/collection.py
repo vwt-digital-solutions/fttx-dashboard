@@ -76,7 +76,9 @@ def get_month_series_from_document(collection, year, **filters):
             index=pd.date_range(start=year, periods=12, freq="MS"), data=0
         ).add(series, fill_value=0)
     else:
-        series = pd.Series()
+        series = pd.Series(
+            index=pd.date_range(start=year, periods=12, freq="MS"), data=0
+        )
     return series
 
 
@@ -89,7 +91,9 @@ def get_week_series_from_document(collection, year, **filters):
             index=pd.date_range(start=year, periods=52, freq="W-MON"), data=0
         ).add(series, fill_value=0)
     else:
-        series = pd.Series()
+        series = pd.Series(
+            index=pd.date_range(start=year, periods=52, freq="W-MON"), data=0
+        )
     return series
 
 
