@@ -21,7 +21,7 @@ class RatioPartIndicator(TimeseriesIndicator):
     @staticmethod
     def _make_project_line(df):
         return TimeseriesDistanceLine(
-            df.groupby("opleverdatum").sum()["indicator"]
+            df.groupby("opleverdatum").sum().cumsum()["indicator"]
         ).differentiate()
 
     @staticmethod
@@ -47,4 +47,5 @@ class RatioPartIndicator(TimeseriesIndicator):
             client=self.client,
             project=project,
             to_be_integrated=True,
+            to_be_normalized=False,
         )
