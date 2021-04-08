@@ -224,6 +224,72 @@ def fetch_data_for_redenna_overview(ctx, year, client):
     return data, title
 
 
+def fetch_data_for_indicator_boxes(project, client):
+    this_week = datetime.now().isocalendar()[1]
+    indicator_types = {
+        f"Realisatie HPend week {str(this_week - 1)}": [
+            "RealisationHPendIndicator",
+            "InternalTargetHPendLine",
+        ],
+        f"Realisatie HPend week {str(this_week)}": [
+            "RealisationHPendIndicator",
+            "InternalTargetHPendLine",
+        ],
+        f"Realisatie HPciviel week {str(this_week - 1)}": [
+            "RealisationHPcivielIndicator",
+            "InternalTargetHPcivielLine",
+        ],
+        f"Realisatie HPciviel week {str(this_week)}": [
+            "RealisationHPcivielIndicator",
+            "InternalTargetHPcivielLine",
+        ],
+        f"Ratio HC / HPend week {str(this_week)}": [
+            "RealisationHCIndicatorIntegrated",
+            "RealisationHPendIndicatorIntegrated",
+        ],
+    }
+
+    info_list = []
+    for title in indicator_types:
+        values = []
+        gauge_type = "bullet"
+        sub_title = "Target: "
+        for line in indicator_types[title]:
+            if title[-2:] == str(this_week):
+                which_week = "current_week"
+            else:
+                which_week = "last_week"
+            values.append(
+                collection.get_week_value_from_document(
+                    collection="Indicators",
+                    which_week=which_week,
+                    line=line,
+                    client=client,
+                    project=project,
+                )
+            )
+
+        # exception for calculation of ratio's
+        if title == f"Ratio HC / HPend week {str(this_week)}":
+            print(values)
+            values[0] = round(values[0] / values[1], 2)
+            values[1] = 0.9
+            gauge_type = "speedo"
+
+        info_list.append(
+            dict(
+                value=values[0],
+                value2=values[1],
+                previous_value=None,
+                title=title,
+                sub_title=sub_title,
+                font_color="black",
+                gauge_type=gauge_type,
+            )
+        )
+    return info_list
+
+
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
     opgeleverd_data_dict = collection.get_document(
         collection="Data",

@@ -58,10 +58,10 @@ def get_year_value_from_document(collection, year, **filters):
     return value
 
 
-def get_current_week_value_from_document(collection, **filters):
+def get_week_value_from_document(collection, which_week, **filters):
     doc = get_document(collection, **filters)
     if doc:
-        value = doc["current_week"]
+        value = doc[which_week]
     else:
         value = 0
     return value
