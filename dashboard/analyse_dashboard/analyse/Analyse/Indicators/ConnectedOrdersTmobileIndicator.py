@@ -13,7 +13,7 @@ class ConnectedOrdersTmobileIndicator(RatioPartIndicator, DateAggregator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.graph_name = "aangesloten_orders_tmobile"
+        self.graph_name = "RealisationHPendIndicator"
 
     def apply_business_rules(self):
         """

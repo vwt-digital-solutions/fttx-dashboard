@@ -80,7 +80,11 @@ def fetch_data_for_overview_boxes(client, year):
             "RealisationHCIndicator",
             "RealisationHPendIndicator",
         ],
-        "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
+        "Ratio <12 weken": [
+            "linenotavailable",
+            "RealisationHPendOnTimeIndicator",
+            "RealisationHPendIndicator",
+        ],
     }
 
     parameters_global_info_list = []
@@ -100,9 +104,7 @@ def fetch_data_for_overview_boxes(client, year):
             )
 
         # exception for calculation of ratio's
-        if len(values) == 3:
-            print(values[1])
-            print(values[2])
+        if (len(values) == 3) & (values[1] != "n.v.t."):
             values[1] = str(round(int(values[1]) / int(values[2]), 2))
 
         parameters_global_info_list.append(

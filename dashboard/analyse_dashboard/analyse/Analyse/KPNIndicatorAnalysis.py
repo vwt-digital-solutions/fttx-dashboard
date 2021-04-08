@@ -5,15 +5,8 @@ from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
 from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
-from Analyse.Indicators.ConnectedOnTimeOrdersTmobileIndicator import \
-    ConnectedOnTimeOrdersTmobileIndicator
-from Analyse.Indicators.ConnectedOrdersTmobileIndicator import \
-    ConnectedOrdersTmobileIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
-from Analyse.Indicators.HcOpgeleverdIndicator import HcOpgeleverdIndicator
 from Analyse.Indicators.HcPatch import HcPatch
-from Analyse.Indicators.HpEndOpgeleverdIndicator import \
-    HpEndOpgeleverdIndicator
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
 from Analyse.Indicators.InternalTargetHPendIndicator import \
@@ -39,6 +32,10 @@ from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
 from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
     RealisationHPendIntegratedIndicator
+from Analyse.Indicators.RealisationHPendTmobileIndicator import \
+    RealisationHPendTmobileIndicator
+from Analyse.Indicators.RealisationHPendTmobileOnTimeIndicator import \
+    RealisationHPendTmobileOnTimeIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
@@ -77,22 +74,6 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(
-            RealisationHPendIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
-        self.records.append(
-            RealisationHCIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
-        self.records.append(
-            RealisationHPendIntegratedIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
-
         self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
 
 
@@ -128,11 +109,22 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
             ).perform()
         )
         self.records.append(
-            ClientTargetIndicator(df=None, client=self.client).perform()
+            RealisationHPendIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
         )
-        self.records.append(HcOpgeleverdIndicator(df=df, client=self.client).perform())
         self.records.append(
-            HpEndOpgeleverdIndicator(df=df, client=self.client).perform()
+            RealisationHCIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHPendIntegratedIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            ClientTargetIndicator(df=None, client=self.client).perform()
         )
 
 
@@ -150,10 +142,14 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
             PlanningIndicatorTMobile(df=df, client=self.client).perform()
         )
         self.records.append(
-            ConnectedOrdersTmobileIndicator(df=df, client=self.client).perform()
+            RealisationHPendTmobileIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
         )
         self.records.append(
-            ConnectedOnTimeOrdersTmobileIndicator(df=df, client=self.client).perform()
+            RealisationHPendTmobileOnTimeIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
         )
 
 
