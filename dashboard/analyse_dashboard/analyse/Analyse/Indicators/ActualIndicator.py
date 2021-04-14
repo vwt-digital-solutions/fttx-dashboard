@@ -14,6 +14,9 @@ class ActualIndicator(DataIndicator, Aggregator):
         self.collection = "Indicators"
         self.graph_name = None
 
+    def aggregate(self, df):
+        return super().aggregate(df=df, by="project", agg_function="sum")
+
     def perform(self):
         """
         Main loop that applies business rules, aggregates resulting frame,
@@ -23,9 +26,7 @@ class ActualIndicator(DataIndicator, Aggregator):
         to_record.
 
         """
-        series = self.aggregate(
-            df=self.apply_business_rules(), by="project", agg_function="sum"
-        )
+        series = self.aggregate(df=self.apply_business_rules())
         records = RecordList()
         for project, value in series.iterrows():
             project_line = self.create_line(value)
