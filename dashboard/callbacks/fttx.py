@@ -146,7 +146,7 @@ for client in config.client_config.keys():  # noqa: C901
         if year:
             if toggles.transform_frontend_newindicator:
                 output = performance_chart.get_fig(
-                    fetch_data_for_performance_graph(year=year, client=client)
+                    fetch_data_for_performance_graph(client=client)
                 )
             else:
                 output = collection.get_graph(

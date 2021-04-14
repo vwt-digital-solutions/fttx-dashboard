@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from Analyse.Aggregators.Aggregator import Aggregator
+from Analyse.Capacity_analysis.Line import TimeseriesLine
 from Analyse.Indicators.ActualIndicator import ActualIndicator
 from Analyse.Indicators.InternalTargetHPendIndicator import \
     InternalTargetHPendIndicator
@@ -23,92 +24,103 @@ class PerformanceGraphIndicator(ActualIndicator, Aggregator):
         super().__init__(**kwargs)
         self.project_info = project_info
 
-    def apply_business_rules(self):
+    def perform(self):
+        werkvoorraad, realisatie, target = self.get_instances_of_indicators()
+        # get filtered dataframes for werkvoorraad and realisatie
+        df_werkvoorraad = werkvoorraad.aggregate(werkvoorraad.apply_business_rules())
+        df_realisatie = realisatie.aggregate(realisatie.apply_business_rules())
+        # get current week
+        this_week = (datetime.now() - timedelta(datetime.now().weekday())).strftime(
+            "%Y-%m-%d"
+        )
+
+        x = []
+        y = []
+        names_projects = []
+        for project in self.project_info:
+            total_units = self.project_info[project]["huisaansluitingen"]
+            progress_of_target, werkvoorraad_ideal = self.get_progress_of_target(
+                target, project, this_week, total_units
+            )
+            progress_of_realisatie = self.get_progress_of_realisatie(
+                df_realisatie, project, this_week, total_units
+            )
+            werkvoorraad = self.get_werkvoorraad(df_werkvoorraad, project, total_units)
+            if progress_of_target and progress_of_realisatie and werkvoorraad:
+                x += [round((progress_of_realisatie - progress_of_target) * 100, 2)]
+                y += [round((werkvoorraad / werkvoorraad_ideal) * 100, 2)]
+                names_projects += [project]
+        return self.to_record(dict(x=x, y=y, names=names_projects))
+
+    def get_instances_of_indicators(self):
         """
         Retrieves aggregates frames from two indicator types, werkvoorraad and realisatie HPend.
 
         Returns: Two dataframes, werkvoorraad and realisatie.
         """
 
-        werkvoorraad_indicator = WerkvoorraadIndicator(df=self.df, client=self.client)
-        werkvoorraad = werkvoorraad_indicator.aggregate(
-            werkvoorraad_indicator.apply_business_rules()
-        )
-
-        realisatie_indicator = RealisationHPendIndicator(
+        # create instances of required indicators
+        werkvoorraad = WerkvoorraadIndicator(df=self.df, client=self.client)
+        realisatie = RealisationHPendIndicator(
             df=self.df, project_info=self.project_info, client=self.client
         )
-        realisatie = realisatie_indicator.aggregate(
-            realisatie_indicator.apply_business_rules()
+        target = InternalTargetHPendIndicator(
+            project_info=self.project_info, client="kpn"
         )
 
-        return werkvoorraad, realisatie
+        return werkvoorraad, realisatie, target
+
+    def get_progress_of_target(self, target, project, this_week, total_units):
+        target_line = target._make_project_line(project)
+        if target_line:
+            target_series = (
+                target_line.resample(freq="W-MON", method="sum")
+                .integrate()
+                .make_series()
+            )
+            if this_week in target_series.index:
+                progress = target_series.loc[this_week] / total_units
+            else:
+                progress = target_series.iloc[-1] / total_units
+            if len(target_series) >= 8:
+                werkvoorraad_ideal = target_series.iloc[7] / total_units
+            else:
+                werkvoorraad_ideal = target_series.iloc[-1] / total_units
+        else:
+            progress = None
+            werkvoorraad_ideal = None
+        return progress, werkvoorraad_ideal
+
+    def get_progress_of_realisatie(
+        self, df_realisatie, project, this_week, total_units
+    ):
+        if project in df_realisatie.index:
+            data = df_realisatie.loc[project]
+            realisatie_series = (
+                TimeseriesLine(data=data)
+                .resample(freq="W-MON", method="sum")
+                .integrate()
+                .make_series()
+            )
+            if this_week in realisatie_series.index:
+                progress = realisatie_series.loc[this_week] / total_units
+            else:
+                progress = realisatie_series.iloc[-1] / total_units
+        else:
+            progress = None
+        return progress
+
+    def get_werkvoorraad(self, df_werkvoorraad, project, total_units):
+        if project in df_werkvoorraad.index and total_units:
+            werkvoorraad = df_werkvoorraad.loc[project, "werkvoorraad"] / total_units
+        else:
+            werkvoorraad = None
+        return werkvoorraad
 
     def to_record(self, record_dict):
         return Record(
             record=record_dict,
             collection="Indicators",
             client=self.client,
-            graph_name="performance_graph",
+            graph_name="data_for_performance_graph",
         )
-
-    def perform(self):
-        werkvoorraad, realised = self.apply_business_rules()
-        target_indicator = InternalTargetHPendIndicator(
-            project_info=self.project_info, client="kpn"
-        )
-        record_dict = {}
-        for project, series in werkvoorraad.iterrows():
-            target_line = self.get_target(project, target_indicator)
-            if project in realised.index and target_line and series[0] > 0:
-                project_dict = {}
-                target_series = target_line.integrate().make_series()
-                target_ideal = target_series.iloc[9]
-                total_units = target_series.iloc[-1]
-
-                realised_number = self.get_realised_number(realised, project)
-                percentage_realised = realised_number / total_units
-
-                target_number = self.get_target_number(target_series)
-                percentage_target = target_number / total_units
-
-                project_dict["x"] = (percentage_realised - percentage_target) * 100
-                project_dict["y"] = series[0] / target_ideal * 100
-                record_dict[project] = project_dict
-
-        return self.to_record(record_dict)
-
-    @staticmethod
-    def get_target(project, indicator):
-        try:
-            target = indicator._make_project_line(project)
-        except KeyError:
-            target = None
-        return target
-
-    @staticmethod
-    def get_realised_number(series, project):
-        this_week = (datetime.now() - timedelta(datetime.now().weekday())).strftime(
-            "%Y-%m-%d"
-        )
-        try:
-            project_series = series.loc[project]
-        except KeyError:
-            print(f"No data for project {project}")
-            return None
-        try:
-            number = project_series.loc[this_week]
-        except KeyError:
-            number = project_series.iloc[-1]
-        return number
-
-    @staticmethod
-    def get_target_number(project_series):
-        this_week = (datetime.now() - timedelta(datetime.now().weekday())).strftime(
-            "%Y-%m-%d"
-        )
-        if this_week in project_series.index:
-            number = project_series.loc[this_week]
-        else:
-            number = project_series.iloc[-1]
-        return number

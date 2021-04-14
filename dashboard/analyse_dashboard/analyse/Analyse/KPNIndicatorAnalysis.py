@@ -79,6 +79,13 @@ class FttXIndicatorAnalyse(FttXBase):
             ).perform()
         )
         self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
+        self.records.append(
+            PerformanceGraphIndicator(
+                df=df,
+                project_info=self.transformed_data.project_info,
+                client=self.client,
+            ).perform()
+        )
 
 
 class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
@@ -164,7 +171,6 @@ class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
     def analyse(self):
         super().analyse()
         planning_data = self.transformed_data.planning_new
-        df = self.transformed_data.df
         self.records.append(
             PlanningHPCivielIndicatorKPN(df=planning_data, client=self.client).perform()
         )
@@ -173,13 +179,6 @@ class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
         )
         self.records.append(
             ClientTargetIndicator(df=None, client=self.client).perform()
-        )
-        self.records.append(
-            PerformanceGraphIndicator(
-                df=df,
-                project_info=self.transformed_data.project_info,
-                client=self.client,
-            ).perform()
         )
 
 

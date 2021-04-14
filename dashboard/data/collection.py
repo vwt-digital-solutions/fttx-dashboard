@@ -120,3 +120,7 @@ def get_redenna_overview_from_document(collection, date, period, **filters):
         value = get_document(collection, **filters)[series_type][date]
         pie_chart_dict[cluster] = value if value else 0
     return {date: pie_chart_dict}
+
+
+def get_data_performance_graph(collection, **filters):
+    return get_document(collection, **filters)
