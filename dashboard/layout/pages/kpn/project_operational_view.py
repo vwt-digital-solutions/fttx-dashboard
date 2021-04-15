@@ -28,10 +28,11 @@ def get_html(client):
         ),
         html.Div(
             [
-                html.Div(
-                    [dcc.Graph(id=f"graph_prog-{client}")],
-                    id="graph_prog_c",
-                    className="pretty_container column",
+                figure(
+                    figure=no_graph(
+                        title="Progress of HPend over time", text="Loading..."
+                    ),
+                    graph_id=f"graph_prog-{client}",
                 ),
                 figure(
                     figure=no_graph(

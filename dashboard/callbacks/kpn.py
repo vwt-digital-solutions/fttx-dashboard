@@ -5,7 +5,9 @@ from dash.exceptions import PreventUpdate
 from app import app, toggles
 # update value dropdown given selection in scatter chart
 from data import collection
-from data.data import fetch_data_for_indicator_boxes
+from data.data import (fetch_data_for_indicator_boxes,
+                       fetch_data_for_progress_HPend_chart)
+from layout.components.graphs import progress_HPend_chart
 from layout.components.indicator import indicator
 from layout.components.list_of_boxes import project_indicator_list
 
@@ -84,10 +86,15 @@ def update_prognose_graph(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    fig_prog = collection.get_graph(
-        client="kpn", graph_name="prognose_graph_dict", project=drop_selectie
-    )
-    for i, item in enumerate(fig_prog["data"]):
-        fig_prog["data"][i]["x"] = pd.to_datetime(item["x"])
+    if toggles.transform_frontend_newindicator:
+        fig_prog = progress_HPend_chart.get_fig(
+            fetch_data_for_progress_HPend_chart(client=client, project=drop_selectie)
+        )
+    else:
+        fig_prog = collection.get_graph(
+            client="kpn", graph_name="prognose_graph_dict", project=drop_selectie
+        )
+        for i, item in enumerate(fig_prog["data"]):
+            fig_prog["data"][i]["x"] = pd.to_datetime(item["x"])
 
     return [fig_prog]

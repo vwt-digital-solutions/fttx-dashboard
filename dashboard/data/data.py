@@ -14,6 +14,29 @@ def fetch_data_for_performance_graph(client):
     )
 
 
+def fetch_data_for_progress_HPend_chart(client, project):
+    data = {}
+    data["prognose"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        client=client,
+        project=project,
+        line="PrognoseHPendIndicatorIntegrated",
+    )
+    data["target"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        client=client,
+        project=project,
+        line="InternalTargetHPendLineIntegrated",
+    )
+    data["realisatie"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        client=client,
+        project=project,
+        line="RealisationHPendIndicatorIntegrated",
+    )
+    return data
+
+
 def fetch_data_for_overview_boxes(client, year):
     lines_for_in_boxes = {
         "Internal Target": [
