@@ -197,8 +197,11 @@ def fetch_data_for_redenna_overview(ctx, year, client):
         redenna_by_period = collection.get_document(
             collection="Data", client=client, graph_name=f"redenna_by_{period}"
         )
+        if period == "year":
+            date = date[0:4] + "-12-31"
 
     # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
+    print(date)
     data = dict(sorted(redenna_by_period.get(date, dict()).items()))
 
     return data, title
