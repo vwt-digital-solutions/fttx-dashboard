@@ -20,7 +20,7 @@ class PrognoseIntegratedIndicator(PrognoseIndicator):
             client=self.client,
             project=line.project,
             to_be_integrated=True,
-            to_be_normalized=False,
+            to_be_normalized=True,
             to_be_splitted_by_year=True,
-            percentage=False,
+            percentage=True,
         )

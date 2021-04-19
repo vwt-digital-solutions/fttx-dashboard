@@ -1,9 +1,8 @@
-import dash_html_components as html
 import dash_bootstrap_components as dbc
-
-from data.graph import update_date
+import dash_html_components as html
 
 from app import app
+from data.graph import update_date
 
 
 def header(header_text=""):
@@ -32,12 +31,12 @@ en voor het laatst meegenomen in de analyse op {data_process_finance}.
                             "height": "70px",
                             "width": "auto",
                             "margin-bottom": "15px",
-                            "margin-left": "115px"
+                            "margin-left": "115px",
                         },
                     ),
                 ],
                 className="one-third column",
-                style={'textAlign': 'left'}
+                style={"textAlign": "left"},
             ),
             html.Div(
                 [
@@ -47,23 +46,29 @@ en voor het laatst meegenomen in de analyse op {data_process_finance}.
                                 header_text,
                                 style={"margin-bottom": "0px", "margin-left": "75px"},
                             ),
-                            html.P(id='date_update',
-                                   children="   Data updated",
-                                   style={"margin-bottom": "0px", "margin-left": "75px"},
-                                   className="fa fa-info-circle"),
-                            dbc.Tooltip(children=[html.P(data_update_text_1),
-                                                  html.Br(),
-                                                  html.P(data_update_text_2)],
-                                        id="hover",
-                                        target="date_update",
-                                        placement="below",
-                                        style={'font-size': 12}),
+                            html.P(
+                                id="date_update",
+                                children="   Data updated",
+                                style={"margin-bottom": "0px", "margin-left": "75px"},
+                                className="fa fa-info-circle",
+                            ),
+                            dbc.Tooltip(
+                                children=[
+                                    html.P(data_update_text_1),
+                                    html.Br(),
+                                    html.P(data_update_text_2),
+                                ],
+                                id="hover",
+                                target="date_update",
+                                placement="below",
+                                style={"font-size": 12},
+                            ),
                         ],
                     )
                 ],
                 className="one-third column",
                 id="title",
-                style={'textAlign': 'center'}
+                style={"textAlign": "center"},
             ),
             html.Div(
                 [
@@ -74,12 +79,12 @@ en voor het laatst meegenomen in de analyse op {data_process_finance}.
                             "height": "100px",
                             "width": "auto",
                             "margin-bottom": "15px",
-                            "margin-right": "0px"
+                            "margin-right": "0px",
                         },
                     )
                 ],
                 className="one-third column",
-                style={'textAlign': 'right'}
+                style={"textAlign": "right"},
             ),
         ],
         id="header",

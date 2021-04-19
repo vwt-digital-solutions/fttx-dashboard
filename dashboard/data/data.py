@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pandas as pd
 
@@ -8,86 +8,96 @@ from app import toggles
 from data import collection
 
 
-def no_graph(title="", text="No Data"):
-    """
-    Creates a figure with no data. It accepts a title and a text. The text will be displayed in a large font in place of
-    of the graph.
-
-    Args:
-        title (str): optional title
-        text (str): optional, default: "No Data"
-
-    Returns:
-        dict: A dictionary in the plotly figure format.
-    """
-    return {
-        "layout": {
-            "paper_bgcolor": config.colors_vwt["paper_bgcolor"],
-            "plot_bgcolor": config.colors_vwt["plot_bgcolor"],
-            "xaxis": {"visible": False},
-            "yaxis": {"visible": False},
-            "annotations": [
-                {
-                    "text": text,
-                    "xref": "paper",
-                    "yref": "paper",
-                    "showarrow": False,
-                    "font": {"size": 28},
-                }
-            ],
-            "title": title,
-        }
-    }
-
-
-def fetch_data_for_performance_graph(year, client):
-    list_projects = collection.get_document(
-        collection="Data", client=client, graph_name="project_names"
-    )["filters"]
-    list_projects = [el["label"] for el in list_projects]
-    this_week = (datetime.now() - timedelta(datetime.now().weekday())).strftime(
-        "%Y-%m-%d"
+def fetch_data_for_performance_graph(client):
+    return collection.get_data_performance_graph(
+        collection="Indicators", client=client, graph_name="data_for_performance_graph"
     )
 
-    x = []
-    y = []
-    names = []
-    for project in list_projects:
-        realised = collection.get_cumulative_week_series_from_document(
-            collection="Indicators",
-            line="RealisationHPendIndicator",
-            client=client,
-            project=project,
-        )
-        targets = collection.get_cumulative_week_series_from_document(
-            collection="Indicators",
-            line="InternalTargetHPendLine",
-            client=client,
-            project=project,
-        )
-        werkvoorraad = collection.get_year_value_from_document(
-            collection="Indicators",
-            year=year,
-            line="WerkvoorraadHPendIndicator",
-            client=client,
-            project=project,
-        )
-        if not realised.empty and not targets.empty and (werkvoorraad > 0):
-            werkvoorraad_ideal = targets.iloc[9]  # 9 weeks of work is the ideal stock
-            total_units = targets.iloc[-1]
-            if this_week in realised.index:
-                percentage_realised = realised.loc[this_week] / total_units
-            else:
-                percentage_realised = realised.iloc[-1] / total_units
-            if this_week in targets.index:
-                percentage_target = targets.loc[this_week] / total_units
-            else:
-                percentage_target = targets.iloc[-1] / total_units
-            x += [(percentage_realised - percentage_target) * 100]
-            y += [werkvoorraad / werkvoorraad_ideal * 100]
-            names += [project]
 
-    return dict(x=x, y=y, names=names)
+def fetch_data_for_progress_HPend_chart(client, project):
+    data = {}
+    data["prognose"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        client=client,
+        project=project,
+        line="PrognoseHPendIndicatorIntegrated",
+    )
+    data["target"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        client=client,
+        project=project,
+        line="InternalTargetHPendLineIntegrated",
+    )
+    data["realisatie"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        client=client,
+        project=project,
+        line="RealisationHPendIndicatorIntegrated",
+    )
+    return data
+
+
+def fetch_data_for_overview_boxes(client, year):
+    lines_for_in_boxes = {
+        "Internal Target": [
+            "InternalTargetHPcivielLine",
+            "InternalTargetHPendLine",
+        ],
+        "Client Target": ["ClientTarget", "ClientTarget"],
+        "Realisatie": [
+            "RealisationHPcivielIndicator",
+            "RealisationHPendIndicator",
+        ],
+        "Planning": [
+            "PlanningHPcivielIndicator",
+            "PlanningHPendIndicator",
+        ],
+        "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
+        "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+        "Ratio HC / HPend": [
+            "linenotavailable",
+            "RealisationHCIndicator",
+            "RealisationHPendIndicator",
+        ],
+        "Ratio <12 weken": [
+            "linenotavailable",
+            "RealisationHPendOnTimeIndicator",
+            "RealisationHPendIndicator",
+        ],
+    }
+
+    parameters_global_info_list = []
+    for title in lines_for_in_boxes:
+        values = []
+        for indicator in lines_for_in_boxes[title]:
+            values.append(
+                str(
+                    collection.get_year_value_from_document(
+                        collection="Indicators",
+                        year=year,
+                        line=indicator,
+                        client=client,
+                        project="client_aggregate",
+                    )
+                )
+            )
+
+        # exception for calculation of ratio's
+        if (len(values) == 3) & (values[1] != "n.v.t."):
+            values[1] = str(round(int(values[1]) / int(values[2]), 2))
+
+        parameters_global_info_list.append(
+            dict(
+                id_="",
+                title=title,
+                text1="HPciviel: ",
+                text2="HPend: ",
+                value1=values[0],
+                value2=values[1],
+            )
+        )
+
+    return parameters_global_info_list
 
 
 def fetch_data_for_month_overview(year, client):
@@ -128,6 +138,12 @@ def fetch_data_for_week_overview(year, client):
         )
 
     return df
+
+
+def fetch_data_for_project_info_table(client):
+    return collection.get_document(
+        collection="ProjectInfo", graph_name="project_dates", client=client
+    )
 
 
 def fetch_data_for_redenna_overview(ctx, year, client):
@@ -181,11 +197,83 @@ def fetch_data_for_redenna_overview(ctx, year, client):
         redenna_by_period = collection.get_document(
             collection="Data", client=client, graph_name=f"redenna_by_{period}"
         )
+        if period == "year":
+            date = date[0:4] + "-12-31"
 
     # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
+    print(date)
     data = dict(sorted(redenna_by_period.get(date, dict()).items()))
 
     return data, title
+
+
+def fetch_data_for_indicator_boxes(project, client):
+    this_week = datetime.now().isocalendar()[1]
+    indicator_types = {
+        f"Realisatie HPend week {str(this_week - 1)}": [
+            "RealisationHPendIndicator",
+            "InternalTargetHPendLine",
+        ],
+        f"Realisatie HPend week {str(this_week)}": [
+            "RealisationHPendIndicator",
+            "InternalTargetHPendLine",
+        ],
+        f"Realisatie HPciviel week {str(this_week - 1)}": [
+            "RealisationHPcivielIndicator",
+            "InternalTargetHPcivielLine",
+        ],
+        f"Realisatie HPciviel week {str(this_week)}": [
+            "RealisationHPcivielIndicator",
+            "InternalTargetHPcivielLine",
+        ],
+        f"Ratio HC / HPend week {str(this_week)}": [
+            "RealisationHCIndicatorIntegrated",
+            "RealisationHPendIndicatorIntegrated",
+        ],
+    }
+
+    info_list = []
+    for title in indicator_types:
+        values = []
+        gauge_type = "bullet"
+        sub_title = "Target: "
+        for line in indicator_types[title]:
+            if title[-2:] == str(this_week):
+                which_week = "current_week"
+            else:
+                which_week = "last_week"
+            if title == f"Ratio HC / HPend week {str(this_week)}":
+                which_week = "max_value_on_weekly_basis"
+            values.append(
+                collection.get_week_value_from_document(
+                    collection="Indicators",
+                    which_week=which_week,
+                    line=line,
+                    client=client,
+                    project=project,
+                )
+            )
+
+        # exception for calculation of ratio's
+        if title == f"Ratio HC / HPend week {str(this_week)}":
+            print(values)
+            if values[1] != 0:
+                values[0] = round(values[0] / values[1], 2)
+            values[1] = 0.9
+            gauge_type = "speedo"
+
+        info_list.append(
+            dict(
+                value=values[0],
+                value2=values[1],
+                previous_value=None,
+                title=title,
+                sub_title=sub_title,
+                font_color="black",
+                gauge_type=gauge_type,
+            )
+        )
+    return info_list
 
 
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):

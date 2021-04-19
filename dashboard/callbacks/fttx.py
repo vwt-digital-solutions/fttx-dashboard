@@ -10,17 +10,21 @@ from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
 from data.data import (completed_status_counts, fetch_data_for_month_overview,
+                       fetch_data_for_overview_boxes,
                        fetch_data_for_overview_graphs,
                        fetch_data_for_performance_graph,
+                       fetch_data_for_project_info_table,
                        fetch_data_for_redenna_overview,
-                       fetch_data_for_week_overview, no_graph,
+                       fetch_data_for_week_overview,
                        redenna_by_completed_status)
 from layout.components import redenna_status_pie
-from layout.components.global_info_list import global_info_list
 from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import (completed_status_counts_bar,
                                       overview_bar_chart, performance_chart,
+                                      project_info_table,
                                       redenna_overview_chart)
+from layout.components.graphs.no_graph import no_graph
+from layout.components.list_of_boxes import global_info_list
 
 for client in config.client_config.keys():  # noqa: C901
 
@@ -142,7 +146,7 @@ for client in config.client_config.keys():  # noqa: C901
         if year:
             if toggles.transform_frontend_newindicator:
                 output = performance_chart.get_fig(
-                    fetch_data_for_performance_graph(year=year, client=client)
+                    fetch_data_for_performance_graph(client=client)
                 )
             else:
                 output = collection.get_graph(
@@ -174,6 +178,17 @@ for client in config.client_config.keys():  # noqa: C901
             data, title = fetch_data_for_redenna_overview(ctx, year, client)
             return redenna_overview_chart.get_fig(data, title)
 
+        raise PreventUpdate
+
+    @app.callback(
+        Output(f"FTU_table_c_{client}", "children"),
+        [Input(f"year-dropdown-{client}", "value")],
+    )
+    def load_project_info_table(year, client=client):
+        if year:
+            return project_info_table.get_ftu_table(
+                fetch_data_for_project_info_table(client)
+            )
         raise PreventUpdate
 
     @app.callback(
@@ -287,57 +302,9 @@ for client in config.client_config.keys():  # noqa: C901
             raise PreventUpdate
 
         if toggles.transform_frontend_newindicator:
-            lines_for_in_boxes = {
-                "Internal Target": [
-                    "InternalTargetHPcivielLine",
-                    "InternalTargetHPendLine",
-                ],
-                "Client Target": ["ClientTarget", "ClientTarget"],
-                "Realisatie": [
-                    "RealisationHPcivielIndicator",
-                    "RealisationHPendIndicator",
-                ],
-                "Planning": [
-                    "PlanningHPcivielIndicator",
-                    "PlanningHPendIndicator",
-                ],
-                "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
-                "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
-                "Actuele HC / HPend": ["linenotavailable", "HcHpEndRatio"],
-                "Ratio <12 weken": ["linenotavailable", "12_week_ratio"],
-            }
-            parameters_global_info_list = []
-            for title in lines_for_in_boxes:
-                value1 = str(
-                    collection.get_year_value_from_document(
-                        collection="Indicators",
-                        year=year,
-                        line=lines_for_in_boxes[title][0],
-                        client=client,
-                        project="client_aggregate",
-                    )
-                )
-                value2 = str(
-                    collection.get_year_value_from_document(
-                        collection="Indicators",
-                        year=year,
-                        line=lines_for_in_boxes[title][1],
-                        client=client,
-                        project="client_aggregate",
-                    )
-                )
-                parameters_global_info_list.append(
-                    dict(
-                        id_="",
-                        title=title,
-                        text1="HPciviel: ",
-                        text2="HPend: ",
-                        value1=value1,
-                        value2=value2,
-                    )
-                )
             output = global_info_list(
-                items=parameters_global_info_list, className="container-display"
+                className="container-display",
+                items=fetch_data_for_overview_boxes(client, year),
             )
 
         elif toggles.overview_indicators:

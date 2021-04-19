@@ -6,7 +6,6 @@ from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
 from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
-from Analyse.Indicators.HcHpEndIndicator import HcHpEndIndicator
 from Analyse.Indicators.HcPatch import HcPatch
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
@@ -16,6 +15,8 @@ from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
     InternalTargetHPendIntegratedIndicator
 from Analyse.Indicators.InternalTargetTmobileIndicator import \
     InternalTargetTmobileIndicator
+from Analyse.Indicators.PerformanceGraphIndicator import \
+    PerformanceGraphIndicator
 from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
     PlanningHPCivielIndicatorKPN
 from Analyse.Indicators.PlanningHPEndIndicatorKPN import \
@@ -26,15 +27,20 @@ from Analyse.Indicators.PlanningIndicatorTMobile import \
 from Analyse.Indicators.PrognoseIndicator import PrognoseIndicator
 from Analyse.Indicators.PrognoseIntegratedIndicator import \
     PrognoseIntegratedIndicator
+from Analyse.Indicators.RealisationHCIndicator import RealisationHCIndicator
+from Analyse.Indicators.RealisationHCIntegratedIndicator import \
+    RealisationHCIntegratedIndicator
 from Analyse.Indicators.RealisationHPcivielIndicator import \
     RealisationHPcivielIndicator
 from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
 from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
     RealisationHPendIntegratedIndicator
+from Analyse.Indicators.RealisationHPendTmobileIndicator import \
+    RealisationHPendTmobileIndicator
+from Analyse.Indicators.RealisationHPendTmobileOnTimeIndicator import \
+    RealisationHPendTmobileOnTimeIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
-from Analyse.Indicators.TwelveWeekRatioIndicator import \
-    TwelveWeekRatioIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
 from Analyse.Record.RecordList import RecordList
@@ -72,18 +78,14 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(
-            RealisationHPendIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
-        self.records.append(
-            RealisationHPendIntegratedIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
-
         self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
+        self.records.append(
+            PerformanceGraphIndicator(
+                df=df,
+                project_info=self.transformed_data.project_info,
+                client=self.client,
+            ).perform()
+        )
 
 
 class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
@@ -117,15 +119,31 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
                 project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(HcHpEndIndicator(df=df, client=self.client).perform())
-
         self.records.append(
-            ClientTargetIndicator(df=None, client=self.client).perform()
+            RealisationHPendIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHCIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHPendIntegratedIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHCIntegratedIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
         )
 
 
 class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
     def analyse(self):
+        super().analyse()
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
         self.records.append(
@@ -138,7 +156,14 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
             PlanningIndicatorTMobile(df=df, client=self.client).perform()
         )
         self.records.append(
-            TwelveWeekRatioIndicator(df=df, client=self.client).perform()
+            RealisationHPendTmobileIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHPendTmobileOnTimeIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
         )
 
 
@@ -151,6 +176,9 @@ class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
         )
         self.records.append(
             PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
+        )
+        self.records.append(
+            ClientTargetIndicator(df=None, client=self.client).perform()
         )
 
 

@@ -79,7 +79,7 @@ class PlanningIndicatorTMobile(TimeseriesIndicator):
         if line:
             record = LineRecord(
                 record=line,
-                collection="Lines",
+                collection="Indicators",
                 graph_name=f"{line.name}",
                 phase="oplever",
                 client=self.client,

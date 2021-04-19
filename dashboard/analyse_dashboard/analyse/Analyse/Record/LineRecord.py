@@ -117,6 +117,10 @@ class LineRecord(Record):
                 line_week
             )
 
+            record_to_write["max_value_on_weekly_basis"] = int(
+                line_week.make_series().max()
+            )
+
             record_to_write["series_week"] = self.configure_series_to_write(line_week)
             record_to_write["series_month"] = self.configure_series_to_write(line_month)
             record_to_write["series_year"] = self.configure_series_to_write(line_year)

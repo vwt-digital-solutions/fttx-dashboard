@@ -35,6 +35,11 @@ class RealisationIndicator(TimeseriesIndicator):
         df = df[self.columns]
         return df
 
+    def aggregate(self, df):
+        return super().aggregate(
+            df=self.apply_business_rules(), by=self.columns, agg_function="size"
+        )
+
     def perform(self):
         """
         Main perform to do all necessary calculations for indicator.
@@ -42,9 +47,7 @@ class RealisationIndicator(TimeseriesIndicator):
         Returns: List of Records with lines per project.
 
         """
-        df = self.aggregate(
-            df=self.apply_business_rules(), by=self.columns, agg_function="size"
-        )
+        df = self.aggregate(df=self.apply_business_rules())
 
         line_list = []
         record_list = RecordList()
