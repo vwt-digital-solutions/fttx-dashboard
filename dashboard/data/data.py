@@ -256,7 +256,6 @@ def fetch_data_for_indicator_boxes(project, client):
 
         # exception for calculation of ratio's
         if title == f"Ratio HC / HPend week {str(this_week)}":
-            print(values)
             if values[1] != 0:
                 values[0] = round(values[0] / values[1], 2)
             values[1] = 0.9
@@ -274,6 +273,81 @@ def fetch_data_for_indicator_boxes(project, client):
             )
         )
     return info_list
+
+
+def fetch_data_for_indicator_boxes_tmobile(project, client):
+    indicator_types = {
+        "Openstaand HC aanleg op tijd": [
+            "< 8 weken",
+            "HCopenOnTime",
+        ],
+        "Openstaand HC aanleg beperkte tijd": [
+            "> 8 weken < 12 weken",
+            "HCopenLate",
+        ],
+        "Openstaand HC aanleg te laat": [
+            "> 12 weken",
+            "HCopenTooLate",
+        ],
+        "Ratio op tijd gesloten orders": [
+            " ",
+            "RealisationHPendOnTimeIndicator",
+            "RealisationHPendIndicator",
+        ],
+        "Openstaand patch only op tijd": [
+            "< 8 weken",
+            "PatchOnlyOnTime",
+        ],
+        "Openstaand patch only beperkte tijd": [
+            "> 8 weken < 12 weken",
+            "PatchOnlyLate",
+        ],
+        "Openstaand patch only te laat": [
+            "> 12 weken",
+            "PatchOnlyTooLate",
+        ],
+        "Werkvoorraad HAS": [
+            " ",
+            "WerkvoorraadHPendIndicator",
+        ],
+    }
+
+    info_list = []
+    year = str(datetime.now().year)
+    for title in indicator_types:
+        subtitle = indicator_types[title][0]
+        line = indicator_types[title][1]
+        value = collection.get_year_value_from_document(
+            collection="Indicators",
+            year=year,
+            line=line,
+            client=client,
+            project=project,
+        )
+
+        # exception for calculation of ratio's
+        if title == "Ratio op tijd gesloten orders":
+            value2 = collection.get_year_value_from_document(
+                collection="Indicators",
+                year=year,
+                line=indicator_types[title][2],
+                client=client,
+                project=project,
+            )
+            if value2 != 0:
+                value = round(value / value2)
+
+        info_list.append(
+            dict(
+                value=value if not isinstance(value, str) else 0,
+                previous_value=None,
+                title=title,
+                sub_title=subtitle,
+                font_color="black",
+                id=f"indicator-{title}-{client}",
+            )
+        )
+    return info_list[0:4], info_list[4:]
 
 
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
