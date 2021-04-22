@@ -11,7 +11,7 @@ class HCOpen(TimeConstraintIndicator, Aggregator):
         Indicator to calculate current werkvoorraad
         """
         super().__init__(**kwargs)
-        self.graph_name = "HCOpen"
+        self.graph_name = "HCopen"
 
     def apply_business_rules(self):
         df = copy.deepcopy(self.df)
