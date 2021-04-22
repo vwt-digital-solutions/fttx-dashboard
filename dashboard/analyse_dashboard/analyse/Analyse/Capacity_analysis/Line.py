@@ -42,13 +42,13 @@ dtype: int64
 """
 
 import base64
+from datetime import timedelta
 from io import BytesIO
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from datetime import timedelta
 
 from Analyse.Capacity_analysis.Domain import DateDomain, Domain
 
@@ -165,10 +165,12 @@ class Line:
         series = self.make_series()
         series.plot()
         tmpfile = BytesIO()
-        fig.savefig(tmpfile, format='png')
+        fig.savefig(tmpfile, format="png")
         plt.close()
-        encoded = base64.b64encode(tmpfile.getvalue()).decode('utf-8')
-        html = f"{self._notebook_name()}<br/><img src=\'data:image/png;base64,{encoded}\'>"
+        encoded = base64.b64encode(tmpfile.getvalue()).decode("utf-8")
+        html = (
+            f"{self._notebook_name()}<br/><img src='data:image/png;base64,{encoded}'>"
+        )
         return html
 
 
@@ -176,6 +178,7 @@ class FunctionLine(Line):
     """
     A function line is defined by a mathematical function
     """
+
     ...
 
 
@@ -191,22 +194,30 @@ class LinearLine(FunctionLine):
         domain (Domain): The domain for which the line is defined.
     """
 
-    def __init__(self, slope: float, intercept: float, domain: Domain = None, *args, **kwargs):
+    def __init__(
+        self, slope: float, intercept: float, domain: Domain = None, *args, **kwargs
+    ):
         self.slope = slope
         self.intercept = intercept
         self.domain = domain
         super().__init__(*args, **kwargs)
 
     def _notebook_name(self):
-        name = "<br/>".join(x for x in [self.name, f"$$f(x) = {self.slope} \\cdot x + {self.intercept}$$"] if x)
+        name = "<br/>".join(
+            x
+            for x in [self.name, f"$$f(x) = {self.slope} \\cdot x + {self.intercept}$$"]
+            if x
+        )
         return name
 
     def __str__(self):
         return f"f(x) = {self.slope} * x + {self.intercept}"
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(slope={self.slope}, intercept={self.intercept}, domain={self.domain}," \
-               f" name='{self.name}')"
+        return (
+            f"{self.__class__.__name__}(slope={self.slope}, intercept={self.intercept}, domain={self.domain},"
+            f" name='{self.name}')"
+        )
 
     def make_series(self) -> pd.Series:
         """
@@ -232,8 +243,10 @@ class LinearLine(FunctionLine):
         dtype: int64
         """
         if not self.domain:
-            raise NotImplementedError(f"Can not create a series for a {self.__class__.__name__} when no domain is "
-                                      f"specified")
+            raise NotImplementedError(
+                f"Can not create a series for a {self.__class__.__name__} when no domain is "
+                f"specified"
+            )
         values = self.slope * self.domain.get_range() + self.intercept
         series = pd.Series(index=self.domain.domain, data=values)
         return series
@@ -242,10 +255,9 @@ class LinearLine(FunctionLine):
     def translate_x(self, delta):
         translated_intersect = self.intercept - delta * self.slope
         new_domain = self.domain.shift(delta)
-        translated_line = LinearLine(slope=self.slope,
-                                     intercept=translated_intersect,
-                                     domain=new_domain
-                                     )
+        translated_line = LinearLine(
+            slope=self.slope, intercept=translated_intersect, domain=new_domain
+        )
 
         return translated_line
 
@@ -298,12 +310,17 @@ class PointLine(Line):
         if isinstance(other, Line):
             other = other.make_series()
         data = self.make_series().add(other, fill_value=fill_value)
-        data = data.add(pd.Series(data=fill_value, index=pd.date_range(start=data.index.min(), end=data.index.max())),
-                        fill_value=fill_value)
+        data = data.add(
+            pd.Series(
+                data=fill_value,
+                index=pd.date_range(start=data.index.min(), end=data.index.max()),
+            ),
+            fill_value=fill_value,
+        )
         return self.__class__(data=data)
 
     def __iadd__(self, other):
-        self = (self + other)
+        self = self + other
         return self
 
     def __sub__(self, other):
@@ -312,7 +329,7 @@ class PointLine(Line):
         return self.__class__(data=self.make_series() - other)
 
     def __isub__(self, other):
-        self = (self - other)
+        self = self - other
         return self
 
     def __mul__(self, other):
@@ -321,7 +338,7 @@ class PointLine(Line):
         return self.__class__(data=self.make_series() * other)
 
     def __imul__(self, other):
-        self = (self * other)
+        self = self * other
         return self
 
     def __truediv__(self, other):
@@ -397,7 +414,9 @@ class TimeseriesLine(PointLine):
     A point line is a collection of datapoints on a shared datetime index.
     """
 
-    def __init__(self, data, domain=None, max_value=None, project=None, *args, **kwargs):
+    def __init__(
+        self, data, domain=None, max_value=None, project=None, *args, **kwargs
+    ):
         """
         Args:
             data (pd.Series): the series is stretched along the domain when
@@ -414,7 +433,9 @@ class TimeseriesLine(PointLine):
         elif domain:
             self.domain = domain
         else:
-            self.domain = DateDomain(self.data.index[0], self.data.index[-1], freq=data.index.freq)
+            self.domain = DateDomain(
+                self.data.index[0], self.data.index[-1], freq=data.index.freq
+            )
         self.max_value = max_value
         self.project = project
 
@@ -427,11 +448,7 @@ class TimeseriesLine(PointLine):
     def extrapolate(self, data_partition=None, **kwargs):
         slope, intercept = self.linear_regression(data_partition)
         domain = DateDomain(self.data.index[0], self.data.index[-1])
-        return LinearLine(slope=slope,
-                          intercept=intercept,
-                          domain=domain,
-                          **kwargs
-                          )
+        return LinearLine(slope=slope, intercept=intercept, domain=domain, **kwargs)
 
     def integrate(self):
         """
@@ -453,7 +470,9 @@ class TimeseriesLine(PointLine):
             A new timeseries line
         """
         if self.domain.end > other.domain.begin:
-            raise NotImplementedError("You can only add lines that have a higher index than the line in the object")
+            raise NotImplementedError(
+                "You can only add lines that have a higher index than the line in the object"
+            )
 
         if skip_base:
             series = self.make_series()[:-skip]
@@ -464,7 +483,9 @@ class TimeseriesLine(PointLine):
 
         intersect = series.index.intersection(other_series.index)
         if len(intersect):
-            raise ValueError(f"Cannot append Lines that have overlapping indices: {intersect}")
+            raise ValueError(
+                f"Cannot append Lines that have overlapping indices: {intersect}"
+            )
 
         return TimeseriesLine(series.add(other_series, fill_value=0), **kwargs)
 
@@ -505,7 +526,14 @@ class TimeseriesLine(PointLine):
         return slope, intersect
 
     #  this function requires a line based on speed, not distance
-    def get_line_aggregate(self, freq='MS', aggregate_type='series', loffset='0', closed='left', index_as_str=False):
+    def get_line_aggregate(
+        self,
+        freq="MS",
+        aggregate_type="series",
+        loffset="0",
+        closed="left",
+        index_as_str=False,
+    ):
         """This function takes the line specified in the object and aggregates its values to a chosen type of output.
         The output can be a series or a value which is aggregated to a frequency of MS, W-MON or Y by the method sum
         or mean.
@@ -523,29 +551,41 @@ class TimeseriesLine(PointLine):
         Returns:
             aggregate (pd.Series or int or float)
         """
-        if aggregate_type == 'series':
-            series = self.make_normalised_series(maximum=self.max_value, percentage=True)
-            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).sum().cumsum()
+        if aggregate_type == "series":
+            series = self.make_normalised_series(
+                maximum=self.max_value, percentage=True
+            )
+            aggregate = (
+                series.resample(freq, loffset=loffset + freq, closed=closed)
+                .sum()
+                .cumsum()
+            )
             if index_as_str:
                 aggregate.index = aggregate.index.format()
-        elif aggregate_type == 'value_sum':
+        elif aggregate_type == "value_sum":
             series = self.make_series()
-            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).sum()
+            aggregate = series.resample(
+                freq, loffset=loffset + freq, closed=closed
+            ).sum()
             period_for_output = self.period_for_output(freq)
             if period_for_output in series.index:
                 aggregate = aggregate[period_for_output]
             else:
                 aggregate = 0
-        elif aggregate_type == 'value_mean':
+        elif aggregate_type == "value_mean":
             series = self.make_series()
-            aggregate = series.resample(freq, loffset=loffset + freq, closed=closed).mean()
+            aggregate = series.resample(
+                freq, loffset=loffset + freq, closed=closed
+            ).mean()
             period_for_output = self.period_for_output(freq)
             if period_for_output in series.index:
                 aggregate = aggregate[period_for_output]
             else:
                 aggregate = 0
         else:
-            raise NotImplementedError('No method implemented for aggregate type {}'.format(aggregate_type))
+            raise NotImplementedError(
+                "No method implemented for aggregate type {}".format(aggregate_type)
+            )
 
         return aggregate
 
@@ -561,15 +601,24 @@ class TimeseriesLine(PointLine):
         Returns:
             index for next period (str)
         """
-        if freq == 'MS':
-            period = pd.Timestamp(pd.Timestamp.now().year, pd.Timestamp.now().month, 1) + relativedelta(months=1)
-        elif freq == 'W-MON':
-            period = pd.to_datetime(pd.Timestamp.now().date() + relativedelta(days=7 - pd.Timestamp.now().weekday()))
+        if freq == "MS":
+            period = pd.Timestamp(
+                pd.Timestamp.now().year, pd.Timestamp.now().month, 1
+            ) + relativedelta(months=1)
+        elif freq == "W-MON":
+            period = pd.to_datetime(
+                pd.Timestamp.now().date()
+                + relativedelta(days=7 - pd.Timestamp.now().weekday())
+            )
         else:
-            raise NotImplementedError('There is no output period implemented for this frequency {}'.format(freq))
+            raise NotImplementedError(
+                "There is no output period implemented for this frequency {}".format(
+                    freq
+                )
+            )
         return period
 
-    def distance_to_max_value(self, line_type='rate'):
+    def distance_to_max_value(self, line_type="rate"):
         """This function calculates the distance between the end of the line and the maximum value specified for the line.
 
         Args:
@@ -583,12 +632,14 @@ class TimeseriesLine(PointLine):
             distance (float)
         """
         if self.max_value:
-            if line_type == 'rate':
+            if line_type == "rate":
                 distance = self.max_value - self.integrate().get_most_recent_point()
-            elif line_type == 'cumulative':
+            elif line_type == "cumulative":
                 distance = self.max_value - self.get_most_recent_point()
             else:
-                raise NotImplementedError('There is no method implemented for line_type {}'.format(line_type))
+                raise NotImplementedError(
+                    "There is no method implemented for line_type {}".format(line_type)
+                )
         else:
             raise ValueError
         return distance
@@ -613,7 +664,7 @@ class TimeseriesLine(PointLine):
             daysleft = None
         return daysleft
 
-    def resample(self, freq='MS', method='sum', label='left', closed='left'):
+    def resample(self, freq="MS", method="sum", label="left", closed="left"):
         """This function takes the line specified in the object and resamples its values.
         The output is a TimeseriesLine.
 
@@ -628,21 +679,15 @@ class TimeseriesLine(PointLine):
             aggregate series (pd.Series)
         """
 
-        if not (freq == 'MS' or freq == 'W-MON' or freq == 'YS'):
-            raise NotImplementedError('No method implemented for frequency type {}, '
-                                      'choose "D", "W-MON" or "MS"'.format(freq))
+        if not (freq == "MS" or freq == "W-MON" or freq == "YS"):
+            raise NotImplementedError(
+                "No method implemented for frequency type {}, "
+                'choose "D", "W-MON" or "MS"'.format(freq)
+            )
 
         series = self.make_series()
-        if method == 'sum':
-            aggregate = series.resample(freq,
-                                        closed=closed,
-                                        label=label).sum()
-        elif method == 'mean':
-            aggregate = series.resample(freq,
-                                        closed=closed,
-                                        label=label).mean()
-        else:
-            raise NotImplementedError(f'The chosen method {method} is not implemented, choose "sum" or "mean"')
+
+        aggregate = series.resample(freq, closed=closed, label=label).agg(method)
         return TimeseriesLine(data=aggregate)
 
     def split_by_year(self):
@@ -653,14 +698,20 @@ class TimeseriesLine(PointLine):
         """
         series = self.make_series()
         timeseries_per_year = []
-        for year in range(self.get_extreme_period_of_series('year', 'min'),
-                          self.get_extreme_period_of_series('year', 'max') + 1):
-            year_serie = series[((series.index >= pd.Timestamp(year=year, month=1, day=1))
-                                 & (series.index <= pd.Timestamp(year=year, month=12, day=31)))]
+        for year in range(
+            self.get_extreme_period_of_series("year", "min"),
+            self.get_extreme_period_of_series("year", "max") + 1,
+        ):
+            year_serie = series[
+                (
+                    (series.index >= pd.Timestamp(year=year, month=1, day=1))
+                    & (series.index <= pd.Timestamp(year=year, month=12, day=31))
+                )
+            ]
             timeseries_per_year.append(TimeseriesLine(year_serie))
         return timeseries_per_year
 
-    def get_extreme_period_of_series(self, period, extreme='min'):
+    def get_extreme_period_of_series(self, period, extreme="min"):
         """
         This function returns the first year, month or day present in a TimeseriesLine
         Args:
@@ -671,34 +722,36 @@ class TimeseriesLine(PointLine):
 
         """
         series = self.make_series()
-        if extreme == 'min':
+        if extreme == "min":
             extreme_date = series.index.min()
-        elif extreme == 'max':
+        elif extreme == "max":
             extreme_date = series.index.max()
         else:
-            raise ValueError(f'This extreme "{extreme}" is not configured, pick "min" / "max"')
+            raise ValueError(
+                f'This extreme "{extreme}" is not configured, pick "min" / "max"'
+            )
 
-        if period == 'year':
+        if period == "year":
             return extreme_date.year
-        elif period == 'month':
+        elif period == "month":
             return extreme_date.month
-        elif period == 'day':
+        elif period == "day":
             return extreme_date.day
         else:
-            raise ValueError(f'This period "{period}" is not configured, pick "year" / "month" / "day"')
+            raise ValueError(
+                f'This period "{period}" is not configured, pick "year" / "month" / "day"'
+            )
 
 
 class TimeSeriesSpeedLine(TimeseriesLine):
-
     def make_series(self):
         filled_data = self.data.reindex(self.domain.domain, fill_value=0)
         return filled_data
 
 
 class TimeseriesDistanceLine(TimeseriesLine):
-
     def make_series(self):
-        filled_data = self.data.reindex(self.domain.domain, method='ffill')
+        filled_data = self.data.reindex(self.domain.domain, method="ffill")
         return filled_data
 
 
