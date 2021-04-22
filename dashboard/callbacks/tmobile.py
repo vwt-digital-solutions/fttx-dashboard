@@ -23,11 +23,11 @@ client = "tmobile"
         Output(f"indicator-download-{client}", "href"),
     ],
     [
+        Input(f"indicator-too_late-hc_aanleg-{client}", "n_clicks"),
         Input(f"indicator-late-hc_aanleg-{client}", "n_clicks"),
-        Input(f"indicator-limited-hc_aanleg-{client}", "n_clicks"),
         Input(f"indicator-on_time-hc_aanleg-{client}", "n_clicks"),
+        Input(f"indicator-too_late-patch_only-{client}", "n_clicks"),
         Input(f"indicator-late-patch_only-{client}", "n_clicks"),
-        Input(f"indicator-limited-patch_only-{client}", "n_clicks"),
         Input(f"indicator-on_time-patch_only-{client}", "n_clicks"),
         Input("close-sm", "n_clicks"),
     ],
@@ -62,9 +62,11 @@ def indicator_modal(
         wait_category = changed_list[1]
         order_type = changed_list[2]
         # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
+        # hier ook een fetch_data voor redenna pie ...
         cluster_redenna_sorted_dict = dict(
             sorted(result[wait_category + "-" + order_type]["cluster_redenna"].items())
         )
+        # hier make figure functie...
         figure = pie_chart.get_html(
             labels=list(cluster_redenna_sorted_dict.keys()),
             values=list(cluster_redenna_sorted_dict.values()),
@@ -103,7 +105,7 @@ def update_indicators(dropdown_selection):
         data1, data2 = fetch_data_for_indicator_boxes_tmobile(
             project=dropdown_selection, client=client
         )
-        fig = [
+        out = [
             html.Div(
                 children=project_indicator_list(data1), className="container-display"
             ),
@@ -112,7 +114,7 @@ def update_indicators(dropdown_selection):
             ),
         ]
 
-        fig = fig + [
+        out = out + [
             dbc.Modal(
                 [
                     dbc.ModalBody(
@@ -170,7 +172,7 @@ def update_indicators(dropdown_selection):
             client=client,
         )
 
-        fig = [
+        out = [
             html.Div(
                 children=[
                     indicator(
@@ -205,7 +207,7 @@ def update_indicators(dropdown_selection):
             ),
         ]
 
-        fig = fig + [
+        out = out + [
             dbc.Modal(
                 [
                     dbc.ModalBody(
@@ -236,4 +238,4 @@ def update_indicators(dropdown_selection):
             )
         ]
 
-    return [fig, indicators]
+    return [out, indicators]

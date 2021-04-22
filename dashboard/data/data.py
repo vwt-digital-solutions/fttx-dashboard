@@ -275,39 +275,58 @@ def fetch_data_for_indicator_boxes(project, client):
     return info_list
 
 
+# def fetch_data_for_redenna_project(project):
+#     redenna_project = collection.get_redenna_overview_from_document(
+#         collection="Indicators",
+#         date=date,
+#         period=period,
+#         client=client,
+#         project=project,
+#     )
+#     return redenna_project
+
+
 def fetch_data_for_indicator_boxes_tmobile(project, client):
     indicator_types = {
         "Openstaand HC aanleg op tijd": [
             "< 8 weken",
+            "on_time-hc_aanleg",
             "HCopenOnTime",
         ],
         "Openstaand HC aanleg beperkte tijd": [
             "> 8 weken < 12 weken",
+            "late-hc_aanleg",
             "HCopenLate",
         ],
         "Openstaand HC aanleg te laat": [
             "> 12 weken",
+            "too_late-hc_aanleg",
             "HCopenTooLate",
         ],
         "Ratio op tijd gesloten orders": [
             " ",
+            "ratio-12-weeks",
             "RealisationHPendOnTimeIndicator",
             "RealisationHPendIndicator",
         ],
         "Openstaand patch only op tijd": [
             "< 8 weken",
+            "on_time-patch_only",
             "PatchOnlyOnTime",
         ],
         "Openstaand patch only beperkte tijd": [
             "> 8 weken < 12 weken",
+            "late-patch_only",
             "PatchOnlyLate",
         ],
         "Openstaand patch only te laat": [
             "> 12 weken",
+            "too_late-patch_only",
             "PatchOnlyTooLate",
         ],
         "Werkvoorraad HAS": [
             " ",
+            "werkvoorraad-has",
             "WerkvoorraadHPendIndicator",
         ],
     }
@@ -316,7 +335,7 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
     year = str(datetime.now().year)
     for title in indicator_types:
         subtitle = indicator_types[title][0]
-        line = indicator_types[title][1]
+        line = indicator_types[title][2]
         value = collection.get_year_value_from_document(
             collection="Indicators",
             year=year,
@@ -330,12 +349,12 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
             value2 = collection.get_year_value_from_document(
                 collection="Indicators",
                 year=year,
-                line=indicator_types[title][2],
+                line=indicator_types[title][3],
                 client=client,
                 project=project,
             )
-            if value2 != 0:
-                value = round(value / value2)
+            if (value2 != 0) & (value2 != "n.v.t."):
+                value = round(value / value2 * 100) / 100
 
         info_list.append(
             dict(
@@ -344,7 +363,7 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
                 title=title,
                 sub_title=subtitle,
                 font_color="black",
-                id=f"indicator-{title}-{client}",
+                id=f"indicator-{indicator_types[title][1]}-{client}",
             )
         )
     return info_list[0:4], info_list[4:]

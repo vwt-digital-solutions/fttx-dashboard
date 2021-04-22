@@ -127,5 +127,21 @@ def get_redenna_overview_from_document(collection, date, period, **filters):
     return {date: pie_chart_dict}
 
 
+# def get_redenna_project_from_document(collection, **filters):
+#     cluster_types = [
+#         "HC",
+#         "geplande aansluiting",
+#         "permissieobstructies",
+#         "technische obstructies",
+#     ]
+#     series_type = "series_year"
+#     pie_chart_dict = {}
+#     for cluster in cluster_types:
+#         filters["line"] = "RedenNAindicator_" + cluster
+#         value = sum(get_document(collection, **filters)[series_type])
+#         pie_chart_dict[cluster] = value if value else 0
+#     return {date: pie_chart_dict}
+
+
 def get_data_performance_graph(collection, **filters):
     return get_document(collection, **filters)
