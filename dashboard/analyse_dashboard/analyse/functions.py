@@ -559,11 +559,13 @@ def prognose_graph(x_d, y_prog_l, d_real_l, y_target_l, FTU0_date, FTU1_date):
     """
     record_dict = {}
     for key in y_prog_l:
-        if not FTU0_date[key]:  # TODO: Fix this -> replace with self.project_list
+        if (
+            key not in FTU0_date.keys()
+        ):  # TODO: Fix this -> replace with self.project_list
             FTU0_date[key] = "2020-01-01"
-        if not FTU1_date[
-            key
-        ]:  # some project do not have a FTU1 date assigned (yet), set project length to 100 days:
+        if (
+            key not in FTU1_date.keys()
+        ):  # some project do not have a FTU1 date assigned (yet), set project length to 100 days:
             FTU1_date[key] = (
                 pd.to_datetime(FTU0_date[key]) + pd.Timedelta(days=100)
             ).strftime("%Y-%m-%d")
