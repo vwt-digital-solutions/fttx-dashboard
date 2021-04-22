@@ -7,7 +7,6 @@ from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
 from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HCOpen import HCOpen
-from Analyse.Indicators.HcPatch import HcPatch
 from Analyse.Indicators.HCPatchOnly import HCPatchOnly
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
@@ -153,7 +152,6 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(HcPatch(df=df, client=self.client).perform())
         self.records.append(HCPatchOnly(df=df, client=self.client).perform())
         self.records.append(HCOpen(df=df, client=self.client).perform())
         self.records.append(

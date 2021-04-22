@@ -15,7 +15,7 @@ class HCOpen(TimeConstraintIndicator, Aggregator):
 
     def apply_business_rules(self):
         df = copy.deepcopy(self.df)
-        df["OnTime"] = br.openstaande_orders_tmobile(self.df, time_window="on time")
-        df["Late"] = br.openstaande_orders_tmobile(self.df, time_window="limited")
-        df["TooLate"] = br.openstaande_orders_tmobile(self.df, time_window="late")
+        df["OnTime"] = br.hc_aanleg_tmobile(self.df, time_window="on time")
+        df["Late"] = br.hc_aanleg_tmobile(self.df, time_window="limited")
+        df["TooLate"] = br.hc_aanleg_tmobile(self.df, time_window="late")
         return df[["project", "OnTime", "Late", "TooLate"]]
