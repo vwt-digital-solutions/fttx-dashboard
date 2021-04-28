@@ -369,6 +369,16 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
     return info_list[0:4], info_list[4:]
 
 
+def fetch_data_for_redenna_modal(project, client, indicator_type, wait_category):
+    pie_dict = collection.get_redenna_modal_from_document(
+        collection="Indicators",
+        graph_name=f"RedenNA_{wait_category}_{indicator_type}",
+        client=client,
+        project=project,
+    )["clusters"]
+    return dict(sorted(pie_dict.items()))
+
+
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
     opgeleverd_data_dict = collection.get_document(
         collection="Data",

@@ -58,6 +58,11 @@ def get_year_value_from_document(collection, year, **filters):
     return value
 
 
+def get_redenna_modal_from_document(collection, **filters):
+    doc = get_document(collection, **filters)
+    return doc
+
+
 def get_week_value_from_document(collection, which_week, **filters):
     doc = get_document(collection, **filters)
     if doc:

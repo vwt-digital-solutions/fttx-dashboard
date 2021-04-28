@@ -1,7 +1,6 @@
 from Analyse.Aggregators.Aggregator import Aggregator
 from Analyse.Indicators.DataIndicator import DataIndicator
 from Analyse.Record.DictRecord import DictRecord
-from Analyse.Record.RecordList import RecordList
 
 
 class ActualRedenNAIndicator(DataIndicator, Aggregator):
@@ -18,17 +17,15 @@ class ActualRedenNAIndicator(DataIndicator, Aggregator):
         """
         df = self.apply_business_rules()
         aggregate = self.aggregate(df=df, by=["project", "cluster_redenna"]).fillna(0)
-        records = RecordList()
+        project_dict = {}
         for project, _ in aggregate.groupby(level=0):
-            project_dict = dict(
+            project_dict[project] = dict(
                 clusters=aggregate.loc[project].to_dict()["sleutel"],
                 sleutels=list(df[df.project == project].sleutel),
             )
-            records.append(self.to_record(project, project_dict))
+        return self.to_record(project_dict)
 
-        return records
-
-    def to_record(self, project, project_dict):
+    def to_record(self, project_dict):
         dict_record = DictRecord(
             record=project_dict,
             collection="Indicators",

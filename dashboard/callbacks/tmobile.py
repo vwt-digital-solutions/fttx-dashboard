@@ -7,9 +7,10 @@ from dash.exceptions import PreventUpdate
 from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
-from data.data import fetch_data_for_indicator_boxes_tmobile
+from data.data import (fetch_data_for_indicator_boxes_tmobile,
+                       fetch_data_for_redenna_modal)
 from layout.components.figure import figure
-from layout.components.graphs import pie_chart
+from layout.components.graphs import pie_chart, redenna_modal_chart
 from layout.components.indicator import indicator
 from layout.components.list_of_boxes import project_indicator_list
 
@@ -61,23 +62,35 @@ def indicator_modal(
         changed_list = changed_id.split("-")
         wait_category = changed_list[1]
         order_type = changed_list[2]
-        # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
-        # hier ook een fetch_data voor redenna pie ...
-        cluster_redenna_sorted_dict = dict(
-            sorted(result[wait_category + "-" + order_type]["cluster_redenna"].items())
-        )
-        # hier make figure functie...
-        figure = pie_chart.get_html(
-            labels=list(cluster_redenna_sorted_dict.keys()),
-            values=list(cluster_redenna_sorted_dict.values()),
-            title="Reden na",
-            colors=[
-                colors["green"],
-                colors["yellow"],
-                colors["red"],
-                colors["vwt_blue"],
-            ],
-        )
+
+        if toggles.transform_frontend_newindicator:
+            figure = redenna_modal_chart.get_fig(
+                data=fetch_data_for_redenna_modal(
+                    project=project,
+                    client=client,
+                    indicator_type=order_type,
+                    wait_category=wait_category,
+                ),
+                title="Reden na",
+            )
+        else:
+            cluster_redenna_sorted_dict = dict(
+                sorted(
+                    result[wait_category + "-" + order_type]["cluster_redenna"].items()
+                )
+            )
+            # hier make figure functie...
+            figure = pie_chart.get_html(
+                labels=list(cluster_redenna_sorted_dict.keys()),
+                values=list(cluster_redenna_sorted_dict.values()),
+                title="Reden na",
+                colors=[
+                    colors["green"],
+                    colors["yellow"],
+                    colors["red"],
+                    colors["vwt_blue"],
+                ],
+            )
 
         return [
             not is_open,
