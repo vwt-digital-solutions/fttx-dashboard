@@ -38,11 +38,11 @@ client = "tmobile"
     ],
 )
 def indicator_modal(
+    too_late_clicks_hc,
     late_clicks_hc,
-    limited_clicks_hc,
     on_time_clicks_hc,
+    too_late_clicks_po,
     late_clicks_po,
-    limited_clicks_po,
     on_time_clicks_po,
     close_clicks,
     is_open,
@@ -51,11 +51,11 @@ def indicator_modal(
 ):
     changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
     if "indicator" in changed_id and (
-        late_clicks_hc
-        or limited_clicks_hc
+        too_late_clicks_hc
+        or late_clicks_hc
         or on_time_clicks_hc
+        or too_late_clicks_po
         or late_clicks_po
-        or limited_clicks_po
         or on_time_clicks_po
     ):
         changed_list = changed_id.split("-")
