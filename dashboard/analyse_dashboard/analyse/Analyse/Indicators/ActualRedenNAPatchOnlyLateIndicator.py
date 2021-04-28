@@ -8,7 +8,7 @@ class ActualRedenNAPatchOnlyLateIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.collection = "Indicators"
-        self.graph_name = "RedenNA_late_po"
+        self.graph_name = "RedenNA_late_patch_only"
 
     def apply_business_rules(self):
         df = copy.deepcopy(self.df)

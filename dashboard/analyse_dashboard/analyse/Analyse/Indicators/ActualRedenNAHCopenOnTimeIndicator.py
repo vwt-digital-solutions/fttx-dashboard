@@ -8,7 +8,7 @@ class ActualRedenNAHCopenOnTimeIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.collection = "Indicators"
-        self.graph_name = "RedenNA_on_time_hc"
+        self.graph_name = "RedenNA_on_time_hc_aanleg"
 
     def apply_business_rules(self):
         df = copy.deepcopy(self.df)
