@@ -8,7 +8,7 @@ from app import app, toggles
 from config import colors_vwt as colors
 from data import collection
 from data.data import (fetch_data_for_indicator_boxes_tmobile,
-                       fetch_data_for_redenna_modal)
+                       fetch_data_for_redenna_modal, fetch_sleutels_figure)
 from layout.components.figure import figure
 from layout.components.graphs import pie_chart, redenna_modal_chart
 from layout.components.indicator import indicator
@@ -73,6 +73,12 @@ def indicator_modal(
                 ),
                 title="Reden na",
             )
+            sleutels_figure = fetch_sleutels_figure(
+                project=project,
+                client=client,
+                indicator_type=order_type,
+                wait_category=wait_category,
+            )
         else:
             cluster_redenna_sorted_dict = dict(
                 sorted(
@@ -95,7 +101,7 @@ def indicator_modal(
         return [
             not is_open,
             figure,
-            f"/dash/order_wait_download?wait_category={wait_category}&project={project}&order_type={order_type}",
+            f"/dash/order_wait_download?sleutels={sleutels_figure}&project={project}&wait_category={wait_category}",
         ]
 
     if close_clicks:

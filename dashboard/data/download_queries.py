@@ -1,6 +1,8 @@
-from sqlalchemy import text
-import config
 import inspect
+
+from sqlalchemy import text
+
+import config
 
 
 def validate_project(func):
@@ -17,7 +19,9 @@ def validate_project(func):
         # Gets a dictionary of all supplied arguments and their values
         all_args = {**dict(zip(inspect.getfullargspec(func).args, args)), **kwargs}
 
-        projects = config.projects_dfn + config.projects_tmobile + config.subset_KPN_2021
+        projects = (
+            config.projects_dfn + config.projects_tmobile + config.subset_KPN_2021
+        )
 
         project = all_args.get("project")
         if project not in projects:
@@ -52,7 +56,8 @@ def waiting_category(project: str, wait_category: str, order_type: str):
     elif order_type == "patch_only":
         plan_type = "in ('Zonder klantafspraak')"
 
-    return text(f"""
+    return text(
+        f"""
 select  fc.adres, fc.postcode, fc.huisnummer, fc.soort_bouw, fc.toestemming, fc.creation as creationdatum,
         fc.opleverstatus, fc.opleverdatum, fc.hasdatum, f.cluster_redenna, fc.redenna,
         fc.toelichting_status, fc.plan_type, DATEDIFF(NOW(), fc.creation)/7 as wachttijd
@@ -64,17 +69,34 @@ and     fc.type in ('AANLEG', 'Aanleg')
 and     fc.plan_type {plan_type}
 having  {having}
 order by fc.creation
-    """).bindparams(project=project)  # nosec
+    """
+    ).bindparams(
+        project=project
+    )  # nosec
+
+
+def sleutel_info_redenna_modal(sleutels: str):
+    """
+    This function generates an sql query for a particular set of sleutels
+    """
+    sleutels = "(" + sleutels[1:-1] + ")"
+    return f"""
+select  adres, postcode, huisnummer, soort_bouw, toestemming, creation,
+        opleverstatus, opleverdatum, hasdatum, redenna,
+        toelichting_status, plan_type, sleutel from fc_aansluitingen
+where   sleutel in {sleutels} order by creation
+"""
 
 
 @validate_project  # noqa: C901
-def project_redenna(project,
-                    schouw_status=None,
-                    bis_status=None,
-                    lasap_status=None,
-                    lasdp_status=None,
-                    has_status=None
-                    ):
+def project_redenna(
+    project,
+    schouw_status=None,
+    bis_status=None,
+    lasap_status=None,
+    lasdp_status=None,
+    has_status=None,
+):
     """
     This function generates an sql query for a particular project with optional filters for the phases (Schouwen,
     BIS, lasAP, lasDP HAS).
@@ -118,7 +140,8 @@ def project_redenna(project,
         elif has_status == "opgeleverd":
             filters += "and fc.opleverstatus = 2\n"
 
-    sql = text(f"""
+    sql = text(
+        f"""
 select  fc.sleutel, fc.project, fc.plaats, fc.postcode, fc.adres, fc.huisnummer,
         f.cluster_redenna, fc.redenna, fc.toelichting_status, fc.soort_bouw, fc.schouwdatum,
         fc.laswerkdpgereed, fc.laswerkapgereed, fc.opleverstatus, fc.opleverdatum, fc.hasdatum,
@@ -127,5 +150,8 @@ from fc_aansluitingen as fc
 left join fc_clusterredenna f on fc.redenna = f.redenna
 where   project = :project
         {filters}
-    """).bindparams(project=project)  # nosec
+    """
+    ).bindparams(
+        project=project
+    )  # nosec
     return sql
