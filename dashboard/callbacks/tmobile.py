@@ -170,6 +170,7 @@ def update_indicators(dropdown_selection):
             )
         ]
 
+        # this amd its output can be removed together with the toggle
         indicators = collection.get_document(
             collection="Data",
             graph_name="project_indicators",
