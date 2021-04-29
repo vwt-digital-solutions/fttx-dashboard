@@ -46,7 +46,9 @@ def fetch_data_for_overview_boxes(client, year):
         "Client Target": ["ClientTarget", "ClientTarget"],
         "Realisatie": [
             "RealisationHPcivielIndicator",
-            "RealisationHPendIndicator",
+            "RealisationHPendIndicator"
+            if client != "tmobile"
+            else "RealisationHPendTmobileIndicator",
         ],
         "Planning": [
             "PlanningHPcivielIndicator",
@@ -62,7 +64,7 @@ def fetch_data_for_overview_boxes(client, year):
         "Ratio <12 weken": [
             "linenotavailable",
             "RealisationHPendOnTimeIndicator",
-            "RealisationHPendIndicator",
+            "RealisationHPendTmobileIndicator",
         ],
     }
 
@@ -103,7 +105,9 @@ def fetch_data_for_overview_boxes(client, year):
 def fetch_data_for_month_overview(year, client):
     lines = [
         "InternalTargetHPendLine",
-        "RealisationHPendIndicator",
+        "RealisationHPendIndicator"
+        if client != "tmobile"
+        else "RealisationHPendTmobileIndicator",
         "PlanningHPendIndicator",
         "PrognoseHPendIndicator",
     ]
@@ -123,7 +127,9 @@ def fetch_data_for_month_overview(year, client):
 def fetch_data_for_week_overview(year, client):
     lines = [
         "InternalTargetHPendLine",
-        "RealisationHPendIndicator",
+        "RealisationHPendIndicator"
+        if client != "tmobile"
+        else "RealisationHPendTmobileIndicator",
         "PlanningHPendIndicator",
         "PrognoseHPendIndicator",
     ]
@@ -306,8 +312,8 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
         "Ratio op tijd gesloten orders": [
             " ",
             "ratio-12-weeks",
-            "RealisationHPendOnTimeIndicator",
-            "RealisationHPendIndicator",
+            "RealisationHPendOnTimeIndicatorIntegrated",
+            "RealisationHPendIntegratedTmobileIndicator",
         ],
         "Openstaand patch only op tijd": [
             "< 8 weken",
