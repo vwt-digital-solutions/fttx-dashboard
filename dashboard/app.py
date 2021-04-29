@@ -151,14 +151,13 @@ def order_wait_download():
         "huisnummer",
         "soort_bouw",
         "toestemming",
-        "creationdatum",
+        "creation",
         "opleverstatus",
         "opleverdatum",
         "hasdatum",
         "redenna",
         "toelichting_status",
         "plan_type",
-        "wachttijd",
     ]
 
     excel = df_to_excel(result, relevant_columns)
