@@ -2,33 +2,28 @@ import pandas as pd
 import logging
 import config
 
-from functions import get_database_engine
-
 
 class ConsumeAansluitingenHistory:
     """
     Class for consuming Fiberconnect home connections and storing the history
     """
-    def __init__(self, records, date=None):
+    def __init__(self, records, sql_engine, date=None):
         self.table = 'fc_aansluitingen_history'
         self.relevant_columns = ['uid', 'sleutel', 'project', 'variable', 'value']
         self.history_columns = config.FC_HISTORY_COLUMNS
         self.records = records
+        self.sqlEngine = sql_engine
         self.date = date
         self.reference_records = pd.DataFrame(columns=self.relevant_columns)
         self.records_to_update = pd.DataFrame(columns=self.relevant_columns)
         self.uids_to_upate_versionEnd = []
 
     def consume_records(self):
-        self._get_database_engine()
         self._transform_to_long_format()
         self._read_reference_records()
         self._compare_records()
         self._update_records_versionEnd()
         self._append_new_records()
-
-    def _get_database_engine(self):
-        self.sqlEngine = get_database_engine()
 
     def _transform_to_long_format(self):
         logging.info('Transforming DataFrame to long-format ...')
@@ -124,16 +119,13 @@ AND fca.versionEnd IS NULL;
 
 class ConsumeAansluitingen:
 
-    def __init__(self, records):
+    def __init__(self, records, sql_engine):
         self.table = 'fc_aansluitingen'
         self.records = records
+        self.sqlEngine = sql_engine
 
     def consume_records(self):
-        self._get_database_engine()
         self._append_new_records()
-
-    def _get_database_engine(self):
-        self.sqlEngine = get_database_engine('dev')
 
     def _append_new_records(self):
         logging.info(f'Start writing {len(self.records)} to sql')

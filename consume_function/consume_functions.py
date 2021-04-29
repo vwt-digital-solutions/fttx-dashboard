@@ -20,9 +20,9 @@ db = firestore.Client()
 def process_fiberconnect(records, topic_config):
     logging.info("Processing fiber connect")
     df = pd.DataFrame(records).replace({np.nan: None})
-    consume_aansluitingen = ConsumeAansluitingen(records=df)
+    consume_aansluitingen = ConsumeAansluitingen(records=df, sql_engine=sqlEngine)
     consume_aansluitingen.consume_records()
-    consume_aansluitingen_history = ConsumeAansluitingenHistory(records=df)
+    consume_aansluitingen_history = ConsumeAansluitingenHistory(records=df, sql_engine=sqlEngine)
     consume_aansluitingen_history.consume_records()
 
     update_date_document_name = topic_config.get('update_date_document')
