@@ -6,6 +6,7 @@ import logging
 from google.cloud import firestore, secretmanager
 from pandas._libs.tslibs.nattype import NaTType
 from sqlalchemy.engine import ResultProxy
+from FiberconnectAansluitingen import ConsumeAansluitingenHistory, ConsumeAansluitingen
 
 import config
 from sqlalchemy import create_engine
@@ -18,10 +19,15 @@ db = firestore.Client()
 
 def process_fiberconnect(records, topic_config):
     logging.info("Processing fiber connect")
-    records, logs = prepare_records(records)
-    write_logs_to_sql(logs)
-    write_records_to_sql(records=records,
-                         topic_config=topic_config)
+    df = pd.DataFrame(records).replace({np.nan: None})
+    consume_aansluitingen = ConsumeAansluitingen(records=df)
+    consume_aansluitingen.consume_records()
+    consume_aansluitingen_history = ConsumeAansluitingenHistory(records=df)
+    consume_aansluitingen_history.consume_records()
+
+    update_date_document_name = topic_config.get('update_date_document')
+    db.collection('Graphs').document(update_date_document_name). \
+        set(dict(id=update_date_document_name, date=datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')))
 
 
 def process_default(records, topic_config):
