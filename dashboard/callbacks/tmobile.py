@@ -50,8 +50,13 @@ def indicator_modal(
     result,
     project,
 ):
+
     changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
-    if "indicator" in changed_id and (
+
+    if close_clicks:
+        output = [not is_open, {"data": None, "layout": None}, ""]
+
+    elif "indicator" in changed_id and (
         too_late_clicks_hc
         or late_clicks_hc
         or on_time_clicks_hc
@@ -98,15 +103,16 @@ def indicator_modal(
                 ],
             )
 
-        return [
+        output = [
             not is_open,
             figure,
             f"/dash/order_wait_download?sleutels={sleutels_figure}&project={project}&wait_category={wait_category}",
         ]
 
-    if close_clicks:
-        return [not is_open, {"data": None, "layout": None}, ""]
-    return [is_open, {"data": None, "layout": None}, ""]
+    else:
+        output = [is_open, {"data": None, "layout": None}, ""]
+
+    return output
 
 
 @app.callback(
