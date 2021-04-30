@@ -7,6 +7,7 @@ class ConsumeAansluitingenHistory:
     """
     Class for consuming Fiberconnect home connections and storing the history
     """
+
     def __init__(self, records, sql_engine, date=None):
         self.table = 'fc_aansluitingen_history'
         self.relevant_columns = ['uid', 'sleutel', 'project', 'variable', 'value']
@@ -19,6 +20,10 @@ class ConsumeAansluitingenHistory:
         self.uids_to_upate_versionEnd = []
 
     def consume_records(self):
+        """
+        Main function to consume records and store in sql table 'fc_aansluitingen_history'
+        """
+
         self._transform_to_long_format()
         self._read_reference_records()
         self._compare_records()
@@ -26,11 +31,22 @@ class ConsumeAansluitingenHistory:
         self._append_new_records()
 
     def _transform_to_long_format(self):
+        """
+        Function to keep relevant columns and transform a pd.DataFrame into long format
+        """
+
         logging.info('Transforming DataFrame to long-format ...')
         self.records = self.records[self.history_columns]
         self.records = self.records.melt(id_vars=['sleutel', 'project'])
 
     def _read_reference_records(self):
+        """
+        For every record it is checked which records have changed since the last update (normally yesterday).
+        In the sql table fc_aansluitingen_history is searched for the reference records to compare with.
+        --> reference_record is a record with the same 'sleutel', the same 'variable' and where the 'versionEnd' IS NULL
+
+        These reference_records are store in self.reference_records
+        """
         logging.info(f'Reading {len(self.records)} reference records ...')
 
         limit = 10000
@@ -59,6 +75,14 @@ AND fca.versionEnd IS NULL
                 logging.info(f'Read {count} reference records ...')
 
     def _compare_records(self):
+        """
+        Function to compare the reference records with the records to be consumed. The diff needs to be added to the
+        sql table `fc_aansluitingen_history`. The matching reference records are now redundant and therefore
+        the `versionEnd` of these records need to be updated.
+
+        Stores records to be added as self.records_to_update
+        Stores records of which the versionEnd needs to be updated as self.uids_to_update_versionEnd
+        """
 
         if self.reference_records.empty:
             self.records_to_update = self.records
@@ -79,6 +103,10 @@ AND fca.versionEnd IS NULL
             logging.info(f'Found {len(self.records_to_update)} new records')
 
     def _update_records_versionEnd(self):
+        """
+        Function to update the `versionEnd` of given UIDs of records in the sql table `fc_aansluitingen_history`
+        """
+
         if self.uids_to_upate_versionEnd:
             logging.info('Updating versionEnd ...')
             date = f"'{pd.Timestamp(self.date).strftime('%Y-%m-%d %H:%M:%S')}'" if self.date else 'CURRENT_TIMESTAMP'
@@ -96,12 +124,16 @@ AND fca.versionEnd IS NULL;
             logging.info('Skip updating versionEnd, no references where found')
 
     def _append_new_records(self):
+        """
+        Function to append the new records in the sql table `fc_aansluitingen_history`. The records are updated in loops
+        of 5000
+        """
         if not self.records_to_update.empty:
             # Remove None values
             self.records_to_update = self.records_to_update[self.records_to_update.value.notnull()]
 
             records_available = True
-            limit = 50_000
+            limit = 5000
             count = 0
             while records_available:
                 records = self.records_to_update[count: count + limit]
@@ -113,11 +145,14 @@ AND fca.versionEnd IS NULL;
 
                 records.to_sql('fc_aansluitingen_history', con=self.sqlEngine, index=False, if_exists='append')
                 count += limit
-                if count % 1_000_000 == 0:
+                if count % 10_000 == 0:
                     logging.info(f'Writing {count} records to sql')
 
 
 class ConsumeAansluitingen:
+    """
+    Class for consuming Fiberconnect home connections and storing the min the main sql table fc_aansluitingen
+    """
 
     def __init__(self, records, sql_engine):
         self.table = 'fc_aansluitingen'
@@ -128,6 +163,11 @@ class ConsumeAansluitingen:
         self._append_new_records()
 
     def _append_new_records(self):
+        """
+        Function to insert the records in the base table fc_aansluitingen. The records 'sleutel' is used as unique
+        identifier. When the id already exists, the record is updated. The records are updated with a max of
+        5000 a time.
+        """
         logging.info(f'Start writing {len(self.records)} to sql')
         if not self.records.empty:
 
