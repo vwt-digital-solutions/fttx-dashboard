@@ -9,7 +9,7 @@ class ConsumeAansluitingenHistory:
     """
 
     def __init__(self, records, sql_engine, date=None):
-        self.table = 'fc_aansluitingen_history'
+        self.table = config.FC_HISTORY_TABLE
         self.relevant_columns = ['uid', 'sleutel', 'project', 'variable', 'value']
         self.history_columns = config.FC_HISTORY_COLUMNS
         self.records = records
@@ -155,7 +155,7 @@ class ConsumeAansluitingen:
     """
 
     def __init__(self, records, sql_engine):
-        self.table = 'fc_aansluitingen'
+        self.table = config.FC_TABLE
         self.records = records
         self.sqlEngine = sql_engine
 
