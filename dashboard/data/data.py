@@ -487,14 +487,24 @@ def redenna_by_completed_status(
         click_filter = {}
 
     if project_name:
-        counts = pd.DataFrame(
-            collection.get_document(
-                collection="Indicators",
-                graph_name="ActualStatusBarChartIndicator",
-                project=project_name,
-                client=client,
+        if toggles.transform_frontend_newindicator:
+            counts = pd.DataFrame(
+                collection.get_document(
+                    collection="Indicators",
+                    graph_name="ActualStatusBarChartIndicator",
+                    project=project_name,
+                    client=client,
+                )
             )
-        )
+        else:
+            counts = pd.DataFrame(
+                collection.get_document(
+                    collection="Data",
+                    graph_name="completed_status_counts",
+                    project=project_name,
+                    client=client,
+                )
+            )
         if counts.empty:
             return None
         clusters = config.client_config[client]["clusters_reden_na"]
@@ -552,14 +562,24 @@ def completed_status_counts(project_name, client, click_filter=None):  # noqa: C
     ]
 
     if project_name:
-        counts = pd.DataFrame(
-            collection.get_document(
-                collection="Indicators",
-                graph_name="ActualStatusBarChartIndicator",
-                project=project_name,
-                client=client,
+        if toggles.transform_frontend_newindicator:
+            counts = pd.DataFrame(
+                collection.get_document(
+                    collection="Indicators",
+                    graph_name="ActualStatusBarChartIndicator",
+                    project=project_name,
+                    client=client,
+                )
             )
-        )
+        else:
+            counts = pd.DataFrame(
+                collection.get_document(
+                    collection="Data",
+                    graph_name="completed_status_counts",
+                    project=project_name,
+                    client=client,
+                )
+            )
         if counts.empty:
             return None
         clusters = config.client_config[client]["clusters_reden_na"]
