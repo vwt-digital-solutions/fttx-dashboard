@@ -1,13 +1,59 @@
-from Analyse.Aggregators.Aggregator import Aggregator
+import copy
+
+import business_rules as br
 from Analyse.Indicators.DataIndicator import DataIndicator
 from Analyse.Record.DictRecord import DictRecord
 
 
-class ActualStatusBarChartIndicator(DataIndicator, Aggregator):
+class ActualStatusBarChartIndicator(DataIndicator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.collection = "Indicators"
-        self.graph_name = None
+        self.graph_name = "ActualStatusBarChartIndicator"
+
+    def apply_business_rules(self):
+        df = copy.deepcopy(self.df)
+
+        df["HAS_status"] = False
+        df.loc[br.has_niet_opgeleverd(df), "HAS_status"] = "niet_opgeleverd"
+        df.loc[br.has_ingeplanned(df), "HAS_status"] = "ingeplanned"
+        df.loc[br.hp_opgeleverd(df), "HAS_status"] = "opgeleverd_zonder_hc"
+        df.loc[br.hc_opgeleverd(df), "HAS_status"] = "opgeleverd"
+
+        df["schouw_status"] = False
+        df.loc[~br.toestemming_bekend(df), "schouw_status"] = "niet_opgeleverd"
+        df.loc[br.toestemming_bekend(df), "schouw_status"] = "opgeleverd"
+
+        df["bis_status"] = False
+        df.loc[br.bis_niet_opgeleverd(df), "bis_status"] = "niet_opgeleverd"
+        df.loc[br.bis_opgeleverd(df), "bis_status"] = "opgeleverd"
+
+        df["lasDP_status"] = False
+        df.loc[br.laswerk_dp_niet_gereed(df), "lasDP_status"] = "niet_opgeleverd"
+        df.loc[br.laswerk_dp_gereed(df), "lasDP_status"] = "opgeleverd"
+
+        df["lasAP_status"] = False
+        df.loc[br.laswerk_ap_niet_gereed(df), "lasAP_status"] = "niet_opgeleverd"
+        df.loc[br.laswerk_ap_gereed(df), "lasAP_status"] = "opgeleverd"
+
+        df["laagbouw"] = False
+        df.loc[df["soort_bouw"] == "Laag", "laagbouw"] = True
+
+        df_out = df[
+            [
+                "schouw_status",
+                "bis_status",
+                "laagbouw",
+                "lasDP_status",
+                "lasAP_status",
+                "HAS_status",
+                "cluster_redenna",
+                "sleutel",
+                "project",
+            ]
+        ]
+
+        return df_out
 
     def perform(self):
         """
@@ -16,13 +62,19 @@ class ActualStatusBarChartIndicator(DataIndicator, Aggregator):
 
         """
         df = self.apply_business_rules()
-        aggregate = self.aggregate(df=df, by=["project", "cluster_redenna"]).fillna(0)
+        df = df.rename(columns={"sleutel": "count"})
+        col_names = list(df.columns)
         project_dict = {}
-        for project, _ in aggregate.groupby(level=0):
-            project_dict[project] = dict(
-                clusters=aggregate.loc[project].to_dict()["sleutel"],
-                sleutels=list(df[df.project == project].sleutel),
+        for project in df.project.unique():
+            project_status = df[df.project == project][col_names[:-1]]
+            project_dict[project] = (
+                project_status.groupby(col_names[:-2])
+                .count()
+                .reset_index()
+                .dropna()
+                .to_dict(orient="records")
             )
+
         return self.to_record(project_dict)
 
     def to_record(self, project_dict):

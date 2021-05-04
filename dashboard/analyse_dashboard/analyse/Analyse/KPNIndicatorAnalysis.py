@@ -16,6 +16,8 @@ from Analyse.Indicators.ActualRedenNAPatchOnlyOnTimeIndicator import \
     ActualRedenNAPatchOnlyOnTimeIndicator
 from Analyse.Indicators.ActualRedenNAPatchOnlyTooLateIndicator import \
     ActualRedenNAPatchOnlyTooLateIndicator
+from Analyse.Indicators.ActualStatusBarChartIndicator import \
+    ActualStatusBarChartIndicator
 from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HCOpen import HCOpen
@@ -83,6 +85,10 @@ class FttXIndicatorAnalyse(FttXBase):
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
         self.records.append(RedenNaIndicator(df=df, client=self.client).perform())
+
+        self.records.append(
+            ActualStatusBarChartIndicator(df=df, client=self.client).perform()
+        )
 
         self.records.append(WerkvoorraadIndicator(df=df, client=self.client).perform())
 
