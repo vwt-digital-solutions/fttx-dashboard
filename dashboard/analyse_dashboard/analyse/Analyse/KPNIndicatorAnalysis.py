@@ -4,9 +4,22 @@ import os
 from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
+from Analyse.Indicators.ActualRedenNAHCopenLateIndicator import \
+    ActualRedenNAHCopenLateIndicator
+from Analyse.Indicators.ActualRedenNAHCopenOnTimeIndicator import \
+    ActualRedenNAHCopenOnTimeIndicator
+from Analyse.Indicators.ActualRedenNAHCopenTooLateIndicator import \
+    ActualRedenNAHCopenTooLateIndicator
+from Analyse.Indicators.ActualRedenNAPatchOnlyLateIndicator import \
+    ActualRedenNAPatchOnlyLateIndicator
+from Analyse.Indicators.ActualRedenNAPatchOnlyOnTimeIndicator import \
+    ActualRedenNAPatchOnlyOnTimeIndicator
+from Analyse.Indicators.ActualRedenNAPatchOnlyTooLateIndicator import \
+    ActualRedenNAPatchOnlyTooLateIndicator
 from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
-from Analyse.Indicators.HcPatch import HcPatch
+from Analyse.Indicators.HCOpen import HCOpen
+from Analyse.Indicators.HCPatchOnly import HCPatchOnly
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
     InternalTargetHPcivielIndicator
 from Analyse.Indicators.InternalTargetHPendIndicator import \
@@ -151,7 +164,26 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
-        self.records.append(HcPatch(df=df, client=self.client).perform())
+        self.records.append(HCPatchOnly(df=df, client=self.client).perform())
+        self.records.append(HCOpen(df=df, client=self.client).perform())
+        self.records.append(
+            ActualRedenNAHCopenOnTimeIndicator(df=df, client=self.client).perform()
+        )
+        self.records.append(
+            ActualRedenNAHCopenLateIndicator(df=df, client=self.client).perform()
+        )
+        self.records.append(
+            ActualRedenNAHCopenTooLateIndicator(df=df, client=self.client).perform()
+        )
+        self.records.append(
+            ActualRedenNAPatchOnlyOnTimeIndicator(df=df, client=self.client).perform()
+        )
+        self.records.append(
+            ActualRedenNAPatchOnlyLateIndicator(df=df, client=self.client).perform()
+        )
+        self.records.append(
+            ActualRedenNAPatchOnlyTooLateIndicator(df=df, client=self.client).perform()
+        )
         self.records.append(
             PlanningIndicatorTMobile(df=df, client=self.client).perform()
         )
@@ -215,7 +247,23 @@ class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAn
     ...
 
 
-class KPNDFNIndicatorTestETL(FttXIndicatorETL, FttXTestLoad, KPNIndicatorAnalyse):
+class FttXIndicatorTestETL(PickleExtract, FttXIndicatorETL):
+    ...
+
+
+class KPNIndicatorTestETL(PickleExtract, KPNIndicatorETL, FttXTestLoad):
+    ...
+
+
+class DFNIndicatorTestETL(
+    PickleExtract, DFNIndicatorETL, FttXTestLoad, DFNIndicatorAnalyse
+):
+    ...
+
+
+class TmobileIndicatorTestETL(
+    PickleExtract, TmobileIndicatorETL, FttXTestLoad, TmobileIndicatorAnalyse
+):
     ...
 
 
@@ -233,7 +281,11 @@ class FttXIndicatorLocalETL(PickleExtract, FttXIndicatorETL):
             )
 
 
-class KPNDFNIndicatorLocalETL(KPNIndicatorETL, FttXIndicatorLocalETL):
+class KPNIndicatorLocalETL(KPNIndicatorETL, FttXIndicatorLocalETL):
+    ...
+
+
+class DFNIndicatorLocalETL(DFNIndicatorETL, FttXIndicatorLocalETL):
     ...
 
 

@@ -8,7 +8,6 @@ The ETL process for FttX. It contains all steps that are common for all FttX cli
 import logging
 import os
 import pickle  # nosec
-import time
 
 import numpy as np
 import pandas as pd
@@ -36,6 +35,7 @@ from functions import (
     sum_over_period_to_record,
     voorspel_and_planning_minus_HPend_sum_over_periods_to_record)
 from toggles import ReleaseToggles
+from config import FC_HISTORY_TABLE
 
 logger = logging.getLogger("FttX Analyse")
 
@@ -67,6 +67,7 @@ class FttXExtract(Extract):
         super().__init__(**kwargs)
         self.projects = self.config["projects"]
         self.client_name = self.config.get("name")
+        self.history_table = FC_HISTORY_TABLE
 
     # TODO: Documentation by Erik van Egmond
     def extract(self):
@@ -77,6 +78,7 @@ class FttXExtract(Extract):
         """
         logger.info("Extracting the Projects collection")
         self._extract_from_sql()
+        self._append_history()
         self.extract_project_info()
         if toggles.leverbetrouwbaarheid:
             self._extract_leverbetrouwbaarheid_dataframe()
@@ -100,51 +102,106 @@ where project in :projects
         df["project"] = df.project.astype(projects_category)
         self.extracted_data.df = df
 
-    @staticmethod
-    def _extract_project(project_name, cursor=None):
+    def _append_history(self):
         """
-        Extracts FC data from a specific project on the firestore
-
-        Args:
-            project_name: Project that data will be extracted for.
-            cursor: Lines to skip at the start of project data
-
-        Returns: Dataframe with extracted project data.
-
+        Main function to extra data from history table in the database
+        and append this to the self.extracted_data.df
         """
-        start_time = time.time()
-        logger.info(f"Extracting {project_name}...")
-        collection = firestore.Client().collection("Projects")
-        limit = 5000
-        df = pd.DataFrame([])
-        new_records = []
-        docs = []
-        while True:
-            new_records.clear()
-            docs.clear()
-            query = (
-                collection.where("project", "==", project_name)
-                .limit(limit)
-                .order_by("__name__")
-            )
-            if cursor:
-                docs = [snapshot for snapshot in query.start_after(cursor).stream()]
-            else:
-                docs = [snapshot for snapshot in query.stream()]
 
-            new_records = [doc.to_dict() for doc in docs]
-            df = df.append(
-                pd.DataFrame(new_records).fillna(np.nan), ignore_index=True, sort=True
-            )
+        sql_engine = get_database_engine()
+        self._extract_first_opleverdatum(sql_engine)
+        self._extract_laswerkgereed_datum(sql_engine, column='laswerkapgereed')
+        self._extract_laswerkgereed_datum(sql_engine, column='laswerkdpgereed')
+        self._extract_status_civiel_datum(sql_engine)
+        self._has_last_change_date(sql_engine)
 
-            if len(docs) == limit:
-                cursor = docs[-1]
-                continue
-            break
-        logger.info(
-            f"Extracted {len(df)} records in {time.time() - start_time} seconds"
+    def _extract_first_opleverdatum(self, sql_engine):
+        """Function to extract the 'first' opleverdatum from the history table in the database"""
+
+        logger.info('Extracting history "Opleverdatum" from sql database')
+        sql = text(
+            f"""
+SELECT fc.sleutel, fc.value as 'first_opleverdatum', creationDate
+FROM {self.history_table} as fc
+WHERE fc.variable = 'opleverdatum'
+AND `project` IN :projects
+"""  # nosec
+        ).bindparams(
+            bindparam("projects", expanding=True)
         )
-        return df
+        df = pd.read_sql(
+            sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
+        )
+        df = df.sort_values('creationDate', ascending=True).groupby(
+            'sleutel').first_opleverdatum.first().reset_index()
+        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+
+    def _extract_laswerkgereed_datum(self, sql_engine, column):
+        """Function to extract the laswerk gereed datum from the history table in the database"""
+
+        logger.info(f'Extracting history "{column}" from sql database')
+        column_name = f'{column}_datum'
+
+        sql = text(
+            f"""
+SELECT sleutel, MIN(`creationDate`)
+AS '{column_name}'
+FROM {self.history_table}
+WHERE `variable` = '{column}'
+AND `value` = '1'
+AND `project` IN :projects
+GROUP BY `sleutel`
+"""
+        ).bindparams(
+            bindparam("projects", expanding=True)
+        )  # nosec
+        df = pd.read_sql(
+            sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
+        )
+        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+
+    def _extract_status_civiel_datum(self, sql_engine):
+        """Function to extract the status_civiel datum from the history table in the database"""
+
+        logger.info('Extracting history "status_civiel" from sql database')
+        sql = text(
+            f"""
+SELECT sleutel, MIN(`creationDate`)
+AS 'status_civiel_datum'
+FROM {self.history_table}
+WHERE `variable` = 'status_civiel'
+AND `value` IN('1', '1 / Voor Gevel', '1 / Geul')
+AND `project` IN :projects
+GROUP BY `sleutel`
+"""  # nosec
+        ).bindparams(
+            bindparam("projects", expanding=True)
+        )
+        df = pd.read_sql(
+            sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
+        )
+        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+
+    def _has_last_change_date(self, sql_engine):
+        """Function to extract the last_change datum of hasdatum from the history table in the database"""
+
+        logger.info('Extracting history "hasdatum" from sql database')
+        sql = text(
+            f"""
+SELECT sleutel, MAX(`creationDate`)
+AS 'hasdatum_change_date'
+FROM {self.history_table}
+WHERE `variable` = 'hasdatum'
+AND `project` IN :projects
+GROUP BY `sleutel`
+"""  # nosec
+        ).bindparams(
+            bindparam("projects", expanding=True)
+        )
+        df = pd.read_sql(
+            sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
+        )
+        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def extract_project_info(self):
         """
@@ -311,6 +368,8 @@ class FttXTransform(Transform):
 
     # TODO: Documentation by Erik van Egmond
     def _fix_dates(self):
+        """Function that tranfsorms the columns with a date to pd.datetime format"""
+
         logger.info(
             "Transforming columns to datetime column if there is 'datum' in column name"
         )
@@ -326,6 +385,8 @@ class FttXTransform(Transform):
             "toestemming_datum",
             "creation",
             "plan_date",
+            "first_opleverdatum",
+            "hasdatum_change_date"
         ]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(
             pd.to_datetime, infer_datetime_format=True, errors="coerce", utc=True

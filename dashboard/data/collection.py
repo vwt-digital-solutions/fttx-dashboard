@@ -58,6 +58,11 @@ def get_year_value_from_document(collection, year, **filters):
     return value
 
 
+def get_redenna_modal_from_document(collection, **filters):
+    doc = get_document(collection, **filters)
+    return doc
+
+
 def get_week_value_from_document(collection, which_week, **filters):
     doc = get_document(collection, **filters)
     if doc:
@@ -125,6 +130,22 @@ def get_redenna_overview_from_document(collection, date, period, **filters):
         value = get_document(collection, **filters)[series_type][date]
         pie_chart_dict[cluster] = value if value else 0
     return {date: pie_chart_dict}
+
+
+# def get_redenna_project_from_document(collection, **filters):
+#     cluster_types = [
+#         "HC",
+#         "geplande aansluiting",
+#         "permissieobstructies",
+#         "technische obstructies",
+#     ]
+#     series_type = "series_year"
+#     pie_chart_dict = {}
+#     for cluster in cluster_types:
+#         filters["line"] = "RedenNAindicator_" + cluster
+#         value = sum(get_document(collection, **filters)[series_type])
+#         pie_chart_dict[cluster] = value if value else 0
+#     return {date: pie_chart_dict}
 
 
 def get_data_performance_graph(collection, **filters):

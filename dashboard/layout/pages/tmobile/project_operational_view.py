@@ -20,7 +20,10 @@ def get_html(client):
     return [
         dcc.Store(id=f"status-count-filter-{client}"),
         dcc.Store(id=f"indicator-data-{client}"),
-        html.Div(id=f"indicators-{client}"),
+        html.Div(
+            id=f"indicators-{client}",
+            # className="container-display",
+        ),
         html.Div(
             className="container-display",
             children=[

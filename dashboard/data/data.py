@@ -46,7 +46,9 @@ def fetch_data_for_overview_boxes(client, year):
         "Client Target": ["ClientTarget", "ClientTarget"],
         "Realisatie": [
             "RealisationHPcivielIndicator",
-            "RealisationHPendIndicator",
+            "RealisationHPendIndicator"
+            if client != "tmobile"
+            else "RealisationHPendTmobileIndicator",
         ],
         "Planning": [
             "PlanningHPcivielIndicator",
@@ -62,7 +64,7 @@ def fetch_data_for_overview_boxes(client, year):
         "Ratio <12 weken": [
             "linenotavailable",
             "RealisationHPendOnTimeIndicator",
-            "RealisationHPendIndicator",
+            "RealisationHPendTmobileIndicator",
         ],
     }
 
@@ -103,7 +105,9 @@ def fetch_data_for_overview_boxes(client, year):
 def fetch_data_for_month_overview(year, client):
     lines = [
         "InternalTargetHPendLine",
-        "RealisationHPendIndicator",
+        "RealisationHPendIndicator"
+        if client != "tmobile"
+        else "RealisationHPendTmobileIndicator",
         "PlanningHPendIndicator",
         "PrognoseHPendIndicator",
     ]
@@ -123,7 +127,9 @@ def fetch_data_for_month_overview(year, client):
 def fetch_data_for_week_overview(year, client):
     lines = [
         "InternalTargetHPendLine",
-        "RealisationHPendIndicator",
+        "RealisationHPendIndicator"
+        if client != "tmobile"
+        else "RealisationHPendTmobileIndicator",
         "PlanningHPendIndicator",
         "PrognoseHPendIndicator",
     ]
@@ -256,7 +262,6 @@ def fetch_data_for_indicator_boxes(project, client):
 
         # exception for calculation of ratio's
         if title == f"Ratio HC / HPend week {str(this_week)}":
-            print(values)
             if values[1] != 0:
                 values[0] = round(values[0] / values[1], 2)
             values[1] = 0.9
@@ -274,6 +279,120 @@ def fetch_data_for_indicator_boxes(project, client):
             )
         )
     return info_list
+
+
+# def fetch_data_for_redenna_project(project):
+#     redenna_project = collection.get_redenna_overview_from_document(
+#         collection="Indicators",
+#         date=date,
+#         period=period,
+#         client=client,
+#         project=project,
+#     )
+#     return redenna_project
+
+
+def fetch_data_for_indicator_boxes_tmobile(project, client):
+    indicator_types = {
+        "Openstaand HC aanleg op tijd": [
+            "< 8 weken",
+            "on_time-hc_aanleg",
+            "HCopenOnTime",
+        ],
+        "Openstaand HC aanleg beperkte tijd": [
+            "> 8 weken < 12 weken",
+            "late-hc_aanleg",
+            "HCopenLate",
+        ],
+        "Openstaand HC aanleg te laat": [
+            "> 12 weken",
+            "too_late-hc_aanleg",
+            "HCopenTooLate",
+        ],
+        "Ratio op tijd gesloten orders": [
+            " ",
+            "ratio-12-weeks",
+            "RealisationHPendOnTimeIndicatorIntegrated",
+            "RealisationHPendIntegratedTmobileIndicator",
+        ],
+        "Openstaand patch only op tijd": [
+            "< 8 weken",
+            "on_time-patch_only",
+            "PatchOnlyOnTime",
+        ],
+        "Openstaand patch only beperkte tijd": [
+            "> 8 weken < 12 weken",
+            "late-patch_only",
+            "PatchOnlyLate",
+        ],
+        "Openstaand patch only te laat": [
+            "> 12 weken",
+            "too_late-patch_only",
+            "PatchOnlyTooLate",
+        ],
+        "Werkvoorraad HAS": [
+            " ",
+            "werkvoorraad-has",
+            "WerkvoorraadHPendIndicator",
+        ],
+    }
+
+    info_list = []
+    year = str(datetime.now().year)
+    for title in indicator_types:
+        subtitle = indicator_types[title][0]
+        line = indicator_types[title][2]
+        value = collection.get_year_value_from_document(
+            collection="Indicators",
+            year=year,
+            line=line,
+            client=client,
+            project=project,
+        )
+
+        # exception for calculation of ratio's
+        if title == "Ratio op tijd gesloten orders":
+            value2 = collection.get_year_value_from_document(
+                collection="Indicators",
+                year=year,
+                line=indicator_types[title][3],
+                client=client,
+                project=project,
+            )
+            if (value2 != 0) & (value2 != "n.v.t."):
+                value = round(value / value2 * 100) / 100
+
+        info_list.append(
+            dict(
+                value=value if not isinstance(value, str) else 0,
+                previous_value=None,
+                title=title,
+                sub_title=subtitle,
+                font_color="black",
+                id=f"indicator-{indicator_types[title][1]}-{client}",
+            )
+        )
+    return info_list[0:4], info_list[4:]
+
+
+def fetch_data_for_redenna_modal(project, client, indicator_type, wait_category):
+    pie_dict = collection.get_redenna_modal_from_document(
+        collection="Indicators",
+        graph_name=f"RedenNA_{wait_category}_{indicator_type}",
+        client=client,
+        project=project,
+    )["clusters"]
+    return dict(sorted(pie_dict.items()))
+
+
+def fetch_sleutels_figure(project, client, indicator_type, wait_category):
+    sleutels = collection.get_redenna_modal_from_document(
+        collection="Indicators",
+        graph_name=f"RedenNA_{wait_category}_{indicator_type}",
+        client=client,
+        project=project,
+    )["sleutels"]
+    return sleutels
 
 
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
