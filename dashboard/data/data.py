@@ -489,8 +489,8 @@ def redenna_by_completed_status(
     if project_name:
         counts = pd.DataFrame(
             collection.get_document(
-                collection="Data",
-                graph_name="completed_status_counts",
+                collection="Indicators",
+                graph_name="ActualStatusBarChartIndicator",
                 project=project_name,
                 client=client,
             )
@@ -554,8 +554,8 @@ def completed_status_counts(project_name, client, click_filter=None):  # noqa: C
     if project_name:
         counts = pd.DataFrame(
             collection.get_document(
-                collection="Data",
-                graph_name="completed_status_counts",
+                collection="Indicators",
+                graph_name="ActualStatusBarChartIndicator",
                 project=project_name,
                 client=client,
             )
