@@ -1,4 +1,3 @@
-from collections import namedtuple
 from datetime import datetime
 
 import pandas as pd
@@ -474,39 +473,28 @@ def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: st
     return df[mask]
 
 
-def redenna_by_completed_status(
-    project_name,
-    client,
-    click_filter=None,
-):
-    RedenNADataFrames = namedtuple(
-        "RedenNADataFrames", ["total", "laagbouw", "hoogbouw"]
-    )  # Used to return a named tuple
+def fetch_data_for_status_redenna_piechart(project_name, client, click_filter=None):
 
-    if not click_filter:
-        click_filter = {}
+    if toggles.transform_frontend_newindicator:
+        counts = pd.DataFrame(
+            collection.get_document(
+                collection="Indicators",
+                graph_name="ActualStatusBarChartIndicator",
+                project=project_name,
+                client=client,
+            )
+        )
+    else:
+        counts = pd.DataFrame(
+            collection.get_document(
+                collection="Data",
+                graph_name="completed_status_counts",
+                project=project_name,
+                client=client,
+            )
+        )
 
-    if project_name:
-        if toggles.transform_frontend_newindicator:
-            counts = pd.DataFrame(
-                collection.get_document(
-                    collection="Indicators",
-                    graph_name="ActualStatusBarChartIndicator",
-                    project=project_name,
-                    client=client,
-                )
-            )
-        else:
-            counts = pd.DataFrame(
-                collection.get_document(
-                    collection="Data",
-                    graph_name="completed_status_counts",
-                    project=project_name,
-                    client=client,
-                )
-            )
-        if counts.empty:
-            return None
+    if not counts.empty:
         clusters = config.client_config[client]["clusters_reden_na"]
         cluster_types = pd.CategoricalDtype(
             categories=list(clusters.keys()), ordered=True
@@ -517,11 +505,13 @@ def redenna_by_completed_status(
         if click_filter:
             for col, value in click_filter.items():
                 mask = mask & (counts[col] == value)
+            cols_filter = list(click_filter.keys())
+        else:
+            cols_filter = []
 
-        cols = list(dict.fromkeys(list(click_filter.keys()) + ["cluster_redenna"]))
-        cols.append("laagbouw")
-        cols_to_see = cols + ["count"]
-        result = counts[mask][cols_to_see].groupby(cols).sum().reset_index()
+        cols = list(dict.fromkeys(cols_filter + ["cluster_redenna"])) + ["laagbouw"]
+        result = counts[mask][cols + ["count"]].groupby(cols).sum().reset_index()
+
         total = (
             result.groupby("cluster_redenna")
             .sum()
@@ -540,18 +530,34 @@ def redenna_by_completed_status(
             .reset_index()[["cluster_redenna", "count"]]
         )
 
-        return RedenNADataFrames(total, laagbouw, hoogbouw)
+    else:
+        total = pd.DataFrame()
+        laagbouw = pd.DataFrame()
+        hoogbouw = pd.DataFrame()
 
-    return None, None
+    return total, laagbouw, hoogbouw
 
 
-def completed_status_counts(project_name, client, click_filter=None):  # noqa: C901
-    StatusCountDataFrames = namedtuple(
-        "StatusCountDataFrames", ["laagbouw", "hoogbouw"]
-    )  # Used to return a named tuple
+def fetch_data_for_status_barchart(project_name, client, click_filter=None):
 
-    if not click_filter:
-        click_filter = {}
+    if toggles.transform_frontend_newindicator:
+        counts = pd.DataFrame(
+            collection.get_document(
+                collection="Indicators",
+                graph_name="ActualStatusBarChartIndicator",
+                project=project_name,
+                client=client,
+            )
+        )
+    else:
+        counts = pd.DataFrame(
+            collection.get_document(
+                collection="Data",
+                graph_name="completed_status_counts",
+                project=project_name,
+                client=client,
+            )
+        )
 
     categories = [
         "schouw_status",
@@ -561,65 +567,42 @@ def completed_status_counts(project_name, client, click_filter=None):  # noqa: C
         "HAS_status",
     ]
 
-    if project_name:
-        if toggles.transform_frontend_newindicator:
-            counts = pd.DataFrame(
-                collection.get_document(
-                    collection="Indicators",
-                    graph_name="ActualStatusBarChartIndicator",
-                    project=project_name,
-                    client=client,
-                )
-            )
-        else:
-            counts = pd.DataFrame(
-                collection.get_document(
-                    collection="Data",
-                    graph_name="completed_status_counts",
-                    project=project_name,
-                    client=client,
-                )
-            )
-        if counts.empty:
-            return None
-        clusters = config.client_config[client]["clusters_reden_na"]
-        cluster_types = pd.CategoricalDtype(
-            categories=list(clusters.keys()), ordered=True
-        )
-        counts["cluster_redenna"] = counts["cluster_redenna"].astype(cluster_types)
+    phase_category = pd.CategoricalDtype(categories=categories)
 
+    status_category = pd.CategoricalDtype(
+        categories=[
+            "niet_opgeleverd",
+            "ingeplanned",
+            "opgeleverd",
+            "opgeleverd_zonder_hc",
+        ]
+    )
+
+    if not counts.empty:
         mask = pd.Series([True]).repeat(len(counts.index)).values
         if click_filter:
             for col, value in click_filter.items():
                 mask = mask & (counts[col] == value)
+            cols_filter = list(click_filter.keys())
+        else:
+            cols_filter = []
 
         laagbouw_matrix = []
         hoogbouw_matrix = []
 
         for category in categories:
-            cols = list(dict.fromkeys(list(click_filter.keys()) + [category]))
-            cols.append("laagbouw")
-            cols_to_see = cols + ["count"]
-            result = counts[mask][cols_to_see].groupby(cols).sum().reset_index()
+            cols = list(dict.fromkeys(cols_filter + [category])) + ["laagbouw"]
+            result = counts[mask][cols + ["count"]].groupby(cols).sum().reset_index()
+
             lb = result[result.laagbouw][[category, "count"]]
-            hb = result[~result.laagbouw][[category, "count"]]
             for i, row in lb.iterrows():
                 laagbouw_matrix.append([category] + row.values.tolist())
+
+            hb = result[~result.laagbouw][[category, "count"]]
             for i, row in hb.iterrows():
                 hoogbouw_matrix.append([category] + row.values.tolist())
 
         lb_df = pd.DataFrame(laagbouw_matrix, columns=["phase", "status", "count"])
-        hb_df = pd.DataFrame(hoogbouw_matrix, columns=["phase", "status", "count"])
-
-        status_category = pd.CategoricalDtype(
-            categories=[
-                "niet_opgeleverd",
-                "ingeplanned",
-                "opgeleverd",
-                "opgeleverd_zonder_hc",
-            ]
-        )
-        phase_category = pd.CategoricalDtype(categories=categories)
         lb_df["status"] = lb_df.status.astype(status_category)
         lb_df["phase"] = lb_df.phase.astype(phase_category)
         lb_df = lb_df.groupby(by=["phase", "status"]).sum().reset_index()
@@ -627,6 +610,9 @@ def completed_status_counts(project_name, client, click_filter=None):  # noqa: C
             lb_df["count"] = 0
         else:
             lb_df["count"] = lb_df["count"].fillna(0)
+        data_laagbouw = lb_df
+
+        hb_df = pd.DataFrame(hoogbouw_matrix, columns=["phase", "status", "count"])
         hb_df["status"] = hb_df.status.astype(status_category)
         hb_df["phase"] = hb_df.phase.astype(phase_category)
         hb_df = hb_df.groupby(by=["phase", "status"]).sum().reset_index()
@@ -634,10 +620,10 @@ def completed_status_counts(project_name, client, click_filter=None):  # noqa: C
             hb_df["count"] = 0
         else:
             hb_df["count"] = hb_df["count"].fillna(0)
+        data_hoogbouw = hb_df
 
-        return StatusCountDataFrames(lb_df, hb_df)
+    else:
+        data_laagbouw = pd.DataFrame()
+        data_hoogbouw = pd.DataFrame()
 
-    return StatusCountDataFrames(
-        pd.DataFrame(columns=["phase", "status", "count"]),
-        pd.DataFrame(columns=["phase", "status", "count"]),
-    )
+    return data_laagbouw, data_hoogbouw

@@ -1,5 +1,4 @@
 from datetime import datetime
-from urllib.parse import urlencode
 
 import dash
 from dash.dependencies import Input, Output, State
@@ -7,22 +6,22 @@ from dash.exceptions import PreventUpdate
 
 import config
 from app import app, toggles
-from config import colors_vwt as colors
 from data import collection
-from data.data import (completed_status_counts, fetch_data_for_month_overview,
+from data.data import (fetch_data_for_month_overview,
                        fetch_data_for_overview_boxes,
                        fetch_data_for_overview_graphs,
                        fetch_data_for_performance_graph,
                        fetch_data_for_project_info_table,
                        fetch_data_for_redenna_overview,
-                       fetch_data_for_week_overview,
-                       redenna_by_completed_status)
-from layout.components import redenna_status_pie
+                       fetch_data_for_status_barchart,
+                       fetch_data_for_status_redenna_piechart,
+                       fetch_data_for_week_overview)
 from layout.components.global_info_list_old import global_info_list_old
 from layout.components.graphs import (completed_status_counts_bar,
                                       overview_bar_chart, performance_chart,
                                       project_info_table,
-                                      redenna_overview_chart)
+                                      redenna_overview_chart,
+                                      redenna_status_pie)
 from layout.components.graphs.no_graph import no_graph
 from layout.components.list_of_boxes import global_info_list
 
@@ -222,8 +221,6 @@ for client in config.client_config.keys():  # noqa: C901
         [
             Output(f"status-counts-laagbouw-{client}", "figure"),
             Output(f"status-counts-hoogbouw-{client}", "figure"),
-            Output(f"status-counts-laagbouw-{client}-container", "style"),
-            Output(f"status-counts-hoogbouw-{client}-container", "style"),
         ],
         [
             Input(f"status-count-filter-{client}", "data"),
@@ -231,37 +228,29 @@ for client in config.client_config.keys():  # noqa: C901
         ],
     )
     def update_graphs_using_status_clicks(click_filter, project_name, client=client):
-        if project_name:
-            status_counts = completed_status_counts(
-                project_name, click_filter=click_filter, client=client
-            )
-            if status_counts is None:
-                return [
-                    no_graph(),
-                    no_graph(),
-                    {"display": "block"},
-                    {"display": "block"},
-                ]
-            laagbouw = completed_status_counts_bar.get_fig(
-                status_counts.laagbouw, title="Status oplevering per fase (LB)"
-            )
-            laagbouw_style = {"display": "block"} if laagbouw else {"display": "none"}
-            hoogbouw = completed_status_counts_bar.get_fig(
-                status_counts.hoogbouw, title="Status oplevering per fase (HB & Duplex)"
-            )
-            hoogbouw_style = {"display": "block"} if hoogbouw else {"display": "none"}
-            return laagbouw, hoogbouw, laagbouw_style, hoogbouw_style
-        return (
-            {"data": None, "layout": None},
-            {"data": None, "layout": None},
-            {"display": "block"},
-            {"display": "block"},
+        if not project_name:
+            raise PreventUpdate
+
+        data_laagbouw, data_hoogbouw = fetch_data_for_status_barchart(
+            project_name, click_filter=click_filter, client=client
         )
+
+        if not data_laagbouw.empty:
+            laagbouw = completed_status_counts_bar.get_fig(
+                data_laagbouw, title="Status oplevering per fase (LB)"
+            )
+            hoogbouw = completed_status_counts_bar.get_fig(
+                data_hoogbouw, title="Status oplevering per fase (HB & Duplex)"
+            )
+        else:
+            laagbouw = no_graph()
+            hoogbouw = no_graph()
+
+        return laagbouw, hoogbouw
 
     @app.callback(
         [
             Output(f"redenna_project_{client}", "figure"),
-            Output(f"project-redenna-download-{client}", "href"),
         ],
         [
             Input(f"status-count-filter-{client}", "data"),
@@ -269,29 +258,21 @@ for client in config.client_config.keys():  # noqa: C901
         ],
     )
     def update_redenna_status_clicks(click_filter, project_name, client=client):
-        if project_name:
-            redenna_counts = redenna_by_completed_status(
-                project_name, click_filter=click_filter, client=client
-            )
-            if redenna_counts is None:
-                return [no_graph(), ""]
-            redenna_pie = redenna_status_pie.get_fig(
-                redenna_counts,
-                title="Opgegeven reden na",
-                colors=[
-                    colors["green"],
-                    colors["yellow"],
-                    colors["red"],
-                    colors["vwt_blue"],
-                ],
-            )
-            if click_filter:
-                download_url = f"/dash/project_redenna_download?project={project_name}&{urlencode(click_filter)}"
-            else:
-                download_url = f"/dash/project_redenna_download?project={project_name}"
+        if not project_name:
+            raise PreventUpdate
 
-            return [redenna_pie, download_url]
-        return [{"data": None, "layout": None}, ""]
+        total, laagbouw, hoogbouw = fetch_data_for_status_redenna_piechart(
+            project_name, click_filter=click_filter, client=client
+        )
+
+        if not total.empty:
+            fig = redenna_status_pie.get_fig(
+                total, laagbouw, hoogbouw, title="Opgegeven reden na"
+            )
+        else:
+            fig = no_graph()
+
+        return [fig]
 
     @app.callback(
         Output(f"info-container-year-{client}", "children"),
