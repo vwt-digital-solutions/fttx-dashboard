@@ -22,7 +22,7 @@ firestore==0.0.8
 Flask==1.1.1
 Flask-Caching==1.7.2
 Flask-Compress==1.9.0
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-Dance==2.2.0
 Flask-Login==0.4.1
 Flask-SSLify==0.1.5
