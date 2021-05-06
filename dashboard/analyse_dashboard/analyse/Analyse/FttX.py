@@ -8,6 +8,7 @@ The ETL process for FttX. It contains all steps that are common for all FttX cli
 import logging
 import os
 import pickle  # nosec
+from datetime import timedelta
 
 import numpy as np
 import pandas as pd
@@ -109,22 +110,26 @@ where project in :projects
         """
 
         sql_engine = get_database_engine()
-        self._extract_first_opleverdatum(sql_engine)
+        self._extract_first_changedate_opleverdatum(sql_engine)
         self._extract_laswerkgereed_datum(sql_engine, column='laswerkapgereed')
         self._extract_laswerkgereed_datum(sql_engine, column='laswerkdpgereed')
         self._extract_status_civiel_datum(sql_engine)
         self._has_last_change_date(sql_engine)
 
-    def _extract_first_opleverdatum(self, sql_engine):
-        """Function to extract the 'first' opleverdatum from the history table in the database"""
+    def _extract_first_changedate_opleverdatum(self, sql_engine):
+        """
+        Function to extract the date of the first time a `opleverdatum` was filled
+        from the history table in the database.
+        """
 
         logger.info('Extracting history "Opleverdatum" from sql database')
         sql = text(
             f"""
-SELECT fc.sleutel, fc.value as 'first_opleverdatum', creationDate
+SELECT fc.sleutel, MIN(fc.creationDate) AS 'opleverdatum'
 FROM {self.history_table} as fc
 WHERE fc.variable = 'opleverdatum'
 AND `project` IN :projects
+GROUP BY `sleutel`
 """  # nosec
         ).bindparams(
             bindparam("projects", expanding=True)
@@ -132,9 +137,24 @@ AND `project` IN :projects
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
-        df = df.sort_values('creationDate', ascending=True).groupby(
-            'sleutel').first_opleverdatum.first().reset_index()
+
+        # rename old column for 'opleverdatum' and then merge new opleverdatum from history.
+        self.extracted_data.df = self.extracted_data.df.rename(columns={'opleverdatum': 'opleverdatum_old'})
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+
+        cols = ['opleverdatum', 'opleverdatum_old']
+        self.extracted_data.df[cols] = self.extracted_data.df[cols].apply(pd.to_datetime,
+                                                                          infer_datetime_format=True,
+                                                                          errors="coerce")
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        self.extracted_data.df['opleverdatum'] = self.extracted_data.df['opleverdatum'] - timedelta(days=1)
+
+        # building-up history began 2020-10-05, before that day use the opleverdatum as_is
+        # to prevent large peaks in timeseries
+        mask = self.extracted_data.df['opleverdatum_old'] < pd.Timestamp("2020-10-05")
+        self.extracted_data.df.loc[mask, 'opleverdatum'] = self.extracted_data.df.loc[mask, 'opleverdatum_old']
+        self.extracted_data.df.drop(columns=['opleverdatum_old'], inplace=True)
 
     def _extract_laswerkgereed_datum(self, sql_engine, column):
         """Function to extract the laswerk gereed datum from the history table in the database"""
@@ -385,7 +405,6 @@ class FttXTransform(Transform):
             "toestemming_datum",
             "creation",
             "plan_date",
-            "first_opleverdatum",
             "hasdatum_change_date"
         ]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(
