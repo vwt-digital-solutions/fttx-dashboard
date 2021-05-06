@@ -47,6 +47,7 @@ class LineRecord(Record):
             self.to_be_normalized = to_be_normalized
             self.percentage = percentage
             self.to_be_splitted_by_year = to_be_splitted_by_year
+            self.max_value = record.max_value
             super().__init__(record, collection, client, graph_name, **kwargs)
 
     else:
@@ -175,7 +176,9 @@ class LineRecord(Record):
             line = line.integrate()
 
         if self.to_be_normalized:
-            series = line.make_normalised_series(percentage=self.percentage)
+            series = line.make_normalised_series(
+                percentage=self.percentage, maximum=self.max_value
+            )
         else:
             series = line.make_series()
 
