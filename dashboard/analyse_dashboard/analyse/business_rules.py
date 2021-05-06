@@ -8,6 +8,7 @@ a DataFrame or Series.
 """
 
 import pandas as pd
+from datetime import timedelta
 
 opleverstatussen = [
     "0",
@@ -495,4 +496,23 @@ def target_tmobile(df):
         (~df.creation.isna())
         & (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
         & (df.type.isin(['AANLEG', 'Aanleg']))
+    )
+
+
+def leverbetrouwbaar(df: pd.DataFrame):
+    """
+    This BR determines if the house is delivered in time (leverbetrouwbaar), thus:
+    -   The opleverdatum is not empty
+    -   The opleverdatum == hasdatum
+    -   The hasdatum has not changed within 3 days of the opleverdatum
+    Args:
+        df (pd.DataFrame): The transformed dataframe
+
+    Returns:
+        pd.Series: A series of truth values
+    """
+    return (
+        (df.opleverdatum.notna())
+        & (df.opleverdatum == df.hasdatum)
+        & (df.hasdatum_change_date < (df.opleverdatum - timedelta(days=3)))
     )
