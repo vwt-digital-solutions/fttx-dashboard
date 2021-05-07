@@ -391,7 +391,7 @@ class FttXTransform(Transform):
         """Function that tranfsorms the columns with a date to pd.datetime format"""
 
         logger.info(
-            "Transforming columns to datetime column if there is 'datum' in column name"
+            "Transforming columns to datetime format"
         )
         self.transformed_data.datums = datums = [
             "activatie_datum",
