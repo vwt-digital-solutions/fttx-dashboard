@@ -59,7 +59,7 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         for project in set(self.df.project):
             project_dict[project] = self.apply_business_rules(project)
 
-        return self.to_records(project_dict)
+        return self.to_record(project_dict)
 
     def to_record(self, project_dict):
         dict_record = DictRecord(
