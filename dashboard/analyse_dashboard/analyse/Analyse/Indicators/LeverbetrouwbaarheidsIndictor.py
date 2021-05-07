@@ -39,6 +39,10 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
 
         # Apply business rule for leverbetrouwbaar to be true or not
         mask = br.leverbetrouwbaar(df)
+
+        if len(mask) == 0:
+            return 'n.v.t.'
+
         ratio = mask.sum() / len(mask)
 
         return ratio
