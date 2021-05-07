@@ -30,6 +30,7 @@ from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
     InternalTargetHPendIntegratedIndicator
 from Analyse.Indicators.InternalTargetTmobileIndicator import \
     InternalTargetTmobileIndicator
+from Analyse.Indicators.LeverbetrouwbaarheidsIndictor import LeverbetrouwbaarheidIndicator
 from Analyse.Indicators.PerformanceGraphIndicator import \
     PerformanceGraphIndicator
 from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
@@ -103,6 +104,14 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df,
                 project_info=self.transformed_data.project_info,
                 client=self.client,
+            ).perform()
+        )
+
+        self.records.append(
+            LeverbetrouwbaarheidIndicator(
+                df=df,
+                client=self.client,
+                graph_name='leverbetrouwbaarheid'
             ).perform()
         )
 
