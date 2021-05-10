@@ -118,8 +118,7 @@ where project in :projects
 
     def _extract_first_changedate_opleverdatum(self, sql_engine):
         """
-        Function to extract the date of the first time a `opleverdatum` was filled
-        from the history table in the database.
+        Function to extract the date of the first time a `opleverdatum` was filled.
         """
 
         logger.info('Extracting history "Opleverdatum" from sql database')
@@ -178,6 +177,11 @@ GROUP BY `sleutel`
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        df[column_name] = df[column_name].apply(pd.to_datetime, infer_datetime_format=True, errors="coerce")
+        df[column_name] = df[column_name] - timedelta(days=1)
+
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def _extract_status_civiel_datum(self, sql_engine):
@@ -190,7 +194,7 @@ SELECT sleutel, MIN(`creationDate`)
 AS 'status_civiel_datum'
 FROM {self.history_table}
 WHERE `variable` = 'status_civiel'
-AND `value` IN('1', '1 / Voor Gevel', '1 / Geul')
+AND `value` NOT LIKE '0%'
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
@@ -200,6 +204,13 @@ GROUP BY `sleutel`
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        df['status_civiel_datum'] = df['status_civiel_datum'].apply(pd.to_datetime,
+                                                                    infer_datetime_format=True,
+                                                                    errors="coerce")
+        df['status_civiel_datum'] = df['status_civiel_datum'] - timedelta(days=1)
+
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def _has_last_change_date(self, sql_engine):
@@ -221,6 +232,13 @@ GROUP BY `sleutel`
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        df['hasdatum_change_date'] = df['hasdatum_change_date'].apply(pd.to_datetime,
+                                                                      infer_datetime_format=True,
+                                                                      errors="coerce")
+        df['hasdatum_change_date'] = df['hasdatum_change_date'] - timedelta(days=1)
+
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def extract_project_info(self):
