@@ -55,7 +55,7 @@ def fetch_data_for_overview_boxes(client, year):
         ],
         "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
         "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
-        "Ratio HC / HPend": [
+        "HC / HPend": [
             "linenotavailable",
             "RealisationHCIndicator",
             "RealisationHPendIndicator",
@@ -219,23 +219,23 @@ def fetch_data_for_redenna_overview(ctx, year, client):
 def fetch_data_for_indicator_boxes(project, client):
     this_week = datetime.now().isocalendar()[1]
     indicator_types = {
-        f"Realisatie HPend week {str(this_week - 1)}": [
+        f"Realisatie HPend w {str(this_week - 1)}": [
             "RealisationHPendIndicator",
             "InternalTargetHPendLine",
         ],
-        f"Realisatie HPend week {str(this_week)}": [
+        f"Realisatie HPend w {str(this_week)}": [
             "RealisationHPendIndicator",
             "InternalTargetHPendLine",
         ],
-        f"Realisatie HPciviel week {str(this_week - 1)}": [
+        f"Realisatie HPciviel w {str(this_week - 1)}": [
             "RealisationHPcivielIndicator",
             "InternalTargetHPcivielLine",
         ],
-        f"Realisatie HPciviel week {str(this_week)}": [
+        f"Realisatie HPciviel w {str(this_week)}": [
             "RealisationHPcivielIndicator",
             "InternalTargetHPcivielLine",
         ],
-        f"Ratio HC / HPend week {str(this_week)}": [
+        f"HC / HPend w {str(this_week)}": [
             "RealisationHCIndicatorIntegrated",
             "RealisationHPendIndicatorIntegrated",
         ],
