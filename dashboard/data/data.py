@@ -251,7 +251,7 @@ def fetch_data_for_indicator_boxes(project, client):
         gauge_type = "bullet"
         sub_title = "Target: "
         for line in indicator_types[title]:
-            if title[-2:] == str(this_week):
+            if (title[-2:] == str(this_week)) | (title == "Leverbetrouwbaarheid"):
                 which_week = "current_week"
             else:
                 which_week = "last_week"
