@@ -82,9 +82,16 @@ class PrognoseIndicator(LineIndicator):
             total_amount - realisation_rate_line.integrate().get_most_recent_point()
         )
         n_days = distance_to_max_value / mean_rate
-        n_days_int = math.floor(n_days) if n_days >= 1 else 1
+        if n_days >= 1:
+            n_days_int = math.floor(n_days)
+            # small correction so that the predicted amount == total amount on the last day
+            mean_rate_corrected = (
+                mean_rate + (n_days - n_days_int) * mean_rate / n_days_int
+            )
+        else:
+            n_days_int = 1
+            mean_rate_corrected = mean_rate * n_days
+
         domain = DateDomainRange(begin=start_date, n_days=n_days_int)
-        # small correction so that the predicted amount == total amount on the last day
-        mean_rate_corrected = mean_rate + ((n_days - n_days_int) if n_days_int > 1 else 0) * mean_rate / n_days_int
         line = TimeseriesLine(data=mean_rate_corrected, domain=domain)
         return line
