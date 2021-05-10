@@ -17,7 +17,7 @@ class RealisationHPendIntegratedIndicator(RealisationHPendIndicator):
             record = LineRecord(
                 record=line,
                 collection="Indicators",
-                graph_name=f"{line.name}_integrated",
+                graph_name=self.indicator_name,
                 phase="oplever",
                 client=self.client,
                 project=line.project,

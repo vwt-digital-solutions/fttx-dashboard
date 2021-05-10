@@ -235,7 +235,7 @@ def fetch_data_for_indicator_boxes(project, client):
             "RealisationHPcivielIndicator",
             "InternalTargetHPcivielLine",
         ],
-        f"HC / HPend w {str(this_week)}": [
+        "HC / HPend": [
             "RealisationHCIndicatorIntegrated",
             "RealisationHPendIndicatorIntegrated",
         ],
@@ -255,7 +255,7 @@ def fetch_data_for_indicator_boxes(project, client):
                 which_week = "current_week"
             else:
                 which_week = "last_week"
-            if title == f"Ratio HC / HPend week {str(this_week)}":
+            if title == "HC / HPend":
                 which_week = "max_value_on_weekly_basis"
             values.append(
                 collection.get_week_value_from_document(
@@ -268,7 +268,7 @@ def fetch_data_for_indicator_boxes(project, client):
             )
 
         # exception for calculation of ratio's
-        if title == f"Ratio HC / HPend week {str(this_week)}":
+        if title == "HC / HPend":
             if values[1] != 0:
                 values[0] = round(values[0] / values[1], 2)
             values[1] = 0.9
