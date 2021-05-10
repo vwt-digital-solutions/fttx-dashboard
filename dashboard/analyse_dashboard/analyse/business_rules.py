@@ -7,8 +7,6 @@ a DataFrame or Series.
 
 """
 
-from datetime import timedelta
-
 import pandas as pd
 
 opleverstatussen = [
@@ -537,8 +535,6 @@ def leverbetrouwbaar(df: pd.DataFrame):
     )
     df = df[mask]
 
-    return (
-        (df.opleverdatum.notna())
-        & (df.opleverdatum == df.hasdatum)
-        & (df.hasdatum_change_date < (df.opleverdatum - timedelta(days=3)))
+    return (df.opleverdatum == df.hasdatum) & (
+        df.hasdatum_change_date < (df.opleverdatum - pd.Timedelta(days=2))
     )
