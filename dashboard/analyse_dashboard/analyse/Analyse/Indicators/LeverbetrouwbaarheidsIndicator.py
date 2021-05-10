@@ -33,10 +33,14 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         """
         df = copy.deepcopy(self.df)
 
+        # Select houses that are connected last two weeks, longer time periods
+        # are not reliable enough due to failures of the robot transfering data from 050 to gcp
+        df = df[df.opleverdatum >= (pd.Timestamp.today() - pd.Timedelta(days=14))]
+
         if project:
             df = df[df.project == project]
 
-        return br.leverbetrouwbaar(df)
+        return [df[br.leverbetrouwbaar(df)], df[br.opgeleverd(df)]]
 
     def perform(self):
         """
@@ -46,13 +50,13 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         """
         records = RecordList()
 
-        mask = self.apply_business_rules()
-        aggregate_line = self.create_line(mask.sum() / len(mask))
+        list_df = self.apply_business_rules()
+        aggregate_line = self.create_line(len(list_df[0]) / len(list_df[1]))
         records.append(self.to_record("client_aggregate", aggregate_line))
 
         for project in set(self.df.project):
-            mask = self.apply_business_rules()
-            project_line = self.create_line(mask.sum() / len(mask))
+            list_df = self.apply_business_rules()
+            project_line = self.create_line(len(list_df[0]) / len(list_df[1]))
             records.append(self.to_record(project, project_line))
 
         return records

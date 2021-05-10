@@ -528,13 +528,10 @@ def leverbetrouwbaar(df: pd.DataFrame):
         pd.Series: A series of truth values
     """
 
-    # Select houses that are connected last two weeks, longer time periods
-    # are not reliable enough due to failures of the robot transfering data from 050 to gcp
-    mask = (df.opleverdatum >= (pd.Timestamp.today() - pd.Timedelta(days=14))) & (
-        df.opleverdatum.notna()
+    mask = (
+        (df.opleverdatum == df.hasdatum)
+        & (df.hasdatum_change_date < (df.opleverdatum - pd.Timedelta(days=2)))
+        & (df.opleverdatum.notna())
     )
-    df = df[mask]
 
-    return (df.opleverdatum == df.hasdatum) & (
-        df.hasdatum_change_date < (df.opleverdatum - pd.Timedelta(days=2))
-    )
+    return mask
