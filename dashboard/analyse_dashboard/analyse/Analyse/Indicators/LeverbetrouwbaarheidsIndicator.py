@@ -51,12 +51,14 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         records = RecordList()
 
         list_df = self.apply_business_rules()
-        aggregate_line = self.create_line(len(list_df[0]) / len(list_df[1]))
+        ratio = len(list_df[0]) / len(list_df[1]) if len(list_df[1]) != 0 else 0
+        aggregate_line = self.create_line(ratio)
         records.append(self.to_record("client_aggregate", aggregate_line))
 
         for project in set(self.df.project):
             list_df = self.apply_business_rules(project=project)
-            project_line = self.create_line(len(list_df[0]) / len(list_df[1]))
+            ratio = len(list_df[0]) / len(list_df[1]) if len(list_df[1]) != 0 else 0
+            project_line = self.create_line(ratio)
             records.append(self.to_record(project, project_line))
 
         return records
