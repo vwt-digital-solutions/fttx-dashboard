@@ -6,13 +6,13 @@ import sys
 from builtins import input
 
 import config
-from Analyse.KPNIndicatorAnalysis import (DFNIndicatorAnalyse,
+from Analyse.KPNIndicatorAnalysis import (DFNIndicatorETL,
                                           DFNIndicatorLocalETL,
                                           DFNIndicatorTestETL,
-                                          KPNIndicatorAnalyse,
+                                          KPNIndicatorETL,
                                           KPNIndicatorLocalETL,
                                           KPNIndicatorTestETL,
-                                          TmobileIndicatorAnalyse,
+                                          TmobileIndicatorETL,
                                           TmobileIndicatorLocalETL,
                                           TmobileIndicatorTestETL)
 
@@ -56,17 +56,17 @@ def get_etl_process(client, etl_type="local"):
     etl_processes = {
         "kpn": {
             "local": KPNIndicatorLocalETL,
-            "write_to_dev": KPNIndicatorAnalyse,
+            "write_to_dev": KPNIndicatorETL,
             "reload": KPNIndicatorTestETL,
         },
         "tmobile": {
             "local": TmobileIndicatorLocalETL,
-            "write_to_dev": TmobileIndicatorAnalyse,
+            "write_to_dev": TmobileIndicatorETL,
             "reload": TmobileIndicatorTestETL,
         },
         "dfn": {
             "local": DFNIndicatorLocalETL,
-            "write_to_dev": DFNIndicatorAnalyse,
+            "write_to_dev": DFNIndicatorETL,
             "reload": DFNIndicatorTestETL,
         },
     }
