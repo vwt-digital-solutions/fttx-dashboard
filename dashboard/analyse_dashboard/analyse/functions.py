@@ -29,6 +29,7 @@ def round_(data):
         else:
             data = int(data)
     elif isinstance(data, pd.Series):
+        data = data.fillna(0)
         if (data.max() >= -1) & (data.max() <= 1):
             data = (data * 10 ** 2).astype(int) / 10 ** 2
         else:
