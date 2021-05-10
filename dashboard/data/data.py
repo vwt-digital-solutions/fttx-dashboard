@@ -65,6 +65,10 @@ def fetch_data_for_overview_boxes(client, year):
             "RealisationHPendOnTimeIndicator",
             "RealisationHPendTmobileIndicator",
         ],
+        "Leverbetrouwbaarheid": [
+            "linenotavailable",
+            "leverbetrouwbaarheid",
+        ],
     }
 
     parameters_global_info_list = []
@@ -235,6 +239,10 @@ def fetch_data_for_indicator_boxes(project, client):
             "RealisationHCIndicatorIntegrated",
             "RealisationHPendIndicatorIntegrated",
         ],
+        "Leverbetrouwbaarheid": [
+            "leverbetrouwbaarheid",
+            "n.v.t.",
+        ],
     }
 
     info_list = []
@@ -263,6 +271,10 @@ def fetch_data_for_indicator_boxes(project, client):
         if title == f"Ratio HC / HPend week {str(this_week)}":
             if values[1] != 0:
                 values[0] = round(values[0] / values[1], 2)
+            values[1] = 0.9
+            gauge_type = "speedo"
+
+        if title == "Leverbetrouwbaarheid":
             values[1] = 0.9
             gauge_type = "speedo"
 
@@ -333,6 +345,11 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
             " ",
             "werkvoorraad-has",
             "WerkvoorraadHPendIndicator",
+        ],
+        "Leverbetrouwbaarheid": [
+            " ",
+            "leverbetrouwbaarheid",
+            "leverbetrouwbaarheid",
         ],
     }
 

@@ -7,8 +7,9 @@ a DataFrame or Series.
 
 """
 
-import pandas as pd
 from datetime import timedelta
+
+import pandas as pd
 
 opleverstatussen = [
     "0",
@@ -30,14 +31,16 @@ opleverstatussen = [
     "35",
     "50",
     "90",
-    "91"
+    "91",
 ]
 """
 opleverstatussen is a list that contains all possible opleverstatussen.
 """
 
 
-def make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series: pd.Series, time_delta_days: int = 0) -> pd.Series:
+def make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+    series: pd.Series, time_delta_days: int = 0
+) -> pd.Series:
     """
     A function that creates a mask for the supplied series that lists which dates are before today's date minus the
     time_delta_days.
@@ -52,9 +55,10 @@ def make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series: pd.Series
     Returns:
          pd.Series: A series of truth values.
     """
-    time_point: pd.Timestamp = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    return (~series.isna()  # date must be known
-            & (series <= time_point))  # the date must be before or on the day of the delta.
+    time_point: pd.Timestamp = pd.Timestamp.today() - pd.Timedelta(days=time_delta_days)
+    return ~series.isna() & (  # date must be known
+        series <= time_point
+    )  # the date must be before or on the day of the delta.
 
 
 def geschouwed(df, time_delta_days=0):
@@ -69,7 +73,9 @@ def geschouwed(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.schouwdatum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+        df.schouwdatum, time_delta_days=time_delta_days
+    )
 
 
 def ordered(df, time_delta_days=0):
@@ -83,7 +89,9 @@ def ordered(df, time_delta_days=0):
     Returns:
              pd.Series: A series of truth values.
     """
-    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.toestemming_datum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+        df.toestemming_datum, time_delta_days=time_delta_days
+    )
 
 
 def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
@@ -99,8 +107,9 @@ def actieve_orders_tmobile(df: pd.DataFrame) -> pd.Series:
          pd.Series: A series of truth values.
 
     """
-    return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
-            & (df.type.isin(['AANLEG', 'Aanleg'])))
+    return (~df.status.isin(["CANCELLED", "TO_BE_CANCELLED"])) & (
+        df.type.isin(["AANLEG", "Aanleg"])
+    )
 
 
 def open_order_tmobile(df: pd.DataFrame):
@@ -114,42 +123,45 @@ def open_order_tmobile(df: pd.DataFrame):
     Returns: pd.Series: A series of truth values.
 
     """
-    return ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
-            & (df.type.isin(['AANLEG', 'Aanleg'])))
+    return (~df.status.isin(["CANCELLED", "TO_BE_CANCELLED", "CLOSED"])) & (
+        df.type.isin(["AANLEG", "Aanleg"])
+    )
 
 
 def add_time_window(df, mask, time_window, time_delta_days=0):
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
-    if time_window == 'on time':
-        mask = (mask
-                & ((time_point - df['creation']).dt.days <= 56))
-    elif time_window == 'limited':
-        mask = (mask
-                & (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
-    elif time_window == 'late':
-        mask = (mask
-                & ((time_point - df['creation']).dt.days > 84))
+    time_point = pd.Timestamp.today() - pd.Timedelta(days=time_delta_days)
+    if time_window == "on time":
+        mask = mask & ((time_point - df["creation"]).dt.days <= 56)
+    elif time_window == "limited":
+        mask = mask & (
+            ((time_point - df["creation"]).dt.days > 56)
+            & ((time_point - df["creation"]).dt.days <= 84)
+        )
+    elif time_window == "late":
+        mask = mask & ((time_point - df["creation"]).dt.days > 84)
     return mask
 
 
 def hc_patch_only_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
-    mask = (open_order_tmobile(df)
-            & (df.plan_type == 'Zonder klantafspraak'))
+    mask = open_order_tmobile(df) & (df.plan_type == "Zonder klantafspraak")
     if time_window:
         mask = add_time_window(df, mask, time_window, time_delta_days)
     return mask
 
 
 def hc_aanleg_tmobile(df: pd.DataFrame, time_window=None, time_delta_days=0):
-    mask = (open_order_tmobile(df)
-            & (df.plan_type != 'Zonder klantafspraak'))
+    mask = open_order_tmobile(df) & (df.plan_type != "Zonder klantafspraak")
     if time_window:
         mask = add_time_window(df, mask, time_window, time_delta_days)
     return mask
 
 
-def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
-                               time_window: str = None, order_type: str = None) -> pd.Series:
+def openstaande_orders_tmobile(
+    df: pd.DataFrame,
+    time_delta_days: int = 0,
+    time_window: str = None,
+    order_type: str = None,
+) -> pd.Series:
     """
     Used to calculate the openstaande orders for tmobile, based on the business rules: \n
     -   Is the df row status not equal to CANCELLED, TO_BE_CANCELLED or CLOSED?
@@ -167,27 +179,26 @@ def openstaande_orders_tmobile(df: pd.DataFrame, time_delta_days: int = 0,
          pd.Series: A series of truth values.
 
     """
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    time_point = pd.Timestamp.today() - pd.Timedelta(days=time_delta_days)
 
-    mask = ((~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED', 'CLOSED']))
-            & (df.type.isin(['AANLEG', 'Aanleg'])))
+    mask = (~df.status.isin(["CANCELLED", "TO_BE_CANCELLED", "CLOSED"])) & (
+        df.type.isin(["AANLEG", "Aanleg"])
+    )
 
-    if order_type == 'patch only':
-        mask = (mask
-                & (df.plan_type == 'Zonder klantafspraak'))
-    elif order_type == 'hc aanleg':
-        mask = (mask
-                & (df.plan_type != 'Zonder klantafspraak'))
+    if order_type == "patch only":
+        mask = mask & (df.plan_type == "Zonder klantafspraak")
+    elif order_type == "hc aanleg":
+        mask = mask & (df.plan_type != "Zonder klantafspraak")
 
-    if time_window == 'on time':
-        mask = (mask
-                & ((time_point - df['creation']).dt.days <= 56))
-    elif time_window == 'limited':
-        mask = (mask
-                & (((time_point - df['creation']).dt.days > 56) & ((time_point - df['creation']).dt.days <= 84)))
-    elif time_window == 'late':
-        mask = (mask
-                & ((time_point - df['creation']).dt.days > 84))
+    if time_window == "on time":
+        mask = mask & ((time_point - df["creation"]).dt.days <= 56)
+    elif time_window == "limited":
+        mask = mask & (
+            ((time_point - df["creation"]).dt.days > 56)
+            & ((time_point - df["creation"]).dt.days <= 84)
+        )
+    elif time_window == "late":
+        mask = mask & ((time_point - df["creation"]).dt.days > 84)
 
     return mask
 
@@ -212,12 +223,10 @@ def aangesloten_orders_tmobile(df: pd.DataFrame, time_window: str = None) -> pd.
 
     """
 
-    mask = ((df.status == 'CLOSED')
-            & (df.type.isin(['AANLEG', 'Aanleg'])))
+    mask = (df.status == "CLOSED") & (df.type.isin(["AANLEG", "Aanleg"]))
 
-    if time_window == 'on time':
-        mask = (mask
-                & ((df['opleverdatum'] - df['creation']).dt.days <= 84))
+    if time_window == "on time":
+        mask = mask & ((df["opleverdatum"] - df["creation"]).dt.days <= 84)
 
     return mask
 
@@ -232,7 +241,7 @@ def toestemming_bekend(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return ~df['toestemming'].isna()
+    return ~df["toestemming"].isna()
 
 
 def laswerk_ap_gereed(df):
@@ -245,7 +254,7 @@ def laswerk_ap_gereed(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['laswerkapgereed'] == '1'
+    return df["laswerkapgereed"] == "1"
 
 
 def laswerk_ap_niet_gereed(df):
@@ -258,7 +267,7 @@ def laswerk_ap_niet_gereed(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['laswerkapgereed'] != '1'
+    return df["laswerkapgereed"] != "1"
 
 
 def laswerk_dp_gereed(df):
@@ -271,7 +280,7 @@ def laswerk_dp_gereed(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['laswerkdpgereed'] == '1'
+    return df["laswerkdpgereed"] == "1"
 
 
 def laswerk_dp_niet_gereed(df):
@@ -284,7 +293,7 @@ def laswerk_dp_niet_gereed(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['laswerkdpgereed'] != '1'
+    return df["laswerkdpgereed"] != "1"
 
 
 def bis_opgeleverd(df):
@@ -297,7 +306,7 @@ def bis_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return ~df['opleverstatus'].isin(['0', '90', '99'])
+    return ~df["opleverstatus"].isin(["0", "90", "99"])
 
 
 def bis_werkvoorraad(df):
@@ -310,7 +319,7 @@ def bis_werkvoorraad(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'].isin(['0'])
+    return df["opleverstatus"].isin(["0"])
 
 
 def bis_niet_opgeleverd(df):
@@ -323,7 +332,7 @@ def bis_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df['opleverstatus'].isin(['0', '90', '99'])
+    return df["opleverstatus"].isin(["0", "90", "99"])
 
 
 def hc_opgeleverd(df, time_delta_days=0):
@@ -336,9 +345,10 @@ def hc_opgeleverd(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series=df.opleverdatum,
-                                                                      time_delta_days=time_delta_days)
-    mask = mask & (df.opleverstatus == '2')
+    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+        series=df.opleverdatum, time_delta_days=time_delta_days
+    )
+    mask = mask & (df.opleverstatus == "2")
     return mask
 
 
@@ -354,9 +364,10 @@ def hp_opgeleverd(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(series=df.opleverdatum,
-                                                                      time_delta_days=time_delta_days)
-    mask = (mask & (df['opleverstatus'] != '2'))
+    mask = make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+        series=df.opleverdatum, time_delta_days=time_delta_days
+    )
+    mask = mask & (df["opleverstatus"] != "2")
     return mask
 
 
@@ -371,7 +382,9 @@ def has_ingeplanned(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    mask = ((df['opleverdatum'].isna() & ~df['hasdatum'].isna()) | (df['opleverdatum'] > pd.Timestamp.now()))
+    mask = (df["opleverdatum"].isna() & ~df["hasdatum"].isna()) | (
+        df["opleverdatum"] > pd.Timestamp.now()
+    )
     return mask
 
 
@@ -386,9 +399,11 @@ def has_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (df['opleverdatum'].isna()
-            # TODO is the hasdatum not the planned date? If so, 'has' can be 'niet opgeleverd' but still be planned.
-            & df['hasdatum'].isna())
+    return (
+        df["opleverdatum"].isna()
+        # TODO is the hasdatum not the planned date? If so, 'has' can be 'niet opgeleverd' but still be planned.
+        & df["hasdatum"].isna()
+    )
 
 
 def has_gepland(df):
@@ -401,7 +416,7 @@ def has_gepland(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return (~df['hasdatum'].isna())
+    return ~df["hasdatum"].isna()
 
 
 def hpend(df, time_delta_days=0):
@@ -414,7 +429,9 @@ def hpend(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.opleverdatum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+        df.opleverdatum, time_delta_days=time_delta_days
+    )
 
 
 def opgeleverd(df, time_delta_days=0):
@@ -429,7 +446,9 @@ def opgeleverd(df, time_delta_days=0):
     Returns:
          pd.Series: A series of truth values.
     """
-    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(df.opleverdatum, time_delta_days=time_delta_days)
+    return make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
+        df.opleverdatum, time_delta_days=time_delta_days
+    )
 
 
 def has_werkvoorraad(df, time_delta_days=0):
@@ -450,12 +469,12 @@ def has_werkvoorraad(df, time_delta_days=0):
     Returns:
         pd.Series: A series of truth values.
     """
-    time_point = (pd.Timestamp.today() - pd.Timedelta(days=time_delta_days))
+    time_point = pd.Timestamp.today() - pd.Timedelta(days=time_delta_days)
     return (
         (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
         & (df.opleverdatum.isna() | (df.opleverdatum > time_point))
-        & (df.toestemming == 'Ja')
-        & (~df.opleverstatus.isin(['0', '90', '99']))
+        & (df.toestemming == "Ja")
+        & (~df.opleverstatus.isin(["0", "90", "99"]))
     )
 
 
@@ -473,10 +492,9 @@ def hpend_year(df, year=None):
     """
     if not year:
         year = str(pd.Timestamp.now().year)
-    start_year = pd.to_datetime(year + '-01-01')
-    end_year = pd.to_datetime(year + '-12-31')
-    return df.opleverdatum.apply(
-        lambda x: (x >= start_year) and (x <= end_year))
+    start_year = pd.to_datetime(year + "-01-01")
+    end_year = pd.to_datetime(year + "-12-31")
+    return df.opleverdatum.apply(lambda x: (x >= start_year) and (x <= end_year))
 
 
 def target_tmobile(df):
@@ -494,8 +512,8 @@ def target_tmobile(df):
     """
     return (
         (~df.creation.isna())
-        & (~df.status.isin(['CANCELLED', 'TO_BE_CANCELLED']))
-        & (df.type.isin(['AANLEG', 'Aanleg']))
+        & (~df.status.isin(["CANCELLED", "TO_BE_CANCELLED"]))
+        & (df.type.isin(["AANLEG", "Aanleg"]))
     )
 
 
@@ -511,6 +529,14 @@ def leverbetrouwbaar(df: pd.DataFrame):
     Returns:
         pd.Series: A series of truth values
     """
+
+    # Select houses that are connected last two weeks, longer time periods
+    # are not reliable enough due to failures of the robot transfering data from 050 to gcp
+    mask = (df.opleverdatum >= (pd.Timestamp.today() - pd.Timedelta(days=14))) & (
+        df.opleverdatum.notna()
+    )
+    df = df[mask]
+
     return (
         (df.opleverdatum.notna())
         & (df.opleverdatum == df.hasdatum)
