@@ -1,8 +1,8 @@
 import config
 from Analyse.Capacity_analysis.Analysis_capacity import CapacityETL
 from Analyse.Finance_ETL import FinanceETL
-from Analyse.KPNDFN import KPNETL, DFNETL
-from Analyse.TMobile import TMobileETL
+from Analyse.KPNIndicatorAnalysis import TmobileIndicatorETL, DFNIndicatorETL, KPNIndicatorETL
+from Analyse.ProjectInfoETL import ProjectInfoETL
 from functions import set_date_update
 from datetime import datetime, timedelta
 from google.cloud import firestore_v1
@@ -96,8 +96,10 @@ def finance_analyse_kpn(request):
 
 
 def analyseKPN(client_name):
-    kpn = KPNETL(client=client_name, config=config.client_config[client_name])
+    kpn = KPNIndicatorETL(client=client_name, config=config.client_config[client_name])
     kpn.perform()
+    projectinfo_kpn = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
+    projectinfo_kpn.perform()
 
 
 def analyseCapacity(client_name):
@@ -111,22 +113,26 @@ def analyseFinance(client_name):
 
 
 def analyseDFN(client_name):
-    dfn = DFNETL(client=client_name, config=config.client_config[client_name])
+    dfn = DFNIndicatorETL(client=client_name, config=config.client_config[client_name])
     dfn.perform()
+    projectinfo_dfn = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
+    projectinfo_dfn.perform()
 
 
 def analyseTmobile(client_name):
-    tmobile = TMobileETL(client=client_name, config=config.client_config[client_name])
+    tmobile = TmobileIndicatorETL(client=client_name, config=config.client_config[client_name])
     tmobile.perform()
+    projectinfo_tmobile = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
+    projectinfo_tmobile.perform()
 
 
-def str_to_datetime(str):
-    return pd.to_datetime(str, errors='coerce', infer_datetime_format=True)
+def str_to_datetime(str_to_parse):
+    return pd.to_datetime(str_to_parse, errors='coerce', infer_datetime_format=True)
 
 
 def get_update_dates(client):
-    check = ((db.collection('Graphs').document('update_date_fiberconnect').get().exists)
-             & (db.collection('Graphs').document(f'update_date_{client}').get().exists))
+    check = (db.collection('Graphs').document('update_date_fiberconnect').get().exists
+             & db.collection('Graphs').document(f'update_date_{client}').get().exists)
     if not check:
         return True
     latest_consume = str_to_datetime(
