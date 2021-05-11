@@ -200,22 +200,15 @@ class PhaseCapacity:
         Args:
             line (object)
         """
-        if toggles.transform_line_record:
-            if line.name == 'work_stock_amount_indicator':
-                self.record_list.append(LineRecord(record=line,
-                                                   collection='Lines',
-                                                   graph_name=f'{line.name}',
-                                                   phase=self.phase_data['name'],
-                                                   client=self.client,
-                                                   project=self.project,
-                                                   resample_method='mean'))
-            else:
-                self.record_list.append(LineRecord(record=line,
-                                                   collection='Lines',
-                                                   graph_name=f'{line.name}',
-                                                   phase=self.phase_data['name'],
-                                                   client=self.client,
-                                                   project=self.project))
+
+        if line.name == 'work_stock_amount_indicator':
+            self.record_list.append(LineRecord(record=line,
+                                               collection='Lines',
+                                               graph_name=f'{line.name}',
+                                               phase=self.phase_data['name'],
+                                               client=self.client,
+                                               project=self.project,
+                                               resample_method='mean'))
         else:
             self.record_list.append(LineRecord(record=line,
                                                collection='Lines',
@@ -224,8 +217,8 @@ class PhaseCapacity:
                                                client=self.client,
                                                project=self.project))
 
-    # TODO: Documentation by Casper van Houten
     def get_record(self):
+        """Method to show records"""
         return self.record_list
 
     @staticmethod
