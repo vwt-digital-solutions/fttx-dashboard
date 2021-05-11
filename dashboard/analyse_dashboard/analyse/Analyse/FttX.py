@@ -77,7 +77,7 @@ class FttXExtract(Extract):
 
         Sets datasets on self.extracted_data.
         """
-        logger.info("Extracting the Projects collection")
+        logger.info("Extracting the aansluitingen")
         self._extract_from_sql()
         self._append_history()
         self.extract_project_info()

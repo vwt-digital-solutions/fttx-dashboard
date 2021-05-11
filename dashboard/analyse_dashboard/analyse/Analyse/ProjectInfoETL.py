@@ -20,7 +20,7 @@ class ProjectInfoExtract(FttXExtract):
         self.client_name = self.config.get("name")
 
     def extract(self):
-        logger.info("Extracting the Projects collection")
+        logger.info("Extracting the aansluitingen")
         self._extract_from_sql()
         logger.info("Extracting mappings of bnumber vs projectname")
         self.extracted_data.map_bnumber_vs_projectname_sql = (
