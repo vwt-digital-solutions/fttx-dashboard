@@ -2,11 +2,9 @@ import pandas as pd
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
-from app import app, toggles
-# update value dropdown given selection in scatter chart
+from app import app
 from data import collection
 from data.data import fetch_data_for_indicator_boxes
-from layout.components.indicator import indicator
 from layout.components.list_of_boxes import project_indicator_list
 
 client = "dfn"
@@ -24,35 +22,9 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    if toggles.transform_frontend_newindicator:
-        indicator_info = project_indicator_list(
-            fetch_data_for_indicator_boxes(project=dropdown_selection, client=client)
-        )
-    else:
-        indicator_types = [
-            "lastweek_realisatie",
-            "weekrealisatie",
-            "last_week_bis_realisatie",
-            "week_bis_realisatie",
-            "weekHCHPend",
-        ]
-        indicators = collection.get_document(
-            collection="Data",
-            graph_name="project_indicators",
-            project=dropdown_selection,
-            client=client,
-        )
-        indicator_info = [
-            indicator(
-                value=indicators[el]["counts"],
-                previous_value=indicators[el].get("counts_prev"),
-                title=indicators[el]["title"],
-                sub_title=indicators[el]["subtitle"],
-                font_color=indicators[el]["font_color"],
-                gauge=indicators[el].get("gauge"),
-            )
-            for el in indicator_types
-        ]
+    indicator_info = project_indicator_list(
+        fetch_data_for_indicator_boxes(project=dropdown_selection, client=client)
+    )
 
     return [indicator_info]
 

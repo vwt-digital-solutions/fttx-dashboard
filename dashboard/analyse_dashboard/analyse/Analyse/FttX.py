@@ -81,8 +81,6 @@ class FttXExtract(Extract):
         self._extract_from_sql()
         self._append_history()
         self.extract_project_info()
-        if toggles.leverbetrouwbaarheid:
-            self._extract_leverbetrouwbaarheid_dataframe()
 
     # TODO: Documentation by Erik van Egmond
     def _extract_from_sql(self):
@@ -286,38 +284,6 @@ GROUP BY `sleutel`
             .replace({999: None})
             .to_dict(orient="index")
         )
-
-    def _extract_leverbetrouwbaarheid_dataframe(self):
-        """
-        This function extracts a pd.DataFrame from the transition log (fc_transitie_log) and the aansluitingen dataset
-        (fc_aansluitingen) that contains houses of which: \n
-        -   the hasdatum is equal to the opleverdatum.
-        -   the hasdatum has been changed to the final hasdatum.
-        -   the opleverdatum starts at 2021-01-01, to filter out a bunch of keys that were changed for the first time.
-        This DataFrame can then be used to calculate the leverbetrouwbaarheid.
-        """
-        logger.info("Extracting dataframe for leverbetrouwbaarheid")
-        sql = text(
-            """
-select  fctl.date as last_change_in_hasdatum,
-        fctl.to_value as hasdatum_changed_to,
-        fcas.hasdatum, fcas.opleverdatum, fcas.project
-from fc_transitie_log as fctl
-inner join fc_aansluitingen as fcas on
-fctl.key = 'hasdatum' and
-fctl.project in :projects and
-fctl.sleutel = fcas.sleutel and
-fctl.to_value = fcas.hasdatum and fcas.opleverdatum >= '2021-01-01'
-"""
-        ).bindparams(
-            bindparam("projects", expanding=True)
-        )  # nosec
-        df = pd.read_sql(
-            sql, get_database_engine(), params={"projects": tuple(self.projects)}
-        )
-        projects_category = pd.CategoricalDtype(categories=self.projects)
-        df["project"] = df.project.astype(projects_category)
-        self.extracted_data.leverbetrouwbaarheid = df
 
 
 # TODO: Documentation by Erik van Egmond
@@ -555,11 +521,7 @@ class FttXAnalyse(FttXBase):
         self._make_records_for_dashboard_values()
         self._make_records_of_client_targets_for_dashboard_values()
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
-        if toggles.leverbetrouwbaarheid:
-            self._make_records_of_ratios_for_dashboard_values()
-        else:
-            self._make_records_ratio_hc_hpend_for_dashboard_values()
-            self._make_records_ratio_under_8weeks_for_dashboard_values()
+        self._make_records_of_ratios_for_dashboard_values()
         self._make_intermediate_results_ratios_project_specific_values()
         self._calculate_current_werkvoorraad()
         self._reden_na()
