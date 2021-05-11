@@ -42,12 +42,7 @@ def fetch_data_for_overview_boxes(client, year):
             "InternalTargetHPendLine",
         ],
         "Client Target": ["ClientTarget", "ClientTarget"],
-        "Realisatie": [
-            "RealisationHPcivielIndicator",
-            "RealisationHPendIndicator"
-            if client != "tmobile"
-            else "RealisationHPendTmobileIndicator",
-        ],
+        "Realisatie": ["RealisationHPcivielIndicator", "RealisationHPendIndicator"],
         "Planning": [
             "PlanningHPcivielIndicator",
             "PlanningHPendIndicator",
@@ -62,7 +57,7 @@ def fetch_data_for_overview_boxes(client, year):
         "Ratio <12 weken": [
             "linenotavailable",
             "RealisationHPendOnTimeIndicator",
-            "RealisationHPendTmobileIndicator",
+            "RealisationHPendIndicator",
         ],
         "Leverbetrouwbaarheid": [
             "linenotavailable",
@@ -106,19 +101,17 @@ def fetch_data_for_overview_boxes(client, year):
 
 def fetch_data_for_month_overview(year, client):
     lines = [
-        "InternalTargetHPendLine",
-        "RealisationHPendIndicator"
-        if client != "tmobile"
-        else "RealisationHPendTmobileIndicator",
-        "PlanningHPendIndicator",
-        "PrognoseHPendIndicator",
+        ["target", "InternalTargetHPendLine"],
+        ["realisatie", "RealisationHPendIndicator"],
+        ["planning", "PlanningHPendIndicator"],
+        ["prognose", "PrognoseHPendIndicator"],
     ]
     df = pd.DataFrame(index=pd.date_range(start=year, freq="MS", periods=12))
     for line in lines:
-        df[line] = collection.get_month_series_from_document(
+        df[line[0]] = collection.get_month_series_from_document(
             collection="Indicators",
             year=year,
-            line=line,
+            line=line[1],
             client=client,
             project="client_aggregate",
         )
@@ -128,19 +121,17 @@ def fetch_data_for_month_overview(year, client):
 
 def fetch_data_for_week_overview(year, client):
     lines = [
-        "InternalTargetHPendLine",
-        "RealisationHPendIndicator"
-        if client != "tmobile"
-        else "RealisationHPendTmobileIndicator",
-        "PlanningHPendIndicator",
-        "PrognoseHPendIndicator",
+        ["target", "InternalTargetHPendLine"],
+        ["realisatie", "RealisationHPendIndicator"],
+        ["planning", "PlanningHPendIndicator"],
+        ["prognose", "PrognoseHPendIndicator"],
     ]
     df = pd.DataFrame(index=pd.date_range(start=year, freq="W-MON", periods=52))
     for line in lines:
-        df[line] = collection.get_week_series_from_document(
+        df[line[0]] = collection.get_week_series_from_document(
             collection="Indicators",
             year=year,
-            line=line,
+            line=line[1],
             client=client,
             project="client_aggregate",
         )
@@ -284,17 +275,6 @@ def fetch_data_for_indicator_boxes(project, client):
     return info_list
 
 
-# def fetch_data_for_redenna_project(project):
-#     redenna_project = collection.get_redenna_overview_from_document(
-#         collection="Indicators",
-#         date=date,
-#         period=period,
-#         client=client,
-#         project=project,
-#     )
-#     return redenna_project
-
-
 def fetch_data_for_indicator_boxes_tmobile(project, client):
     indicator_types = {
         "Openstaand HC aanleg op tijd": [
@@ -316,7 +296,7 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
             " ",
             "ratio-12-weeks",
             "RealisationHPendOnTimeIndicatorIntegrated",
-            "RealisationHPendIntegratedTmobileIndicator",
+            "RealisationHPendIndicatorIntegrated",
         ],
         "Openstaand patch only op tijd": [
             "< 8 weken",
@@ -436,31 +416,6 @@ def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: st
     voorspelling_data_dict = {
         key: int(value) for key, value in voorspelling_data_dict.items()
     }
-
-    # The following commented lines are from the old function "has_planning_by", I don't think we need them anymore:
-    #
-    # for tmobile the toestemming_datum is used as outlook
-    # if client == 'tmobile':
-    #     target_data_dict = collection.get_document(collection="Data", graph_name="toestemming",
-    #                                                client=client, year=year, frequency=freq)
-    # if not target_data_dict:
-    #     target_data_dict['count_outlookdatum'] = opgeleverd_data_dict['opleverdatum'].copy()
-    #     for el in target_data_dict['count_outlookdatum']:
-    #         target_data_dict['count_outlookdatum'][el] = 0
-    #     if period == 'month':
-    #         target_data_dict['count_outlookdatum']['2020-11-02'] = 0
-    #         target_data_dict['count_outlookdatum']['2020-12-01'] = 0
-    # # temporary solution until we also have voorspelling data for T-Mobile
-    # if not voorspelling_data_dict:
-    #     voorspelling_data_dict['count_voorspellingdatum'] = opgeleverd_data_dict['opleverdatum'].copy()
-    #     for el in voorspelling_data_dict['count_voorspellingdatum'].keys():
-    #         voorspelling_data_dict['count_voorspellingdatum'][el] = 0
-    #
-    # # temporary solution until we also have planning data for DFN
-    # if client == 'dfn':
-    #     planning_data_dict['count_hasdatum'] = planning_data_dict['count_hasdatum'].copy()
-    #     for el in planning_data_dict['count_hasdatum'].keys():
-    #         planning_data_dict['count_hasdatum'][el] = 0
 
     df = (
         pd.DataFrame(
