@@ -54,6 +54,10 @@ from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
 from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
     RealisationHPendIntegratedIndicator
+from Analyse.Indicators.RealisationHPendIntegratedTmobileIndicator import \
+    RealisationHPendIntegratedTmobileIndicator
+from Analyse.Indicators.RealisationHPendIntegratedTmobileOnTimeIndicator import \
+    RealisationHPendIntegratedTmobileOnTimeIndicator
 from Analyse.Indicators.RealisationHPendTmobileIndicator import \
     RealisationHPendTmobileIndicator
 from Analyse.Indicators.RealisationHPendTmobileOnTimeIndicator import \
@@ -210,6 +214,16 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
         )
         self.records.append(
             RealisationHPendTmobileOnTimeIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHPendIntegratedTmobileOnTimeIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHPendIntegratedTmobileIndicator(
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )

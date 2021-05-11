@@ -15,14 +15,14 @@ class RealisationHPendIntegratedTmobileOnTimeIndicator(
             record = LineRecord(
                 record=line,
                 collection="Indicators",
-                graph_name=f"{line.name}",
+                graph_name=self.indicator_name,
                 phase="oplever",
                 client=self.client,
                 project=line.project,
                 to_be_integrated=True,
-                to_be_normalized=True,
+                to_be_normalized=False,
                 to_be_splitted_by_year=True,
-                percentage=True,
+                percentage=False,
             )
         else:
             record = None

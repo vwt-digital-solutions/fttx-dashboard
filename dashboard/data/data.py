@@ -277,38 +277,43 @@ def fetch_data_for_indicator_boxes(project, client):
 
 def fetch_data_for_indicator_boxes_tmobile(project, client):
     indicator_types = {
-        "Openstaand HC aanleg op tijd": [
+        "HC open op tijd": [
             "< 8 weken",
             "on_time-hc_aanleg",
             "HCopenOnTime",
         ],
-        "Openstaand HC aanleg beperkte tijd": [
+        "HC open laat": [
             "> 8 weken < 12 weken",
             "late-hc_aanleg",
             "HCopenLate",
         ],
-        "Openstaand HC aanleg te laat": [
+        "HC open te laat": [
             "> 12 weken",
             "too_late-hc_aanleg",
             "HCopenTooLate",
         ],
-        "Ratio op tijd gesloten orders": [
+        "Ratio op tijd aangesloten": [
             " ",
             "ratio-12-weeks",
-            "RealisationHPendOnTimeIndicatorIntegrated",
+            "RealisationHPendIntegratedTmobileOnTimeIndicator",
             "RealisationHPendIndicatorIntegrated",
         ],
-        "Openstaand patch only op tijd": [
+        "Leverbetrouwbaarheid": [
+            " ",
+            "leverbetrouwbaarheid",
+            "leverbetrouwbaarheid",
+        ],
+        "Patch only open op tijd": [
             "< 8 weken",
             "on_time-patch_only",
             "PatchOnlyOnTime",
         ],
-        "Openstaand patch only beperkte tijd": [
+        "Patch only open laat": [
             "> 8 weken < 12 weken",
             "late-patch_only",
             "PatchOnlyLate",
         ],
-        "Openstaand patch only te laat": [
+        "Patch only open te laat": [
             "> 12 weken",
             "too_late-patch_only",
             "PatchOnlyTooLate",
@@ -317,11 +322,6 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
             " ",
             "werkvoorraad-has",
             "WerkvoorraadHPendIndicator",
-        ],
-        "Leverbetrouwbaarheid": [
-            " ",
-            "leverbetrouwbaarheid",
-            "leverbetrouwbaarheid",
         ],
     }
 
@@ -339,7 +339,7 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
         )
 
         # exception for calculation of ratio's
-        if title == "Ratio op tijd gesloten orders":
+        if title == "Ratio op tijd aangesloten":
             value2 = collection.get_year_value_from_document(
                 collection="Indicators",
                 year=year,
@@ -347,6 +347,8 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
                 client=client,
                 project=project,
             )
+            print(value)
+            print(value2)
             if (value2 != 0) & (value2 != "n.v.t."):
                 value = round(value / value2 * 100) / 100
 
@@ -358,9 +360,10 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
                 sub_title=subtitle,
                 font_color="black",
                 id=f"indicator-{indicator_types[title][1]}-{client}",
+                gauge_type="standard",
             )
         )
-    return info_list[0:4], info_list[4:]
+    return info_list[0:5], info_list[5:]
 
 
 def fetch_data_for_redenna_modal(project, client, indicator_type, wait_category):
