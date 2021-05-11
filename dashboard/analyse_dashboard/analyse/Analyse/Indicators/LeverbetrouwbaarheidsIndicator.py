@@ -20,13 +20,10 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         super().__init__(**kwargs)
         self.graph_name = "leverbetrouwbaarheid"
 
-    def apply_business_rules(self, project=None):
+    def apply_business_rules(self):
         """
         Business rule to calculate the ratio of houses that is connect in the last two weeks and is 'leverbetrouwbaar'
         according to the business rule.
-
-        Args:
-            project: project to calculate ratio for
 
         Returns: calculated ratio
 
@@ -37,10 +34,11 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         # are not reliable enough due to failures of the robot transfering data from 050 to gcp
         df = df[df.opleverdatum >= (pd.Timestamp.today() - pd.Timedelta(days=14))]
 
-        if project:
-            df = df[df.project == project]
+        # Select houses that are 'opgeleverd'
+        df['opgeleverd'] = br.opgeleverd(df)
+        df['leverbetrouwbaar'] = br.leverbetrouwbaar(df)
 
-        return [df[br.leverbetrouwbaar(df)], df[br.opgeleverd(df)]]
+        return df[['project', 'opgeleverd', 'leverbetrouwbaar']]
 
     def perform(self):
         """
@@ -49,18 +47,17 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         Returns: DictRecord with ratios per project and the overall ratio.
         """
         records = RecordList()
-
-        list_df = self.apply_business_rules()
-        ratio = len(list_df[0]) / len(list_df[1]) if len(list_df[1]) != 0 else 0
+        df = self.apply_business_rules()
+        ratio = df.leverbetrouwbaar.sum() / df.opgeleverd.sum() if df.opgeleverd.sum() != 0 else 0
         aggregate_line = self.create_line(ratio)
         records.append(self.to_record("client_aggregate", aggregate_line))
 
-        for project in set(self.df.project):
-            list_df = self.apply_business_rules(project=project)
-            ratio = len(list_df[0]) / len(list_df[1]) if len(list_df[1]) != 0 else 0
-            project_line = self.create_line(ratio)
+        df = super().aggregate(df, by='project', agg_function={'opgeleverd': 'sum', 'leverbetrouwbaar': 'sum'})
+        df['ratio'] = df['leverbetrouwbaar'] / df['opgeleverd']
+        df['ratio'] = df['ratio'].fillna(0)
+        for project in set(df.index):
+            project_line = self.create_line(df.loc[project, 'ratio'])
             records.append(self.to_record(project, project_line))
-
         return records
 
     @staticmethod
