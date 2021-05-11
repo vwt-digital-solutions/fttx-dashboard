@@ -144,7 +144,8 @@ class ProjectInfoTransform(Transform):
         df = df.loc[df.index.dropna()]
         df = df.loc[df.index != "?"]
         df.index = [str(i)[1:] if "B" in str(i) else str(i) for i in df.index]
-        df = df.where((df != "???") & (df != "?"))
+        # df = df.where((df != "???") & (df != "?"))
+        df = df.replace({"???": np.nan, "?": np.nan})
         df = df[~df.index.duplicated()]
         # setting required data types
         df["FTU0"] = pd.to_datetime(df["FTU0"])
@@ -161,7 +162,7 @@ class ProjectInfoTransform(Transform):
         record = self.extracted_data.record_project_info
         df = pd.DataFrame.from_dict(record["record"], orient="columns")
         # cleaning of data
-        df = df.where(df != "None", None)
+        df = df.replace({"None": None})
         # set required data types
         df["FTU0"] = pd.to_datetime(df["FTU0"])
         df["FTU1"] = pd.to_datetime(df["FTU1"])
