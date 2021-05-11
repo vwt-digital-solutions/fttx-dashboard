@@ -45,7 +45,8 @@ class ProjectInfoExtract(FttXExtract):
         ds.index.name = "bnumber"
         # exception for bnumber 8258, this value is double assigned to Bergen op Zoom oude stad and Bergen op Zoom oost,
         # so inconclusive and therefore deleted from list
-        ds.drop(index="8258", inplace=True)
+        if "8258" in ds.index:
+            ds.drop(index="8258", inplace=True)
         return ds
 
     def _get_project_info_excel(self):
@@ -175,7 +176,6 @@ class ProjectInfoTransform(Transform):
 
     def update_project_info(self, df, df_newinfo, map_bnumber_vs_projectname):
         for bnumber in df_newinfo.index:
-            print(bnumber)
             df.loc[map_bnumber_vs_projectname.loc[bnumber].project] = df_newinfo.loc[
                 bnumber
             ]

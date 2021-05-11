@@ -115,15 +115,15 @@ def analyseFinance(client_name):
 def analyseDFN(client_name):
     dfn = DFNIndicatorETL(client=client_name, config=config.client_config[client_name])
     dfn.perform()
-    projectinfo_dfn = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
-    projectinfo_dfn.perform()
+    # projectinfo_dfn = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
+    # projectinfo_dfn.perform()
 
 
 def analyseTmobile(client_name):
     tmobile = TmobileIndicatorETL(client=client_name, config=config.client_config[client_name])
     tmobile.perform()
-    projectinfo_tmobile = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
-    projectinfo_tmobile.perform()
+    # projectinfo_tmobile = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
+    # projectinfo_tmobile.perform()
 
 
 def str_to_datetime(str_to_parse):
