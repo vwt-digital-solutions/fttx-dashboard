@@ -65,10 +65,14 @@ from Analyse.Indicators.RealisationHPendTmobileOnTimeIndicator import \
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
+from Analyse.Record.DocumentListRecord import DocumentListRecord
 from Analyse.Record.RecordList import RecordList
 from Analyse.TMobile import TMobileTransform
 from functions import create_project_filter
 from Analyse.Record.ListRecord import ListRecord
+import business_rules as br
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger("FttX Indicator Analyse")
 
@@ -95,6 +99,10 @@ class FttXIndicatorAnalyse(FttXBase):
         project_info = self.transformed_data.project_info
 
         self.records.append(self._set_filters(client=self.client))
+
+        self.records.append(self._progress_per_phase_over_time_for_finance())
+
+        self.records.append(self._progress_per_phase_for_finance())
 
         self.records.append(RedenNaIndicator(df=df, client=self.client).perform())
 
@@ -138,6 +146,122 @@ class FttXIndicatorAnalyse(FttXBase):
             graph_name="project_names",
             collection="Data",
             client=client
+        )
+
+    def _progress_per_phase_over_time_for_finance(self):
+        """
+        This function calculates the progress per phase over time base on the specified columns
+        per phase:
+            'opleverdatum': 'has',
+            'schouwdatum': 'schouwen',
+            'laswerkapgereed_datum': 'montage ap',
+            'laswerkdpgereed_datum': 'montage dp',
+            'status_civiel_datum': 'civiel'
+
+        Adds a record consisting of dict per project holding a timeindex with progress per phase
+
+        """
+        logger.info("Calculating project progress per phase over time")
+        document_list = []
+        for project, df in self.transformed_data.df.groupby("project"):
+            if df.empty:
+                continue
+            columns = [
+                "opleverdatum",
+                "schouwdatum",
+                "laswerkapgereed_datum",
+                "laswerkdpgereed_datum",
+                "status_civiel_datum",
+                "laswerkapgereed",
+                "laswerkdpgereed",
+            ]
+            date_df = df.loc[:, columns]
+            mask = br.laswerk_dp_gereed(df) & br.laswerk_ap_gereed(df)
+            date_df["montage"] = np.datetime64("NaT")
+            date_df.loc[mask, "montage"] = date_df[
+                ["laswerkapgereed_datum", "laswerkdpgereed_datum"]
+            ][mask].max(axis=1)
+            date_df = date_df.drop(columns=["laswerkapgereed", "laswerkdpgereed"])
+            progress_over_time: pd.DataFrame = date_df.apply(pd.value_counts).resample(
+                "D"
+            ).sum().cumsum() / len(df)
+            progress_over_time.index = progress_over_time.index.strftime("%Y-%m-%d")
+            progress_over_time.rename(
+                columns={
+                    "opleverdatum": "has",
+                    "schouwdatum": "schouwen",
+                    "laswerkapgereed_datum": "montage ap",
+                    "laswerkdpgereed_datum": "montage dp",
+                    "status_civiel_datum": "civiel",
+                },
+                inplace=True,
+            )
+            record = progress_over_time.to_dict()
+            document_list.append(
+                dict(
+                    client=self.client,
+                    project=project,
+                    data_set="progress_over_time",
+                    record=record,
+                )
+            )
+
+        return DocumentListRecord(
+            record=document_list,
+            client=self.client,
+            collection="Data",
+            graph_name="Progress_over_time",
+            document_key=["client", "project", "data_set"]
+        )
+
+    def _progress_per_phase_for_finance(self):
+        """
+        Calculates the progress per phase for the phases civiel, montage, schouwen, hc, hp and hp end, as well
+        as the totals per project. These results are put in a record and added to the records attribute of the class.
+
+        """
+        logger.info("Calculating project progress per phase")
+
+        progress_df = pd.concat(
+            [
+                self.transformed_data.df.project,
+                ~self.transformed_data.df.sleutel.isna(),
+                self.transformed_data.df.status_civiel.str.contains("1"),
+                br.laswerk_dp_gereed(self.transformed_data.df)
+                & br.laswerk_ap_gereed(self.transformed_data.df),
+                br.geschouwed(self.transformed_data.df),
+                br.hc_opgeleverd(self.transformed_data.df),
+                br.hp_opgeleverd(self.transformed_data.df),
+                br.opgeleverd(self.transformed_data.df),
+            ],
+            axis=1,
+        )
+        progress_df.columns = [
+            "project",
+            "totaal",
+            "civiel",
+            "montage",
+            "schouwen",
+            "hc",
+            "hp",
+            "hpend",
+        ]
+        documents = [
+            dict(
+                project=project, client=self.client, data_set="progress", record=values
+            )
+            for project, values in progress_df.groupby("project")
+            .sum()
+            .to_dict(orient="index")
+            .items()
+        ]
+
+        return DocumentListRecord(
+            record=documents,
+            client=self.client,
+            collection="Data",
+            graph_name="Progress",
+            document_key=["client", "project", "data_set"]
         )
 
 
