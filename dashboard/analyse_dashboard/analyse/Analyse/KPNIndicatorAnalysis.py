@@ -67,6 +67,8 @@ from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
 from Analyse.Record.RecordList import RecordList
 from Analyse.TMobile import TMobileTransform
+from functions import create_project_filter
+from Analyse.Record.ListRecord import ListRecord
 
 logger = logging.getLogger("FttX Indicator Analyse")
 
@@ -91,6 +93,9 @@ class FttXIndicatorAnalyse(FttXBase):
     def analyse(self):
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
+
+        self.records.append(self._set_filters(client=self.client))
+
         self.records.append(RedenNaIndicator(df=df, client=self.client).perform())
 
         self.records.append(
@@ -104,7 +109,9 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
+
         self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
+
         self.records.append(
             PerformanceGraphIndicator(
                 df=df,
@@ -118,6 +125,19 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df,
                 client=self.client,
             ).perform()
+        )
+
+    def _set_filters(self, client):
+        """
+        Sets the set of projects that should be shown in the dashboard as record, so that it can be retrieved from the
+        firestore.
+
+        """
+        return ListRecord(
+            record=create_project_filter(self.transformed_data.df),
+            graph_name="project_names",
+            collection="Data",
+            client=client
         )
 
 

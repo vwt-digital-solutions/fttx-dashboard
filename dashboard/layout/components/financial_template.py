@@ -7,10 +7,8 @@ from layout.components.graphs.no_graph import no_graph
 
 
 def financial_template(client):
-
-    datum_baan = api.get("/Graphs?id=update_date_baan_realisation")[0]["date"][
-        0:-10
-    ].replace("T", " ")
+    datum = api.get("/Graphs?id=update_date_baan_realisation")
+    datum_baan = datum[0]["date"][0:-10].replace("T", " ") if datum else "[Niet beschikbaar]"
     explain_barchart_1 = f"""
     Deze barchart geeft de financiele status weer op {datum_baan}. We zien hier wat er is begroot, hoeveel hiervan
     is gerealiseerd, en wat er operationeel is gedaan."""
