@@ -127,8 +127,11 @@ def get_redenna_overview_from_document(collection, date, period, **filters):
     pie_chart_dict = {}
     for cluster in cluster_types:
         filters["line"] = "RedenNAindicator_" + cluster
-        value = get_document(collection, **filters)[series_type][date]
-        pie_chart_dict[cluster] = value if value else 0
+        doc = get_document(collection, **filters)
+        if date in doc[series_type]:
+            pie_chart_dict[cluster] = doc[series_type][date]
+        else:
+            pie_chart_dict[cluster] = 0
     return {date: pie_chart_dict}
 
 

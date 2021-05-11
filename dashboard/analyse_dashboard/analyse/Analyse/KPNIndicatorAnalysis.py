@@ -18,7 +18,8 @@ from Analyse.Indicators.ActualRedenNAPatchOnlyTooLateIndicator import \
     ActualRedenNAPatchOnlyTooLateIndicator
 from Analyse.Indicators.ActualStatusBarChartIndicator import \
     ActualStatusBarChartIndicator
-from Analyse.Indicators.ClientTargetIndicator import ClientTargetIndicator
+from Analyse.Indicators.ClientTargetKPNIndicator import \
+    ClientTargetKPNIndicator
 from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HCOpen import HCOpen
 from Analyse.Indicators.HCPatchOnly import HCPatchOnly
@@ -225,7 +226,7 @@ class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
             PlanningHPEndIndicatorKPN(df=planning_data, client=self.client).perform()
         )
         self.records.append(
-            ClientTargetIndicator(df=None, client=self.client).perform()
+            ClientTargetKPNIndicator(df=None, client=self.client).perform()
         )
 
 

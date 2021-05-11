@@ -2,7 +2,7 @@ from Analyse.Aggregators.Aggregator import Aggregator
 from Analyse.Indicators.ActualIndicator import ActualIndicator
 
 
-class ClientTargetIndicator(ActualIndicator, Aggregator):
+class ClientTargetKPNIndicator(ActualIndicator, Aggregator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current client target.
