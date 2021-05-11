@@ -5,7 +5,6 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 from app import app
-from data import collection
 from data.data import (fetch_data_for_indicator_boxes_tmobile,
                        fetch_data_for_redenna_modal, fetch_sleutels_figure)
 from layout.components.figure import figure
@@ -32,7 +31,6 @@ client = "tmobile"
     ],
     [
         State("modal-sm", "is_open"),
-        State(f"indicator-data-{client}", "data"),
         State(f"project-dropdown-{client}", "value"),
     ],
 )
@@ -45,16 +43,12 @@ def indicator_modal(
     on_time_clicks_po,
     close_clicks,
     is_open,
-    result,
     project,
 ):
 
     changed_id = [p["prop_id"] for p in dash.callback_context.triggered][0]
 
-    if close_clicks:
-        output = [not is_open, {"data": None, "layout": None}, ""]
-
-    elif "indicator" in changed_id and (
+    if "indicator" in changed_id and (
         too_late_clicks_hc
         or late_clicks_hc
         or on_time_clicks_hc
@@ -87,7 +81,8 @@ def indicator_modal(
             figure,
             f"/dash/order_wait_download?sleutels={sleutels_figure}&project={project}&wait_category={wait_category}",
         ]
-
+    elif close_clicks:
+        output = [not is_open, {"data": None, "layout": None}, ""]
     else:
         output = [is_open, {"data": None, "layout": None}, ""]
 
@@ -97,7 +92,6 @@ def indicator_modal(
 @app.callback(
     [
         Output(f"indicators-{client}", "children"),
-        Output(f"indicator-data-{client}", "data"),
     ],
     [Input(f"project-dropdown-{client}", "value")],
 )
@@ -109,12 +103,8 @@ def update_indicators(dropdown_selection):
         project=dropdown_selection, client=client
     )
     out = [
-        html.Div(
-            children=project_indicator_list(data1), className="container-display"
-        ),
-        html.Div(
-            children=project_indicator_list(data2), className="container-display"
-        ),
+        html.Div(children=project_indicator_list(data1), className="container-display"),
+        html.Div(children=project_indicator_list(data2), className="container-display"),
     ]
 
     out = out + [
@@ -148,12 +138,4 @@ def update_indicators(dropdown_selection):
         )
     ]
 
-    # this amd its output can be removed together with the toggle
-    indicators = collection.get_document(
-        collection="Data",
-        graph_name="project_indicators",
-        project=dropdown_selection,
-        client=client,
-    )
-
-    return [out, indicators]
+    return [out]

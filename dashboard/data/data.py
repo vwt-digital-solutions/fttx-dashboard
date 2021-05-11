@@ -347,9 +347,7 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
                 client=client,
                 project=project,
             )
-            print(value)
-            print(value2)
-            if (value2 != 0) & (value2 != "n.v.t."):
+            if (value2 != 0) & (value != "n.v.t."):
                 value = round(value / value2 * 100) / 100
 
         info_list.append(
