@@ -3,7 +3,6 @@ from datetime import datetime
 import pandas as pd
 
 import config
-from app import toggles
 from data import collection
 
 
@@ -194,20 +193,13 @@ def fetch_data_for_redenna_overview(ctx, year, client):
 
     date, period, title = get_date_and_period_and_title(ctx, year)
 
-    if toggles.transform_frontend_newindicator:
-        redenna_by_period = collection.get_redenna_overview_from_document(
-            collection="Indicators",
-            date=date,
-            period=period,
-            client=client,
-            project="client_aggregate",
-        )
-    else:
-        redenna_by_period = collection.get_document(
-            collection="Data", client=client, graph_name=f"redenna_by_{period}"
-        )
-        if period == "year":
-            date = date[0:4] + "-12-31"
+    redenna_by_period = collection.get_redenna_overview_from_document(
+        collection="Indicators",
+        date=date,
+        period=period,
+        client=client,
+        project="client_aggregate",
+    )
 
     # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
     print(date)
@@ -492,24 +484,14 @@ def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: st
 
 def fetch_data_for_status_redenna_piechart(project_name, client, click_filter=None):
 
-    if toggles.transform_frontend_newindicator:
-        counts = pd.DataFrame(
-            collection.get_document(
-                collection="Indicators",
-                graph_name="ActualStatusBarChartIndicator",
-                project=project_name,
-                client=client,
-            )
+    counts = pd.DataFrame(
+        collection.get_document(
+            collection="Indicators",
+            graph_name="ActualStatusBarChartIndicator",
+            project=project_name,
+            client=client,
         )
-    else:
-        counts = pd.DataFrame(
-            collection.get_document(
-                collection="Data",
-                graph_name="completed_status_counts",
-                project=project_name,
-                client=client,
-            )
-        )
+    )
 
     if not counts.empty:
         clusters = config.client_config[client]["clusters_reden_na"]
@@ -557,24 +539,14 @@ def fetch_data_for_status_redenna_piechart(project_name, client, click_filter=No
 
 def fetch_data_for_status_barchart(project_name, client, click_filter=None):
 
-    if toggles.transform_frontend_newindicator:
-        counts = pd.DataFrame(
-            collection.get_document(
-                collection="Indicators",
-                graph_name="ActualStatusBarChartIndicator",
-                project=project_name,
-                client=client,
-            )
+    counts = pd.DataFrame(
+        collection.get_document(
+            collection="Indicators",
+            graph_name="ActualStatusBarChartIndicator",
+            project=project_name,
+            client=client,
         )
-    else:
-        counts = pd.DataFrame(
-            collection.get_document(
-                collection="Data",
-                graph_name="completed_status_counts",
-                project=project_name,
-                client=client,
-            )
-        )
+    )
 
     categories = [
         "schouw_status",

@@ -7,7 +7,6 @@ class ReleaseToggles(TogglesList):
     capacity_view: bool
     overview_indicators: bool
     leverbetrouwbaarheid: bool
-    transform_frontend_newindicator: bool
 
 
 toggles = ReleaseToggles("toggles.yaml")

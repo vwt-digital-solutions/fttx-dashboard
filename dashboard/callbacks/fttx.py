@@ -5,11 +5,10 @@ from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 import config
-from app import app, toggles
+from app import app
 from data import collection
 from data.data import (fetch_data_for_month_overview,
                        fetch_data_for_overview_boxes,
-                       fetch_data_for_overview_graphs,
                        fetch_data_for_performance_graph,
                        fetch_data_for_project_info_table,
                        fetch_data_for_redenna_overview,
@@ -102,17 +101,9 @@ for client in config.client_config.keys():  # noqa: C901
     )
     def load_month_overview_per_year(year, client=client):
         if year:
-            if toggles.transform_frontend_newindicator:
-                output = overview_bar_chart.get_fig_new(
-                    data=fetch_data_for_month_overview(year, client)
-                )
-            else:
-                output = overview_bar_chart.get_fig(
-                    data=fetch_data_for_overview_graphs(
-                        year=year, freq="M", period="month", client=client
-                    ),
-                    year=year,
-                )
+            output = overview_bar_chart.get_fig_new(
+                data=fetch_data_for_month_overview(year, client)
+            )
             return output
         raise PreventUpdate
 
@@ -122,17 +113,9 @@ for client in config.client_config.keys():  # noqa: C901
     )
     def load_week_overview_per_year(year, client=client):
         if year:
-            if toggles.transform_frontend_newindicator:
-                output = overview_bar_chart.get_fig_new(
-                    data=fetch_data_for_week_overview(year, client)
-                )
-            else:
-                output = overview_bar_chart.get_fig(
-                    data=fetch_data_for_overview_graphs(
-                        year=year, freq="W-MON", period="week", client=client
-                    ),
-                    year=year,
-                )
+            output = overview_bar_chart.get_fig_new(
+                data=fetch_data_for_week_overview(year, client)
+            )
             return output
         raise PreventUpdate
 
@@ -142,14 +125,9 @@ for client in config.client_config.keys():  # noqa: C901
     )
     def load_performance_graph_per_year(year, client=client):
         if year:
-            if toggles.transform_frontend_newindicator:
-                output = performance_chart.get_fig(
-                    fetch_data_for_performance_graph(client=client)
-                )
-            else:
-                output = collection.get_graph(
-                    client=client, graph_name="project_performance"
-                )
+            output = performance_chart.get_fig(
+                fetch_data_for_performance_graph(client=client)
+            )
             return output
         raise PreventUpdate
 
