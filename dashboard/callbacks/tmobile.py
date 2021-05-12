@@ -75,7 +75,6 @@ def indicator_modal(
             indicator_type=order_type,
             wait_category=wait_category,
         )
-
         output = [
             not is_open,
             figure,
