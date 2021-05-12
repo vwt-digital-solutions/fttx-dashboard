@@ -216,11 +216,14 @@ for client in config.client_config.keys():  # noqa: C901
             laagbouw = completed_status_counts_bar.get_fig(
                 data_laagbouw, title="Status oplevering per fase (LB)"
             )
+        else:
+            laagbouw = no_graph()
+
+        if not data_hoogbouw.empty:
             hoogbouw = completed_status_counts_bar.get_fig(
                 data_hoogbouw, title="Status oplevering per fase (HB & Duplex)"
             )
         else:
-            laagbouw = no_graph()
             hoogbouw = no_graph()
 
         return laagbouw, hoogbouw

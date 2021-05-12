@@ -193,7 +193,6 @@ def fetch_data_for_redenna_overview(ctx, year, client):
     )
 
     # Sorted the cluster redenna dict here, so that the pie chart pieces have the proper color:
-    print(date)
     data = dict(sorted(redenna_by_period.get(date, dict()).items()))
 
     return data, title
