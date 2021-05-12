@@ -1,14 +1,12 @@
-from Analyse.Indicators.RealisationHPendTmobileOnTimeIndicator import \
-    RealisationHPendTmobileOnTimeIndicator
+from Analyse.Indicators.RealisationHCTmobileIndicator import \
+    RealisationHCTmobileIndicator
 from Analyse.Record.LineRecord import LineRecord
 
 
-class RealisationHPendIntegratedTmobileOnTimeIndicator(
-    RealisationHPendTmobileOnTimeIndicator
-):
+class RealisationHCIntegratedTmobileIndicator(RealisationHCTmobileIndicator):
     def __init__(self, project_info, return_lines=False, **kwargs):
         super().__init__(project_info, return_lines, **kwargs)
-        self.indicator_name = "RealisationHPendIntegratedTmobileOnTimeIndicator"
+        self.indicator_name = "RealisationHCIndicatorIntegrated"
 
     def to_record(self, line):
         if line:

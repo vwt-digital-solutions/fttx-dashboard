@@ -4,7 +4,7 @@ import business_rules as br
 from Analyse.Indicators.RealisationIndicator import RealisationIndicator
 
 
-class RealisationHPendTmobileOnTimeIndicator(RealisationIndicator):
+class RealisationHCTmobileOnTimeIndicator(RealisationIndicator):
     """
     Indicator to calculate number of houses realised over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
@@ -17,7 +17,7 @@ class RealisationHPendTmobileOnTimeIndicator(RealisationIndicator):
         self.return_lines = return_lines
         self.type_total_amount = "huisaansluitingen"
         self.columns = ["project", "opleverdatum"]
-        self.indicator_name = "RealisationHPendOnTimeIndicator"
+        self.indicator_name = "RealisationHCOnTimeIndicator"
 
     def apply_business_rules(self):
         """

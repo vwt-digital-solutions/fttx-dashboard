@@ -56,8 +56,8 @@ def fetch_data_for_overview_boxes(client, year):
         ],
         "Ratio <12 weken": [
             "linenotavailable",
-            "RealisationHPendOnTimeIndicator",
-            "RealisationHPendIndicator",
+            "RealisationHCOnTimeIndicator",
+            "RealisationHCIndicator",
         ],
         "Leverbetrouwbaarheid": [
             "linenotavailable",
@@ -83,16 +83,17 @@ def fetch_data_for_overview_boxes(client, year):
 
         # exception for calculation of ratio's
         if (len(values) == 3) & (values[1] != "n.v.t."):
-            values[1] = str(round(int(values[1]) / int(values[2]), 2))
+            if values[2] != "n.v.t.":
+                values[1] = str(round(int(values[1]) / int(values[2]), 2))
 
         parameters_global_info_list.append(
             dict(
                 id_="",
                 title=title,
                 text1="HPciviel: ",
-                text2="HPend: ",
+                text2="HPend: " if title != "Ratio <12 weken" else "HC: ",
                 value1=values[0],
-                value2=values[1],
+                value2=values[1] if title != "HC / HPend" else "n.v.t.",
             )
         )
 
@@ -294,8 +295,8 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
         "Ratio op tijd aangesloten": [
             " ",
             "ratio-12-weeks",
-            "RealisationHPendIntegratedTmobileOnTimeIndicator",
-            "RealisationHPendIndicatorIntegrated",
+            "RealisationHCIntegratedTmobileOnTimeIndicator",
+            "RealisationHCIndicatorIntegrated",
         ],
         "Leverbetrouwbaarheid": [
             " ",
@@ -346,6 +347,8 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
                 client=client,
                 project=project,
             )
+            print(value)
+            print(value2)
             if (value2 != 0) & (value != "n.v.t."):
                 value = round(value / value2 * 100) / 100
 

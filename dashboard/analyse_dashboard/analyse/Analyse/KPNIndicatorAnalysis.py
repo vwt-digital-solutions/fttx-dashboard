@@ -52,20 +52,22 @@ from Analyse.Indicators.PrognoseIntegratedIndicator import \
 from Analyse.Indicators.RealisationHCIndicator import RealisationHCIndicator
 from Analyse.Indicators.RealisationHCIntegratedIndicator import \
     RealisationHCIntegratedIndicator
+from Analyse.Indicators.RealisationHCIntegratedTmobileIndicator import \
+    RealisationHCIntegratedTmobileIndicator
+from Analyse.Indicators.RealisationHCIntegratedTmobileOnTimeIndicator import \
+    RealisationHCIntegratedTmobileOnTimeIndicator
+from Analyse.Indicators.RealisationHCTmobileIndicator import \
+    RealisationHCTmobileIndicator
+from Analyse.Indicators.RealisationHCTmobileOnTimeIndicator import \
+    RealisationHCTmobileOnTimeIndicator
 from Analyse.Indicators.RealisationHPcivielIndicator import \
     RealisationHPcivielIndicator
 from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
 from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
     RealisationHPendIntegratedIndicator
-from Analyse.Indicators.RealisationHPendIntegratedTmobileIndicator import \
-    RealisationHPendIntegratedTmobileIndicator
-from Analyse.Indicators.RealisationHPendIntegratedTmobileOnTimeIndicator import \
-    RealisationHPendIntegratedTmobileOnTimeIndicator
 from Analyse.Indicators.RealisationHPendTmobileIndicator import \
     RealisationHPendTmobileIndicator
-from Analyse.Indicators.RealisationHPendTmobileOnTimeIndicator import \
-    RealisationHPendTmobileOnTimeIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
@@ -381,17 +383,22 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
             ).perform()
         )
         self.records.append(
-            RealisationHPendTmobileOnTimeIndicator(
+            RealisationHCTmobileIndicator(
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
         self.records.append(
-            RealisationHPendIntegratedTmobileOnTimeIndicator(
+            RealisationHCTmobileOnTimeIndicator(
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
         self.records.append(
-            RealisationHPendIntegratedTmobileIndicator(
+            RealisationHCIntegratedTmobileOnTimeIndicator(
+                df=df, project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHCIntegratedTmobileIndicator(
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
