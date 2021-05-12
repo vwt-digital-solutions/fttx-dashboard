@@ -111,7 +111,7 @@ def finance_analyse_kpn(request):
         logging.info('run done')
 
 
-def project_info_update(request):
+def project_info_update_kpn(request):
     try:
         analyseProjectInfo('kpn')
         set_date_update('kpn_projectinfo')
