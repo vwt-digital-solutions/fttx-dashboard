@@ -1,4 +1,5 @@
 import dash_html_components as html
+
 from layout.components.indicator import indicator
 
 
@@ -24,18 +25,30 @@ def capacity_summary(phase_name, target, work_stock, capacity, poc, unit):
         html.Div(
             className="container-display",
             children=[
-                indicator(value=capacity,
-                          title="Wat ga ik doen?",
-                          suffix=unit),
-                indicator(value=target,
-                          title="Wat heb ik afgesproken?",
-                          suffix=unit),
-                indicator(value=work_stock,
-                          title="Wat kan ik doen?",
-                          suffix=unit),
-                indicator(value=poc,
-                          title="Wat moet ik doen?",
-                          suffix=unit)
-            ]
-        )
+                indicator(
+                    value=capacity,
+                    title="Wat ga ik doen?",
+                    suffix=unit,
+                    gauge_type="standard",
+                ),
+                indicator(
+                    value=target,
+                    title="Wat heb ik afgesproken?",
+                    suffix=unit,
+                    gauge_type="standard",
+                ),
+                indicator(
+                    value=work_stock,
+                    title="Wat kan ik doen?",
+                    suffix=unit,
+                    gauge_type="standard",
+                ),
+                indicator(
+                    value=poc,
+                    title="Wat moet ik doen?",
+                    suffix=unit,
+                    gauge_type="standard",
+                ),
+            ],
+        ),
     ]
