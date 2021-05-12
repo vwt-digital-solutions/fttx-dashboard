@@ -10,12 +10,12 @@ class LineIndicator(Indicator):
     """
 
     def __init__(self, client, project_info):
-        self.client = client
+        self.df = None
+        super().__init__(df=self.df, client=client)
         self.project_info = project_info
         self.type_start_date = None
         self.type_end_date = None
         self.type_total_amount = None
-        self.df = None
 
     def perform(self):
         line_list = []

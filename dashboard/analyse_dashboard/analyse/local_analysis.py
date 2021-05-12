@@ -36,11 +36,19 @@ def run_client(client_name, etl_process, steps=None):
         print(f"Performing {etl_process.__name__} for {client_name}")
         etl.perform()
     else:
-        step_list = [etl.extract, etl.transform, etl.analyse, etl.load]
-        print(
-            f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
-        )
-        [step() for step in step_list[:steps]]
+        if client == 'kpn':
+            steps = steps if steps <= 2 else steps + 1
+            step_list = [etl.extract, etl.transform, etl.analyse_1, etl.analyse_2, etl.load]
+            print(
+                f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
+            )
+            [step() for step in step_list[:steps]]
+        else:
+            step_list = [etl.extract, etl.transform, etl.analyse, etl.analyse, etl.load]
+            print(
+                f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
+            )
+            [step() for step in step_list[:steps]]
 
 
 def get_etl_process(client, etl_type="local"):
