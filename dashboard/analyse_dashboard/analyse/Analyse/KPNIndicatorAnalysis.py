@@ -292,8 +292,14 @@ class FttXIndicatorAnalyse(FttXBase):
 
 
 class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
-    def analyse(self):
+    """Main class to for running the indicator analysis for KPN and DFN"""
+
+    def analyse_1(self):
+        """First part of the analyse that runs the general indicators inheritted from the FttXIndicatorAnalyse"""
         super().analyse()
+
+    def analyse_2(self):
+        """Second part of the analyse that runs the speficiec indicators for KPN and DFN"""
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
 
@@ -345,6 +351,8 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
 
 
 class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
+    """Main class to run indicator analyse for T-mobile"""
+
     def analyse(self):
         super().analyse()
         df = self.transformed_data.df
@@ -405,8 +413,11 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
 
 
 class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
-    def analyse(self):
-        super().analyse()
+    def analyse_1(self):
+        super().analyse_1()
+
+    def analyse_2(self):
+        super().analyse_2()
         planning_data = self.transformed_data.planning_new
         self.records.append(
             PlanningHPCivielIndicatorKPN(df=planning_data, client=self.client).perform()
@@ -421,7 +432,8 @@ class KPNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
 
 class DFNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
     def analyse(self):
-        super().analyse()
+        super().analyse_1()
+        super().analyse_2()
         df = self.transformed_data.df
         self.records.append(PlanningIndicatorDFN(df=df, client=self.client).perform())
 
@@ -439,13 +451,37 @@ class FttXIndicatorETL(
 class KPNIndicatorETL(
     FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNIndicatorAnalyse
 ):
-    ...
+
+    def perform(self):
+        super().extract()
+        super().transform()
+        super().analyse_1()
+        super().analyse_2()
+        super().load()
+
+    def perform_1(self):
+        super().extract()
+        super().transform()
+        super().analyse_1()
+        super().load()
+
+    def perform_2(self):
+        super().extract()
+        super().transform()
+        super().analyse_2()
+        super().load()
 
 
 class DFNIndicatorETL(
     FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, DFNIndicatorAnalyse
 ):
-    ...
+
+    def perform(self):
+        super().extract()
+        super().transform()
+        super().analyse_1()
+        super().analyse_2()
+        super().load()
 
 
 class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAnalyse):

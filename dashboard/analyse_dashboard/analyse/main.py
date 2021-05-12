@@ -19,11 +19,27 @@ db = firestore_v1.Client()
 toggles = ReleaseToggles('toggles.yaml')
 
 
-def analyse_kpn(request):
+def analyse_kpn_1(request):
     try:
-        if get_update_dates('kpn'):
-            analyseKPN('kpn')
-            set_date_update('kpn')
+        if get_update_dates('kpn_1'):
+            analyseKPN_1()
+            set_date_update('kpn_1')
+            return 'OK', 200
+        else:
+            logging.info('Analyse KPN skipped, already up to date')
+            return 'OK', 200
+    except Exception as e:
+        logging.exception(f'Analyse KPN failed {e}')
+        return 'Error', 500
+    finally:
+        logging.info('run done')
+
+
+def analyse_kpn_2(request):
+    try:
+        if get_update_dates('kpn_2'):
+            analyseKPN_2()
+            set_date_update('kpn_2')
             return 'OK', 200
         else:
             logging.info('Analyse KPN skipped, already up to date')
@@ -38,7 +54,7 @@ def analyse_kpn(request):
 def analyse_tmobile(request):
     try:
         if get_update_dates('tmobile'):
-            analyseTmobile('tmobile')
+            analyseTmobile()
             set_date_update('tmobile')
             return 'OK', 200
         else:
@@ -54,7 +70,7 @@ def analyse_tmobile(request):
 def analyse_dfn(request):
     try:
         if get_update_dates('dfn'):
-            analyseDFN('dfn')
+            analyseDFN()
             set_date_update('dfn')
             return 'OK', 200
         else:
@@ -95,9 +111,29 @@ def finance_analyse_kpn(request):
         logging.info('run done')
 
 
-def analyseKPN(client_name):
-    kpn = KPNIndicatorETL(client=client_name, config=config.client_config[client_name])
-    kpn.perform()
+def project_info_update_kpn(request):
+    try:
+        analyseProjectInfo('kpn')
+        set_date_update('kpn_projectinfo')
+        return 'OK', 200
+    except Exception as e:
+        logging.exception(f'Projectinfo analyse KPN failed {e}')
+        return 'Error', 500
+    finally:
+        logging.info('run done')
+
+
+def analyseKPN_1():
+    kpn = KPNIndicatorETL(client='kpn', config=config.client_config['kpn'])
+    kpn.perform_1()
+
+
+def analyseKPN_2():
+    kpn = KPNIndicatorETL(client='kpn', config=config.client_config['kpn'])
+    kpn.perform_2()
+
+
+def analyseProjectInfo(client_name):
     projectinfo_kpn = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
     projectinfo_kpn.perform()
 
@@ -112,18 +148,14 @@ def analyseFinance(client_name):
     finance.perform()
 
 
-def analyseDFN(client_name):
-    dfn = DFNIndicatorETL(client=client_name, config=config.client_config[client_name])
+def analyseDFN():
+    dfn = DFNIndicatorETL(client='dfn', config=config.client_config['dfn'])
     dfn.perform()
-    # projectinfo_dfn = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
-    # projectinfo_dfn.perform()
 
 
-def analyseTmobile(client_name):
-    tmobile = TmobileIndicatorETL(client=client_name, config=config.client_config[client_name])
+def analyseTmobile():
+    tmobile = TmobileIndicatorETL(client='tmobile', config=config.client_config['tmobile'])
     tmobile.perform()
-    # projectinfo_tmobile = ProjectInfoETL(client=client_name, config=config.client_config[client_name])
-    # projectinfo_tmobile.perform()
 
 
 def str_to_datetime(str_to_parse):
