@@ -1,6 +1,10 @@
 import logging
 import os
 
+import numpy as np
+import pandas as pd
+
+import business_rules as br
 from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
@@ -66,13 +70,11 @@ from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
 from Analyse.Record.DocumentListRecord import DocumentListRecord
+from Analyse.Record.ListRecord import ListRecord
+from Analyse.Record.Record import Record
 from Analyse.Record.RecordList import RecordList
 from Analyse.TMobile import TMobileTransform
 from functions import create_project_filter
-from Analyse.Record.ListRecord import ListRecord
-import business_rules as br
-import numpy as np
-import pandas as pd
 
 logger = logging.getLogger("FttX Indicator Analyse")
 
@@ -99,6 +101,8 @@ class FttXIndicatorAnalyse(FttXBase):
         project_info = self.transformed_data.project_info
 
         self.records.append(self._set_filters(client=self.client))
+
+        self.records.append(self._calculate_list_of_years(client=self.client))
 
         self.records.append(self._progress_per_phase_over_time_for_finance())
 
@@ -145,7 +149,7 @@ class FttXIndicatorAnalyse(FttXBase):
             record=create_project_filter(self.transformed_data.df),
             graph_name="project_names",
             collection="Data",
-            client=client
+            client=client,
         )
 
     def _progress_per_phase_over_time_for_finance(self):
@@ -211,7 +215,7 @@ class FttXIndicatorAnalyse(FttXBase):
             client=self.client,
             collection="Data",
             graph_name="Progress_over_time",
-            document_key=["client", "project", "data_set"]
+            document_key=["client", "project", "data_set"],
         )
 
     def _progress_per_phase_for_finance(self):
@@ -261,7 +265,27 @@ class FttXIndicatorAnalyse(FttXBase):
             client=self.client,
             collection="Data",
             graph_name="Progress",
-            document_key=["client", "project", "data_set"]
+            document_key=["client", "project", "data_set"],
+        )
+
+    def _calculate_list_of_years(self, client):
+        """
+        Calculates a list of years per client based on the dates that are found in the date columns.
+
+        """
+        logger.info("Calculating list of years")
+        date_columns = self.transformed_data.datums
+        dc_data = self.transformed_data.df.loc[:, date_columns]
+        list_of_years = []
+        for col in dc_data.columns:
+            list_of_years += list(dc_data[col].dropna().dt.year.unique().astype(str))
+        list_of_years = sorted(list(set(list_of_years)))
+
+        return Record(
+            record=list_of_years,
+            collection="Data",
+            graph_name="List_of_years",
+            client=client,
         )
 
 
