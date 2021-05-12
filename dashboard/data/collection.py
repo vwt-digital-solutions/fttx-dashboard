@@ -52,7 +52,10 @@ def get_graph(**filters):
 def get_year_value_from_document(collection, year, **filters):
     doc = get_document(collection, **filters)
     if doc:
-        value = doc["series_year"][year + "-01-01"]
+        if year + "-01-01" in doc["series_year"]:
+            value = doc["series_year"][year + "-01-01"]
+        else:
+            value = "n.v.t."
     else:
         value = "n.v.t."
     return value
@@ -74,27 +77,29 @@ def get_week_value_from_document(collection, which_week, **filters):
 
 def get_month_series_from_document(collection, year, **filters):
     doc = get_document(collection, **filters)
+    series = pd.Series(index=pd.date_range(start=year, periods=12, freq="MS"), data=0)
     if doc:
-        series = pd.Series(doc["series_month_" + year])
-        series.index = pd.to_datetime(series.index)
-        series = pd.Series(
-            index=pd.date_range(start=year, periods=12, freq="MS"), data=0
-        ).add(series, fill_value=0)
-    else:
-        series = pd.Series(
-            index=pd.date_range(start=year, periods=12, freq="MS"), data=0
-        )
+        if "series_month_" + year in doc:
+            series_to_add = pd.Series(doc["series_month_" + year])
+            series_to_add.index = pd.to_datetime(series_to_add.index)
+            series = series.add(series_to_add, fill_value=0)
+
     return series
 
 
 def get_week_series_from_document(collection, year=None, **filters):
     doc = get_document(collection, **filters)
     if doc and year:
-        series = pd.Series(doc["series_week_" + year])
-        series.index = pd.to_datetime(series.index)
-        series = pd.Series(
-            index=pd.date_range(start=year, periods=52, freq="W-MON"), data=0
-        ).add(series, fill_value=0)
+        if "series_week_" + year in doc:
+            series = pd.Series(doc["series_week_" + year])
+            series.index = pd.to_datetime(series.index)
+            series = pd.Series(
+                index=pd.date_range(start=year, periods=52, freq="W-MON"), data=0
+            ).add(series, fill_value=0)
+        else:
+            series = pd.Series(
+                index=pd.date_range(start=year, periods=52, freq="W-MON"), data=0
+            )
     elif doc:
         series = pd.Series(doc["series_week"])
         series.index = pd.to_datetime(series.index)
@@ -127,8 +132,11 @@ def get_redenna_overview_from_document(collection, date, period, **filters):
     pie_chart_dict = {}
     for cluster in cluster_types:
         filters["line"] = "RedenNAindicator_" + cluster
-        value = get_document(collection, **filters)[series_type][date]
-        pie_chart_dict[cluster] = value if value else 0
+        doc = get_document(collection, **filters)
+        if date in doc[series_type]:
+            pie_chart_dict[cluster] = doc[series_type][date]
+        else:
+            pie_chart_dict[cluster] = 0
     return {date: pie_chart_dict}
 
 

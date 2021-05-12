@@ -23,7 +23,7 @@ def indicator(
         layout={
             "height": 200,
             "font": {"color": font_color},
-            "margin": dict(l=10, r=10, t=60, b=20),
+            "margin": dict(l=10, r=10, t=40, b=20),
             "plot_bgcolor": colors["plot_bgcolor"],
             "paper_bgcolor": colors["paper_bgcolor"],
         }
@@ -31,9 +31,6 @@ def indicator(
     indicator_args = dict(
         value=value,
         number=dict(valueformat=".2%") if percentage else dict(valueformat=":"),
-        title={
-            "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"
-        },
         mode="number",
     )
 
@@ -60,7 +57,7 @@ def indicator(
             "axis": {"range": [0, max_value]},
             "threshold": {
                 "line": {"color": "red", "width": 2},
-                "thickness": 0.75,
+                "thickness": 0.3,
                 "value": max(value2, 0.01),
             },
             "steps": [
@@ -93,6 +90,10 @@ def indicator(
             "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title + str(value2)}</span>"
         }
         fig.update_layout(height=250)
+    elif gauge_type == "standard":
+        indicator_args["title"] = {
+            "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"
+        }
 
     fig.add_trace(go.Indicator(**indicator_args))
     return figure(figure=fig, container_id=id, **figure_kwargs)

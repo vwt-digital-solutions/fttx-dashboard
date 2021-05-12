@@ -6,13 +6,13 @@ import sys
 from builtins import input
 
 import config
-from Analyse.KPNIndicatorAnalysis import (DFNIndicatorAnalyse,
+from Analyse.KPNIndicatorAnalysis import (DFNIndicatorETL,
                                           DFNIndicatorLocalETL,
                                           DFNIndicatorTestETL,
-                                          KPNIndicatorAnalyse,
+                                          KPNIndicatorETL,
                                           KPNIndicatorLocalETL,
                                           KPNIndicatorTestETL,
-                                          TmobileIndicatorAnalyse,
+                                          TmobileIndicatorETL,
                                           TmobileIndicatorLocalETL,
                                           TmobileIndicatorTestETL)
 
@@ -36,11 +36,19 @@ def run_client(client_name, etl_process, steps=None):
         print(f"Performing {etl_process.__name__} for {client_name}")
         etl.perform()
     else:
-        step_list = [etl.extract, etl.transform, etl.analyse, etl.load]
-        print(
-            f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
-        )
-        [step() for step in step_list[:steps]]
+        if client == 'kpn':
+            steps = steps if steps <= 2 else steps + 1
+            step_list = [etl.extract, etl.transform, etl.analyse_1, etl.analyse_2, etl.load]
+            print(
+                f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
+            )
+            [step() for step in step_list[:steps]]
+        else:
+            step_list = [etl.extract, etl.transform, etl.analyse, etl.analyse, etl.load]
+            print(
+                f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
+            )
+            [step() for step in step_list[:steps]]
 
 
 def get_etl_process(client, etl_type="local"):
@@ -56,17 +64,17 @@ def get_etl_process(client, etl_type="local"):
     etl_processes = {
         "kpn": {
             "local": KPNIndicatorLocalETL,
-            "write_to_dev": KPNIndicatorAnalyse,
+            "write_to_dev": KPNIndicatorETL,
             "reload": KPNIndicatorTestETL,
         },
         "tmobile": {
             "local": TmobileIndicatorLocalETL,
-            "write_to_dev": TmobileIndicatorAnalyse,
+            "write_to_dev": TmobileIndicatorETL,
             "reload": TmobileIndicatorTestETL,
         },
         "dfn": {
             "local": DFNIndicatorLocalETL,
-            "write_to_dev": DFNIndicatorAnalyse,
+            "write_to_dev": DFNIndicatorETL,
             "reload": DFNIndicatorTestETL,
         },
     }

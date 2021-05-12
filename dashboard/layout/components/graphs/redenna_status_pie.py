@@ -1,31 +1,32 @@
 import plotly.graph_objects as go
-
 import config
 
 
-def get_fig(redenna_counts, title="", colors=None):
-
-    if not colors:
-        colors = list(config.colors_vwt.values())
+def get_fig(total, laagbouw, hoogbouw, title=""):
+    colors = [config.colors_vwt["green"],
+              config.colors_vwt["yellow"],
+              config.colors_vwt["red"],
+              config.colors_vwt["vwt_blue"],
+              ]
 
     fig = go.Figure()
     fig.add_trace(
-        go.Pie(labels=redenna_counts.total.cluster_redenna,
-               values=redenna_counts.total['count'],
+        go.Pie(labels=total.cluster_redenna,
+               values=total['count'],
                marker_colors=colors,
                visible=True)
     )
 
     fig.add_trace(
-        go.Pie(labels=redenna_counts.laagbouw.cluster_redenna,
-               values=redenna_counts.laagbouw['count'],
+        go.Pie(labels=laagbouw.cluster_redenna,
+               values=laagbouw['count'],
                marker_colors=colors,
                visible=False),
     )
 
     fig.add_trace(
-        go.Pie(labels=redenna_counts.hoogbouw.cluster_redenna,
-               values=redenna_counts.hoogbouw['count'],
+        go.Pie(labels=hoogbouw.cluster_redenna,
+               values=hoogbouw['count'],
                marker_colors=colors,
                visible=False),
     )

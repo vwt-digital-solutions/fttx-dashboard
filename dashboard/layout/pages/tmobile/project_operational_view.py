@@ -5,7 +5,6 @@ tab_name: Operationeel
 tab_order: 1
 """
 
-import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 
@@ -25,8 +24,13 @@ def get_html(client):
             # className="container-display",
         ),
         html.Div(
-            className="container-display",
-            children=[
+            [
+                figure(
+                    figure=no_graph(
+                        title="Progress of HPend over time", text="Loading..."
+                    ),
+                    graph_id=f"graph_prog-{client}",
+                ),
                 figure(
                     figure=no_graph(
                         title="Status oplevering per fase (LB)", text="Loading..."
@@ -41,24 +45,13 @@ def get_html(client):
                     container_id=f"status-counts-hoogbouw-{client}-container",
                     graph_id=f"status-counts-hoogbouw-{client}",
                 ),
-                html.Div(
-                    className="pretty_container column",
-                    children=[
-                        figure(
-                            container_id=f"redenna_project_{client}_container",
-                            graph_id=f"redenna_project_{client}",
-                            figure=no_graph(
-                                title="Opgegeven reden na", text="Loading..."
-                            ),
-                            className="",
-                        ),
-                        html.A(
-                            dbc.Button("Download", className="ml-auto"),
-                            id=f"project-redenna-download-{client}",
-                            href="",
-                        ),
-                    ],
+                figure(
+                    figure=no_graph(title="Opgegeven reden na", text="Loading..."),
+                    container_id=f"redenna_project_{client}_container",
+                    graph_id=f"redenna_project_{client}",
                 ),
             ],
+            id="main_graphs",
+            className="container-display",
         ),
     ]

@@ -8,7 +8,6 @@ from toggles import ReleaseToggles
 toggles = ReleaseToggles("toggles.yaml")
 
 
-# TODO: Documentation by Casper van Houten
 class LineRecord(Record):
     """
     Record type that deals specifically with lines.
@@ -23,40 +22,30 @@ class LineRecord(Record):
         **kwargs:
     """
 
-    if toggles.transform_line_record:
-
-        def __init__(
-            self,
-            record,
-            collection,
-            client,
-            graph_name,
-            phase,
-            project,
-            resample_method="sum",
-            to_be_integrated=True,
-            to_be_normalized=True,
-            percentage=True,
-            to_be_splitted_by_year=False,
-            **kwargs,
-        ):
-            self.phase = phase
-            self.project = project
-            self.resample_method = resample_method
-            self.to_be_integrated = to_be_integrated
-            self.to_be_normalized = to_be_normalized
-            self.percentage = percentage
-            self.to_be_splitted_by_year = to_be_splitted_by_year
-            super().__init__(record, collection, client, graph_name, **kwargs)
-
-    else:
-
-        def __init__(
-            self, record, collection, client, graph_name, phase, project, **kwargs
-        ):
-            super().__init__(record, collection, client, graph_name, **kwargs)
-            self.phase = phase
-            self.project = project
+    def __init__(
+        self,
+        record,
+        collection,
+        client,
+        graph_name,
+        phase,
+        project,
+        resample_method="sum",
+        to_be_integrated=True,
+        to_be_normalized=True,
+        percentage=True,
+        to_be_splitted_by_year=False,
+        **kwargs,
+    ):
+        self.phase = phase
+        self.project = project
+        self.resample_method = resample_method
+        self.to_be_integrated = to_be_integrated
+        self.to_be_normalized = to_be_normalized
+        self.percentage = percentage
+        self.to_be_splitted_by_year = to_be_splitted_by_year
+        self.max_value = record.max_value
+        super().__init__(record, collection, client, graph_name, **kwargs)
 
     def _to_document(self):
         return dict(
@@ -67,103 +56,74 @@ class LineRecord(Record):
             phase=self.phase,
         )
 
-    def _transform(self, record):
+    def _transform(self, line):
         """This functions transforms the line object in the record to the desired aggregate for output.
 
         Args:
-            record (object): object of a line
+            line (TimeseriesLine): object of a line
 
         Returns:
             record (dict): dictionary of aggregates required for dashboard.
         """
 
-        if toggles.transform_line_record:
-            # TODO: rename record to line if toggles has been removed for consistency. Because the input is of line TimeseriesLine
-            # TODO: remove line.get_line_aggregate() if toggle is removed. Check if other functions are unused afterwards
-            line = record
+        record_to_write = dict()
+        record_to_write["configuration"] = {
+            "resample method": self.resample_method,
+            "integrated": self.to_be_integrated,
+            "normalized": self.to_be_normalized,
+            "percentage": self.percentage,
+        }
 
-            record_to_write = dict()
-            record_to_write["configuration"] = {
-                "resample method": self.resample_method,
-                "integrated": self.to_be_integrated,
-                "normalized": self.to_be_normalized,
-                "percentage": self.percentage,
-            }
+        line_week = line.resample(freq="W-MON", method=self.resample_method)
+        line_month = line.resample(freq="MS", method=self.resample_method)
+        line_year = line.resample(freq="YS", method=self.resample_method)
 
-            line_week = line.resample(freq="W-MON", method=self.resample_method)
-            line_month = line.resample(freq="MS", method=self.resample_method)
-            line_year = line.resample(freq="YS", method=self.resample_method)
+        record_to_write["last_week"] = self._get_value_of_period(
+            line_week, period="last"
+        )
+        record_to_write["current_week"] = self._get_value_of_period(
+            line_week, period="current"
+        )
+        record_to_write["next_week"] = self._get_value_of_period(
+            line_week, period="next"
+        )
+        record_to_write["last_month"] = self._get_value_of_period(
+            line_month, period="last"
+        )
+        record_to_write["current_month"] = self._get_value_of_period(
+            line_month, period="current"
+        )
+        record_to_write["next_month"] = self._get_value_of_period(
+            line_month, period="next"
+        )
 
-            record_to_write["last_week"] = self._get_value_of_period(
-                line_week, period="last"
-            )
-            record_to_write["current_week"] = self._get_value_of_period(
-                line_week, period="current"
-            )
-            record_to_write["next_week"] = self._get_value_of_period(
-                line_week, period="next"
-            )
-            record_to_write["last_month"] = self._get_value_of_period(
-                line_month, period="last"
-            )
-            record_to_write["current_month"] = self._get_value_of_period(
-                line_month, period="current"
-            )
-            record_to_write["next_month"] = self._get_value_of_period(
-                line_month, period="next"
-            )
+        record_to_write["next_4_weeks"] = self.calculate_value_for_next_4_weeks(
+            line_week
+        )
 
-            record_to_write["next_4_weeks"] = self.calculate_value_for_next_4_weeks(
-                line_week
-            )
+        record_to_write["max_value_on_weekly_basis"] = int(
+            line_week.make_series().max()
+        )
 
-            record_to_write["max_value_on_weekly_basis"] = int(
-                line_week.make_series().max()
-            )
+        record_to_write["series_week"] = self.configure_series_to_write(line_week)
+        record_to_write["series_month"] = self.configure_series_to_write(line_month)
+        record_to_write["series_year"] = self.configure_series_to_write(line_year)
 
-            record_to_write["series_week"] = self.configure_series_to_write(line_week)
-            record_to_write["series_month"] = self.configure_series_to_write(line_month)
-            record_to_write["series_year"] = self.configure_series_to_write(line_year)
+        if self.to_be_splitted_by_year:
+            lines_week = line_week.split_by_year()
+            lines_month = line_month.split_by_year()
+            for line in lines_week:
+                year = line.get_extreme_period_of_series("year", "max")
+                record_to_write[
+                    f"series_week_{year}"
+                ] = self.configure_series_to_write(line)
+            for line in lines_month:
+                year = line.get_extreme_period_of_series("year", "min")
+                record_to_write[
+                    f"series_month_{year}"
+                ] = self.configure_series_to_write(line)
 
-            if self.to_be_splitted_by_year:
-                lines_week = line_week.split_by_year()
-                lines_month = line_month.split_by_year()
-                for line in lines_week:
-                    year = line.get_extreme_period_of_series("year", "max")
-                    record_to_write[
-                        f"series_week_{year}"
-                    ] = self.configure_series_to_write(line)
-                for line in lines_month:
-                    year = line.get_extreme_period_of_series("year", "min")
-                    record_to_write[
-                        f"series_month_{year}"
-                    ] = self.configure_series_to_write(line)
-
-            return record_to_write
-
-        else:
-            record_to_write = dict()
-            record_to_write["series_week"] = record.get_line_aggregate(
-                freq="W-MON", loffset="-1", aggregate_type="series", index_as_str=True
-            ).to_dict()
-            record_to_write["series_month"] = record.get_line_aggregate(
-                freq="MS", aggregate_type="series", index_as_str=True
-            ).to_dict()
-            if record.name == "work_stock_amount_indicator":
-                record_to_write["next_week"] = record.get_line_aggregate(
-                    freq="W-MON", loffset="-1", aggregate_type="value_mean"
-                )
-                record_to_write["next_month"] = record.get_line_aggregate(
-                    freq="MS", aggregate_type="value_mean"
-                )
-            else:
-                record_to_write["next_week"] = record.get_line_aggregate(
-                    freq="W-MON", loffset="-1", aggregate_type="value_sum"
-                )
-                record_to_write["next_month"] = record.get_line_aggregate(
-                    freq="MS", aggregate_type="value_sum"
-                )
-            return record_to_write
+        return record_to_write
 
     def configure_series_to_write(self, line):
         """
@@ -175,7 +135,9 @@ class LineRecord(Record):
             line = line.integrate()
 
         if self.to_be_normalized:
-            series = line.make_normalised_series(percentage=self.percentage)
+            series = line.make_normalised_series(
+                percentage=self.percentage, maximum=self.max_value
+            )
         else:
             series = line.make_series()
 
@@ -213,7 +175,8 @@ class LineRecord(Record):
             else 0
         )
 
-    def calculate_value_for_next_4_weeks(self, line_week):
+    @staticmethod
+    def calculate_value_for_next_4_weeks(line_week):
         """
         This function calculates the sum of the upcomming 4 weeks starting next monday.
         Args:

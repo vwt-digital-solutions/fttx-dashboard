@@ -1,16 +1,12 @@
-from Analyse.Indicators.RealisationHPendIndicator import \
-    RealisationHPendIndicator
+from Analyse.Indicators.RealisationHCTmobileIndicator import \
+    RealisationHCTmobileIndicator
 from Analyse.Record.LineRecord import LineRecord
 
 
-class RealisationHPendIntegratedIndicator(RealisationHPendIndicator):
-    """
-    Extension of RealisationHPend indicator, as the integrated line is also needed in the front-end.
-    """
-
+class RealisationHCIntegratedTmobileIndicator(RealisationHCTmobileIndicator):
     def __init__(self, project_info, return_lines=False, **kwargs):
         super().__init__(project_info, return_lines, **kwargs)
-        self.indicator_name = "RealisationHPendIndicatorIntegrated"
+        self.indicator_name = "RealisationHCIndicatorIntegrated"
 
     def to_record(self, line):
         if line:
@@ -22,9 +18,9 @@ class RealisationHPendIntegratedIndicator(RealisationHPendIndicator):
                 client=self.client,
                 project=line.project,
                 to_be_integrated=True,
-                to_be_normalized=True,
+                to_be_normalized=False,
                 to_be_splitted_by_year=True,
-                percentage=True,
+                percentage=False,
             )
         else:
             record = None

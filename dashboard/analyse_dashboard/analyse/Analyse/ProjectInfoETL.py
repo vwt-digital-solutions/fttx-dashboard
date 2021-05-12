@@ -20,7 +20,7 @@ class ProjectInfoExtract(FttXExtract):
         self.client_name = self.config.get("name")
 
     def extract(self):
-        logger.info("Extracting the Projects collection")
+        logger.info("Extracting the aansluitingen")
         self._extract_from_sql()
         logger.info("Extracting mappings of bnumber vs projectname")
         self.extracted_data.map_bnumber_vs_projectname_sql = (
@@ -45,7 +45,8 @@ class ProjectInfoExtract(FttXExtract):
         ds.index.name = "bnumber"
         # exception for bnumber 8258, this value is double assigned to Bergen op Zoom oude stad and Bergen op Zoom oost,
         # so inconclusive and therefore deleted from list
-        ds.drop(index="8258", inplace=True)
+        if "8258" in ds.index:
+            ds.drop(index="8258", inplace=True)
         return ds
 
     def _get_project_info_excel(self):
@@ -144,7 +145,8 @@ class ProjectInfoTransform(Transform):
         df = df.loc[df.index.dropna()]
         df = df.loc[df.index != "?"]
         df.index = [str(i)[1:] if "B" in str(i) else str(i) for i in df.index]
-        df = df.where((df != "???") & (df != "?"))
+        # df = df.where((df != "???") & (df != "?"))
+        df = df.replace({"???": np.nan, "?": np.nan})
         df = df[~df.index.duplicated()]
         # setting required data types
         df["FTU0"] = pd.to_datetime(df["FTU0"])
@@ -161,7 +163,7 @@ class ProjectInfoTransform(Transform):
         record = self.extracted_data.record_project_info
         df = pd.DataFrame.from_dict(record["record"], orient="columns")
         # cleaning of data
-        df = df.where(df != "None", None)
+        df = df.replace({"None": None})
         # set required data types
         df["FTU0"] = pd.to_datetime(df["FTU0"])
         df["FTU1"] = pd.to_datetime(df["FTU1"])
@@ -174,7 +176,6 @@ class ProjectInfoTransform(Transform):
 
     def update_project_info(self, df, df_newinfo, map_bnumber_vs_projectname):
         for bnumber in df_newinfo.index:
-            print(bnumber)
             df.loc[map_bnumber_vs_projectname.loc[bnumber].project] = df_newinfo.loc[
                 bnumber
             ]

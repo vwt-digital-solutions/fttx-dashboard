@@ -8,6 +8,7 @@ The ETL process for FttX. It contains all steps that are common for all FttX cli
 import logging
 import os
 import pickle  # nosec
+from datetime import timedelta
 
 import numpy as np
 import pandas as pd
@@ -76,12 +77,10 @@ class FttXExtract(Extract):
 
         Sets datasets on self.extracted_data.
         """
-        logger.info("Extracting the Projects collection")
+        logger.info("Extracting the aansluitingen")
         self._extract_from_sql()
         self._append_history()
         self.extract_project_info()
-        if toggles.leverbetrouwbaarheid:
-            self._extract_leverbetrouwbaarheid_dataframe()
 
     # TODO: Documentation by Erik van Egmond
     def _extract_from_sql(self):
@@ -109,22 +108,25 @@ where project in :projects
         """
 
         sql_engine = get_database_engine()
-        self._extract_first_opleverdatum(sql_engine)
+        self._extract_first_changedate_opleverdatum(sql_engine)
         self._extract_laswerkgereed_datum(sql_engine, column='laswerkapgereed')
         self._extract_laswerkgereed_datum(sql_engine, column='laswerkdpgereed')
         self._extract_status_civiel_datum(sql_engine)
         self._has_last_change_date(sql_engine)
 
-    def _extract_first_opleverdatum(self, sql_engine):
-        """Function to extract the 'first' opleverdatum from the history table in the database"""
+    def _extract_first_changedate_opleverdatum(self, sql_engine):
+        """
+        Function to extract the date of the first time a `opleverdatum` was filled.
+        """
 
         logger.info('Extracting history "Opleverdatum" from sql database')
         sql = text(
             f"""
-SELECT fc.sleutel, fc.value as 'first_opleverdatum', creationDate
+SELECT fc.sleutel, MIN(fc.creationDate) AS 'opleverdatum'
 FROM {self.history_table} as fc
 WHERE fc.variable = 'opleverdatum'
 AND `project` IN :projects
+GROUP BY `sleutel`
 """  # nosec
         ).bindparams(
             bindparam("projects", expanding=True)
@@ -132,9 +134,24 @@ AND `project` IN :projects
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
-        df = df.sort_values('creationDate', ascending=True).groupby(
-            'sleutel').first_opleverdatum.first().reset_index()
+
+        # rename old column for 'opleverdatum' and then merge new opleverdatum from history.
+        self.extracted_data.df = self.extracted_data.df.rename(columns={'opleverdatum': 'opleverdatum_old'})
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+
+        cols = ['opleverdatum', 'opleverdatum_old']
+        self.extracted_data.df[cols] = self.extracted_data.df[cols].apply(pd.to_datetime,
+                                                                          infer_datetime_format=True,
+                                                                          errors="coerce")
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        self.extracted_data.df['opleverdatum'] = self.extracted_data.df['opleverdatum'] - timedelta(days=1)
+
+        # building-up history began 2020-10-05, before that day use the opleverdatum as_is
+        # to prevent large peaks in timeseries
+        mask = self.extracted_data.df['opleverdatum_old'] < pd.Timestamp("2020-10-05")
+        self.extracted_data.df.loc[mask, 'opleverdatum'] = self.extracted_data.df.loc[mask, 'opleverdatum_old']
+        self.extracted_data.df.drop(columns=['opleverdatum_old'], inplace=True)
 
     def _extract_laswerkgereed_datum(self, sql_engine, column):
         """Function to extract the laswerk gereed datum from the history table in the database"""
@@ -158,6 +175,11 @@ GROUP BY `sleutel`
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        df[column_name] = df[column_name].apply(pd.to_datetime, infer_datetime_format=True, errors="coerce")
+        df[column_name] = df[column_name] - timedelta(days=1)
+
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def _extract_status_civiel_datum(self, sql_engine):
@@ -170,7 +192,7 @@ SELECT sleutel, MIN(`creationDate`)
 AS 'status_civiel_datum'
 FROM {self.history_table}
 WHERE `variable` = 'status_civiel'
-AND `value` IN('1', '1 / Voor Gevel', '1 / Geul')
+AND `value` NOT LIKE '0%'
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
@@ -180,6 +202,13 @@ GROUP BY `sleutel`
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        df['status_civiel_datum'] = df['status_civiel_datum'].apply(pd.to_datetime,
+                                                                    infer_datetime_format=True,
+                                                                    errors="coerce")
+        df['status_civiel_datum'] = df['status_civiel_datum'] - timedelta(days=1)
+
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def _has_last_change_date(self, sql_engine):
@@ -201,6 +230,13 @@ GROUP BY `sleutel`
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
+
+        # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
+        df['hasdatum_change_date'] = df['hasdatum_change_date'].apply(pd.to_datetime,
+                                                                      infer_datetime_format=True,
+                                                                      errors="coerce")
+        df['hasdatum_change_date'] = df['hasdatum_change_date'] - timedelta(days=1)
+
         self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
 
     def extract_project_info(self):
@@ -248,38 +284,6 @@ GROUP BY `sleutel`
             .replace({999: None})
             .to_dict(orient="index")
         )
-
-    def _extract_leverbetrouwbaarheid_dataframe(self):
-        """
-        This function extracts a pd.DataFrame from the transition log (fc_transitie_log) and the aansluitingen dataset
-        (fc_aansluitingen) that contains houses of which: \n
-        -   the hasdatum is equal to the opleverdatum.
-        -   the hasdatum has been changed to the final hasdatum.
-        -   the opleverdatum starts at 2021-01-01, to filter out a bunch of keys that were changed for the first time.
-        This DataFrame can then be used to calculate the leverbetrouwbaarheid.
-        """
-        logger.info("Extracting dataframe for leverbetrouwbaarheid")
-        sql = text(
-            """
-select  fctl.date as last_change_in_hasdatum,
-        fctl.to_value as hasdatum_changed_to,
-        fcas.hasdatum, fcas.opleverdatum, fcas.project
-from fc_transitie_log as fctl
-inner join fc_aansluitingen as fcas on
-fctl.key = 'hasdatum' and
-fctl.project in :projects and
-fctl.sleutel = fcas.sleutel and
-fctl.to_value = fcas.hasdatum and fcas.opleverdatum >= '2021-01-01'
-"""
-        ).bindparams(
-            bindparam("projects", expanding=True)
-        )  # nosec
-        df = pd.read_sql(
-            sql, get_database_engine(), params={"projects": tuple(self.projects)}
-        )
-        projects_category = pd.CategoricalDtype(categories=self.projects)
-        df["project"] = df.project.astype(projects_category)
-        self.extracted_data.leverbetrouwbaarheid = df
 
 
 # TODO: Documentation by Erik van Egmond
@@ -371,7 +375,7 @@ class FttXTransform(Transform):
         """Function that tranfsorms the columns with a date to pd.datetime format"""
 
         logger.info(
-            "Transforming columns to datetime column if there is 'datum' in column name"
+            "Transforming columns to datetime format"
         )
         self.transformed_data.datums = datums = [
             "activatie_datum",
@@ -385,7 +389,6 @@ class FttXTransform(Transform):
             "toestemming_datum",
             "creation",
             "plan_date",
-            "first_opleverdatum",
             "hasdatum_change_date"
         ]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(
@@ -518,11 +521,7 @@ class FttXAnalyse(FttXBase):
         self._make_records_for_dashboard_values()
         self._make_records_of_client_targets_for_dashboard_values()
         self._make_records_of_voorspelling_and_planning_for_dashboard_values()
-        if toggles.leverbetrouwbaarheid:
-            self._make_records_of_ratios_for_dashboard_values()
-        else:
-            self._make_records_ratio_hc_hpend_for_dashboard_values()
-            self._make_records_ratio_under_8weeks_for_dashboard_values()
+        self._make_records_of_ratios_for_dashboard_values()
         self._make_intermediate_results_ratios_project_specific_values()
         self._calculate_current_werkvoorraad()
         self._reden_na()

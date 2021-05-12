@@ -1,16 +1,16 @@
 import importlib
 import os
+from urllib import parse
 
 import dash
+import dash_bootstrap_components as dbc
 import dash_html_components as html
-from urllib import parse
 
 from layout.components import overview
 from layout.components.header import header
 from layout.components.nav_bar import nav_bar
 from layout.pages import error, main_page
 from utils import get_client_name
-import dash_bootstrap_components as dbc
 
 
 def client_tabbed_view(views):
@@ -33,12 +33,16 @@ def client_tabbed_view(views):
     """
     tabs = dbc.Tabs(
         [
-            dbc.Tab(view['view'], label=view['tab_name'], tab_id=f"tab-{view['tab_name'].lower().replace(' ', '-')}")
+            dbc.Tab(
+                view["view"],
+                label=view["tab_name"],
+                tab_id=f"tab-{view['tab_name'].lower().replace(' ', '-')}",
+            )
             for view in views
         ],
         className="mt-5 mb-3",
         id="project-tabs",
-        active_tab=f"tab-{views[0]['tab_name'].lower().replace(' ', '-')}"
+        active_tab=f"tab-{views[0]['tab_name'].lower().replace(' ', '-')}",
     )
 
     return tabs
@@ -55,10 +59,11 @@ def client_project_view(client) -> dash.development.base_component.Component:
     Returns:
         dash.development.base_component.Component: A dash component of the view.
     """
-    tabs = {f"layout.pages.{client}.{file.rstrip('.py')}"
-            for file in os.listdir(f"layout/pages/{client}")
-            if file.endswith(".py")
-            }
+    tabs = {
+        f"layout.pages.{client}.{file.rstrip('.py')}"
+        for file in os.listdir(f"layout/pages/{client}")
+        if file.endswith(".py")
+    }
 
     views = []
     for tab in tabs:
@@ -70,7 +75,7 @@ def client_project_view(client) -> dash.development.base_component.Component:
 
     if len(views) > 1:
         return client_tabbed_view(views)
-    return views[0]['view']
+    return views[0]["view"]
 
 
 def get_tab_view(client: str, tab: str) -> dict:
@@ -99,9 +104,9 @@ def get_tab_view(client: str, tab: str) -> dict:
 
     tab_name, tab_order = parse_view_docstring(module)
     if tab_name:
-        view_dict['tab_name'] = tab_name
+        view_dict["tab_name"] = tab_name
     if tab_order:
-        view_dict['tab_order'] = tab_order
+        view_dict["tab_order"] = tab_order
     return view_dict
 
 
@@ -160,13 +165,13 @@ def client_page_body(client, project):
         html.Div(
             id=f"{client}-overview",
             children=overview.get_html(client),
-            style={'display': "block"}
+            style={"display": "block"},
         ),
         html.Div(
-            style={'display': 'none'},
+            style={"display": "none"},
             id=f"{client}-project-view",
             children=client_project_view(client),
-        )
+        ),
     ]
     return body
 
@@ -212,14 +217,8 @@ def get_layout(pathname="/", brand=""):
 
     """
     client, _, remainder = pathname.lstrip("/").partition("/")
-    print(client, remainder)
     project = parse.unquote_plus(remainder)
     page_body = get_page_body(client, project)
 
-    layout = html.Div(
-        [
-            nav_bar(client, brand),
-            html.Div(page_body)
-        ]
-    )
+    layout = html.Div([nav_bar(client, brand), html.Div(page_body)])
     return layout

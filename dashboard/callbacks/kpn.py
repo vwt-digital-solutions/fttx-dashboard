@@ -1,14 +1,10 @@
-import pandas as pd
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
-from app import app, toggles
-# update value dropdown given selection in scatter chart
-from data import collection
+from app import app
 from data.data import (fetch_data_for_indicator_boxes,
                        fetch_data_for_progress_HPend_chart)
 from layout.components.graphs import progress_HPend_chart
-from layout.components.indicator import indicator
 from layout.components.list_of_boxes import project_indicator_list
 
 client = "kpn"
@@ -26,36 +22,9 @@ def update_indicators(dropdown_selection):
     if dropdown_selection is None:
         raise PreventUpdate
 
-    if toggles.transform_frontend_newindicator:
-        indicator_info = project_indicator_list(
-            fetch_data_for_indicator_boxes(project=dropdown_selection, client=client)
-        )
-    else:
-        indicator_types = [
-            "lastweek_realisatie",
-            "weekrealisatie",
-            "last_week_bis_realisatie",
-            "week_bis_realisatie",
-            "weekHCHPend",
-        ]
-        indicators = collection.get_document(
-            collection="Data",
-            graph_name="project_indicators",
-            project=dropdown_selection,
-            client=client,
-        )
-        indicator_info = [
-            indicator(
-                value=indicators[el]["counts"],
-                previous_value=indicators[el].get("counts_prev"),
-                title=indicators[el]["title"],
-                sub_title=indicators[el]["subtitle"],
-                font_color=indicators[el]["font_color"],
-                gauge=indicators[el].get("gauge"),
-            )
-            for el in indicator_types
-        ]
-
+    indicator_info = project_indicator_list(
+        fetch_data_for_indicator_boxes(project=dropdown_selection, client=client)
+    )
     return [indicator_info]
 
 
@@ -86,15 +55,8 @@ def update_prognose_graph(drop_selectie):
     if drop_selectie is None:
         raise PreventUpdate
 
-    if toggles.transform_frontend_newindicator:
-        fig_prog = progress_HPend_chart.get_fig(
-            fetch_data_for_progress_HPend_chart(client=client, project=drop_selectie)
-        )
-    else:
-        fig_prog = collection.get_graph(
-            client="kpn", graph_name="prognose_graph_dict", project=drop_selectie
-        )
-        for i, item in enumerate(fig_prog["data"]):
-            fig_prog["data"][i]["x"] = pd.to_datetime(item["x"])
+    fig_prog = progress_HPend_chart.get_fig(
+        fetch_data_for_progress_HPend_chart(client=client, project=drop_selectie)
+    )
 
     return [fig_prog]

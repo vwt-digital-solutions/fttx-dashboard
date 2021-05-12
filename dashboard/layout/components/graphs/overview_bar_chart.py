@@ -12,10 +12,10 @@ def get_fig_new(data):
         0,
         1.5
         * max(
-            max(data.InternalTargetHPendLine),
-            max(data.RealisationHPendIndicator),
-            max(data.PlanningHPendIndicator),
-            max(data.PrognoseHPendIndicator),
+            max(data.target),
+            max(data.realisatie),
+            max(data.planning),
+            max(data.prognose),
         ),
     ]
 
@@ -57,7 +57,7 @@ def get_fig_new(data):
             dict(
                 name="Voorspelling",
                 x=x_count,
-                y=data.PrognoseHPendIndicator,
+                y=data.prognose,
                 customdata=date_list,
                 mode="markers",
                 marker=dict(color=colors["yellow"], symbol="diamond", size=15),
@@ -65,7 +65,7 @@ def get_fig_new(data):
             dict(
                 name="Planning",
                 x=x_count,
-                y=data.PlanningHPendIndicator,
+                y=data.planning,
                 customdata=date_list,
                 type="lines",
                 marker=dict(color=colors["red"]),
@@ -74,7 +74,7 @@ def get_fig_new(data):
             dict(
                 name="Realisatie",
                 x=[el + 0.5 * width for el in x_count],
-                y=data.RealisationHPendIndicator,
+                y=data.realisatie,
                 customdata=date_list,
                 type="bar",
                 marker=dict(color=colors["green"]),
@@ -83,7 +83,7 @@ def get_fig_new(data):
             dict(
                 name="Internal target",
                 x=[el - 0.5 * width for el in x_count],
-                y=data.InternalTargetHPendLine,
+                y=data.target,
                 customdata=date_list,
                 type="bar",
                 marker=dict(color=colors["lightgray"]),
