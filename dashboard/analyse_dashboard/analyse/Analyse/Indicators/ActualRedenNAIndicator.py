@@ -12,7 +12,7 @@ class ActualRedenNAIndicator(DataIndicator, Aggregator):
     def perform(self):
         """
         Aggregate to clusters and retrieve the counts, then make the result into a record.
-        Returns: Record reday to be written to the firestore, containing clustered data.
+        Returns: Record ready to be written to the firestore, containing clustered data.
 
         """
         df = self.apply_business_rules()

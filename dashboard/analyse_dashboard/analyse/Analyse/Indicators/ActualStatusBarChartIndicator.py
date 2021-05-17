@@ -7,6 +7,12 @@ from Analyse.Record.DictRecord import DictRecord
 
 class ActualStatusBarChartIndicator(DataIndicator):
     def __init__(self, **kwargs):
+        """
+        Indicator that creates a matrix to be used in the status bar chart indicator.
+
+        Args:
+            **kwargs:
+        """
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = "ActualStatusBarChartIndicator"

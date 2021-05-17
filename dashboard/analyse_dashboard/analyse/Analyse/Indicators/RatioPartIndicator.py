@@ -5,6 +5,11 @@ from Analyse.Record.RecordList import RecordList
 
 
 class RatioPartIndicator(TimeseriesIndicator):
+    """
+    Ratiopart indicator is used to calculate eiether a nominator and denominator for a ratio.
+    Ratio is calculated in the front-end to prevent dealing with unnecessary edge-cases.
+    """
+
     def perform(self):
         df = self.apply_business_rules()
         agg_df = self.aggregate(df)

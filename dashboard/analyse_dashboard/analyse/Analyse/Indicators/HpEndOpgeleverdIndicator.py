@@ -6,6 +6,11 @@ from Analyse.Indicators.RatioPartIndicator import RatioPartIndicator
 
 class HpEndOpgeleverdIndicator(RatioPartIndicator):
     def __init__(self, **kwargs):
+        """
+        Indicator to calculate HPend ratio part of HC/HPend.
+        Args:
+            **kwargs:
+        """
         super().__init__(**kwargs)
         self.graph_name = "HPend_opgeleverd"
 

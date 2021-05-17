@@ -8,7 +8,7 @@ from Analyse.Indicators.TimeConstraintIndicator import TimeConstraintIndicator
 class HCPatchOnly(TimeConstraintIndicator, Aggregator):
     def __init__(self, **kwargs):
         """
-        Indicator to calculate current werkvoorraad
+        Indicator to calculate current Patch only amount.
         """
         super().__init__(**kwargs)
         self.graph_name = "PatchOnly"

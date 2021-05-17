@@ -6,6 +6,12 @@ from Analyse.Indicators.ActualRedenNAIndicator import ActualRedenNAIndicator
 
 class ActualRedenNAPatchOnlyLateIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
+        """
+        Indicator that creates cluster reden na's for late patch only connections.
+
+        Args:
+            **kwargs:
+        """
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = "RedenNA_late_patch_only"
