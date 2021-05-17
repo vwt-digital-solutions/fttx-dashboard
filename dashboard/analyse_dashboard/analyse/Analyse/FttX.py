@@ -24,6 +24,7 @@ from Analyse.Record.DocumentListRecord import DocumentListRecord
 from Analyse.Record.ListRecord import ListRecord
 from Analyse.Record.Record import Record
 from Analyse.Record.RecordListWrapper import RecordListWrapper
+from config import FC_HISTORY_TABLE
 from functions import (
     calculate_current_werkvoorraad, calculate_redenna_per_period,
     cluster_reden_na, create_project_filter, extract_aangesloten_orders_dates,
@@ -32,11 +33,10 @@ from functions import (
     extract_realisatie_hc_dates, extract_realisatie_hpend_dates,
     extract_target_dates, extract_voorspelling_dates,
     extract_werkvoorraad_has_dates, get_database_engine, individual_reden_na,
-    overview_reden_na, ratio_sum_over_periods_to_record, rules_to_state,
+    overview_reden_na, ratio_sum_over_periods_to_record,
     sum_over_period_to_record,
     voorspel_and_planning_minus_HPend_sum_over_periods_to_record)
 from toggles import ReleaseToggles
-from config import FC_HISTORY_TABLE
 
 logger = logging.getLogger("FttX Analyse")
 
@@ -109,8 +109,8 @@ where project in :projects
 
         sql_engine = get_database_engine()
         self._extract_first_changedate_opleverdatum(sql_engine)
-        self._extract_laswerkgereed_datum(sql_engine, column='laswerkapgereed')
-        self._extract_laswerkgereed_datum(sql_engine, column='laswerkdpgereed')
+        self._extract_laswerkgereed_datum(sql_engine, column="laswerkapgereed")
+        self._extract_laswerkgereed_datum(sql_engine, column="laswerkdpgereed")
         self._extract_status_civiel_datum(sql_engine)
         self._has_last_change_date(sql_engine)
 
@@ -128,36 +128,42 @@ WHERE fc.variable = 'opleverdatum'
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
-        ).bindparams(
-            bindparam("projects", expanding=True)
-        )
+        ).bindparams(bindparam("projects", expanding=True))
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
 
         # rename old column for 'opleverdatum' and then merge new opleverdatum from history.
-        self.extracted_data.df = self.extracted_data.df.rename(columns={'opleverdatum': 'opleverdatum_old'})
-        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+        self.extracted_data.df = self.extracted_data.df.rename(
+            columns={"opleverdatum": "opleverdatum_old"}
+        )
+        self.extracted_data.df = self.extracted_data.df.merge(
+            df, how="left", on="sleutel"
+        )
 
-        cols = ['opleverdatum', 'opleverdatum_old']
-        self.extracted_data.df[cols] = self.extracted_data.df[cols].apply(pd.to_datetime,
-                                                                          infer_datetime_format=True,
-                                                                          errors="coerce")
+        cols = ["opleverdatum", "opleverdatum_old"]
+        self.extracted_data.df[cols] = self.extracted_data.df[cols].apply(
+            pd.to_datetime, infer_datetime_format=True, errors="coerce"
+        )
 
         # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
-        self.extracted_data.df['opleverdatum'] = self.extracted_data.df['opleverdatum'] - timedelta(days=1)
+        self.extracted_data.df["opleverdatum"] = self.extracted_data.df[
+            "opleverdatum"
+        ] - timedelta(days=1)
 
         # building-up history began 2020-10-05, before that day use the opleverdatum as_is
         # to prevent large peaks in timeseries
-        mask = self.extracted_data.df['opleverdatum_old'] < pd.Timestamp("2020-10-05")
-        self.extracted_data.df.loc[mask, 'opleverdatum'] = self.extracted_data.df.loc[mask, 'opleverdatum_old']
-        self.extracted_data.df.drop(columns=['opleverdatum_old'], inplace=True)
+        mask = self.extracted_data.df["opleverdatum_old"] < pd.Timestamp("2020-10-05")
+        self.extracted_data.df.loc[mask, "opleverdatum"] = self.extracted_data.df.loc[
+            mask, "opleverdatum_old"
+        ]
+        self.extracted_data.df.drop(columns=["opleverdatum_old"], inplace=True)
 
     def _extract_laswerkgereed_datum(self, sql_engine, column):
         """Function to extract the laswerk gereed datum from the history table in the database"""
 
         logger.info(f'Extracting history "{column}" from sql database')
-        column_name = f'{column}_datum'
+        column_name = f"{column}_datum"
 
         sql = text(
             f"""
@@ -177,10 +183,14 @@ GROUP BY `sleutel`
         )
 
         # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
-        df[column_name] = df[column_name].apply(pd.to_datetime, infer_datetime_format=True, errors="coerce")
+        df[column_name] = df[column_name].apply(
+            pd.to_datetime, infer_datetime_format=True, errors="coerce"
+        )
         df[column_name] = df[column_name] - timedelta(days=1)
 
-        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+        self.extracted_data.df = self.extracted_data.df.merge(
+            df, how="left", on="sleutel"
+        )
 
     def _extract_status_civiel_datum(self, sql_engine):
         """Function to extract the status_civiel datum from the history table in the database"""
@@ -196,20 +206,20 @@ AND `value` NOT LIKE '0%'
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
-        ).bindparams(
-            bindparam("projects", expanding=True)
-        )
+        ).bindparams(bindparam("projects", expanding=True))
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
 
         # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
-        df['status_civiel_datum'] = df['status_civiel_datum'].apply(pd.to_datetime,
-                                                                    infer_datetime_format=True,
-                                                                    errors="coerce")
-        df['status_civiel_datum'] = df['status_civiel_datum'] - timedelta(days=1)
+        df["status_civiel_datum"] = df["status_civiel_datum"].apply(
+            pd.to_datetime, infer_datetime_format=True, errors="coerce"
+        )
+        df["status_civiel_datum"] = df["status_civiel_datum"] - timedelta(days=1)
 
-        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+        self.extracted_data.df = self.extracted_data.df.merge(
+            df, how="left", on="sleutel"
+        )
 
     def _has_last_change_date(self, sql_engine):
         """Function to extract the last_change datum of hasdatum from the history table in the database"""
@@ -224,20 +234,20 @@ WHERE `variable` = 'hasdatum'
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
-        ).bindparams(
-            bindparam("projects", expanding=True)
-        )
+        ).bindparams(bindparam("projects", expanding=True))
         df = pd.read_sql(
             sql, sql_engine.connect(), params={"projects": tuple(self.projects)}
         )
 
         # correct 1 day delay in data delivery of robot. So creationDate is officially 1 day to late.
-        df['hasdatum_change_date'] = df['hasdatum_change_date'].apply(pd.to_datetime,
-                                                                      infer_datetime_format=True,
-                                                                      errors="coerce")
-        df['hasdatum_change_date'] = df['hasdatum_change_date'] - timedelta(days=1)
+        df["hasdatum_change_date"] = df["hasdatum_change_date"].apply(
+            pd.to_datetime, infer_datetime_format=True, errors="coerce"
+        )
+        df["hasdatum_change_date"] = df["hasdatum_change_date"] - timedelta(days=1)
 
-        self.extracted_data.df = self.extracted_data.df.merge(df, how='left', on='sleutel')
+        self.extracted_data.df = self.extracted_data.df.merge(
+            df, how="left", on="sleutel"
+        )
 
     def extract_project_info(self):
         """
@@ -316,67 +326,14 @@ class FttXTransform(Transform):
     def transform(self, **kwargs):
         super().transform()
         logger.info("Transforming the data following the FttX protocol")
-        self._make_project_list()
         self._fix_dates()
         self._cluster_reden_na()
-        self._add_status_columns()
-        self._set_totals()
-
-    def _is_ftu_available(self, project):
-        """
-        This functions checks whether a FTU0 date is available
-
-        Args:
-            project: the project name
-
-        Returns:
-            bool: boolean if ftu0 is available or not
-
-        """
-        available = False
-        ftu0 = self.transformed_data.ftu["date_FTU0"].get(project)
-        if ftu0:
-            available = True
-        return available
-
-    def _make_project_list(self):
-        """
-        This functions returns a list of projects that have at least a FTU0 date.
-        All the projects in this list will be evaluated in the analysis.
-
-        Returns:
-            list: returns a list of projects names
-        """
-        project_list = []
-        if self.client == "tmobile":
-            self.project_list = self.config["projects"]
-        else:
-            for project in self.config["projects"]:
-                if self._is_ftu_available(project):
-                    project_list.append(project)
-                else:
-                    logger.info(f"For the {project} we do not have a FTU0 date")
-            self.project_list = project_list
-
-    # TODO: Documentation by Mark Bruisten
-    def _set_totals(self):
-        """
-        Sets total amount of connections per project in transformed_data dictionary.
-
-        Returns:
-
-        """
-        self.transformed_data.totals = {}
-        for project, project_df in self.transformed_data.df.groupby("project"):
-            self.transformed_data.totals[project] = len(project_df)
 
     # TODO: Documentation by Erik van Egmond
     def _fix_dates(self):
         """Function that tranfsorms the columns with a date to pd.datetime format"""
 
-        logger.info(
-            "Transforming columns to datetime format"
-        )
+        logger.info("Transforming columns to datetime format")
         self.transformed_data.datums = datums = [
             "activatie_datum",
             "hasdatum",
@@ -389,7 +346,7 @@ class FttXTransform(Transform):
             "toestemming_datum",
             "creation",
             "plan_date",
-            "hasdatum_change_date"
+            "hasdatum_change_date",
         ]
         self.transformed_data.df[datums] = self.transformed_data.df[datums].apply(
             pd.to_datetime, infer_datetime_format=True, errors="coerce", utc=True
@@ -422,83 +379,6 @@ class FttXTransform(Transform):
         self.transformed_data.df["cluster_redenna"] = self.transformed_data.df[
             "cluster_redenna"
         ].astype(cluster_types)
-
-    # TODO: Documentation by Erik van Egmond
-    def _add_status_columns(self):
-        logger.info("Transforming dataframe through adding status columns")
-        state_list = [
-            "niet_opgeleverd",
-            "ingeplanned",
-            "opgeleverd_zonder_hc",
-            "opgeleverd",
-        ]
-        self.transformed_data.df["false"] = False
-        has_rules_list = [
-            br.has_niet_opgeleverd(self.transformed_data.df),
-            br.has_ingeplanned(self.transformed_data.df),
-            br.hp_opgeleverd(self.transformed_data.df),
-            br.hc_opgeleverd(self.transformed_data.df),
-        ]
-        logger.info("Added has_rules_list")
-        has = rules_to_state(has_rules_list, state_list)
-        geschouwd_rules_list = [
-            ~br.toestemming_bekend(self.transformed_data.df),
-            self.transformed_data.df["false"],
-            self.transformed_data.df["false"],
-            br.toestemming_bekend(self.transformed_data.df),
-        ]
-        geschouwd = rules_to_state(geschouwd_rules_list, state_list)
-        logger.info("Added geschouwd_rules_list")
-
-        bis_gereed_rules_list = [
-            br.bis_niet_opgeleverd(self.transformed_data.df),
-            self.transformed_data.df["false"],
-            self.transformed_data.df["false"],
-            br.bis_opgeleverd(self.transformed_data.df),
-        ]
-        bis_gereed = rules_to_state(bis_gereed_rules_list, state_list)
-        logger.info("Added bis_gereed_rules_list")
-
-        laswerkdpgereed_rules_list = [
-            br.laswerk_dp_niet_gereed(self.transformed_data.df),
-            self.transformed_data.df["false"],
-            self.transformed_data.df["false"],
-            br.laswerk_dp_gereed(self.transformed_data.df),
-        ]
-        laswerkdpgereed = rules_to_state(laswerkdpgereed_rules_list, state_list)
-
-        logger.info("Added laswerkdpgereed_rules_list")
-
-        laswerkapgereed_rules_list = [
-            br.laswerk_ap_niet_gereed(self.transformed_data.df),
-            self.transformed_data.df["false"],
-            self.transformed_data.df["false"],
-            br.laswerk_ap_gereed(self.transformed_data.df),
-        ]
-        laswerkapgereed = rules_to_state(laswerkapgereed_rules_list, state_list)
-
-        logger.info("Added laswerkapgereed_rules_list")
-        business_rules_list = [
-            [geschouwd, "schouw_status"],
-            [bis_gereed, "bis_status"],
-            [self.transformed_data.df["soort_bouw"] == "Laag", "laagbouw"],
-            [laswerkdpgereed, "lasDP_status"],
-            [laswerkapgereed, "lasAP_status"],
-            [has, "HAS_status"],
-        ]
-        neccesary_info_list = [
-            [self.transformed_data.df["sleutel"], "sleutel"],
-        ]
-
-        series_list = business_rules_list + neccesary_info_list
-
-        cols, colnames = list(zip(*series_list))
-        status_df = pd.concat(cols, axis=1)
-        status_df.columns = colnames
-        self.transformed_data.df.drop("false", inplace=True, axis=1)
-        self.transformed_data.df = pd.merge(
-            self.transformed_data.df, status_df, on="sleutel", how="left"
-        )
 
 
 # TODO: Documentation by Erik van Egmond
