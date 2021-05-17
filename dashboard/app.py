@@ -1,3 +1,4 @@
+import ast
 import logging
 import os
 from datetime import datetime
@@ -108,10 +109,10 @@ def get_database_engine():
     return create_engine(SACN, pool_recycle=3600)
 
 
-def download_from_sql(query):
+def download_from_sql(query, bindparam=None):
     sqlEngine = get_database_engine()
     try:
-        result = pd.read_sql(query, sqlEngine)
+        result = pd.read_sql(query, sqlEngine, params=bindparam)
     except ValueError as e:
         logging.info(e)
         result = pd.DataFrame()
@@ -138,12 +139,14 @@ def df_to_excel(df: pd.DataFrame, relevant_columns: list = None):
 def order_wait_download():
     from data.download_queries import sleutel_info_redenna_modal
 
-    sleutels = flask.request.args.get("sleutels")
+    sleutels = ast.literal_eval(flask.request.args.get("sleutels"))
     project = flask.request.args.get("project")
     wait_category = flask.request.args.get("wait_category")
     logging.info("Collecting data for sleutels.")
 
-    result = download_from_sql(sleutel_info_redenna_modal(sleutels=sleutels))
+    query = sleutel_info_redenna_modal(sleutels=sleutels)
+
+    result = download_from_sql(query, bindparam=sleutels)
 
     relevant_columns = [
         "adres",

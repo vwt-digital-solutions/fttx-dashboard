@@ -85,6 +85,8 @@ def fetch_data_for_overview_boxes(client, year):
         if (len(values) == 3) & (values[1] != "n.v.t."):
             if values[2] != "n.v.t.":
                 values[1] = str(round(int(values[1]) / int(values[2]), 2))
+                if (title == "HC / HPend") and (client == "tmobile"):
+                    values[1] = "n.v.t."
 
         parameters_global_info_list.append(
             dict(
@@ -93,7 +95,7 @@ def fetch_data_for_overview_boxes(client, year):
                 text1="HPciviel: ",
                 text2="HPend: " if title != "Ratio <12 weken" else "HC: ",
                 value1=values[0],
-                value2=values[1] if title != "HC / HPend" else "n.v.t.",
+                value2=values[1],
             )
         )
 
@@ -347,8 +349,6 @@ def fetch_data_for_indicator_boxes_tmobile(project, client):
                 client=client,
                 project=project,
             )
-            print(value)
-            print(value2)
             if (value2 != 0) & (value != "n.v.t."):
                 value = round(value / value2 * 100) / 100
 
