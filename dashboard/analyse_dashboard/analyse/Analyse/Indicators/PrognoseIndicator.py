@@ -20,6 +20,18 @@ class PrognoseIndicator(LineIndicator):
         )
 
     def _make_project_line(self, project):
+        """Creates a line for given project that extrapolates the daily speed of realisation line (HPend / day)
+        that has been achieved so far. The extrapolation is based on the average of a set of daily speeds
+        in the realisation line (on default the set of speeds at the last 50% of days on which HPend has been realized).
+        If too little has been realized on the project for calculation of an average, the extrapolation
+        is based on the average speed over all projects.
+
+        Args:
+            project
+
+        Returns:
+            Timeseries Line
+        """
         start_date = self.project_info[project][self.type_start_date]
         total_amount = self.project_info[project][self.type_total_amount]
         realisation_rate_line = RealisationHPendIndicator(
@@ -73,10 +85,25 @@ class PrognoseIndicator(LineIndicator):
         return line
 
     def _calculate_mean_realisation_rate_client(self):
+        """Calculates the average daily speed of realisation (HPend / day) over all projects.
+
+        Returns:
+            Value of average speed
+        """
         df = self.df[br.hpend(self.df)]
         return df.groupby(["project", "opleverdatum"]).size().mean()
 
     def _make_extrapolated_line(self, realisation_rate_line, mean_rate, total_amount):
+        """Extrapolates the realised timeseriesline with the average speed until the end of the project is reached.
+
+        Args:
+            realisation_rate_line: realised timeseries line calculated with the RealisationHPendIndicator.
+            mean_rate: the average speed for extrapolation.
+            total_amount: the total number of houses to be realised in the project.
+
+        Returns:
+            Extrapolated timeseries line
+        """
         start_date = realisation_rate_line.domain.end
         distance_to_max_value = (
             total_amount - realisation_rate_line.integrate().get_most_recent_point()

@@ -4,8 +4,9 @@ from Analyse.Indicators.BusinessRule import BusinessRule
 
 class DataIndicator(BusinessRule, Aggregator):
     """
-    Barebones indicator class containing standard functionality that every type of Indicator will be able to do.
+    Barebone indicator class containing standard functionality that every type of Indicator will be able to do.
     """
+
     def perform(self):
         ...
 
