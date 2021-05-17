@@ -8,6 +8,20 @@ class ActualRedenNAIndicator(DataIndicator, Aggregator):
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = None
+        self.relevant_columns = [
+            "adres",
+            "postcode",
+            "huisnummer",
+            "soort_bouw",
+            "toestemming",
+            "creation",
+            "opleverstatus",
+            "opleverdatum",
+            "hasdatum",
+            "redenna",
+            "toelichting_status",
+            "plan_type",
+        ]
 
     def perform(self):
         """
@@ -19,9 +33,15 @@ class ActualRedenNAIndicator(DataIndicator, Aggregator):
         aggregate = self.aggregate(df=df, by=["project", "cluster_redenna"]).fillna(0)
         project_dict = {}
         for project, _ in aggregate.groupby(level=0):
+            clusters = aggregate.loc[project].to_dict()["sleutel"]
+            sleutels = list(df[df.project == project].sleutel)
+            df_aggregate = self.df[self.df.sleutel.isin(sleutels)][
+                self.relevant_columns
+            ]
+            df_aggregate = df_aggregate.astype(str).to_dict(orient="records")
             project_dict[project] = dict(
-                clusters=aggregate.loc[project].to_dict()["sleutel"],
-                sleutels=list(df[df.project == project].sleutel),
+                clusters=clusters,
+                df_aggregate=df_aggregate,
             )
         return self.to_record(project_dict)
 
