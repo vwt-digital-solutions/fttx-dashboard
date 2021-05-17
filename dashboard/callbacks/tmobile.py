@@ -6,7 +6,7 @@ from dash.exceptions import PreventUpdate
 
 from app import app
 from data.data import (fetch_data_for_indicator_boxes_tmobile,
-                       fetch_data_for_redenna_modal, fetch_sleutels_figure)
+                       fetch_data_for_redenna_modal)
 from layout.components.figure import figure
 from layout.components.graphs import redenna_modal_chart
 from layout.components.list_of_boxes import project_indicator_list
@@ -69,16 +69,11 @@ def indicator_modal(
             ),
             title="Reden na",
         )
-        sleutels_figure = fetch_sleutels_figure(
-            project=project,
-            client=client,
-            indicator_type=order_type,
-            wait_category=wait_category,
-        )
+
         output = [
             not is_open,
             figure,
-            f"/dash/order_wait_download?sleutels={sleutels_figure}&project={project}&wait_category={wait_category}",
+            f"/dash/order_wait_download?project={project}&wait_category={wait_category}&order_type={order_type}",
         ]
     elif close_clicks:
         output = [not is_open, {"data": None, "layout": None}, ""]

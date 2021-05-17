@@ -24,7 +24,6 @@ from Analyse.Indicators.ActualStatusBarChartIndicator import \
     ActualStatusBarChartIndicator
 from Analyse.Indicators.ClientTargetKPNIndicator import \
     ClientTargetKPNIndicator
-from Analyse.Indicators.HASIngeplandIndicator import HASIngeplandIndicator
 from Analyse.Indicators.HCOpen import HCOpen
 from Analyse.Indicators.HCPatchOnly import HCPatchOnly
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
@@ -85,12 +84,6 @@ class FttXIndicatorTransform(FttXTransform):
     def transform(self):
         super().transform()
 
-    def _add_status_columns(self):
-        return None
-
-    def _set_totals(self):
-        return None
-
 
 class FttXIndicatorAnalyse(FttXBase):
     def __init__(self, **kwargs):
@@ -123,8 +116,6 @@ class FttXIndicatorAnalyse(FttXBase):
                 df=df, project_info=project_info, client=self.client
             ).perform()
         )
-
-        self.records.append(HASIngeplandIndicator(df=df, client=self.client).perform())
 
         self.records.append(
             PerformanceGraphIndicator(
@@ -451,7 +442,6 @@ class FttXIndicatorETL(
 class KPNIndicatorETL(
     FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, KPNIndicatorAnalyse
 ):
-
     def perform(self):
         super().extract()
         super().transform()
@@ -475,7 +465,6 @@ class KPNIndicatorETL(
 class DFNIndicatorETL(
     FttXIndicatorETL, KPNDFNExtract, KPNDFNTransform, DFNIndicatorAnalyse
 ):
-
     def perform(self):
         super().extract()
         super().transform()

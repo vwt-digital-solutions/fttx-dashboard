@@ -7,11 +7,25 @@ from Analyse.Record.DictRecord import DictRecord
 
 class ActualStatusBarChartIndicator(DataIndicator):
     def __init__(self, **kwargs):
+        """
+        Indicator that creates a matrix to be used in the status bar chart indicator.
+
+        Args:
+            **kwargs:
+        """
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = "ActualStatusBarChartIndicator"
 
     def apply_business_rules(self):
+        """
+        Creates additional columns at the project status dataframe which
+        contain information on the status of a house for a given phase.
+        This information is required to make the aggregated dataframe for the
+        actual status barchart at the frontend.
+
+        Returns: a dataframe with columns on the status of a house, for given phases.
+        """
         df = copy.deepcopy(self.df)
 
         df["HAS_status"] = False
@@ -57,8 +71,11 @@ class ActualStatusBarChartIndicator(DataIndicator):
 
     def perform(self):
         """
-        Aggregate to clusters and retrieve the counts, then make the result into a record.
-        Returns: Record reday to be written to the firestore, containing clustered data.
+        Aggregates the dataframe with information on the status of houses for given phases.
+        The aggregate contains the number of houses that belong to a specific selection of
+        states at different phases.
+
+        Returns: Record ready to be written to the firestore, containing clustered data per project.
 
         """
         df = self.apply_business_rules()

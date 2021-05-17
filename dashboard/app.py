@@ -1,4 +1,3 @@
-import ast
 import logging
 import os
 from datetime import datetime
@@ -137,33 +136,23 @@ def df_to_excel(df: pd.DataFrame, relevant_columns: list = None):
 
 @app.server.route("/dash/order_wait_download")
 def order_wait_download():
-    from data.download_queries import sleutel_info_redenna_modal
+    from data.data import fetch_df_aggregate
 
-    sleutels = ast.literal_eval(flask.request.args.get("sleutels"))
     project = flask.request.args.get("project")
     wait_category = flask.request.args.get("wait_category")
+    order_type = flask.request.args.get("order_type")
+    client = "tmobile"
+
     logging.info("Collecting data for sleutels.")
 
-    query = sleutel_info_redenna_modal(sleutels=sleutels)
+    df_aggregate = fetch_df_aggregate(
+        project=project,
+        client=client,
+        indicator_type=order_type,
+        wait_category=wait_category,
+    )
 
-    result = download_from_sql(query, bindparam=sleutels)
-
-    relevant_columns = [
-        "adres",
-        "postcode",
-        "huisnummer",
-        "soort_bouw",
-        "toestemming",
-        "creation",
-        "opleverstatus",
-        "opleverdatum",
-        "hasdatum",
-        "redenna",
-        "toelichting_status",
-        "plan_type",
-    ]
-
-    excel = df_to_excel(result, relevant_columns)
+    excel = df_to_excel(df_aggregate)
     now = datetime.now().strftime("%Y%m%d")
 
     return send_file(

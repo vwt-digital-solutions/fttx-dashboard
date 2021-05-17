@@ -20,6 +20,17 @@ class InternalTargetIndicator(LineIndicator):
         self.indicator_name = "InternalTargetLine"
 
     def _make_project_line(self, project):
+        """
+        Creates a line which contains the required daily speed (houses / day) in a given phase of the project
+        given the targeted start date, end date and / or speed of the project. The target information
+        is stored at the dictionary project_info.
+
+        Args:
+            project
+
+        Returns:
+            Timeseries line
+        """
         start_project = self.project_info[project][self.type_start_date]
         end_project = self.project_info[project][self.type_end_date]
         if end_project:

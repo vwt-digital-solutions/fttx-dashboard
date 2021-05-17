@@ -9,7 +9,8 @@ from Analyse.Record.RecordList import RecordList
 
 class InternalTargetTmobileIndicator(TimeseriesIndicator):
     """
-    Indicator to calculate number of houses realised over days per project.
+    Indicator to calculate a line per project that contains the number of houses
+    that have been requested for HAS by Tmobile per day.
     Makes LineRecords per project, where all relevant details can be calculated.
     Also makes a LineRecords for the aggregate of the project lines for a given client
     """

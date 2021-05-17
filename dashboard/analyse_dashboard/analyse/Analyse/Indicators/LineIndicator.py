@@ -6,7 +6,7 @@ from Analyse.Record.RecordList import RecordList
 
 class LineIndicator(Indicator):
     """
-    Barebones indicator class containing standard functionality that every type of Indicator will be able to do.
+    Barebone indicator class containing standard functionality that every type of Indicator will be able to do.
     """
 
     def __init__(self, client, project_info):
@@ -18,6 +18,11 @@ class LineIndicator(Indicator):
         self.type_total_amount = None
 
     def perform(self):
+        """Adds for each project a record to the record_list that contains the line made at _make_project_line.
+
+        Returns:
+            List of records which are ready for sending to the firestore.
+        """
         line_list = []
         record_list = RecordList()
         for project in self.project_info:

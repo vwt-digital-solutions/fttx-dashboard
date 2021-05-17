@@ -376,14 +376,14 @@ def fetch_data_for_redenna_modal(project, client, indicator_type, wait_category)
     return dict(sorted(pie_dict.items()))
 
 
-def fetch_sleutels_figure(project, client, indicator_type, wait_category):
-    sleutels = collection.get_redenna_modal_from_document(
+def fetch_df_aggregate(project, client, indicator_type, wait_category):
+    doc = collection.get_redenna_modal_from_document(
         collection="Indicators",
         graph_name=f"RedenNA_{wait_category}_{indicator_type}",
         client=client,
         project=project,
-    )["sleutels"]
-    return sleutels
+    )
+    return pd.DataFrame(doc["df_aggregate"])
 
 
 def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
