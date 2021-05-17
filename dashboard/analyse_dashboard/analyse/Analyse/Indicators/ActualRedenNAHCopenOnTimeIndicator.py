@@ -6,6 +6,12 @@ from Analyse.Indicators.ActualRedenNAIndicator import ActualRedenNAIndicator
 
 class ActualRedenNAHCopenOnTimeIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
+        """
+        Indicator that creates cluster reden na's for on time open connections.
+
+        Args:
+            **kwargs:
+        """
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = "RedenNA_on_time_hc_aanleg"
