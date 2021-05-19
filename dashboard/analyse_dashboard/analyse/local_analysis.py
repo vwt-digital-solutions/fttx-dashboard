@@ -6,15 +6,13 @@ import sys
 from builtins import input
 
 import config
-from Analyse.KPNIndicatorAnalysis import (DFNIndicatorETL,
-                                          DFNIndicatorLocalETL,
-                                          DFNIndicatorTestETL,
-                                          KPNIndicatorETL,
-                                          KPNIndicatorLocalETL,
-                                          KPNIndicatorTestETL,
-                                          TmobileIndicatorETL,
-                                          TmobileIndicatorLocalETL,
-                                          TmobileIndicatorTestETL)
+from Analyse.IndicatorAnalysis import (DFNIndicatorETL, DFNIndicatorLocalETL,
+                                       DFNIndicatorTestETL, KPNIndicatorETL,
+                                       KPNIndicatorLocalETL,
+                                       KPNIndicatorTestETL,
+                                       TmobileIndicatorETL,
+                                       TmobileIndicatorLocalETL,
+                                       TmobileIndicatorTestETL)
 
 logging.basicConfig(
     format=" %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s",
@@ -36,9 +34,15 @@ def run_client(client_name, etl_process, steps=None):
         print(f"Performing {etl_process.__name__} for {client_name}")
         etl.perform()
     else:
-        if client == 'kpn':
+        if client == "kpn":
             steps = steps if steps <= 2 else steps + 1
-            step_list = [etl.extract, etl.transform, etl.analyse_1, etl.analyse_2, etl.load]
+            step_list = [
+                etl.extract,
+                etl.transform,
+                etl.analyse_1,
+                etl.analyse_2,
+                etl.load,
+            ]
             print(
                 f"Performing {steps} steps for {etl_process.__name__}, client: {client_name}"
             )
