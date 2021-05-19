@@ -513,25 +513,3 @@ def target_tmobile(df):
         & (~df.status.isin(["CANCELLED", "TO_BE_CANCELLED"]))
         & (df.type.isin(["AANLEG", "Aanleg"]))
     )
-
-
-def leverbetrouwbaar(df: pd.DataFrame):
-    """
-    This BR determines if the house is delivered in time (leverbetrouwbaar), thus:
-    -   The opleverdatum is not empty
-    -   The opleverdatum == hasdatum
-    -   The hasdatum has not changed within 3 days of the opleverdatum
-    Args:
-        df (pd.DataFrame): The transformed dataframe
-
-    Returns:
-        pd.Series: A series of truth values
-    """
-
-    mask = (
-        (df.opleverdatum == df.hasdatum)
-        & (df.hasdatum_change_date < (df.opleverdatum - pd.Timedelta(days=2)))
-        & (df.opleverdatum.notna())
-    )
-
-    return mask
