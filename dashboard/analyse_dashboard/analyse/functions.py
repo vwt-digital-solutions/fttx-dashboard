@@ -20,6 +20,21 @@ import config
 colors = config.colors_vwt
 
 
+def create_project_filter(df: pd.DataFrame):
+    """
+    Creates a filter based on the projects in the dataframe.
+    Args:
+        df (pd.DataFrame): A dataframe containing a categorical projects column.
+
+    Returns:
+        list[dict]: A list of dictionaries with the projects with the following shape
+        {'label': project, 'value': project}
+    """
+    filters = [{"label": x, "value": x} for x in df.project.cat.categories]
+    record = dict(filters=filters)
+    return record
+
+
 def round_(data):
     if isinstance(data, float):
         if (data > -1) & (data < 1):

@@ -30,11 +30,12 @@ class LineIndicator(Indicator):
             if line_project:
                 line_list.append(line_project)
                 record_list.append(self.to_record(line_project))
-        line_client = concat(
-            line_list, name=self.indicator_name, project="client_aggregate"
-        )
-        line_list.append(line_client)
-        record_list.append(self.to_record(line_client))
+        if line_list:
+            line_client = concat(
+                line_list, name=self.indicator_name, project="client_aggregate"
+            )
+            line_list.append(line_client)
+            record_list.append(self.to_record(line_client))
         return record_list
 
     def _make_project_line(self):

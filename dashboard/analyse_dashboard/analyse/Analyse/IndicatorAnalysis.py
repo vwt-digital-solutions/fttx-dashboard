@@ -32,8 +32,6 @@ from Analyse.Indicators.InternalTargetHPendIndicator import \
     InternalTargetHPendIndicator
 from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
     InternalTargetHPendIntegratedIndicator
-from Analyse.Indicators.InternalTargetTmobileIndicator import \
-    InternalTargetTmobileIndicator
 from Analyse.Indicators.LeverbetrouwbaarheidsIndicator import \
     LeverbetrouwbaarheidIndicator
 from Analyse.Indicators.PerformanceGraphIndicator import \
@@ -129,6 +127,12 @@ class FttXIndicatorAnalyse(FttXBase):
             LeverbetrouwbaarheidIndicator(
                 df=df,
                 client=self.client,
+            ).perform()
+        )
+
+        self.records.append(
+            InternalTargetHPendIndicator(
+                project_info=project_info, client=self.client
             ).perform()
         )
 
@@ -310,11 +314,6 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
             ).perform()
         )
         self.records.append(
-            InternalTargetHPendIndicator(
-                project_info=project_info, client=self.client
-            ).perform()
-        )
-        self.records.append(
             InternalTargetHPendIntegratedIndicator(
                 project_info=project_info, client=self.client
             ).perform()
@@ -348,11 +347,7 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
         super().analyse()
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
-        self.records.append(
-            InternalTargetTmobileIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
+
         self.records.append(HCPatchOnly(df=df, client=self.client).perform())
         self.records.append(HCOpen(df=df, client=self.client).perform())
         self.records.append(
