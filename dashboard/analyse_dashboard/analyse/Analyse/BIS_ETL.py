@@ -1,11 +1,11 @@
-from google.cloud import storage
-
-from Analyse.ETL import Extract, ETL, Transform, logger
-from functions import get_map_bnumber_vs_project_from_sql
+import re
 
 import pandas as pd
-import re
+from google.cloud import storage
+
 import config
+from Analyse.ETL import ETL, Extract, Transform, logger
+from functions import get_map_bnumber_vs_project_from_sql
 
 
 class BISExtract(Extract):
@@ -28,17 +28,19 @@ class BISExtract(Extract):
         mapping = get_map_bnumber_vs_project_from_sql()
         for file in client.list_blobs(bucket, prefix=folder):
             filename = file.name
-            if filename[-5:] == '.xlsx':
-                file_path = f'gs://{bucket}/{file.name}'
-                df = pd.read_excel(file_path,
-                                   sheet_name='Productie',
-                                   skiprows=list(range(0, 12)))
-                b_number = re.findall(r"B\d*", filename)[0][1:]  # find b-number (B + fiberconnect project number)
+            if filename[-5:] == ".xlsx":
+                file_path = f"gs://{bucket}/{file.name}"
+                df = pd.read_excel(
+                    file_path, sheet_name="Productie", skiprows=list(range(0, 12))
+                )
+                b_number = re.findall(r"B\d*", filename)[0][
+                    1:
+                ]  # find b-number (B + fiberconnect project number)
                 if b_number in list(mapping.index):
-                    df['project'] = mapping.at[b_number, 'project']
+                    df["project"] = mapping.at[b_number, "project"]
                     df_list.append(df)
                 else:
-                    logger.error(f'Cannot map b-number to project name: {b_number}')
+                    logger.error(f"Cannot map b-number to project name: {b_number}")
 
         df = pd.concat(df_list, sort=True)
 
@@ -49,6 +51,7 @@ class BISTransform(Transform):
     """
     Performs necessary transformation steps on extracted graven data and adds them to transformed data
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -64,16 +67,18 @@ class BISTransform(Transform):
     def _rename_columns(self):
         df_renamed = pd.DataFrame()
         df_renamed = df_renamed.append(self.extracted_data.df, ignore_index=True)
-        df_renamed = df_renamed.rename(columns={
-            'Kalender weeknummer': 'date',
-            '# Meters BIS geul': 'meters_bis_geul',
-            '# Meters tuinboringen': 'meters_tuinboring',
-            '# Huisaansluitingen': 'aantal_has',
-            '# BIS ploegen': 'aantal_bis_ploegen',
-            '# Tuinploegen': 'aantal_tuin_ploegen',
-            '# HAS ploegen': 'aantal_has_ploegen',
-            'Bijzonderheden': 'bijzonderheden'
-        })
+        df_renamed = df_renamed.rename(
+            columns={
+                "Kalender weeknummer": "date",
+                "# Meters BIS geul": "meters_bis_geul",
+                "# Meters tuinboringen": "meters_tuinboring",
+                "# Huisaansluitingen": "aantal_has",
+                "# BIS ploegen": "aantal_bis_ploegen",
+                "# Tuinploegen": "aantal_tuin_ploegen",
+                "# HAS ploegen": "aantal_has_ploegen",
+                "Bijzonderheden": "bijzonderheden",
+            }
+        )
 
         self.transformed_data.df = df_renamed
 
@@ -83,7 +88,7 @@ class BISTransform(Transform):
         Expands dataframe with to be a timeseries of the complete daterange between first and last date,
         filling missing dates with zeroes.
         """
-        logger.info('Expanding dates to create date-based index')
+        logger.info("Expanding dates to create date-based index")
 
         # TODO: Documentation by Casper van Houten.
         # TODO: Remove hardcoded year.
@@ -96,19 +101,34 @@ class BISTransform(Transform):
             Returns: datetime object with the first date of the input week.
 
             """
-            if x.startswith('2021_'):
-                return pd.to_datetime(x + '1', format='%Y_%W%w')
+            if x.startswith("2021_"):
+                return pd.to_datetime(x + "1", format="%Y_%W%w")
             else:
-                return (pd.to_datetime(x + '1', format='%Y_%W%w')) - pd.to_timedelta(7, unit='d')
+                return (pd.to_datetime(x + "1", format="%Y_%W%w")) - pd.to_timedelta(
+                    7, unit="d"
+                )
 
-        self.transformed_data.df['date'] = self.transformed_data.df['date'].apply(transform_weeknumbers)
-        self.transformed_data.df = self.transformed_data.df.set_index(['project', 'date'])
+        self.transformed_data.df["date"] = self.transformed_data.df["date"].apply(
+            transform_weeknumbers
+        )
+        self.transformed_data.df = self.transformed_data.df.set_index(
+            ["project", "date"]
+        )
+        self.transformed_data.df = self.transformed_data.df[
+            ~self.transformed_data.df.duplicated()
+        ]
 
-        df_date = pd.date_range(start=self.transformed_data.df.index.get_level_values(1).min(),
-                                end=(self.transformed_data.df.index.get_level_values(1).max()
-                                     + pd.to_timedelta(6, unit='d')),
-                                freq='D')
-        self.transformed_data.df = self.transformed_data.df.reindex(df_date, fill_value=None, level=1)
+        df_date = pd.date_range(
+            start=self.transformed_data.df.index.get_level_values(1).min(),
+            end=(
+                self.transformed_data.df.index.get_level_values(1).max()
+                + pd.to_timedelta(6, unit="d")
+            ),
+            freq="D",
+        )
+        self.transformed_data.df = self.transformed_data.df.reindex(
+            df_date, fill_value=None, level=1
+        )
 
 
 # TODO: Documentation by Casper van Houten
@@ -116,6 +136,7 @@ class BISETL(ETL, BISExtract, BISTransform):
     """
     ETL for graven meters.
     """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
