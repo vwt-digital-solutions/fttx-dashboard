@@ -172,16 +172,28 @@ def clickbar_hb(drop_selectie, mask_all):
 
 def update_date():
     try:
-        date_an_kpn = api.get("/Graphs?id=update_date_kpn")[0]["date"][0:-4].replace(
-            "T", " "
-        )
+        date_an_kpn_1 = api.get("/Graphs?id=update_date_kpn_1")[0]["date"][
+            0:-4
+        ].replace("T", " ")
+        date_an_kpn_2 = api.get("/Graphs?id=update_date_kpn_2")[0]["date"][
+            0:-4
+        ].replace("T", " ")
+        date_an_capacity_kpn = api.get("/Graphs?id=update_date_capacity_kpn")[0][
+            "date"
+        ][0:-4].replace("T", " ")
         date_an_tmobile = api.get("/Graphs?id=update_date_tmobile")[0]["date"][
             0:-4
         ].replace("T", " ")
         date_an_dfn = api.get("/Graphs?id=update_date_dfn")[0]["date"][0:-4].replace(
             "T", " "
         )
-        date_an = min(date_an_kpn, date_an_tmobile, date_an_dfn)
+        date_an = min(
+            date_an_kpn_1,
+            date_an_kpn_2,
+            date_an_capacity_kpn,
+            date_an_tmobile,
+            date_an_dfn,
+        )
     except IndexError:
         date_an = "[niet beschikbaar]"
 

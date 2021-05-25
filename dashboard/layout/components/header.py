@@ -7,14 +7,14 @@ from data.graph import update_date
 
 def header(header_text=""):
     update_dates = update_date()
-    # data_processed_operational = update_dates[0]
+    data_processed_operational = update_dates[0]
     data_updated_operational = update_dates[1]
     data_process_finance = update_dates[2]
     data_updated_finance = update_dates[3]
     data_update_text_1 = f"""
-Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational}"""
-    # , en voor het laatst meegenomen in de analyse op {data_processed_operational}.
-    # """
+Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational}
+    , en voor het laatst meegenomen in de analyse op {data_processed_operational}.
+    """
     data_update_text_2 = f"""
 Financiele data (BAAN) is binnengekomen op {data_updated_finance},
 en voor het laatst meegenomen in de analyse op {data_process_finance}.
