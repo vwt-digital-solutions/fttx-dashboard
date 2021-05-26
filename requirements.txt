@@ -81,7 +81,7 @@ typing-extensions==3.10.0.0
 uritemplate==3.0.1
 urllib3==1.26.4
 URLObject==2.4.3
-Werkzeug==2.0.1
+Werkzeug==1.0.1
 xlrd==1.2.0
 XlsxWriter==1.1.8
 yarl==1.6.3
