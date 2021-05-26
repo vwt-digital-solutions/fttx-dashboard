@@ -1,22 +1,28 @@
 import copy
+from datetime import timedelta
 
 import pandas as pd
+
+from Analyse.Capacity_analysis.Domain import DateDomain, DateDomainRange
 from Analyse.Capacity_analysis.Line import TimeseriesLine
-from Analyse.Capacity_analysis.Domain import DateDomainRange, DateDomain
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
-from datetime import timedelta
 from toggles import ReleaseToggles
 
-toggles = ReleaseToggles('toggles.yaml')
+toggles = ReleaseToggles("toggles.yaml")
 
 
-# TODO: Documentation by Casper van Houten
-# TODO: Remove commented code
 class PhaseCapacity:
-
-    def __init__(self, df: pd.DataFrame, phase_data: dict, client: str,
-                 project: str, holiday_periods: list, poc_ideal_rate_line_masterphase=None, masterphase_data=None):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        phase_data: dict,
+        client: str,
+        project: str,
+        holiday_periods: list,
+        poc_ideal_rate_line_masterphase=None,
+        masterphase_data=None,
+    ):
         """This class enables to calculate and make records of all lines of a phase required for the capacity algorithm
         for a given project.
 
@@ -69,13 +75,16 @@ class PhaseCapacity:
         Returns:
             target rate line (object)
         """
-        intercept = self.phase_data['performance_norm_unit']
-        domain = DateDomainRange(begin=self.phase_data['start_date'],
-                                 n_days=self.phase_data['n_days'])
-        line = TimeseriesLine(data=intercept,
-                              domain=domain,
-                              name='target_indicator',
-                              max_value=self.phase_data['total_units'])
+        intercept = self.phase_data["performance_norm_unit"]
+        domain = DateDomainRange(
+            begin=self.phase_data["start_date"], n_days=self.phase_data["n_days"]
+        )
+        line = TimeseriesLine(
+            data=intercept,
+            domain=domain,
+            name="target_indicator",
+            max_value=self.phase_data["total_units"],
+        )
         return line
 
     def calculate_poc_real_rate_line(self):
@@ -85,10 +94,10 @@ class PhaseCapacity:
         Returns:
             poc real rate line (object)
         """
-        ds = self.df[self.phase_data['phase_column']]
-        line = TimeseriesLine(data=ds,
-                              name='poc_real_indicator',
-                              max_value=self.phase_data['total_units'])
+        ds = self.df[self.phase_data["phase_column"]]
+        line = TimeseriesLine(
+            data=ds, name="poc_real_indicator", max_value=self.phase_data["total_units"]
+        )
         return line
 
     def calculate_poc_ideal_rate_line(self):
@@ -106,31 +115,43 @@ class PhaseCapacity:
         daysleft = poc_real_rate_line.daysleft(end=target_rate_line.domain.end)
         # normal case: when there is still work to do and there is time left before the target deadline
         if (distance_to_max_value > 0) & (daysleft > 0):
-            domain = DateDomain(begin=poc_real_rate_line.domain.end, end=target_rate_line.domain.end)
-            holidays_in_date_range = self.count_holidays_in_date_range(self.holiday_periods,
-                                                                       domain.domain)
-            domain = DateDomain(begin=poc_real_rate_line.domain.end,
-                                end=target_rate_line.domain.end - timedelta(holidays_in_date_range))
+            domain = DateDomain(
+                begin=poc_real_rate_line.domain.end, end=target_rate_line.domain.end
+            )
+            holidays_in_date_range = self.count_holidays_in_date_range(
+                self.holiday_periods, domain.domain
+            )
+            domain = DateDomain(
+                begin=poc_real_rate_line.domain.end,
+                end=target_rate_line.domain.end - timedelta(holidays_in_date_range),
+            )
             slope = distance_to_max_value / (daysleft - holidays_in_date_range)
 
-            line = poc_real_rate_line.append(TimeseriesLine(data=slope,
-                                                            domain=domain),
-                                             skip=1)
+            line = poc_real_rate_line.append(
+                TimeseriesLine(data=slope, domain=domain), skip=1
+            )
         # exception: when there is still work to do but the target deadline has already passed
         elif (distance_to_max_value > 0) & (daysleft <= 0):
-            slope = distance_to_max_value / 7  # past deadline, production needs to be finish within a week
-            domain = DateDomain(begin=poc_real_rate_line.domain.end, end=pd.Timestamp.now() + timedelta(7))
-            line = poc_real_rate_line.append(TimeseriesLine(data=slope,
-                                                            domain=domain),
-                                             skip=1)
+            slope = (
+                distance_to_max_value / 7
+            )  # past deadline, production needs to be finish within a week
+            domain = DateDomain(
+                begin=poc_real_rate_line.domain.end,
+                end=pd.Timestamp.now() + timedelta(7),
+            )
+            line = poc_real_rate_line.append(
+                TimeseriesLine(data=slope, domain=domain), skip=1
+            )
         # no more work to do, so ideal line == realised line
         else:
             line = poc_real_rate_line
-        holiday_periods = self.slice_holiday_periods(holiday_periods=self.holiday_periods,
-                                                     periods_to_remove=poc_real_rate_line.domain.domain)
+        holiday_periods = self.slice_holiday_periods(
+            holiday_periods=self.holiday_periods,
+            periods_to_remove=poc_real_rate_line.domain.domain,
+        )
         line = self.add_holiday_periods_to_line(line, holiday_periods)
-        line.name = 'poc_ideal_indicator'
-        line.max_value = self.phase_data['total_units']
+        line.name = "poc_ideal_indicator"
+        line.max_value = self.phase_data["total_units"]
         return line
 
     def calculate_poc_verwacht_rate_line(self):
@@ -147,19 +168,25 @@ class PhaseCapacity:
         slope = poc_real_rate_line.integrate().extrapolate(data_partition=0.5).slope
         # when there not enough realised data pionts, we take the ideal speed as slope
         if slope == 0:
-            slope = self.phase_data['performance_norm_unit']
+            slope = self.phase_data["performance_norm_unit"]
         distance_to_max_value = poc_real_rate_line.distance_to_max_value()
         daysleft = poc_real_rate_line.daysleft(slope=slope)
         # if there is work to do we extend the pocreal line, if not ideal line == realised line
         if distance_to_max_value > 0:
-            domain = DateDomainRange(begin=poc_real_rate_line.domain.end, n_days=daysleft)
-            line = poc_real_rate_line.append(TimeseriesLine(data=slope, domain=domain), skip=1)
+            domain = DateDomainRange(
+                begin=poc_real_rate_line.domain.end, n_days=daysleft
+            )
+            line = poc_real_rate_line.append(
+                TimeseriesLine(data=slope, domain=domain), skip=1
+            )
         else:
             line = poc_real_rate_line
-        holiday_periods = self.slice_holiday_periods(self.holiday_periods, poc_real_rate_line.domain.domain)
+        holiday_periods = self.slice_holiday_periods(
+            self.holiday_periods, poc_real_rate_line.domain.domain
+        )
         line = self.add_holiday_periods_to_line(line, holiday_periods)
-        line.name = 'poc_verwacht_indicator'
-        line.max_value = self.phase_data['total_units']
+        line.name = "poc_verwacht_indicator"
+        line.max_value = self.phase_data["total_units"]
         return line
 
     def calculate_work_stock_rate_line(self):
@@ -174,10 +201,10 @@ class PhaseCapacity:
         """
         if not self.poc_ideal_rate_line_masterphase:
             raise ValueError
-        ratio = self.phase_data['total_units'] / self.masterphase_data['total_units']
+        ratio = self.phase_data["total_units"] / self.masterphase_data["total_units"]
         line = self.poc_ideal_rate_line_masterphase * ratio
-        line.name = 'work_stock_indicator'
-        line.max_value = self.phase_data['total_units']
+        line.name = "work_stock_indicator"
+        line.max_value = self.phase_data["total_units"]
         return line
 
     def calculate_work_stock_amount_line(self):
@@ -189,9 +216,12 @@ class PhaseCapacity:
         Returns:
             work stock amount line (object)
         """
-        line = self.calculate_work_stock_rate_line().integrate() - self.calculate_poc_ideal_rate_line().integrate()
-        line.name = 'work_stock_amount_indicator'
-        line.max_value = self.phase_data['total_units']
+        line = (
+            self.calculate_work_stock_rate_line().integrate()
+            - self.calculate_poc_ideal_rate_line().integrate()
+        )
+        line.name = "work_stock_amount_indicator"
+        line.max_value = self.phase_data["total_units"]
         return line
 
     def line_to_record(self, line: object):
@@ -201,21 +231,29 @@ class PhaseCapacity:
             line (object)
         """
 
-        if line.name == 'work_stock_amount_indicator':
-            self.record_list.append(LineRecord(record=line,
-                                               collection='Lines',
-                                               graph_name=f'{line.name}',
-                                               phase=self.phase_data['name'],
-                                               client=self.client,
-                                               project=self.project,
-                                               resample_method='mean'))
+        if line.name == "work_stock_amount_indicator":
+            self.record_list.append(
+                LineRecord(
+                    record=line,
+                    collection="Lines",
+                    graph_name=f"{line.name}",
+                    phase=self.phase_data["name"],
+                    client=self.client,
+                    project=self.project,
+                    resample_method="mean",
+                )
+            )
         else:
-            self.record_list.append(LineRecord(record=line,
-                                               collection='Lines',
-                                               graph_name=f'{line.name}',
-                                               phase=self.phase_data['name'],
-                                               client=self.client,
-                                               project=self.project))
+            self.record_list.append(
+                LineRecord(
+                    record=line,
+                    collection="Lines",
+                    graph_name=f"{line.name}",
+                    phase=self.phase_data["name"],
+                    client=self.client,
+                    project=self.project,
+                )
+            )
 
     def get_record(self):
         """Method to show records"""
@@ -243,10 +281,18 @@ class PhaseCapacity:
                 new_holiday_periods.append(base_holiday_period)
             elif remove_start and not remove_end:
                 new_holiday_periods.append(
-                    pd.date_range(periods_to_remove.max() + timedelta(days=1), base_holiday_period[-1]))
+                    pd.date_range(
+                        periods_to_remove.max() + timedelta(days=1),
+                        base_holiday_period[-1],
+                    )
+                )
             elif not remove_start and remove_end:
                 new_holiday_periods.append(
-                    pd.date_range(base_holiday_period[0], periods_to_remove.min() + timedelta(days=-1)))
+                    pd.date_range(
+                        base_holiday_period[0],
+                        periods_to_remove.min() + timedelta(days=-1),
+                    )
+                )
         return new_holiday_periods
 
     @staticmethod
@@ -275,14 +321,20 @@ class PhaseCapacity:
         Returns:
 
         """
-        holiday_periods = copy.deepcopy(sorted_holiday_periods)  # Retrieve full set of defined rest dates
+        holiday_periods = copy.deepcopy(
+            sorted_holiday_periods
+        )  # Retrieve full set of defined rest dates
         # Main loop.
         # You have to loop over the rest periods multiple times,
         # because you are extending the timeperiod in every loop
         while True:
             # Find all relevant rest periods, given current dates of the line
-            next_holiday_period, other_periods = self._find_next_holiday_periods_in_date_range(line.make_series().index,
-                                                                                               holiday_periods)
+            (
+                next_holiday_period,
+                other_periods,
+            ) = self._find_next_holiday_periods_in_date_range(
+                line.make_series().index, holiday_periods
+            )
             if not len(next_holiday_period):
                 break  # Stop looping if there's no rest periods left to add
             # Remove rest periods that have been added from the set that can still be added
@@ -301,10 +353,16 @@ class PhaseCapacity:
         Returns:
 
         """
-        holiday_period_line = TimeseriesLine(domain=DateDomain(begin=holiday_period[0], end=holiday_period[-1]), data=0)
+        holiday_period_line = TimeseriesLine(
+            domain=DateDomain(begin=holiday_period[0], end=holiday_period[-1]), data=0
+        )
         before_line = line.slice(end=holiday_period.min())
-        after_line = line.slice(begin=holiday_period.min()).translate_x(len(holiday_period))
-        return before_line.append(holiday_period_line, skip=1, skip_base=True).append(after_line)
+        after_line = line.slice(begin=holiday_period.min()).translate_x(
+            len(holiday_period)
+        )
+        return before_line.append(holiday_period_line, skip=1, skip_base=True).append(
+            after_line
+        )
 
     # Rest dates have to be sorted to yield correct results!!
     def _find_next_holiday_periods_in_date_range(self, date_range, holidays_period):
@@ -322,7 +380,9 @@ class PhaseCapacity:
             dates = holidays_period.pop(0)
             overlapping_dates = self._find_overlapping_dates(date_range, dates)
             if overlapping_dates:
-                overlapping_dates = pd.date_range(start=overlapping_dates[0], end=overlapping_dates[-1], freq='D')
+                overlapping_dates = pd.date_range(
+                    start=overlapping_dates[0], end=overlapping_dates[-1], freq="D"
+                )
                 break
         return overlapping_dates, holidays_period
 
@@ -330,11 +390,15 @@ class PhaseCapacity:
         if holidays_period.min() in base_period:
             overlapping_dates = holidays_period.to_list()
         else:
-            overlapping_dates = [date for date in holidays_period if date in base_period]
+            overlapping_dates = [
+                date for date in holidays_period if date in base_period
+            ]
         return overlapping_dates
 
     def _remove_holiday_periods(self, holidays_period, to_remove):
         new_list = [x for x in holidays_period if not to_remove]
         if len(new_list) == len(holidays_period):
-            raise ValueError('Did not remove value from list, this would result in infinite loop')
+            raise ValueError(
+                "Did not remove value from list, this would result in infinite loop"
+            )
         return new_list

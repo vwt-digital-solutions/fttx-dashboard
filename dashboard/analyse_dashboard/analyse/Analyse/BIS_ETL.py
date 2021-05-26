@@ -86,7 +86,6 @@ class BISTransform(Transform):
             df_list_renamed.append(df_renamed)
         self.transformed_data.df = pd.concat(df_list_renamed, sort=True)
 
-    # TODO: Documentation by Casper van Houten
     def _expand_dates(self):
         """
         Expands dataframe with to be a timeseries of the complete daterange between first and last date,
@@ -94,8 +93,6 @@ class BISTransform(Transform):
         """
         logger.info("Expanding dates to create date-based index")
 
-        # TODO: Documentation by Casper van Houten.
-        # TODO: Remove hardcoded year.
         def transform_weeknumbers(x):
             """
             Transforms input date into a datetime object
@@ -135,7 +132,6 @@ class BISTransform(Transform):
         )
 
 
-# TODO: Documentation by Casper van Houten
 class BISETL(ETL, BISExtract, BISTransform):
     """
     ETL for graven meters.
@@ -144,7 +140,6 @@ class BISETL(ETL, BISExtract, BISTransform):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    # TODO: Documentation by Casper van Houten
     def perform(self):
         """
         Performs extract and transform for bis etl, which are all ETL steps associated with BIS

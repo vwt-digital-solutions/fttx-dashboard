@@ -95,8 +95,15 @@ class Line:
             normalized_series = series / maximum
         return normalized_series
 
-    # TODO: Documentation by Casper van Houten
     def get_most_recent_point(self, total=None):
+        """
+        Retrieves the y-value of the line with the highest x-value present.
+        Args:
+            total: Total to normalize the line with (optional).
+
+        Returns: y-value at highest x-value of line.
+
+        """
         if total:
             recent_point = self.make_normalised_series(total)[-1]
         else:
@@ -251,8 +258,15 @@ class LinearLine(FunctionLine):
         series = pd.Series(index=self.domain.domain, data=values)
         return series
 
-    # TODO: Documentation by Casper van Houten
     def translate_x(self, delta):
+        """
+        Translate line by a given delta.
+        Args:
+            delta: amount to shift the line by
+
+        Returns: Shifted line.
+
+        """
         translated_intersect = self.intercept - delta * self.slope
         new_domain = self.domain.shift(delta)
         translated_line = LinearLine(
@@ -261,8 +275,16 @@ class LinearLine(FunctionLine):
 
         return translated_line
 
-    # TODO: Documentation by Casper van Houten
     def focus_domain(self, lower_treshold=None, upper_treshold=np.Inf):
+        """
+        Focus the domain of a line between extreme values.
+        Args:
+            lower_treshold: Lowest y-value to shrink the domain to.
+            upper_treshold: Highest y-value to shrink the domain to.
+
+        Returns: New line with shrunk domain.
+
+        """
         if lower_treshold is not None:
             intersect = lower_treshold
         else:
@@ -380,7 +402,6 @@ class PointLine(Line):
         integral = self.make_series().cumsum()
         return PointLine(data=integral, **kwargs)
 
-    # TODO: Documentation by Casper van Houten
     def linear_regression(self, data_partition=None):
         """
         Given a set of points, do a linear regression to extrapolate future data
@@ -439,13 +460,26 @@ class TimeseriesLine(PointLine):
         self.max_value = max_value
         self.project = project
 
-    # TODO: Documentation by Casper van Houten
     def make_series(self):
+        """
+        Make pandas series of line.
+        Returns: pandas.Series of data in Line.
+
+        """
         filled_data = self.data.reindex(self.domain.domain, fill_value=0)
         return filled_data
 
-    # TODO: Documentation by Casper van Houten
     def extrapolate(self, data_partition=None, **kwargs):
+        """
+        Extrapolates a Linearline from datapoints in current line
+
+        Args:
+            data_partition: Fraction of data to use to calculate extrapolation.
+            **kwargs:
+
+        Returns: LinearLine with extrapolated data.
+
+        """
         slope, intercept = self.linear_regression(data_partition)
         domain = DateDomain(self.data.index[0], self.data.index[-1])
         return LinearLine(slope=slope, intercept=intercept, domain=domain, **kwargs)

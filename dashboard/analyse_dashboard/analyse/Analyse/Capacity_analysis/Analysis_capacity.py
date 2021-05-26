@@ -19,8 +19,11 @@ from Analyse.FttX import (FttXExtract, FttXTestLoad, FttXTransform,
 from Analyse.Record.RecordList import RecordList
 
 
-# TODO: Documentation by Casper van Houten
 class CapacityExtract(FttXExtract):
+    """
+    Extract function for CapacityETL. Includes FttXExtract as well as BISETL, as both are used in CapacityAnalysis..
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.client = kwargs.get("client")
@@ -40,9 +43,11 @@ class CapacityPickleExtract(PickleExtract, CapacityExtract):
         self.extract_BIS()
 
 
-# TODO: Documentation by Casper van Houten
 class CapacityTransform(FttXTransform):
     def __init__(self, **kwargs):
+        """
+        CapacityTransform to be used in CapacityETL.
+        """
         super().__init__(**kwargs)
         if not hasattr(self, "config"):
             self.config = kwargs.get("config")
@@ -61,18 +66,43 @@ class CapacityTransform(FttXTransform):
         self._combine_and_reformat_data_for_capacity_analysis()
 
     def transform_bis_etl(self):
+        """
+        Performs the transform for bis_etl in context of CapacityETL.
+        """
         self.bis_etl.transform()
 
     def add_bis_etl_to_transformed_data(self):
+        """
+        Sets transformed_data of bis_etl on transformed_data of capacityETL.
+        """
         self.transformed_data.bis = self.bis_etl.transformed_data
 
     def get_civiel_start_date(self, start_date):
+        """
+        Retrieves datetime start date from a string start date. If missing, a default will be used.
+
+        Args:
+            start_date: String of civiel start date.
+
+        Returns: String of start date.
+
+        """
         default_start_date = "2021-01-01"
         if start_date == "None" or start_date is None or start_date == "":
             start_date = default_start_date
         return pd.to_datetime(start_date)
 
     def get_total_units(self, total_units, type_total):
+        """
+        Retrieves total units or sets a possible default if it is missing.
+
+        Args:
+            total_units: total units from source data
+            type_total: type of total to be used, either meters bis, meters tuinschieten or huisaansluitingen.
+
+        Returns: Total units transformed from source dict, or a default.
+
+        """
         default_total_unit_dict = {
             "meters BIS": 100000,
             "meters tuinschieten": 50000,
@@ -83,6 +113,10 @@ class CapacityTransform(FttXTransform):
         return float(total_units)
 
     def fill_projectspecific_phase_config(self):
+        """
+        Main loop to fill phase config from source data. Results in a dictionary of phase specific properties per
+        project, based on extracted data.
+        """
         phases_projectspecific = {}
         # Temporarily hard-coded values
         performance_norm_config = 0.366  # based  on dates Nijmegen Dukenburg
@@ -151,13 +185,15 @@ class CapacityTransform(FttXTransform):
             self.dict_capacity[project] = df_capacity_project
 
 
-# TODO: Documentation by Casper van Houten
 class CapacityLoad(Load):
+    """
+    Standard load functionality for Capacity ETL that writes all records to the firestore.
+    """
+
     def load(self):
         self.records.to_firestore()
 
 
-# TODO: Casper van Houten, add some simple examples
 class CapacityAnalyse(ETLBase):
     """
     Main class for the analyses required for the capacity planning algorithm. Per project and phase,
