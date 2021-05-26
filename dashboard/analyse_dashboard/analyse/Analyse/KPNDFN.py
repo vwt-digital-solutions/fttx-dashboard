@@ -7,20 +7,18 @@ from Analyse.FttX import FttXExtract, FttXTransform
 logger = logging.getLogger("KPN Analyse")
 
 
-# TODO: Documentation by Andre van Turnhout
 class KPNDFNExtract(FttXExtract):
+    """Extracts the planning excel for HPCiviel and HPend made bij Wout Bisselink from the gcp."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.planning_location = kwargs["config"].get("planning_location")
-        self.target_location = kwargs["config"].get("target_location")
         self.client_name = kwargs["config"].get("name")
 
-    # TODO: Documentation by Andre van Turnhout
     def extract(self):
         super().extract()
         self._extract_planning()
 
-    # TODO: Documentation by Andre van Turnhout
     def _extract_planning(self):
         logger.info("Extracting Planning")
         if self.planning_location:
@@ -30,10 +28,7 @@ class KPNDFNExtract(FttXExtract):
             self.extracted_data.planning = pd.DataFrame()
 
 
-# TODO: Documentation by Andre van Turnhout
 class KPNDFNTransform(FttXTransform):
-
-    # TODO: Documentation by Andre van Turnhout
     def transform(self):
         super().transform()
         self._transform_planning_new()

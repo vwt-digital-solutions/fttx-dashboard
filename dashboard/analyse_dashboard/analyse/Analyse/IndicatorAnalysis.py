@@ -88,8 +88,8 @@ class FttXIndicatorAnalyse(FttXBase):
         super().__init__(**kwargs)
         self.records = RecordList()
 
-    # TODO: Documentation by Andre van Turnhout
     def analyse(self):
+        """Performs an indicator and collects the records into records."""
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
 

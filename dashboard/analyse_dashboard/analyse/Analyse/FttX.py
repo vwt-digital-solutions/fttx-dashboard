@@ -312,7 +312,6 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._cluster_reden_na()
-        self._set_totals()
 
     def _is_ftu_available(self, project):
         """
@@ -349,18 +348,6 @@ class FttXTransform(Transform):
                 else:
                     logger.info(f"For the {project} we do not have a FTU0 date")
             self.project_list = project_list
-
-    # TODO: Documentation by Mark Bruisten
-    def _set_totals(self):
-        """
-        Sets total amount of connections per project in transformed_data dictionary.
-
-        Returns:
-
-        """
-        self.transformed_data.totals = {}
-        for project, project_df in self.transformed_data.df.groupby("project"):
-            self.transformed_data.totals[project] = len(project_df)
 
     # TODO: Documentation by Erik van Egmond
     def _fix_dates(self):
