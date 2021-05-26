@@ -70,12 +70,12 @@ class BISTransform(Transform):
         df_renamed = df_renamed.rename(
             columns={
                 "Kalender weeknummer": "date",
-                "# Meters BIS geul": "meters_bis_geul",
-                "# Meters tuinboringen": "meters_tuinboring",
-                "# Huisaansluitingen": "aantal_has",
-                "# BIS ploegen": "aantal_bis_ploegen",
-                "# Tuinploegen": "aantal_tuin_ploegen",
-                "# HAS ploegen": "aantal_has_ploegen",
+                "Meters BIS geul": "meters_bis_geul",
+                "Meters tuinboringen": "meters_tuinboring",
+                "Aantal Huisaansluitingen": "aantal_has",
+                "BIS ploegen": "aantal_bis_ploegen",
+                "Tuinploegen": "aantal_tuin_ploegen",
+                "HAS ploegen": "aantal_has_ploegen",
                 "Bijzonderheden": "bijzonderheden",
             }
         )
