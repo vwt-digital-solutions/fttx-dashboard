@@ -122,6 +122,9 @@ class CapacityTransform(FttXTransform):
         self.transformed_data.project_phase_data = phases_projectspecific
 
     def _combine_and_reformat_data_for_capacity_analysis(self):
+        """This function collects the required date columns (for each phase) for the capacity analysis,
+        reformats them and puts them per project in a dedicated dictionary (dict_capacity).
+        """
         self.dict_capacity = {}
         demo_projects = self.config["demo_projects_capacity"]
         for project in demo_projects:
