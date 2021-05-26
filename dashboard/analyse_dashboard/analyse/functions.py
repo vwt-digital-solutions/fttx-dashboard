@@ -14,7 +14,6 @@ from dateutil.relativedelta import relativedelta
 from google.cloud import firestore, secretmanager
 from sqlalchemy import create_engine
 
-import business_rules as br
 import config
 
 colors = config.colors_vwt
@@ -91,8 +90,19 @@ def set_date_update(client=None):
     firestore.Client().collection("Graphs").document(record["id"]).set(record)
 
 
-# TODO: Documentation by Andre van Turnhout Do not remove.
 def error_check_FCBC(df: pd.DataFrame):
+    """This function determines how many houses in the dataframe fall
+    in a specific error category (named business rules). The type of errors
+    are documented at the BCExport pdf supplied by KPN. All the errors are related to
+    faulty logging in FiberConnect which leads to refusal of import at BCexport.
+
+    Args:
+        df (pd.DataFrame): dataframe with information on houses from FiberConnect.
+
+    Returns:
+        n_err: Dictionary with total number of errors per project.
+        errors_FC_BC: Dictionary of list of sleutels per error type per project.
+    """
     business_rules = {}
 
     no_errors_series = pd.Series([False]).repeat(len(df)).values
@@ -374,56 +384,6 @@ def error_check_FCBC(df: pd.DataFrame):
         n_err[plaats] = len(set(total_sleutels))
 
     return n_err, errors_FC_BC
-
-
-# TODO: Documentation by  Andre van Turnhout, add the arguments and return value   -> can this be removed?
-def wait_bins(df: pd.DataFrame, time_delta_days: int = 0) -> pd.DataFrame:
-    """
-    This function counts the wait between toestemming datum and now (or a reference date, based on time_delta_days).
-    It only considers houses which are not connected yet.
-
-    Args:
-        df:
-        time_delta_days:
-
-    Returns:
-
-    """
-    time_point = pd.Timestamp.today() - pd.Timedelta(days=time_delta_days)
-    mask = ~br.opgeleverd(df, time_delta_days) & br.toestemming_bekend(df)
-    toestemming_df = df[mask][
-        ["toestemming", "toestemming_datum", "opleverdatum", "cluster_redenna"]
-    ]
-
-    toestemming_df["waiting_time"] = (
-        time_point - toestemming_df.toestemming_datum
-    ).dt.days / 7
-    toestemming_df["bins"] = pd.cut(
-        toestemming_df.waiting_time,
-        bins=[-np.inf, 0, 8, 12, np.inf],
-        labels=["before_order", "on_time", "limited_time", "late"],
-    )
-    return toestemming_df
-
-
-# TODO: Documentation by Casper van Houten
-def calculate_oplevertijd(row):
-    """
-    Calculates the oplevertijd, which is the amount of days between the toestemmingsdatum and opleverdatum.
-    Used for T-mobile, as it uses 'ordered' logic, which only applies to T-mobile.
-    Args:
-        row: row of data, including exactly one opleverdatum and toestemmingsdatum
-
-    Returns: the oplevertijd in days, as an integer.
-    will return NaN if woning does not have state 'opgeleverd' yet, or if the row has not been ordered yet.
-
-    """
-    # Do not calculate an oplevertijd if row was not ordered or not opgeleverd
-    if row.ordered and row.opgeleverd:
-        oplevertijd = (row.opleverdatum - row.toestemming_datum).days
-    else:
-        oplevertijd = np.nan
-    return oplevertijd
 
 
 # TODO: Documentation by Casper van Houten
