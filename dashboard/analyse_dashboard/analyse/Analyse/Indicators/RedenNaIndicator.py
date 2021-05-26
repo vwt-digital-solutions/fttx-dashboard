@@ -1,11 +1,10 @@
 from Analyse.Capacity_analysis.Line import TimeseriesDistanceLine
 from Analyse.Indicators.TimeseriesIndicator import TimeseriesIndicator
-from Analyse.PieChart import PieChart
 from Analyse.Record.LineRecord import LineRecord
 from Analyse.Record.RecordList import RecordList
 
 
-class RedenNaIndicator(TimeseriesIndicator, PieChart):
+class RedenNaIndicator(TimeseriesIndicator):
     """
     Calculates reden na pie chart for every project
     """

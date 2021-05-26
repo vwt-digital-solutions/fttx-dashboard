@@ -89,7 +89,7 @@ def indicator(
         indicator_args["title"] = {
             "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title + str(value2)}</span>"
         }
-        fig.update_layout(height=250)
+        fig.update_layout(height=280)
     elif gauge_type == "standard":
         indicator_args["title"] = {
             "text": f"{title}<br><span style='font-size:0.8em; font-color:light-gray'>{sub_title}</span>"

@@ -19,7 +19,8 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
         super().__init__(**kwargs)
         self.project_info = project_info
         self.type_total_amount = "huisaansluitingen"
-        self.columns = ["project", "creation"]
+        # self.columns = ["project", "creation"]  # target for HC
+        self.columns = ["project", "hasdatum"]  # target for HPend
         self.indicator_name = "InternalTargetHPendLine"
 
     def apply_business_rules(self):
@@ -31,7 +32,8 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df = df[br.actieve_orders_tmobile(df)]
+        # df = df[br.actieve_orders_tmobile(df)]  # target for HC
+        df = df[br.has_gepland(df)]  # target for HPend
         df = df[self.columns]
         return df
 
