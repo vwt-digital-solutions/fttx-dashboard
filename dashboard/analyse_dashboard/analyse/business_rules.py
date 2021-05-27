@@ -304,7 +304,7 @@ def bis_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return ~df["opleverstatus"].isin(["0", "90", "99"])
+    return ~df["opleverstatus"].isin(["0", "90", "91", "99"])
 
 
 def bis_werkvoorraad(df):
