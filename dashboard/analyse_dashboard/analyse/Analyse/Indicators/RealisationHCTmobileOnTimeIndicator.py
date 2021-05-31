@@ -28,6 +28,6 @@ class RealisationHCTmobileOnTimeIndicator(RealisationIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df = df[br.aangesloten_orders_tmobile(df, time_window="on time")]
+        df = df[br.aangesloten_orders_tmobile(df, time_window="ratio")]
         df = df[self.columns]
         return df

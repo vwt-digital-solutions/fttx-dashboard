@@ -227,13 +227,13 @@ class FttXIndicatorAnalyse(FttXBase):
             [
                 self.transformed_data.df.project,
                 ~self.transformed_data.df.sleutel.isna(),
-                self.transformed_data.df.status_civiel.str.contains("1"),
+                br.bis_opgeleverd(self.transformed_data.df),
                 br.laswerk_dp_gereed(self.transformed_data.df)
                 & br.laswerk_ap_gereed(self.transformed_data.df),
-                br.geschouwed(self.transformed_data.df),
+                br.geschouwd(self.transformed_data.df),
                 br.hc_opgeleverd(self.transformed_data.df),
                 br.hp_opgeleverd(self.transformed_data.df),
-                br.opgeleverd(self.transformed_data.df),
+                br.hpend(self.transformed_data.df),
             ],
             axis=1,
         )

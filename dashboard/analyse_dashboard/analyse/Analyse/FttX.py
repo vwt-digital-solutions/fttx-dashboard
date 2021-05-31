@@ -180,13 +180,14 @@ GROUP BY `sleutel`
         """Function to extract the status_civiel datum from the history table in the database"""
 
         logger.info('Extracting history "status_civiel" from sql database')
+
         sql = text(
             f"""
 SELECT sleutel, MIN(`creationDate`)
 AS 'status_civiel_datum'
 FROM {self.history_table}
-WHERE `variable` = 'status_civiel'
-AND `value` NOT LIKE '0%'
+WHERE `variable` = 'opleverstatus'
+AND `value` NOT IN (0, 90, 91, 99)
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
@@ -312,42 +313,6 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._cluster_reden_na()
-
-    def _is_ftu_available(self, project):
-        """
-        This functions checks whether a FTU0 date is available
-
-        Args:
-            project: the project name
-
-        Returns:
-            bool: boolean if ftu0 is available or not
-
-        """
-        available = False
-        ftu0 = self.transformed_data.ftu["date_FTU0"].get(project)
-        if ftu0:
-            available = True
-        return available
-
-    def _make_project_list(self):
-        """
-        This functions returns a list of projects that have at least a FTU0 date.
-        All the projects in this list will be evaluated in the analysis.
-
-        Returns:
-            list: returns a list of projects names
-        """
-        project_list = []
-        if self.client == "tmobile":
-            self.project_list = self.config["projects"]
-        else:
-            for project in self.config["projects"]:
-                if self._is_ftu_available(project):
-                    project_list.append(project)
-                else:
-                    logger.info(f"For the {project} we do not have a FTU0 date")
-            self.project_list = project_list
 
     # TODO: Documentation by Erik van Egmond
     def _fix_dates(self):
