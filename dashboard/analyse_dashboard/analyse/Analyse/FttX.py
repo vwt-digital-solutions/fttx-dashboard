@@ -180,13 +180,14 @@ GROUP BY `sleutel`
         """Function to extract the status_civiel datum from the history table in the database"""
 
         logger.info('Extracting history "status_civiel" from sql database')
+
         sql = text(
             f"""
 SELECT sleutel, MIN(`creationDate`)
 AS 'status_civiel_datum'
 FROM {self.history_table}
-WHERE `variable` = 'status_civiel'
-AND `value` NOT LIKE '0%'
+WHERE `variable` = 'opleverstatus'
+AND `value` NOT IN (0, 90, 91, 99)
 AND `project` IN :projects
 GROUP BY `sleutel`
 """  # nosec
