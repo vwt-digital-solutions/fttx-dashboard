@@ -29,25 +29,27 @@ class ActualStatusBarChartIndicator(DataIndicator):
         df = copy.deepcopy(self.df)
 
         df["HAS_status"] = False
-        df.loc[br.has_niet_opgeleverd(df), "HAS_status"] = "niet_opgeleverd"
-        df.loc[br.has_ingeplanned(df), "HAS_status"] = "ingeplanned"
+        df.loc[
+            br.niet_opgeleverd_niet_has_gepland(df), "HAS_status"
+        ] = "niet_opgeleverd"
+        df.loc[br.niet_opgeleverd_wel_has_gepland(df), "HAS_status"] = "ingeplanned"
         df.loc[br.hp_opgeleverd(df), "HAS_status"] = "opgeleverd_zonder_hc"
         df.loc[br.hc_opgeleverd(df), "HAS_status"] = "opgeleverd"
 
         df["schouw_status"] = False
-        df.loc[~br.toestemming_bekend(df), "schouw_status"] = "niet_opgeleverd"
-        df.loc[br.toestemming_bekend(df), "schouw_status"] = "opgeleverd"
+        df.loc[~br.geschouwd(df), "schouw_status"] = "niet_opgeleverd"
+        df.loc[br.geschouwd(df), "schouw_status"] = "opgeleverd"
 
         df["bis_status"] = False
-        df.loc[br.bis_niet_opgeleverd(df), "bis_status"] = "niet_opgeleverd"
+        df.loc[~br.bis_opgeleverd(df), "bis_status"] = "niet_opgeleverd"
         df.loc[br.bis_opgeleverd(df), "bis_status"] = "opgeleverd"
 
         df["lasDP_status"] = False
-        df.loc[br.laswerk_dp_niet_gereed(df), "lasDP_status"] = "niet_opgeleverd"
+        df.loc[~br.laswerk_dp_gereed(df), "lasDP_status"] = "niet_opgeleverd"
         df.loc[br.laswerk_dp_gereed(df), "lasDP_status"] = "opgeleverd"
 
         df["lasAP_status"] = False
-        df.loc[br.laswerk_ap_niet_gereed(df), "lasAP_status"] = "niet_opgeleverd"
+        df.loc[~br.laswerk_ap_gereed(df), "lasAP_status"] = "niet_opgeleverd"
         df.loc[br.laswerk_ap_gereed(df), "lasAP_status"] = "opgeleverd"
 
         df["laagbouw"] = False

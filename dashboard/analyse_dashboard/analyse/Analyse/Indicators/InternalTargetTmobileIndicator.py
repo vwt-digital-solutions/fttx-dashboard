@@ -32,7 +32,6 @@ class InternalTargetTmobileIndicator(TimeseriesIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        # df = df[br.actieve_orders_tmobile(df)]  # target for HC
         df = df[br.has_gepland(df)]  # target for HPend
         df = df[self.columns]
         return df

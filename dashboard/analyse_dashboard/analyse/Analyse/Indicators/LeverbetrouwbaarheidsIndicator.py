@@ -34,11 +34,11 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         # are not reliable enough due to failures of the robot transfering data from 050 to gcp
         df = df[df.opleverdatum >= (pd.Timestamp.today() - pd.Timedelta(days=14))]
 
-        # Select houses that are 'opgeleverd'
-        df['opgeleverd'] = br.opgeleverd(df)
-        df['leverbetrouwbaar'] = br.leverbetrouwbaar(df)
+        # Select houses that are hpend
+        df["hpend"] = br.hpend(df)
+        df["leverbetrouwbaar"] = br.leverbetrouwbaar(df)
 
-        return df[['project', 'opgeleverd', 'leverbetrouwbaar']]
+        return df[["project", "hpend", "leverbetrouwbaar"]]
 
     def perform(self):
         """
@@ -48,15 +48,17 @@ class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
         """
         records = RecordList()
         df = self.apply_business_rules()
-        ratio = df.leverbetrouwbaar.sum() / df.opgeleverd.sum() if df.opgeleverd.sum() != 0 else 0
+        ratio = df.leverbetrouwbaar.sum() / df.hpend.sum() if df.hpend.sum() != 0 else 0
         aggregate_line = self.create_line(ratio)
         records.append(self.to_record("client_aggregate", aggregate_line))
 
-        df = super().aggregate(df, by='project', agg_function={'opgeleverd': 'sum', 'leverbetrouwbaar': 'sum'})
-        df['ratio'] = df['leverbetrouwbaar'] / df['opgeleverd']
-        df['ratio'] = df['ratio'].fillna(0)
+        df = super().aggregate(
+            df, by="project", agg_function={"hpend": "sum", "leverbetrouwbaar": "sum"}
+        )
+        df["ratio"] = df["leverbetrouwbaar"] / df["hpend"]
+        df["ratio"] = df["ratio"].fillna(0)
         for project in set(df.index):
-            project_line = self.create_line(df.loc[project, 'ratio'])
+            project_line = self.create_line(df.loc[project, "ratio"])
             records.append(self.to_record(project, project_line))
         return records
 

@@ -15,16 +15,3 @@ class RealisationHPendTmobileIndicator(RealisationIndicator):
         self.type_total_amount = "huisaansluitingen"
         self.columns = ["project", "opleverdatum"]
         self.indicator_name = "RealisationHPendIndicator"
-
-    # def apply_business_rules(self):
-    #     """
-    #     HC and HPend columns are needed, as we will calculate ratio between these two columns.
-    #     Opleverdatum and project columns are used for aggregations.
-
-    #     Returns: Sliced dataframe with only relevant columns.
-
-    #     """
-    #     df = copy.deepcopy(self.df)
-    #     df = df[br.aangesloten_orders_tmobile(df)]
-    #     df = df[self.columns]
-    #     return df
