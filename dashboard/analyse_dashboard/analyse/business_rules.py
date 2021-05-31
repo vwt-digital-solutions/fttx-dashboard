@@ -259,7 +259,7 @@ def hpend(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    mask = hc_opgeleverd(df) & hp_opgeleverd(df)
+    mask = hc_opgeleverd(df) | hp_opgeleverd(df)
     return mask
 
 
