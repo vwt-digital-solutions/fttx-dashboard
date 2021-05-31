@@ -9,32 +9,6 @@ a DataFrame or Series.
 
 import pandas as pd
 
-opleverstatussen = [
-    "0",
-    "1",
-    "2",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "10",
-    "11",
-    "13",
-    "14",
-    "30",
-    "31",
-    "33",
-    "34",
-    "35",
-    "50",
-    "90",
-    "91",
-]
-"""
-opleverstatussen is a list that contains all possible opleverstatussen.
-"""
-
 
 def make_mask_for_notnan_and_earlier_than_tomorrow_minus_delta(
     series: pd.Series, time_delta_days: int = 0
@@ -330,7 +304,7 @@ def bis_niet_opgeleverd(df):
     Returns:
          pd.Series: A series of truth values.
     """
-    return df["opleverstatus"].isin(["0", "90", "99"])
+    return df["opleverstatus"].isin(["0", "90", "91", "99"])
 
 
 def hc_opgeleverd(df, time_delta_days=0):
@@ -472,7 +446,7 @@ def has_werkvoorraad(df, time_delta_days=0):
         (~df.schouwdatum.isna() & (df.schouwdatum <= time_point))
         & (df.opleverdatum.isna() | (df.opleverdatum > time_point))
         & (df.toestemming == "Ja")
-        & (~df.opleverstatus.isin(["0", "90", "99"]))
+        & (~df.opleverstatus.isin(["0", "90", "91", "99"]))
     )
 
 
