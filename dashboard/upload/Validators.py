@@ -52,19 +52,35 @@ class XLSValidator(Validator):
             raise ValidationError("Er is een probleem opgetreden bij het inlezen van het bestand.")
 
 
-class XLSColumnValidator(XLSValidator):
-    def __init__(self, columns, sheets=None, *args, **kwargs):
+class XLSSheetCount(XLSValidator):
+    """Validator checking if the number of sheets in the receive excel file match the expected number of sheets"""
+
+    def __init__(self, expected_number_of_sheets, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.expected_number_of_sheets = expected_number_of_sheets
+
+    def validate(self):
+        if super().validate():
+            if len(self.parsed_file.sheet_names) == self.expected_number_of_sheets:
+                return True
+            else:
+                error_message = f"Er zijn {len(self.parsed_file.sheet_names)} sheet(s) verwacht" + \
+                                f"maar {self.expected_number_of_sheets} sheet(s) aanwezig"
+                raise ValidationError(error_message)
+
+
+class XLSColumnValidator(XLSSheetCount):
+    def __init__(self, columns, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.parsed_file = None
         self.columns = columns
-        self.sheets = sheets
 
     def validate(self):
         if super().validate():
             self.parsed_file = self.parsed_file.parse()
-            if set(self.parsed_file.columns) != set(self.columns):
-                unexpected = set(self.parsed_file.columns) - set(self.columns)
-                missing = set(self.columns) - set(self.parsed_file.columns)
+            if set(self.parsed_file.columns) != set(self.columns.keys()):
+                unexpected = set(self.parsed_file.columns) - set(self.columns.keys())
+                missing = set(self.columns.keys()) - set(self.parsed_file.columns)
                 error_message = "De kolommen in het bestand zijn niet juist."
                 if unexpected:
                     error_message += f"\nOnverwacht aangetroffen in het bestand: {unexpected}"

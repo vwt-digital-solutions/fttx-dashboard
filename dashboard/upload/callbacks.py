@@ -8,8 +8,8 @@ from flask_dance.contrib.azure import azure
 
 from app import app
 from config import upload_config, upload_url
-from upload.Validators import *  # noqa: F403, F401
 from upload.Validators import ValidationError, Validator
+from upload.Validators import XLSColumnValidator  # noqa: F401
 
 import json
 import logging
