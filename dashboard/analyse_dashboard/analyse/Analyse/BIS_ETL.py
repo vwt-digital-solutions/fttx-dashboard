@@ -62,7 +62,7 @@ class BISTransform(Transform):
         self._rename_columns()
         self._expand_dates()
 
-    def _rename_columns(self):
+    def _rename_columns(self):  # qa: C901
         df_list = self.extracted_data.df_list
 
         df_list_renamed = []
