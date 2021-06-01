@@ -38,6 +38,8 @@ def round_(data):
     if isinstance(data, float):
         if (data > -1) & (data < 1):
             data = int(data * 10 ** 2) / 10 ** 2
+        elif pd.isnull(data):
+            data = 0
         else:
             data = int(data)
     elif isinstance(data, pd.Series):
