@@ -63,6 +63,7 @@ class FttXExtract(Extract):
         """
         logger.info("Extracting the aansluitingen")
         self._extract_from_sql()
+        self._extract_bouwportaal_info(get_database_engine())
         self._append_history()
         self.extract_project_info()
 
@@ -84,6 +85,21 @@ where project in :projects
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df["project"] = df.project.astype(projects_category)
         self.extracted_data.df = df
+
+    def _extract_bouwportaal_info(self, sql_engine):
+        """Function to extract info from bouwportaal in the database"""
+
+        logger.info("Extracting bouwportaal info from sql database")
+
+        sql = text(
+            """
+SELECT *
+FROM bouwportaal_orders
+"""
+        )
+        df = pd.read_sql(sql, sql_engine.connect())
+
+        self.extracted_data.df_bouwportaal = df
 
     def _append_history(self):
         """
