@@ -42,9 +42,7 @@ class BISExtract(Extract):
                 else:
                     logger.error(f"Cannot map b-number to project name: {b_number}")
 
-        df = pd.concat(df_list, sort=True)
-
-        self.extracted_data.df = df
+        self.extracted_data.df_list = df_list
 
 
 class BISTransform(Transform):
@@ -65,22 +63,31 @@ class BISTransform(Transform):
         self._expand_dates()
 
     def _rename_columns(self):
-        df_renamed = pd.DataFrame()
-        df_renamed = df_renamed.append(self.extracted_data.df, ignore_index=True)
-        df_renamed = df_renamed.rename(
-            columns={
-                "Kalender weeknummer": "date",
-                "Meters BIS geul": "meters_bis_geul",
-                "Meters tuinboringen": "meters_tuinboring",
-                "Aantal Huisaansluitingen": "aantal_has",
-                "BIS ploegen": "aantal_bis_ploegen",
-                "Tuinploegen": "aantal_tuin_ploegen",
-                "HAS ploegen": "aantal_has_ploegen",
-                "Bijzonderheden": "bijzonderheden",
-            }
-        )
+        df_list = self.extracted_data.df_list
 
-        self.transformed_data.df = df_renamed
+        df_list_renamed = []
+        for df in df_list:
+            df_renamed = pd.DataFrame()
+            df_renamed = df_renamed.append(df, ignore_index=True)
+            for col in df_renamed.columns:
+                if "weeknummer" in col:
+                    df_renamed = df_renamed.rename(columns={col: "date"})
+                if "geul" in col:
+                    df_renamed = df_renamed.rename(columns={col: "meters_bis_geul"})
+                if "tuinboring" in col:
+                    df_renamed = df_renamed.rename(columns={col: "meters_tuinboring"})
+                if "aansluitingen" in col:
+                    df_renamed = df_renamed.rename(columns={col: "aantal_has"})
+                if "BIS ploegen" in col:
+                    df_renamed = df_renamed.rename(columns={col: "aantal_bis_ploegen"})
+                if "Tuinploegen" in col:
+                    df_renamed = df_renamed.rename(columns={col: "aantal_tuin_ploegen"})
+                if "HAS ploegen" in col:
+                    df_renamed = df_renamed.rename(columns={col: "aantal_has_ploegen"})
+                if "Bijzonderheden" in col:
+                    df_renamed = df_renamed.rename(columns={col: "bijzonderheden"})
+            df_list_renamed.append(df_renamed)
+        self.transformed_data.df = pd.concat(df_list_renamed, sort=True)
 
     # TODO: Documentation by Casper van Houten
     def _expand_dates(self):
