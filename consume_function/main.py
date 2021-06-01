@@ -12,7 +12,7 @@ def handler(request):
         logging.info(f'Read message from subscription {subscription}')
         if topic_config.get('name') == 'fiberconnect':
             process_fiberconnect(records, topic_config)
-        elif topic_config.get('name') in ['asbuilt-meters', 'baan-realisation', 'baan-budget']:
+        elif topic_config.get('name') in ['baan-realisation', 'baan-budget']:
             process_default(records, topic_config)
         else:
             logging.info(f'subscription not found in consume_function: {subscription}')
