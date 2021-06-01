@@ -64,28 +64,25 @@ class BISTransform(Transform):
 
     def _rename_columns(self):
         df_list = self.extracted_data.df_list
+        keys_for_rename = {
+            "weeknummer": "date",
+            "geul": "meters_bis_geul",
+            "tuinboring": "meters_tuinboring",
+            "aansluitingen": "aantal_has",
+            "BIS ploegen": "aantal_bis_ploegen",
+            "Tuinploegen": "aantal_tuin_ploegen",
+            "HAS ploegen": "aantal_has_ploegen",
+            "Bijzonderheden": "bijzonderheden",
+        }
 
         df_list_renamed = []
         for df in df_list:
             df_renamed = pd.DataFrame()
             df_renamed = df_renamed.append(df, ignore_index=True)
             for col in df_renamed.columns:
-                if "weeknummer" in col:
-                    df_renamed = df_renamed.rename(columns={col: "date"})
-                if "geul" in col:
-                    df_renamed = df_renamed.rename(columns={col: "meters_bis_geul"})
-                if "tuinboring" in col:
-                    df_renamed = df_renamed.rename(columns={col: "meters_tuinboring"})
-                if "aansluitingen" in col:
-                    df_renamed = df_renamed.rename(columns={col: "aantal_has"})
-                if "BIS ploegen" in col:
-                    df_renamed = df_renamed.rename(columns={col: "aantal_bis_ploegen"})
-                if "Tuinploegen" in col:
-                    df_renamed = df_renamed.rename(columns={col: "aantal_tuin_ploegen"})
-                if "HAS ploegen" in col:
-                    df_renamed = df_renamed.rename(columns={col: "aantal_has_ploegen"})
-                if "Bijzonderheden" in col:
-                    df_renamed = df_renamed.rename(columns={col: "bijzonderheden"})
+                for key, value in keys_for_rename.items():
+                    if key in col:
+                        df_renamed = df_renamed.rename(columns={col: value})
             df_list_renamed.append(df_renamed)
         self.transformed_data.df = pd.concat(df_list_renamed, sort=True)
 
