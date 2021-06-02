@@ -385,3 +385,18 @@ def mask_aanvragen_activatie_hb(df: pd.DataFrame):
 
     """
     return (df.ordertype == "CONSTRUCT") & (df.soort_bouw != "Laag")
+
+
+def mask_openstaande_aanvragen_ndagen_te_laat(df: pd.DataFrame, ndays=2):
+    """
+    Dataframe mask returning a column if object is openstaande aanvraag is ndays
+    too late according to planning.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return (~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])) & (
+        df.plandatum < pd.Timestamp.now() - pd.Timedelta(days=ndays)
+    )

@@ -4,13 +4,13 @@ import business_rules as br
 from Analyse.Indicators.ActualIndicator import ActualIndicator
 
 
-class AanvragenActivatieLBIndicator(ActualIndicator):
+class OpenstaandeAanvragenTeLaatIndicator(ActualIndicator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad
         """
         super().__init__(**kwargs)
-        self.graph_name = "AanvragenActivatieLBIndicator"
+        self.graph_name = "OpenstaandeAanvragenTeLaatIndicator"
 
     def apply_business_rules(self):
         """
@@ -21,7 +21,5 @@ class AanvragenActivatieLBIndicator(ActualIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df["aanvragen_te_laat"] = br.mask_openstaande_aanvragen_ndagen_te_laat(
-            df, ndays=2
-        )
-        return df[["project", "aanvragen_te_laat"]]
+        df["aanvragen"] = br.mask_aanvragen_activatie_lb(df)
+        return df[["project", "aanvragen"]]
