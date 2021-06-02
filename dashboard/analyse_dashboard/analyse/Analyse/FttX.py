@@ -329,6 +329,7 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._cluster_reden_na()
+        self._transform_bouwportaal_data()
 
     # TODO: Documentation by Erik van Egmond
     def _fix_dates(self):
@@ -381,7 +382,7 @@ class FttXTransform(Transform):
             "cluster_redenna"
         ].astype(cluster_types)
 
-    def transform_bouwportaal_data(self):
+    def _transform_bouwportaal_data(self):
         """
         Matches bouwportaal data on fiberconnect data using:
             - postcode
@@ -394,7 +395,7 @@ class FttXTransform(Transform):
         unique_fc_data = self.transformed_data.df.drop_duplicates(
             ["postcode", "huisnummer", "huisext"]
         )
-        df["huisnummer"] = df["huisnummer"].astype("str")
+        df["huisnummer"] = df["huisnummer"].astype(str)
         unique_fc_data["huisnummer"] = unique_fc_data["huisnummer"].astype(str)
         combined_df = df.merge(
             unique_fc_data,
@@ -403,6 +404,7 @@ class FttXTransform(Transform):
             right_on=["postcode", "huisnummer", "huisext"],
             suffixes=("_bp", "_fc"),
         )
+        combined_df = combined_df["plandatum_bp"].fillna(combined_df["plandatum_fc"])
         self.transformed_data.df_bouwportaal = combined_df
 
 
@@ -414,8 +416,6 @@ class FttXLoad(Load, FttXBase):
     def load(self):
         logger.info("Loading documents...")
         self.records.to_firestore()
-
-    # TODO: Documentation by Erik van Egmond
 
 
 class FttXTestLoad(FttXLoad):
