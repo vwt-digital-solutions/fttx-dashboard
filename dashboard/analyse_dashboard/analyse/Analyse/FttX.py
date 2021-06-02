@@ -404,7 +404,10 @@ class FttXTransform(Transform):
             right_on=["postcode", "huisnummer", "huisext"],
             suffixes=("_bp", "_fc"),
         )
-        combined_df = combined_df["plandatum_bp"].fillna(combined_df["plandatum_fc"])
+        combined_df["plandatum"] = combined_df["plandatum_bp"].fillna(
+            combined_df["plandatum_fc"]
+        )
+        combined_df.drop(["plandatum_bp", "plandatum_fc"], axis=1, inplace=1)
         self.transformed_data.df_bouwportaal = combined_df
 
 
