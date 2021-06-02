@@ -396,12 +396,14 @@ class FttXTransform(Transform):
         )
         df["huisnummer"] = df["huisnummer"].astype("str")
         unique_fc_data["huisnummer"] = unique_fc_data["huisnummer"].astype(str)
-        self.transformed_data.df_bouwportaal = df.merge(
+        combined_df = df.merge(
             unique_fc_data,
             how="left",
             left_on=["postcode", "huisnummer", "extensie"],
             right_on=["postcode", "huisnummer", "huisext"],
+            suffixes=("_bp", "_fc"),
         )
+        self.transformed_data.df_bouwportaal = combined_df
 
 
 class FttXLoad(Load, FttXBase):
@@ -426,5 +428,3 @@ class FttXTestLoad(FttXLoad):
         logger.info("The following documents would have been updated/set:")
         for document in self.records:
             logger.info(document.document_name())
-
-    # TODO: Documentation by Erik van Egmond
