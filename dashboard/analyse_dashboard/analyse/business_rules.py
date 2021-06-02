@@ -305,7 +305,7 @@ def leverbetrouwbaar(df: pd.DataFrame):
     return mask
 
 
-def is_in_lb_werkvoorraad(df: pd.DataFrame):
+def mask_werkvoorraadFCactivatie_lb_FC(df: pd.DataFrame):
     """
     Dataframe mask returning a column if object is in werkvoorraad for LB.
     Args:
@@ -317,7 +317,7 @@ def is_in_lb_werkvoorraad(df: pd.DataFrame):
     return (df.opleverstatus == "16") & (df.opleverdatum.isna())
 
 
-def is_in_hb_werkvoorraad(df: pd.DataFrame):
+def mask_werkvoorraad_activatie_hb_FC(df: pd.DataFrame):
     """
     Dataframe mask returning a column if object is in werkvoorraad for HB.
     Args:
@@ -329,3 +329,27 @@ def is_in_hb_werkvoorraad(df: pd.DataFrame):
     return ((df.opleverstatus == "2") | (df.opleverstatus == "32")) & (
         df.opleverdatum.isna()
     )
+
+
+def mask_werkvoorraadFCactivatie_lb_assigned(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in werkvoorraad for LB.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects in LB werkvoorraad or not.
+
+    """
+    return (df.orderdatum.notna()) & (df.soort_bouw == "Laag")
+
+
+def mask_werkvoorraad_activatie_hb_assigned(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in werkvoorraad for HB.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects in HB werkvoorraad or not.
+
+    """
+    return (df.orderdatum.notna()) & (df.soort_bouw != "Laag")

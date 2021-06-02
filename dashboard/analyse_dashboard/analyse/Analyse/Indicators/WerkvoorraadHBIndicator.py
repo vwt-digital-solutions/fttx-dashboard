@@ -4,13 +4,13 @@ import business_rules as br
 from Analyse.Indicators.ActualIndicator import ActualIndicator
 
 
-class WerkvoorraadIndicatorLB(ActualIndicator):
+class WerkvoorraadIndicatorHB(ActualIndicator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad for LB
         """
         super().__init__(**kwargs)
-        self.graph_name = "WerkvoorraadLBIndicator"
+        self.graph_name = "WerkvoorraadHBIndicator"
 
     def apply_business_rules(self):
         """
@@ -21,5 +21,5 @@ class WerkvoorraadIndicatorLB(ActualIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df["werkvoorraad"] = br.is_in_hb_werkvoorraad(df)
+        df["werkvoorraad"] = br.mask_werkvoorraad_activatie_hb_FC(df)
         return df[["project", "werkvoorraad"]]
