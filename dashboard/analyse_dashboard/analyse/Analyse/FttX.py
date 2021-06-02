@@ -381,6 +381,28 @@ class FttXTransform(Transform):
             "cluster_redenna"
         ].astype(cluster_types)
 
+    def transform_bouwportaal_data(self):
+        """
+        Matches bouwportaal data on fiberconnect data using:
+            - postcode
+            - huisnummer
+            - huisnummer extensie
+        Returns:
+
+        """
+        df = self.extracted_data.df_bouwportaal
+        unique_fc_data = self.transformed_data.df.drop_duplicates(
+            ["postcode", "huisnummer", "huisext"]
+        )
+        df["Huisnummer"] = df["huisnummer"].astype("str")
+        unique_fc_data["huisnummer"] = unique_fc_data["huisnummer"].astype(str)
+        self.transformed_data.df_bouwportaal = df.merge(
+            unique_fc_data,
+            how="left",
+            left_on=["postcode", "Huisnummer", "extensie"],
+            right_on=["postcode", "huisnummer", "huisext"],
+        )
+
 
 class FttXLoad(Load, FttXBase):
     def __init__(self, **kwargs):
