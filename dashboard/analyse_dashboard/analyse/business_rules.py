@@ -333,23 +333,55 @@ def mask_werkvoorraad_activatie_hb_FC(df: pd.DataFrame):
 
 def mask_werkvoorraadFCactivatie_lb_assigned(df: pd.DataFrame):
     """
-    Dataframe mask returning a column if object is in werkvoorraad for LB.
+    Dataframe mask returning a column if object is in werkvoorraad assigned for LB.
     Args:
         df: Dataframe of combined FC and Bouwportaal data.
 
     Returns: boolean mask of objects in LB werkvoorraad or not.
 
     """
-    return (df.orderdatum.notna()) & (df.soort_bouw == "Laag")
+    return (
+        (df.ordertype == "CONSTRUCT")
+        & (df.orderdatum.notna())
+        & (df.soort_bouw == "Laag")
+    )
 
 
 def mask_werkvoorraad_activatie_hb_assigned(df: pd.DataFrame):
     """
-    Dataframe mask returning a column if object is in werkvoorraad for HB.
+    Dataframe mask returning a column if object is in werkvoorraad assigned for HB.
     Args:
         df: Dataframe of combined FC and Bouwportaal data.
 
     Returns: boolean mask of objects in HB werkvoorraad or not.
 
     """
-    return (df.orderdatum.notna()) & (df.soort_bouw != "Laag")
+    return (
+        (df.ordertype == "CONSTRUCT")
+        & (df.orderdatum.notna())
+        & (df.soort_bouw != "Laag")
+    )
+
+
+def mask_aanvragen_activatie_lb(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in aanvraagde activatie voor laagbouw.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return (df.ordertype == "CONSTRUCT") & (df.soort_bouw == "Laag")
+
+
+def mask_aanvragen_activatie_hb(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in aanvraagde activatie voor hoogbouw.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return (df.ordertype == "CONSTRUCT") & (df.soort_bouw != "Laag")
