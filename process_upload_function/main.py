@@ -32,7 +32,6 @@ def handler(data, context):
 
 def process_bouwportaal_orders(df):
     df = df.parse()
-
     datums = [col for col in df.columns if "datum" in col]
     for datum in datums:
         df[datum] = df[datum].apply(pd.to_datetime,
@@ -40,11 +39,8 @@ def process_bouwportaal_orders(df):
                                     errors="coerce",
                                     utc=True)
         df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
-
     df.rename(columns=config.bouwportaal_orders_column_mapping, inplace=True)
-
     df = df.astype(str).replace({np.nan: None, 'NaT': None})
-
     table = config.upload_config['bouwportaal_orders']['database_table']
     write_to_sql(df, table)
 
