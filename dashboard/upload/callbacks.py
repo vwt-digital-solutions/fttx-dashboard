@@ -66,7 +66,6 @@ def submit_files(n_clicks, close_clicks, validator, content, name, date):
             if validator_class.validate():
                 try:
                     send_file(file_content=validator_class.file_content,
-                              content_type=validator_class.content_type,
                               path=upload_config[validator]['path'])
                 except Exception as e:
                     logger.warning(f"Sending a file failed: {e}")
@@ -77,7 +76,7 @@ def submit_files(n_clicks, close_clicks, validator, content, name, date):
     return [f"{validator}"]
 
 
-def send_file(file_content, content_type, path):
+def send_file(file_content, path):
     url = upload_url + path
     logger.info(url)
     headers = {'Authorization': 'Bearer ' + azure.access_token,
