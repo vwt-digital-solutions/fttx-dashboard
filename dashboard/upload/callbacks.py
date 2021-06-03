@@ -13,6 +13,10 @@ from upload.Validators import XLSColumnValidator  # noqa: F401
 
 import json
 import logging
+import io
+import pandas as pd
+
+import traceback
 
 logger = logging.getLogger("Upload Callbacks")
 
@@ -77,10 +81,23 @@ def send_file(file_content, content_type, path):
     url = upload_url + path
     logger.info(url)
     headers = {'Authorization': 'Bearer ' + azure.access_token,
-               'Content-Type': content_type}
-    r = requests.post(url, data=file_content, headers=headers)
-    if r.status_code != 201:
-        message = f"❌ Status: {r.status_code}"
-        if "json" in r.headers.get("Content-Type"):
-            message += json.loads(r.content).get('detail')
-        raise RuntimeError(message)
+               'Content-Type': "application/json"}
+
+    df = pd.ExcelFile(io.BytesIO(file_content))
+    df = df.parse()
+    limit = 4_000
+    count = 0
+
+    while count <= len(df):
+        df_to_send = df[count: count + limit]
+        r = requests.post(url,
+                          data=json.dumps(df_to_send.astype(str).to_dict(orient='records')),
+                          headers=headers)
+        if r.status_code != 201:
+            traceback.print_exc()
+            message = f"❌ Status: {r.status_code}"
+            if "json" in r.headers.get("Content-Type"):
+                message += json.loads(r.content)
+            raise RuntimeError(message)
+
+        count += limit
