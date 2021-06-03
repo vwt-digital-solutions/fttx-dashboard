@@ -31,7 +31,6 @@ def handler(data, context):
 
 
 def process_bouwportaal_orders(df):
-    df = df.parse()
     datums = [col for col in df.columns if "datum" in col]
     for datum in datums:
         df[datum] = df[datum].apply(pd.to_datetime,
@@ -45,12 +44,23 @@ def process_bouwportaal_orders(df):
     write_to_sql(df, table)
 
 
+# def data_from_store(bucket_name, blob_name):
+#     path = 'gs://{}/{}'.format(bucket_name, blob_name)
+#     logging.info('Reading {}'.format(path))
+#     new_data = pd.ExcelFile(path)
+#     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
+#     return new_data
+
 def data_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
-    logging.info('Reading {}'.format(path))
-    new_data = pd.ExcelFile(path)
+    if blob_name.endswith('.xlsx'):
+        df = pd.ExcelFile(path, dtype=str)
+    elif blob_name.endswith('.json'):
+        df = pd.read_json(path, dtype=False)
+    else:
+        raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
-    return new_data
+    return df
 
 
 def write_to_sql(df, table):
