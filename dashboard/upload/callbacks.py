@@ -96,7 +96,7 @@ def send_file(file_content, path):
             traceback.print_exc()
             message = f"❌ Status: {r.status_code}"
             if "json" in r.headers.get("Content-Type"):
-                message += json.loads(r.content)
+                message += json.loads(r.content).get('detail')
             raise RuntimeError(message)
 
         count += limit
