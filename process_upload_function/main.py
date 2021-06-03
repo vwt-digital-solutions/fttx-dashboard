@@ -1,5 +1,6 @@
 from datetime import datetime
 import pandas as pd
+import numpy as np
 import logging
 from google.cloud import firestore, secretmanager
 from sqlalchemy import create_engine
@@ -7,7 +8,6 @@ from sqlalchemy.engine import ResultProxy
 import config
 
 db = firestore.Client()
-logging.basicConfig(level=logging.INFO)
 
 
 def handler(data, context):
@@ -31,9 +31,22 @@ def handler(data, context):
 
 
 def process_bouwportaal_orders(df):
+    df = df.parse()
+
+    datums = [col for col in df.columns if "datum" in col]
+    for datum in datums:
+        df[datum] = df[datum].apply(pd.to_datetime,
+                                    infer_datetime_format=True,
+                                    errors="coerce",
+                                    utc=True)
+        df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
+
     df.rename(columns=config.bouwportaal_orders_column_mapping, inplace=True)
-    table_name = config.upload_config['bouwportaal_orders']['database_table']
-    write_to_sql(df, table_name)
+
+    df = df.astype(str).replace({np.nan: None, 'NaT': None})
+
+    table = config.upload_config['bouwportaal_orders']['database_table']
+    write_to_sql(df, table)
 
 
 def data_from_store(bucket_name, blob_name):
