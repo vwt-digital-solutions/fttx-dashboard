@@ -1,4 +1,3 @@
-import plotly.graph_objects as go
 from dash import callback_context
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
@@ -7,6 +6,7 @@ import config
 from app import app
 from data.data import fetch_data_productionstatus
 from layout.components.capacity.capacity_summary import capacity_summary
+from layout.components.graphs import productionstatus
 from layout.components.graphs.no_graph import no_graph
 
 colors = config.colors_vwt
@@ -84,35 +84,7 @@ for client in config.client_config.keys():  # noqa: C901
         )
 
         if line_graph_bool:
-            color_count = 0
-            color_selection = [
-                colors["darkgray"],
-                colors["lightgray"],
-                colors["vwt_blue"],
-                colors["black"],
-            ]
-            line_graph = go.Figure()
-            for k, v in timeseries.items():
-                line_graph.add_trace(
-                    go.Scatter(
-                        x=v.index,
-                        y=v,
-                        mode="lines+markers",
-                        name=k,
-                        marker=dict(color=color_selection[color_count]),
-                        hovertemplate=None,
-                    )
-                )
-                color_count += 1
-
-            line_graph.update_layout(
-                height=500,
-                paper_bgcolor=colors["paper_bgcolor"],
-                plot_bgcolor=colors["plot_bgcolor"],
-                yaxis_title="%",
-                hovermode="x unified",
-                # hoverdistance=500,
-            )
+            line_graph = productionstatus.get_fig(timeseries)
         else:
             line_graph = no_graph("No data")
 
