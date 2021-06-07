@@ -187,7 +187,7 @@ for client in config.client_config.keys():  # noqa: C901
         if ctx.triggered:
             for trigger in ctx.triggered:
                 if trigger["prop_id"] == list(ctx.inputs.keys())[2]:
-                    return [None]
+                    return [{}]
 
                 for point in trigger["value"]["points"]:
                     category, _, cat_filter = point["customdata"].partition(";")

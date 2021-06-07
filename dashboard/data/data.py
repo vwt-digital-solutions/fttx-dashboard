@@ -574,3 +574,48 @@ def fetch_data_for_status_barchart(project_name, client, click_filter=None):
         data_hoogbouw = pd.DataFrame()
 
     return data_laagbouw, data_hoogbouw
+
+
+def fetch_data_productionstatus(project, client, freq, phase_name):
+    indicator_values = {}
+    timeseries = {}
+    name_indicator = {
+        "target": "Target",
+        "poc_verwacht": "Verwacht verloop",
+        "poc_ideal": "Ideaal verloop",
+        "work_stock": "Werkvoorraad (totale productie)",
+        "work_stock_amount": "Hoeveelheid Werkvoorraad",
+    }
+    line_graph_bool = False
+    for key in [
+        "target",
+        "work_stock",
+        "poc_verwacht",
+        "poc_ideal",
+        "work_stock_amount",
+    ]:
+        indicator_dict = collection.get_document(
+            collection="Lines",
+            line=key + "_indicator",
+            project=project,
+            client=client,
+            phase=phase_name,
+        )
+        if indicator_dict:
+            line_graph_bool = True
+            indicator_values[name_indicator[key]] = int(indicator_dict["next_" + freq])
+            timeseries[name_indicator[key]] = pd.Series(
+                indicator_dict["series_" + freq]
+            )
+        else:
+            indicator_values[name_indicator[key]] = 0
+            timeseries[name_indicator[key]] = pd.Series()
+
+    if indicator_values["Hoeveelheid Werkvoorraad"] < 0:
+        indicator_values["Hoeveelheid Werkvoorraad"] = 0
+    if phase_name == "geulen":
+        indicator_values["Hoeveelheid Werkvoorraad"] = None
+
+    del timeseries["Hoeveelheid Werkvoorraad"]
+
+    return indicator_values, timeseries, line_graph_bool
