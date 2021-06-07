@@ -2,14 +2,11 @@ from app import toggles
 from config_pages import config_pages
 import dash_bootstrap_components as dbc
 import config
-from utils import get_client_name
 
 colors = config.colors_vwt
 
 
-def nav_bar(client, brand):
-
-    huidige_pagina = get_client_name(client)
+def nav_bar(brand="FttX"):
 
     dropdown_items = []
     for page in config_pages:
@@ -26,7 +23,6 @@ def nav_bar(client, brand):
     dropdown_items = dropdown_items[:-1]
 
     children = [
-        dbc.NavItem(dbc.NavLink(huidige_pagina, href='#')),
         dbc.DropdownMenu(
             nav=True,
             in_navbar=True,

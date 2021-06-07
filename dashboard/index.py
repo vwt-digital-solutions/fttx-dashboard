@@ -1,5 +1,7 @@
 import logging
 
+from layout.components.nav_bar import nav_bar
+
 logging.basicConfig(
     format=' %(asctime)s - %(name)s -%(levelname)s - %(filename)s:%(funcName)s:%(lineno)s - %(message)s',
     level=logging.INFO)
@@ -28,6 +30,7 @@ logging.info("Importing Done")
 logging.info("Setting base layout")
 app.layout = html.Div([
     dcc.Location(id='url', refresh=True),
+    html.Div(nav_bar()),
     html.Div(id='page-content'),
     modal.create_modal(modal_body=upload_component.get_html(),
                        modal_id="upload_modal",
@@ -55,7 +58,7 @@ def get_page(page):
 )
 def display_page(pathname):
     layout = default.get_layout
-    return [layout(pathname=pathname, brand="FttX")]
+    return [layout(pathname=pathname)]
 
 
 if __name__ == "__main__":
