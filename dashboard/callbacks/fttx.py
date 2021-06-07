@@ -176,23 +176,22 @@ for client in config.client_config.keys():  # noqa: C901
         ],
         [State(f"status-count-filter-{client}", "data")],
     )
-    def set_status_click_filter(
-        laagbouw_click, hoogbouw_click, reset_button, click_filter
-    ):
-        ctx = dash.callback_context
-        if not click_filter:
-            click_filter = {}
-        if isinstance(click_filter, list):
-            click_filter = click_filter[0]
-        if ctx.triggered:
-            for trigger in ctx.triggered:
-                if trigger["prop_id"] == list(ctx.inputs.keys())[2]:
-                    return [{}]
+    def set_status_click_filter(_, __, ___, click_filter):
 
-                for point in trigger["value"]["points"]:
-                    category, _, cat_filter = point["customdata"].partition(";")
-                    click_filter[category] = cat_filter
-                    return [click_filter]
+        button_name = list(dash.callback_context.inputs.keys())[2]
+        trigger = dash.callback_context.triggered[0]
+        if not trigger["value"]:
+            raise PreventUpdate
+
+        if trigger["prop_id"] == button_name:  # indicates that reset button is used
+            click_filter = {}
+        else:
+            category, _, cat_filter = trigger["value"]["points"][0][
+                "customdata"
+            ].partition(";")
+            click_filter[category] = cat_filter
+
+        return [click_filter]
 
     @app.callback(
         [

@@ -172,6 +172,8 @@ def fetch_data_for_redenna_overview(ctx, year, client):
             "dec",
         ]
         period, _, _ = ctx.triggered[0]["prop_id"].partition("-")
+        if period == "overview":  # this happens when the reset button is used.
+            period = "year"
 
         if period == "year":
             date = f"{year}-01-01"
