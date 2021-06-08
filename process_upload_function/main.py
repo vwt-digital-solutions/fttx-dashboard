@@ -39,7 +39,7 @@ def process_bouwportaal_orders(df):
                                     utc=True)
         df[datum] = df[datum].apply(lambda x: x.tz_convert(None) if x else x)
     df.rename(columns=config.bouwportaal_orders_column_mapping, inplace=True)
-    df = df.astype(str).replace({np.nan: None, 'NaT': None})
+    df = df.astype(str).replace({np.nan: None, 'NaT': None, 'nan': None})
     table = config.upload_config['bouwportaal_orders']['database_table']
     write_to_sql(df, table)
 
