@@ -400,3 +400,27 @@ def mask_openstaande_aanvragen_ndagen_te_laat(df: pd.DataFrame, ndays=2):
     return (~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])) & (
         df.plandatum < pd.Timestamp.now() - pd.Timedelta(days=ndays)
     )
+
+
+def mask_afsluitdatum_notna(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object afsluitdatum notna.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return df.afsluitdatum.notna()
+
+
+def mask_plandatum_notna(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object plandatum notna.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return df.plandatum.notna()

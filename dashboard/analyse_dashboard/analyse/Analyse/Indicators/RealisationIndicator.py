@@ -54,10 +54,14 @@ class RealisationIndicator(TimeseriesIndicator):
         if not df.empty:
             for project, timeseries in df.groupby(level=0):
                 if len(timeseries):
+                    if self.type_total_amount:
+                        max_value = self.project_info[project][self.type_total_amount]
+                    else:
+                        max_value = None
                     line_project = TimeseriesLine(
                         data=timeseries.droplevel(0),
                         name=self.indicator_name,
-                        max_value=self.project_info[project][self.type_total_amount],
+                        max_value=max_value,
                         project=project,
                     )
                     line_list.append(line_project)
