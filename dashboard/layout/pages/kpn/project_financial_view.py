@@ -2,7 +2,7 @@
 Financial view
 ==========
 tab_name: Financieel
-tab_order: 3
+tab_order: 4
 """
 
 from layout.components.financial_template import financial_template

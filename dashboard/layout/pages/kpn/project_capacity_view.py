@@ -2,7 +2,7 @@
 Capacity view
 ==========
 tab_name: Capaciteit
-tab_order: 2
+tab_order: 3
 """
 from layout.components.capacity.capacity_component import capacity_template
 
