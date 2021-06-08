@@ -18,9 +18,19 @@ class ActualConnectionTypeIndicator(DataIndicator, Aggregator):
 
         """
         df = self.apply_business_rules()
-        project_dict = self.aggregate(
+        project_aggregate = self.aggregate(
             df=df, by=["project", "afsluitcode"], agg_function={"order_nummer": "count"}
-        ).to_dict("series")
+        )
+
+        project_dict = {}
+        for project in list(project_aggregate.index.get_level_values(level=0).unique()):
+            project_dict[project] = project_aggregate.loc[project].to_dict()[
+                "order_nummer"
+            ]
+
+        project_dict["client_aggregate"] = self.aggregate(
+            df=df, by=["afsluitcode"], agg_function={"order_nummer": "count"}
+        ).to_dict()["order_nummer"]
 
         return self.to_record(project_dict)
 
