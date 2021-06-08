@@ -21,5 +21,5 @@ class WerkvoorraadLBIndicator(ActualIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df["werkvoorraad"] = br.mask_werkvoorraad_activatie_lb_FC(df)
+        df["werkvoorraad"] = br.mask_aanvragen_activatie_lb(df)
         return df[["project", "werkvoorraad"]]

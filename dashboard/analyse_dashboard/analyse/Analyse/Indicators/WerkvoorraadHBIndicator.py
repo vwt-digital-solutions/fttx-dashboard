@@ -21,5 +21,5 @@ class WerkvoorraadIndicatorHB(ActualIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df["werkvoorraad"] = br.mask_werkvoorraad_activatie_hb_FC(df)
+        df["werkvoorraad"] = br.mask_aanvragen_activatie_hb(df)
         return df[["project", "werkvoorraad"]]
