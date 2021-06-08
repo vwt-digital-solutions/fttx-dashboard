@@ -305,7 +305,7 @@ def leverbetrouwbaar(df: pd.DataFrame):
     return mask
 
 
-def mask_werkvoorraadFCactivatie_lb_FC(df: pd.DataFrame):
+def mask_werkvoorraad_activatie_lb_FC(df: pd.DataFrame):
     """
     Dataframe mask returning a column if object is in werkvoorraad for LB.
     Args:
