@@ -331,7 +331,7 @@ def mask_werkvoorraad_activatie_hb_FC(df: pd.DataFrame):
     )
 
 
-def mask_werkvoorraadFCactivatie_lb_assigned(df: pd.DataFrame):
+def mask_werkvoorraad_activatie_lb_assigned(df: pd.DataFrame):
     """
     Dataframe mask returning a column if object is in werkvoorraad assigned for LB.
     Args:
