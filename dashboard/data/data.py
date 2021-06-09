@@ -55,7 +55,7 @@ def fetch_data_for_overview_boxes(client, year):
             "linenotavailable",
             "PlannedActivationIndicator",
         ],
-        "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
+        "Voorspelling Connectie": ["linenotavailable", "PrognoseHPendIndicator"],
         "Werkvoorraad Connectie": ["linenotavailable", "WerkvoorraadHPendIndicator"],
         "Werkvoorraad Activatie": [
             "linenotavailable",
