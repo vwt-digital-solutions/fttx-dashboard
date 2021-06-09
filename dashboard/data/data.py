@@ -630,7 +630,7 @@ def fetch_data_for_project_boxes_activatie(client, project):
             "AanvragenActivatieLBIndicator",
         ],
         "Openstaande aanvragen - te laat": [
-            "AanvragenActivatieHB"
+            "OpenstaandeAanvragenTeLaatIndicator"
         ],
         "Werkvoorraad Assigned": [
             "WerkvoorraadHBAssignedIndicator",
@@ -676,7 +676,6 @@ def fetch_data_for_project_boxes_activatie(client, project):
                 dict(
                     id_="",
                     title=title,
-                    text1="HB: ",
                     value1=values[0]
                 )
             )
