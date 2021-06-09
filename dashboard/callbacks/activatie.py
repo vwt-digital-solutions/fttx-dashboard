@@ -6,6 +6,7 @@ from app import app
 from data import collection
 from data.data import fetch_data_for_project_boxes_activatie
 from layout.components.graphs.horizontal_bar_chart import get_fig
+from layout.components.graphs.project_activatie_afsluit_planned import get_fig as get_fig_activatie
 import collections
 
 from layout.components.list_of_boxes import global_info_list
@@ -39,6 +40,25 @@ for client in config.client_config.keys():  # noqa: C901
                 fig = get_fig(bar)
                 fig.update_layout(yaxis=dict(type='category'))
                 return fig
+        raise PreventUpdate
+
+    @app.callback(
+        Output(f"realised-connections-activatie-{client}", "figure"),
+        [Input(f"project-dropdown-{client}", "value")],
+    )
+    def realisaed_connections(project, client=client):
+        if project:
+            data = dict()
+            data['afsluit_indicator'] = collection.get_week_series_from_document(
+                collection="Indicators", project=project, client=client, line='AfsluitIndicator'
+            )
+
+            data['planned_indicator'] = collection.get_week_series_from_document(
+                collection="Indicators", project=project, client=client, line='PlannedActivationIndicator'
+            )
+
+            fig = get_fig_activatie(data=data)
+            return fig
         raise PreventUpdate
 
     @app.callback(
