@@ -1,5 +1,3 @@
-import collections
-
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 
@@ -29,11 +27,7 @@ for client in config.client_config.keys():  # noqa: C901
                 graph_name="ActualConnectionTypeIndicator",
             )
 
-            new_dict = dict()
-            for key, value in data.items():
-                new_dict[int(float(key))] = value
-
-            ordered_dict = collections.OrderedDict(sorted(new_dict.items()))
+            ordered_dict = {int(float(k)): v for k, v in sorted(data.items(), key=lambda item: item[1])}
 
             if data:
                 bar = {
@@ -41,6 +35,8 @@ for client in config.client_config.keys():  # noqa: C901
                     "x": list(ordered_dict.values()),
                     "y": list(ordered_dict.keys()),
                     "color": colors.get("vwt_blue"),
+                    'text': 'x',
+                    'title': 'Categorisatie van gerealiseerde aansluitingen in BP'
                 }
 
                 fig = get_fig(bar)
