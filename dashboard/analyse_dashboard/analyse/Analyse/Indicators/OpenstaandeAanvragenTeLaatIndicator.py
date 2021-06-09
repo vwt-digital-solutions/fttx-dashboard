@@ -21,5 +21,7 @@ class OpenstaandeAanvragenTeLaatIndicator(ActualIndicator):
 
         """
         df = copy.deepcopy(self.df)
-        df["aanvragen"] = br.mask_aanvragen_activatie_lb(df)
-        return df[["project", "aanvragen"]]
+        df["aanvragen_te_laat"] = br.mask_openstaande_aanvragen_ndagen_te_laat(
+            df, ndays=2
+        )
+        return df[["project", "aanvragen_te_laat"]]
