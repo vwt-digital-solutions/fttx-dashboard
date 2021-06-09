@@ -621,3 +621,64 @@ def fetch_data_productionstatus(project, client, freq, phase_name):
     del timeseries["Hoeveelheid Werkvoorraad"]
 
     return indicator_values, timeseries, line_graph_bool
+
+
+def fetch_data_for_project_boxes_activatie(client, project):
+    lines_for_in_boxes = {
+        "Aanvragen activatie": [
+            "AanvragenActivatieHBIndicator",
+            "AanvragenActivatieLBIndicator",
+        ],
+        "Openstaande aanvragen - te laat": [
+            "AanvragenActivatieHB"
+        ],
+        "Werkvoorraad Assigned": [
+            "WerkvoorraadHBAssignedIndicator",
+            "WerkvoorraadLBAssignedIndicator"
+        ],
+        "Werkvoorraad": [
+            "WerkvoorraadHBIndicator",
+            "WerkvoorraadLBIndicator",
+        ]
+    }
+
+    which_week = 'current_week'
+
+    parameters_global_info_list = []
+    for title, lines in lines_for_in_boxes.items():
+        values = []
+        for line in lines:
+            values.append(
+                str(
+                    collection.get_week_value_from_document(
+                        collection="Indicators",
+                        which_week=which_week,
+                        line=line,
+                        client=client,
+                        project=project,
+                    )
+                )
+            )
+
+        if len(values) > 1:
+            parameters_global_info_list.append(
+                dict(
+                    id_="",
+                    title=title,
+                    text1="HB: ",
+                    text2="LB: ",
+                    value1=values[0],
+                    value2=values[1],
+                )
+            )
+        else:
+            parameters_global_info_list.append(
+                dict(
+                    id_="",
+                    title=title,
+                    text1="HB: ",
+                    value1=values[0]
+                )
+            )
+
+    return parameters_global_info_list

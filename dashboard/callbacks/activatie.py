@@ -4,8 +4,11 @@ from dash.exceptions import PreventUpdate
 import config
 from app import app
 from data import collection
+from data.data import fetch_data_for_project_boxes_activatie
 from layout.components.graphs.horizontal_bar_chart import get_fig
 import collections
+
+from layout.components.list_of_boxes import global_info_list
 
 colors = config.colors_vwt
 
@@ -37,3 +40,17 @@ for client in config.client_config.keys():  # noqa: C901
                 fig.update_layout(yaxis=dict(type='category'))
                 return fig
         raise PreventUpdate
+
+    @app.callback(
+        Output(f"activatie-indicators-{client}", "children"),
+        [Input(f"project-dropdown-{client}", "value")],
+    )
+    def update_activatie_indicators(dropdown_selection, client=client):
+        if dropdown_selection is None:
+            raise PreventUpdate
+
+        activatie_indicator_info = global_info_list(
+            className="container-display",
+            items=fetch_data_for_project_boxes_activatie(project=dropdown_selection, client=client)
+        )
+        return [activatie_indicator_info]
