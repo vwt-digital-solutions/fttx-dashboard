@@ -42,7 +42,10 @@ def fetch_data_for_overview_boxes(client, year):
             "InternalTargetHPendLine",
         ],
         "Client Target": ["ClientTarget", "ClientTarget"],
-        "Realisatie": ["RealisationHPcivielIndicator", "RealisationHPendIndicator"],
+        "Realisatie Connectie": [
+            "RealisationHPcivielIndicator",
+            "RealisationHPendIndicator",
+        ],
         "Realisatie Activatie": ["linenotavailable", "AfsluitIndicator"],
         "Planning Connectie": [
             "PlanningHPcivielIndicator",
