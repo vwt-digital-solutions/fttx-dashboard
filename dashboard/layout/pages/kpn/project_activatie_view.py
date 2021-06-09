@@ -22,8 +22,9 @@ def get_html(client):
         dcc.Store(id="aggregate_data2", data=None),
         dcc.Store(id=f"status-count-filter-{client}", data={}),
         html.Div(
-            children=[],
-            id=f"activatie-indicators-{client}",
+            children=html.Div(
+                id=f"activatie-indicators-{client}", className="container-display"
+            )
         ),
         html.Div(
             [

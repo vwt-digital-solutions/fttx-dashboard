@@ -49,6 +49,11 @@ def fetch_data_for_overview_boxes(client, year):
         ],
         "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
         "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+        "Werkvoorraad Activatie": [
+            "linenotavailable",
+            "WerkvoorraadLBIndicator",
+            "WerkvoorraadHBIndicator",
+        ],
         "HC / HPend": [
             "linenotavailable",
             "RealisationHCIndicator",
@@ -82,7 +87,7 @@ def fetch_data_for_overview_boxes(client, year):
             )
 
         # exception for calculation of ratio's
-        if (len(values) == 3) & (values[1] != "n.v.t."):
+        if (title in ["HC / HPend", "Ratio <12 weken"]) & (values[1] != "n.v.t."):
             if values[2] != "n.v.t.":
                 values[1] = str(round(int(values[1]) / int(values[2]), 2))
                 if (title == "HC / HPend") and (client == "tmobile"):

@@ -86,9 +86,9 @@ for client in config.client_config.keys():  # noqa: C901
             raise PreventUpdate
 
         activatie_indicator_info = global_info_list(
-            className="container-display",
-            items=fetch_data_for_project_boxes_activatie(
+            fetch_data_for_project_boxes_activatie(
                 project=dropdown_selection, client=client
-            ),
+            )
         )
-        return [activatie_indicator_info]
+
+        return activatie_indicator_info

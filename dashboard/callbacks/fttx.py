@@ -254,7 +254,10 @@ for client in config.client_config.keys():  # noqa: C901
         return [fig]
 
     @app.callback(
-        Output(f"info-container-year-{client}", "children"),
+        [
+            Output(f"info-container-year-{client}", "children"),
+            Output(f"info-container2-year-{client}", "children"),
+        ],
         [Input(f"year-dropdown-{client}", "value")],
     )
     def load_global_info_per_year(year, client=client):
@@ -262,8 +265,9 @@ for client in config.client_config.keys():  # noqa: C901
             raise PreventUpdate
 
         output = global_info_list(
-            className="container-display",
-            items=fetch_data_for_overview_boxes(client, year),
+            items=fetch_data_for_overview_boxes(client, year) + [{}]
         )
 
-        return [output]
+        print(fetch_data_for_overview_boxes(client, year))
+
+        return [output[0:5], output[5:]]
