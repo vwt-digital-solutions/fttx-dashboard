@@ -22,7 +22,7 @@ def get_html(client):
         dcc.Store(id="aggregate_data2", data=None),
         dcc.Store(id=f"status-count-filter-{client}", data={}),
         html.Div(
-            id=f"indicators-activatie-{client}",
+            id=f"activatie-indicators-{client}",
             className="container-display",
         ),
         html.Div(
@@ -42,7 +42,7 @@ def get_html(client):
                 ),
                 figure(
                     figure=no_graph(
-                        title="Prognose activatie", text="Loading..."
+                        title="Prognose activatie", text="No Data"
                     ),
                     container_id=f"prognose-activatie-{client}-container",
                     graph_id=f"prognose-activatie-{client}",
