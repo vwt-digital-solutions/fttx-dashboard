@@ -392,9 +392,11 @@ class FttXTransform(Transform):
 
         """
         df = self.extracted_data.df_bouwportaal
+        df["plandatum"] = self._transform_timestamp_to_datetime(df["plandatum"])
         unique_fc_data = self.transformed_data.df.drop_duplicates(
             ["postcode", "huisnummer", "huisext"]
         )
+
         df["huisnummer"] = df["huisnummer"].astype(str)
         unique_fc_data["huisnummer"] = unique_fc_data["huisnummer"].astype(str)
         combined_df = df.merge(
@@ -409,6 +411,12 @@ class FttXTransform(Transform):
         )
         combined_df.drop(["plandatum_bp", "plandatum_fc"], axis=1, inplace=True)
         self.transformed_data.df_bouwportaal = combined_df
+
+    def _transform_timestamp_to_datetime(self, column):
+        return column.dt.date
+
+    def fillna_bp_with_fc_data(self, df, column):
+        return df[column + "_bp"].fillna(df[column + "_fc"])
 
 
 class FttXLoad(Load, FttXBase):
