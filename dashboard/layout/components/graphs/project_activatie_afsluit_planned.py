@@ -7,29 +7,29 @@ def get_fig(data):
     afsluitindicator = {
         "x": list(data["afsluit_indicator"].index),
         "y": list(data["afsluit_indicator"].values),
-        "mode": "lines",
-        "line": dict(color=colors["vwt_blue"]),
-        "name": "Aflsuit indicator",
+        "mode": "markers",
+        "line": dict(color=colors["green"]),
+        "name": "Gerealiseerde aansluitingen in BP",
     }
 
     planningindicator = {
         "x": list(data["planned_indicator"].index),
         "y": list(data["planned_indicator"].values),
         "mode": "lines",
-        "line": dict(color=colors["black"]),
-        "name": "Aflsuit indicator",
+        "line": dict(color=colors["red"]),
+        "name": "Geplande aansluitingen in BP",
     }
 
-    fig['data'] = [afsluitindicator, planningindicator]
+    fig["data"] = [afsluitindicator, planningindicator]
 
     fig["layout"] = {
         "xaxis": {
-            "title": "Opleverdatum [d]",
+            "title": "Aansluitdatum [d]",
             # "range": [data['prognose'].index.iloc[0],
             #           data['prognose'].index.iloc[-1]],
         },
-        # "yaxis": {"title": "Opgeleverd HPend [%]", "range": [0, 110]},
-        "title": {"text": "Voortgang project Activatie"},
+        "yaxis": {"title": "Aantal aansluitingen"},  # "range": [0, 110]},
+        "title": {"text": "Voortgang Activatie"},
         "showlegend": True,
         "legend": {"x": 0, "xanchor": "left", "y": 1.15},
         "height": 450,

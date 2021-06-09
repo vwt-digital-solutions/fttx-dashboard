@@ -625,24 +625,22 @@ def fetch_data_productionstatus(project, client, freq, phase_name):
 
 def fetch_data_for_project_boxes_activatie(client, project):
     lines_for_in_boxes = {
-        "Aanvragen activatie": [
+        "Werkvoorraad in FC": [
+            "WerkvoorraadHBIndicator",
+            "WerkvoorraadLBIndicator",
+        ],
+        "Aanvragen voor activatie in BP": [
             "AanvragenActivatieHBIndicator",
             "AanvragenActivatieLBIndicator",
         ],
-        "Openstaande aanvragen - te laat": [
-            "OpenstaandeAanvragenTeLaatIndicator"
-        ],
-        "Werkvoorraad Assigned": [
+        "Aanvragen voor activatie ingelegd in BP": [
             "WerkvoorraadHBAssignedIndicator",
-            "WerkvoorraadLBAssignedIndicator"
+            "WerkvoorraadLBAssignedIndicator",
         ],
-        "Werkvoorraad": [
-            "WerkvoorraadHBIndicator",
-            "WerkvoorraadLBIndicator",
-        ]
+        "Openstaande aanvragen - te laat": ["OpenstaandeAanvragenTeLaatIndicator"],
     }
 
-    which_week = 'current_week'
+    which_week = "current_week"
 
     parameters_global_info_list = []
     for title, lines in lines_for_in_boxes.items():
@@ -673,11 +671,7 @@ def fetch_data_for_project_boxes_activatie(client, project):
             )
         else:
             parameters_global_info_list.append(
-                dict(
-                    id_="",
-                    title=title,
-                    value1=values[0]
-                )
+                dict(id_="", title=title, value1=values[0])
             )
 
     return parameters_global_info_list

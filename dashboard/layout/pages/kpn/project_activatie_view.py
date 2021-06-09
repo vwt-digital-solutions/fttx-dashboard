@@ -22,17 +22,11 @@ def get_html(client):
         dcc.Store(id="aggregate_data2", data=None),
         dcc.Store(id=f"status-count-filter-{client}", data={}),
         html.Div(
+            children=[],
             id=f"activatie-indicators-{client}",
-            className="container-display",
         ),
         html.Div(
             [
-                figure(
-                    figure=no_graph(
-                        title="ActualConnection types", text="Loading..."
-                    ),
-                    graph_id=f"graph-actual-connection-type-activatie-{client}",
-                ),
                 figure(
                     figure=no_graph(
                         title="Gerealiseerde aansluitingen", text="Loading..."
@@ -41,12 +35,16 @@ def get_html(client):
                     graph_id=f"realised-connections-activatie-{client}",
                 ),
                 figure(
-                    figure=no_graph(
-                        title="Prognose activatie", text="No Data"
-                    ),
-                    container_id=f"prognose-activatie-{client}-container",
-                    graph_id=f"prognose-activatie-{client}",
-                )
+                    figure=no_graph(title="ActualConnection types", text="Loading..."),
+                    graph_id=f"graph-actual-connection-type-activatie-{client}",
+                ),
+                # figure(
+                #     figure=no_graph(
+                #         title="Prognose activatie", text="No Data"
+                #     ),
+                #     container_id=f"prognose-activatie-{client}-container",
+                #     graph_id=f"prognose-activatie-{client}",
+                # )
             ],
             id="main_graphs",
             className="container-display",
