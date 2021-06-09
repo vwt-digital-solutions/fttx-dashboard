@@ -29,6 +29,8 @@ from Analyse.Indicators.ActualRedenNAPatchOnlyTooLateIndicator import \
 from Analyse.Indicators.ActualStatusBarChartIndicator import \
     ActualStatusBarChartIndicator
 from Analyse.Indicators.AfsluitIndicator import AfsluitIndicator
+from Analyse.Indicators.AfsluitIntegratedIndicator import \
+    AfsluitIntegratedIndicator
 from Analyse.Indicators.ClientTargetKPNIndicator import \
     ClientTargetKPNIndicator
 from Analyse.Indicators.HCOpen import HCOpen
@@ -47,6 +49,8 @@ from Analyse.Indicators.PerformanceGraphIndicator import \
     PerformanceGraphIndicator
 from Analyse.Indicators.PlannedActivationIndicator import \
     PlannedActivationIndicator
+from Analyse.Indicators.PlannedActivationIntegratedIndicator import \
+    PlannedActivationIntegratedIndicator
 from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
     PlanningHPCivielIndicatorKPN
 from Analyse.Indicators.PlanningHPEndIndicatorKPN import \
@@ -477,7 +481,15 @@ class KPNActivatieIndicatorAnalyse(FttXIndicatorAnalyse):
         )
         self.records.append(AfsluitIndicator(df=df_BPFC, client=self.client).perform())
         self.records.append(
+            AfsluitIntegratedIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
             PlannedActivationIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            PlannedActivationIntegratedIndicator(
+                df=df_BPFC, client=self.client
+            ).perform()
         )
 
 
