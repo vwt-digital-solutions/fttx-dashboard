@@ -270,4 +270,4 @@ for client in config.client_config.keys():  # noqa: C901
 
         print(fetch_data_for_overview_boxes(client, year))
 
-        return [output[0:5], output[5:]]
+        return [output[0:7], output[7:]]

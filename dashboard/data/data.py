@@ -43,12 +43,17 @@ def fetch_data_for_overview_boxes(client, year):
         ],
         "Client Target": ["ClientTarget", "ClientTarget"],
         "Realisatie": ["RealisationHPcivielIndicator", "RealisationHPendIndicator"],
-        "Planning": [
+        "Realisatie Activatie": ["linenotavailable", "AfsluitIndicator"],
+        "Planning Connectie": [
             "PlanningHPcivielIndicator",
             "PlanningHPendIndicator",
         ],
+        "Planning Activatie": [
+            "linenotavailable",
+            "PlannedActivationIndicator",
+        ],
         "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
-        "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+        "Werkvoorraad Connectie": ["linenotavailable", "WerkvoorraadHPendIndicator"],
         "Werkvoorraad Activatie": [
             "linenotavailable",
             "WerkvoorraadLBIndicator",
@@ -63,6 +68,10 @@ def fetch_data_for_overview_boxes(client, year):
             "linenotavailable",
             "RealisationHCOnTimeIndicator",
             "RealisationHCIndicator",
+        ],
+        "Open aanvragen - te laat": [
+            "linenotavailable",
+            "OpenstaandeAanvragenTeLaatIndicator",
         ],
         "Leverbetrouwbaarheid": [
             "linenotavailable",
@@ -92,6 +101,10 @@ def fetch_data_for_overview_boxes(client, year):
                 values[1] = str(round(int(values[1]) / int(values[2]), 2))
                 if (title == "HC / HPend") and (client == "tmobile"):
                     values[1] = "n.v.t."
+
+        # exception for activation indicators
+        if title in ["Werkvoorraad Activatie"]:
+            values[1] = str(int(float(values[1]) + float(values[2])))
 
         parameters_global_info_list.append(
             dict(
