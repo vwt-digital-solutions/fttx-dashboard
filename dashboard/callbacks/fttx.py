@@ -268,6 +268,4 @@ for client in config.client_config.keys():  # noqa: C901
             items=fetch_data_for_overview_boxes(client, year) + [{}]
         )
 
-        print(fetch_data_for_overview_boxes(client, year))
-
         return [output[0:7], output[7:]]
