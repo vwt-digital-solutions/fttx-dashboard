@@ -8,6 +8,8 @@ from data.data import fetch_data_for_project_boxes_activatie
 from layout.components.graphs.horizontal_bar_chart import get_fig
 from layout.components.graphs.project_activatie_afsluit_planned import \
     get_fig as get_fig_activatie
+from layout.components.graphs.project_activatie_afsluit_planned_dif import \
+    get_fig as get_fig_activatie_dif
 from layout.components.list_of_boxes import global_info_list
 
 colors = config.colors_vwt
@@ -27,7 +29,10 @@ for client in config.client_config.keys():  # noqa: C901
                 graph_name="ActualConnectionTypeIndicator",
             )
 
-            ordered_dict = {int(float(k)): v for k, v in sorted(data.items(), key=lambda item: item[1])}
+            ordered_dict = {
+                int(float(k)): v
+                for k, v in sorted(data.items(), key=lambda item: item[1])
+            }
 
             if data:
                 bar = {
@@ -35,8 +40,8 @@ for client in config.client_config.keys():  # noqa: C901
                     "x": list(ordered_dict.values()),
                     "y": list(ordered_dict.keys()),
                     "color": colors.get("vwt_blue"),
-                    'text': 'x',
-                    'title': 'Categorisatie van gerealiseerde aansluitingen in BP'
+                    "text": "x",
+                    "title": "Categorisatie van gerealiseerde aansluitingen in BP",
                 }
 
                 fig = get_fig(bar)
@@ -70,6 +75,31 @@ for client in config.client_config.keys():  # noqa: C901
             )
 
             fig = get_fig_activatie(data=data)
+            return fig
+        raise PreventUpdate
+
+    @app.callback(
+        Output(f"realised-connections-activatie-dif-{client}", "figure"),
+        [Input(f"project-dropdown-{client}", "value")],
+    )
+    def realised_connections_dif(project, client=client):
+        if project:
+            data = dict()
+            data["afsluit_indicator"] = collection.get_month_series_from_document(
+                collection="Indicators",
+                project=project,
+                client=client,
+                line="AfsluitIndicator",
+            )
+
+            data["planned_indicator"] = collection.get_month_series_from_document(
+                collection="Indicators",
+                project=project,
+                client=client,
+                line="PlannedActivationIndicator",
+            )
+            print(data)
+            fig = get_fig_activatie_dif(data=data)
             return fig
         raise PreventUpdate
 

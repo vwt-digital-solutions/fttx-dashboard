@@ -75,7 +75,9 @@ def get_week_value_from_document(collection, which_week, **filters):
     return value
 
 
-def get_month_series_from_document(collection, year, **filters):
+def get_month_series_from_document(
+    collection, year=str(pd.Timestamp.now().year), **filters
+):
     doc = get_document(collection, **filters)
     series = pd.Series(index=pd.date_range(start=year, periods=12, freq="MS"), data=0)
     if doc:

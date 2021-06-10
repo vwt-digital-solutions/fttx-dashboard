@@ -32,6 +32,14 @@ def get_html(client):
                     figure=no_graph(
                         title="Gerealiseerde aansluitingen", text="Loading..."
                     ),
+                    container_id=f"realised-connections-activatie-dif-{client}-container",
+                    graph_id=f"realised-connections-activatie-dif-{client}",
+                ),
+                figure(
+                    figure=no_graph(
+                        title="Gerealiseerde aansluitingen cumulatief",
+                        text="Loading...",
+                    ),
                     container_id=f"realised-connections-activatie-{client}-container",
                     graph_id=f"realised-connections-activatie-{client}",
                 ),
