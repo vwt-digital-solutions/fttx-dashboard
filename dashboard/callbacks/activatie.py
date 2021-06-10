@@ -35,11 +35,6 @@ for client in config.client_config.keys():  # noqa: C901
                 line="ConnectionTypeIndicator",
             )
 
-            ordered_dict = {
-                int(float(k)): v
-                for k, v in sorted(data.items(), key=lambda item: item[1])
-            }
-
             if data:
                 unpacked_data = {}
                 for line in data:
