@@ -650,14 +650,11 @@ def fetch_data_for_project_boxes_activatie(client, project):
             "WerkvoorraadHBIndicator",
             "WerkvoorraadLBIndicator",
         ],
-        "Aanvragen voor activatie in BP": [
-            "AanvragenActivatieHBIndicator",
-            "AanvragenActivatieLBIndicator",
-        ],
         "Aanvragen voor activatie ingelegd in BP": [
             "WerkvoorraadHBAssignedIndicator",
             "WerkvoorraadLBAssignedIndicator",
         ],
+        "Openstaande aanvragen": ["OpenstaandeAanvragenIndicator"],
         "Openstaande aanvragen - te laat": ["OpenstaandeAanvragenTeLaatIndicator"],
     }
 

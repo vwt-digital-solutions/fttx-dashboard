@@ -387,6 +387,18 @@ def mask_aanvragen_activatie_hb(df: pd.DataFrame):
     return (df.ordertype == "CONSTRUCT") & (df.soort_bouw != "Laag")
 
 
+def mask_openstaande_aanvragen(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is openstaande aanvraag.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return ~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])
+
+
 def mask_openstaande_aanvragen_ndagen_te_laat(df: pd.DataFrame, ndays=2):
     """
     Dataframe mask returning a column if object is openstaande aanvraag is ndays
@@ -397,7 +409,7 @@ def mask_openstaande_aanvragen_ndagen_te_laat(df: pd.DataFrame, ndays=2):
     Returns: boolean mask of objects.
 
     """
-    return (~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])) & (
+    return mask_openstaande_aanvragen(df) & (
         df.plandatum < pd.Timestamp.now() - pd.Timedelta(days=ndays)
     )
 

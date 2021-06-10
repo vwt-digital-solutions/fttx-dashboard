@@ -8,10 +8,6 @@ import business_rules as br
 from Analyse.ETL import ETL
 from Analyse.FttX import (FttXBase, FttXExtract, FttXLoad, FttXTestLoad,
                           FttXTransform, PickleExtract)
-from Analyse.Indicators.AanvragenActivatieHBIndicator import \
-    AanvragenActivatieHBIndicator
-from Analyse.Indicators.AanvragenActivatieLBIndicator import \
-    AanvragenActivatieLBIndicator
 from Analyse.Indicators.ActualRedenNAHCopenLateIndicator import \
     ActualRedenNAHCopenLateIndicator
 from Analyse.Indicators.ActualRedenNAHCopenOnTimeIndicator import \
@@ -42,6 +38,8 @@ from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
     InternalTargetHPendIntegratedIndicator
 from Analyse.Indicators.LeverbetrouwbaarheidsIndicator import \
     LeverbetrouwbaarheidIndicator
+from Analyse.Indicators.OpenstaandeAanvragenIndicator import \
+    OpenstaandeAanvragenIndicator
 from Analyse.Indicators.OpenstaandeAanvragenTeLaatIndicator import \
     OpenstaandeAanvragenTeLaatIndicator
 from Analyse.Indicators.PerformanceGraphIndicator import \
@@ -453,13 +451,10 @@ class KPNActivatieIndicatorAnalyse(FttXIndicatorAnalyse):
         df_BPFC = self.transformed_data.df_bouwportaal
 
         self.records.append(
-            AanvragenActivatieHBIndicator(df=df_BPFC, client=self.client).perform()
-        )
-        self.records.append(
-            AanvragenActivatieLBIndicator(df=df_BPFC, client=self.client).perform()
-        )
-        self.records.append(
             ConnectionTypeIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            OpenstaandeAanvragenIndicator(df=df_BPFC, client=self.client).perform()
         )
         self.records.append(
             OpenstaandeAanvragenTeLaatIndicator(
