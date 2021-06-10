@@ -341,7 +341,7 @@ def mask_werkvoorraad_activatie_lb_assigned(df: pd.DataFrame):
 
     """
     return (
-        (df.ordertype == "CONSTRUCT")
+        (df.nt_type == "KPN-GNTCUF")
         & (df.orderdatum.notna())
         & (df.soort_bouw == "Laag")
     )
@@ -357,34 +357,10 @@ def mask_werkvoorraad_activatie_hb_assigned(df: pd.DataFrame):
 
     """
     return (
-        (df.ordertype == "CONSTRUCT")
+        (df.nt_type == "KPN-GNTCUF")
         & (df.orderdatum.notna())
         & (df.soort_bouw != "Laag")
     )
-
-
-def mask_aanvragen_activatie_lb(df: pd.DataFrame):
-    """
-    Dataframe mask returning a column if object is in aanvraagde activatie voor laagbouw.
-    Args:
-        df: Dataframe of combined FC and Bouwportaal data.
-
-    Returns: boolean mask of objects.
-
-    """
-    return (df.ordertype == "CONSTRUCT") & (df.soort_bouw == "Laag")
-
-
-def mask_aanvragen_activatie_hb(df: pd.DataFrame):
-    """
-    Dataframe mask returning a column if object is in aanvraagde activatie voor hoogbouw.
-    Args:
-        df: Dataframe of combined FC and Bouwportaal data.
-
-    Returns: boolean mask of objects.
-
-    """
-    return (df.ordertype == "CONSTRUCT") & (df.soort_bouw != "Laag")
 
 
 def mask_openstaande_aanvragen(df: pd.DataFrame):
@@ -396,7 +372,9 @@ def mask_openstaande_aanvragen(df: pd.DataFrame):
     Returns: boolean mask of objects.
 
     """
-    return ~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])
+    return (df.nt_type == "KPN-GNTCUF") & (
+        ~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])
+    )
 
 
 def mask_openstaande_aanvragen_ndagen_te_laat(df: pd.DataFrame, ndays=2):
@@ -423,7 +401,7 @@ def mask_afsluitdatum_notna(df: pd.DataFrame):
     Returns: boolean mask of objects.
 
     """
-    return df.afsluitdatum.notna()
+    return (df.nt_type == "KPN-GNTCUF") & (df.afsluitdatum.notna())
 
 
 def mask_plandatum_notna(df: pd.DataFrame):
@@ -435,4 +413,4 @@ def mask_plandatum_notna(df: pd.DataFrame):
     Returns: boolean mask of objects.
 
     """
-    return df.plandatum.notna()
+    return (df.nt_type == "KPN-GNTCUF") & (df.plandatum.notna())
