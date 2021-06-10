@@ -160,4 +160,7 @@ body {
   font-size: 2rem;
 }
 
-
+.DateRangePickerInput {
+  background-color: #f9f9f9;
+  border-color: #f9f9f9;
+}
