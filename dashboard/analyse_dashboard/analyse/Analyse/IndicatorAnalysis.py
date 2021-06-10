@@ -12,8 +12,6 @@ from Analyse.Indicators.AanvragenActivatieHBIndicator import \
     AanvragenActivatieHBIndicator
 from Analyse.Indicators.AanvragenActivatieLBIndicator import \
     AanvragenActivatieLBIndicator
-from Analyse.Indicators.ActualConnectionTypeIndicator import \
-    ActualConnectionTypeIndicator
 from Analyse.Indicators.ActualRedenNAHCopenLateIndicator import \
     ActualRedenNAHCopenLateIndicator
 from Analyse.Indicators.ActualRedenNAHCopenOnTimeIndicator import \
@@ -33,6 +31,7 @@ from Analyse.Indicators.AfsluitIntegratedIndicator import \
     AfsluitIntegratedIndicator
 from Analyse.Indicators.ClientTargetKPNIndicator import \
     ClientTargetKPNIndicator
+from Analyse.Indicators.ConnectionTypeIndicator import ConnectionTypeIndicator
 from Analyse.Indicators.HCOpen import HCOpen
 from Analyse.Indicators.HCPatchOnly import HCPatchOnly
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
@@ -460,7 +459,7 @@ class KPNActivatieIndicatorAnalyse(FttXIndicatorAnalyse):
             AanvragenActivatieLBIndicator(df=df_BPFC, client=self.client).perform()
         )
         self.records.append(
-            ActualConnectionTypeIndicator(df=df_BPFC, client=self.client).perform()
+            ConnectionTypeIndicator(df=df_BPFC, client=self.client).perform()
         )
         self.records.append(
             OpenstaandeAanvragenTeLaatIndicator(
