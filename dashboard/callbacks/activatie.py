@@ -11,6 +11,7 @@ from layout.components.graphs.project_activatie_afsluit_planned import \
 from layout.components.graphs.project_activatie_afsluit_planned_dif import \
     get_fig as get_fig_activatie_dif
 from layout.components.list_of_boxes import global_info_list
+from layout.components.graphs.no_graph import no_graph
 
 colors = config.colors_vwt
 
@@ -18,23 +19,36 @@ for client in config.client_config.keys():  # noqa: C901
 
     @app.callback(
         Output(f"graph-actual-connection-type-activatie-{client}", "figure"),
-        [Input(f"project-dropdown-{client}", "value")],
+        [
+            Input(f"project-dropdown-{client}", "value"),
+            Input(f"date-picker-actual-connection-type-activatie-{client}", "start_date"),
+            Input(f"date-picker-actual-connection-type-activatie-{client}", "end_date"),
+        ],
     )
-    def actual_connection_type(project, client=client):
+    def actual_connection_type(project, start_date, end_date, client=client):
+
         if project:
-            data = collection.get_document(
+            data = collection.get_documents(
                 collection="Indicators",
                 project=project,
                 client=client,
-                graph_name="ActualConnectionTypeIndicator",
+                line="ConnectionTypeIndicator",
             )
 
-            ordered_dict = {
-                int(float(k)): v
-                for k, v in sorted(data.items(), key=lambda item: item[1])
-            }
-
             if data:
+                unpacked_data = {}
+                for line in data:
+                    phase = line.get('phase')
+                    series = line.get('record').get('series_week')
+
+                    if start_date and end_date:
+                        category_size = sum([v for k, v in series.items() if ((k >= start_date) & (k <= end_date))])
+                    else:
+                        category_size = sum(list(series.values()))
+
+                    unpacked_data[phase] = category_size
+
+                ordered_dict = {int(float(k)): v for k, v in sorted(unpacked_data.items(), key=lambda item: item[1])}
                 bar = {
                     "name": "Actual Connections",
                     "x": list(ordered_dict.values()),
@@ -51,6 +65,9 @@ for client in config.client_config.keys():  # noqa: C901
                 )
 
                 return fig
+            else:
+                return no_graph(title="ActualConnection types", text="No Data")
+
         raise PreventUpdate
 
     @app.callback(
