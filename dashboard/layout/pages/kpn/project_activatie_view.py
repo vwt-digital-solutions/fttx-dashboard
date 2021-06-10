@@ -52,21 +52,13 @@ def get_html(client):
                             className=None
                         ),
                         dcc.DatePickerRange(
-                            id=f'date-picker-actual-connection-type-actiatie-{client}',
+                            id=f'date-picker-actual-connection-type-activatie-{client}',
                             initial_visible_month=date(date.today().year, date.today().month, date.today().day),
                             clearable=True,
                         )
                     ],
                     className='pretty_container column',
                 )
-
-                # figure(
-                #     figure=no_graph(
-                #         title="Prognose activatie", text="No Data"
-                #     ),
-                #     container_id=f"prognose-activatie-{client}-container",
-                #     graph_id=f"prognose-activatie-{client}",
-                # )
             ],
             id="main_graphs",
             className="container-display",
