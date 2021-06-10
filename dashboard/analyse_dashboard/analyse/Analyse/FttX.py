@@ -94,7 +94,7 @@ where project in :projects
         sql = text(
             """
 SELECT *
-FROM bouwportaal_orders
+FROM bouwportaal_orders where nt_type = 'KPN-GNTCUF'
 """
         )
         df = pd.read_sql(sql, sql_engine.connect())
