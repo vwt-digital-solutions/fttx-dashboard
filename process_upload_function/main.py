@@ -7,6 +7,7 @@ from google.cloud import firestore, secretmanager, storage
 from sqlalchemy import create_engine
 from sqlalchemy.engine import ResultProxy
 import config
+import traceback
 
 db = firestore.Client()
 
@@ -28,6 +29,7 @@ def handler(data, context):
     except Exception as e:
         logging.error(f'Processing {filename} stopped')
         logging.error(f'Processing failure: {e}')
+        traceback.print_exc()
         return 'Error', 500
 
 
@@ -45,13 +47,6 @@ def process_bouwportaal_orders(df):
     write_to_sql(df, table)
 
 
-# def data_from_store(bucket_name, blob_name):
-#     path = 'gs://{}/{}'.format(bucket_name, blob_name)
-#     logging.info('Reading {}'.format(path))
-#     new_data = pd.ExcelFile(path)
-#     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
-#     return new_data
-
 def data_from_store(bucket_name, blob_name):
     path = 'gs://{}/{}'.format(bucket_name, blob_name)
     if blob_name.endswith('.xlsx'):
@@ -59,7 +54,7 @@ def data_from_store(bucket_name, blob_name):
     elif blob_name.endswith('.json'):
         bucket = storage.Client().get_bucket(bucket_name)
         blob = storage.Blob(blob_name, bucket)
-        content = blob.download_as_bytes()
+        content = blob.download_as_string()
         data = json.loads(content.decode('utf-8'))
         df = pd.DataFrame.from_records(data['data'])
     else:
