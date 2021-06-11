@@ -1,8 +1,9 @@
+import json
 from datetime import datetime
 import pandas as pd
 import numpy as np
 import logging
-from google.cloud import firestore, secretmanager
+from google.cloud import firestore, secretmanager, storage
 from sqlalchemy import create_engine
 from sqlalchemy.engine import ResultProxy
 import config
@@ -56,7 +57,11 @@ def data_from_store(bucket_name, blob_name):
     if blob_name.endswith('.xlsx'):
         df = pd.ExcelFile(path, dtype=str)
     elif blob_name.endswith('.json'):
-        df = pd.read_json(path, dtype=False)
+        bucket = storage.Client().get_bucket(bucket_name)
+        blob = storage.Blob(blob_name, bucket)
+        content = blob.download_as_bytes()
+        data = json.loads(content.decode('utf-8'))
+        df = pd.DataFrame.from_records(data['data'])
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))

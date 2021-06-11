@@ -1,4 +1,5 @@
 import datetime
+import math
 
 import dash
 import dash_html_components as html
@@ -87,11 +88,22 @@ def send_file(file_content, path):
     limit = 4_000
     count = 0
 
+    number_of_files = math.ceil(len(df) / limit)
+    file = 1
+
     while count <= len(df):
         df_to_send = df[count: count + limit]
+
+        json_to_send = {
+            'number_of_files': number_of_files,
+            'file': file,
+            'data': df_to_send.astype(str).to_dict(orient='records')
+        }
+
         r = requests.post(url,
-                          data=json.dumps(df_to_send.astype(str).to_dict(orient='records')),
+                          data=json.dumps(json_to_send),
                           headers=headers)
+
         if r.status_code != 201:
             traceback.print_exc()
             message = f"❌ Status: {r.status_code}"
@@ -100,3 +112,4 @@ def send_file(file_content, path):
             raise RuntimeError(message)
 
         count += limit
+        file += 1
