@@ -73,12 +73,29 @@ def capacity_template(client):
                             style={"background-color": config.colors_vwt["vwt_blue"]},
                         ),
                         dbc.Collapse(
-                            figure(
-                                graph_id=f"more-info-graph-{client}",
-                                figure=no_graph(
-                                    title="Verdieping Capaciteit", text="Geen data..."
+                            [
+                                dcc.Dropdown(
+                                    id=f"unit-selector-{client}",
+                                    options=[
+                                        {"label": "Percentage", "value": ""},
+                                        {"label": "Units", "value": "_units"},
+                                    ],
+                                    value="_units",
+                                    clearable=False,
+                                    style={
+                                        "color": config.colors_vwt.get("darkgray"),
+                                        "margin-left": "4px",
+                                        "width": "100px",
+                                    },
                                 ),
-                            ),
+                                figure(
+                                    graph_id=f"more-info-graph-{client}",
+                                    figure=no_graph(
+                                        title="Verdieping Capaciteit",
+                                        text="Geen data...",
+                                    ),
+                                ),
+                            ],
                             id=f"more-info-collapse-{client}",
                         ),
                     ],

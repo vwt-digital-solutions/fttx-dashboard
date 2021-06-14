@@ -45,6 +45,7 @@ for client in config.client_config.keys():  # noqa: C901
         + [
             Input(f"frequency-selector-{client}", "value"),
             Input(f"project-dropdown-{client}", "value"),
+            Input(f"unit-selector-{client}", "value"),
         ],
         [State(f"memory_phase_{client}", "data")],
     )
@@ -79,12 +80,14 @@ for client in config.client_config.keys():  # noqa: C901
 
         freq = callback_context.inputs[f"frequency-selector-{client}.value"]
 
+        unit_type = callback_context.inputs[f"unit-selector-{client}.value"]
+
         indicator_values, timeseries, line_graph_bool = fetch_data_productionstatus(
-            project, client, freq, phase_name
+            project, client, freq, phase_name, unit_type=unit_type
         )
 
         if line_graph_bool:
-            line_graph = productionstatus.get_fig(timeseries)
+            line_graph = productionstatus.get_fig(timeseries, unit_type)
         else:
             line_graph = no_graph("No data")
 

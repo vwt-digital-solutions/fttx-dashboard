@@ -243,6 +243,17 @@ class PhaseCapacity:
                     resample_method="mean",
                 )
             )
+            self.record_list.append(
+                LineRecord(
+                    record=line,
+                    collection="Lines",
+                    graph_name=f"{line.name}_units",
+                    phase=self.phase_data["name"],
+                    client=self.client,
+                    project=self.project,
+                    resample_method="mean",
+                )
+            )
         else:
             self.record_list.append(
                 LineRecord(
@@ -252,6 +263,18 @@ class PhaseCapacity:
                     phase=self.phase_data["name"],
                     client=self.client,
                     project=self.project,
+                )
+            )
+            self.record_list.append(
+                LineRecord(
+                    record=line,
+                    collection="Lines",
+                    graph_name=f"{line.name}_units",
+                    phase=self.phase_data["name"],
+                    client=self.client,
+                    project=self.project,
+                    to_be_normalized=False,
+                    percentage=False,
                 )
             )
 

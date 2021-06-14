@@ -599,7 +599,7 @@ def fetch_data_for_status_barchart(project_name, client, click_filter=None):
     return data_laagbouw, data_hoogbouw
 
 
-def fetch_data_productionstatus(project, client, freq, phase_name):
+def fetch_data_productionstatus(project, client, freq, phase_name, unit_type=""):
     indicator_values = {}
     timeseries = {}
     name_indicator = {
@@ -619,7 +619,7 @@ def fetch_data_productionstatus(project, client, freq, phase_name):
     ]:
         indicator_dict = collection.get_document(
             collection="Lines",
-            line=key + "_indicator",
+            line=key + "_indicator" + unit_type,
             project=project,
             client=client,
             phase=phase_name,
