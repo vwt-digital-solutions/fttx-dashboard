@@ -8,7 +8,7 @@ import config
 from Analyse.Capacity_analysis.Analysis_capacity import CapacityETL
 from Analyse.Finance_ETL import FinanceETL
 from Analyse.IndicatorAnalysis import (DFNIndicatorETL, KPNIndicatorETL,
-                                       TmobileIndicatorETL)
+                                       TmobileIndicatorETL, KPNActivatieIndicatorAnalyse)
 from Analyse.ProjectInfoETL import ProjectInfoETL
 from functions import set_date_update
 from toggles import ReleaseToggles
@@ -124,6 +124,18 @@ def project_info_update_kpn(request):
         logging.info("run done")
 
 
+def bouwportaal_analyse_kpn(request):
+    try:
+        analyseBouwportaalKPN('kpn')
+        set_date_update("kpn_bouwportaal")
+        return "OK", 200
+    except Exception as e:
+        logging.exception((f"KPN Bouwportaal analyse failed {e}"))
+        return "Error", 500
+    finally:
+        logging.info('Run done')
+
+
 def analyseKPN_1():
     kpn = KPNIndicatorETL(client="kpn", config=config.client_config["kpn"])
     kpn.perform_1()
@@ -139,6 +151,11 @@ def analyseProjectInfo(client_name):
         client=client_name, config=config.client_config[client_name]
     )
     projectinfo_kpn.perform()
+
+
+def analyseBouwportaalKPN():
+    kpn = KPNActivatieIndicatorAnalyse(client='kpn', config=config.client_config['kpn'])
+    kpn.perform()
 
 
 def analyseCapacity(client_name):
