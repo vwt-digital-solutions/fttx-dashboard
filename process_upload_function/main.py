@@ -3,13 +3,16 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import logging
-from google.cloud import firestore, secretmanager, storage
+from google.cloud import firestore, secretmanager, storage, pubsub
 from sqlalchemy import create_engine
 from sqlalchemy.engine import ResultProxy
 import config
 import traceback
+from gobits import Gobits
 
 db = firestore.Client()
+batch_settings = pubsub.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
+publisher = pubsub.PublisherClient(batch_settings)
 
 
 def handler(data, context):
@@ -18,9 +21,18 @@ def handler(data, context):
     filename = data['name']
     try:
         if 'uploads/bouwportaal_orders/' in filename:
-            df = data_from_store(bucket, filename)
+            df, nr_of_files, nr_of_file = data_from_store(bucket, filename)
             process_bouwportaal_orders(df)
             logging.info('Run finished')
+
+            if nr_of_file == nr_of_files:   # trigger analyse for bouwportaal
+                gobits = Gobits.from_context(context=context)
+                topic_project_id = config.TOPIC_SETTINGS.get('topic_project_id')
+                topic_name = config.TOPIC_SETTINGS.get('topic_name')
+                send_trigger_to_topic(gobits=gobits,
+                                      topic_project_id=topic_project_id,
+                                      topic_name=topic_name)
+
             return 'OK', 200
         else:
             logging.info(f'Skipping {filename} because it does not need processing')
@@ -57,10 +69,12 @@ def data_from_store(bucket_name, blob_name):
         content = blob.download_as_string()
         data = json.loads(content.decode('utf-8'))
         df = pd.DataFrame.from_records(data['data'])
+        nr_of_files = data['number_of_files']
+        nr_of_file = data['file']
     else:
         raise ValueError('File is not json or xlsx: {}'.format(blob_name))
     logging.info('Read file {} from {}'.format(blob_name, bucket_name))
-    return df
+    return df, nr_of_files, nr_of_file
 
 
 def write_to_sql(df, table):
@@ -93,6 +107,20 @@ def get_secret(project_id, secret_id, version_id='latest'):
     response = client.access_secret_version(name)
     payload = response.payload.data.decode('UTF-8')
     return payload
+
+
+def send_trigger_to_topic(gobits, topic_project_id, topic_name):
+    topic_path = publisher.topic_path(topic_project_id, topic_name)
+
+    sendmsg = {
+        "gobits": [gobits.to_json()],
+        "bouw_portaal_analyse_trigger": {'message': 'New data uploaded, start analyse function'}
+    }
+
+    # logging.info(f'Publish to {topic_path}: {sendmsg}')
+    future = publisher.publish(
+        topic_path, bytes(json.dumps(sendmsg).encode('utf-8')))
+    future.add_done_callback(lambda x: logging.info(f"Finished publishing trigger to {topic_path}"))
 
 
 if 'db_ip' in config.database:
