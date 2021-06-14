@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import logging
-from google.cloud import firestore, secretmanager, storage, pubsub_v1
+from google.cloud import firestore, secretmanager, storage, pubsub
 from sqlalchemy import create_engine
 from sqlalchemy.engine import ResultProxy
 import config
@@ -11,7 +11,8 @@ import traceback
 from gobits import Gobits
 
 db = firestore.Client()
-publisher = pubsub_v1.PublisherClient()
+batch_settings = pubsub.types.BatchSettings(**config.TOPIC_BATCH_SETTINGS)
+publisher = pubsub.PublisherClient(batch_settings)
 
 
 def handler(data, context):
@@ -108,14 +109,13 @@ def get_secret(project_id, secret_id, version_id='latest'):
     return payload
 
 
-def send_trigger_to_topic(gobits, topic_project_id, topic_name, subject=None):
+def send_trigger_to_topic(gobits, topic_project_id, topic_name):
     topic_path = publisher.topic_path(topic_project_id, topic_name)
 
-    if subject:
-        sendmsg = {
-            "gobits": [gobits.to_json()],
-            subject: {'message': 'New data uploaded, start analyse function'}
-        }
+    sendmsg = {
+        "gobits": [gobits.to_json()],
+        "bouw_portaal_analyse_trigger": {'message': 'New data uploaded, start analyse function'}
+    }
 
     # logging.info(f'Publish to {topic_path}: {sendmsg}')
     future = publisher.publish(
