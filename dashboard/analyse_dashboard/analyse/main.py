@@ -126,7 +126,7 @@ def project_info_update_kpn(request):
 
 def bouwportaal_analyse_kpn(request):
     try:
-        analyseBouwportaalKPN('kpn')
+        analyseBouwportaalKPN()
         set_date_update("kpn_bouwportaal")
         return "OK", 200
     except Exception as e:
