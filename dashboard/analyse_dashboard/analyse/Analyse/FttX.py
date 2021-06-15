@@ -398,7 +398,7 @@ class FttXTransform(Transform):
         )
 
         df["huisnummer"] = df["huisnummer"].astype(str)
-        unique_fc_data["huisnummer"] = unique_fc_data["huisnummer"].astype(str)
+        unique_fc_data.loc[:, "huisnummer"] = unique_fc_data["huisnummer"].astype(str)
         combined_df = df.merge(
             unique_fc_data,
             how="left",

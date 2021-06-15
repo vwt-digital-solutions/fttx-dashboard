@@ -446,7 +446,6 @@ class KPNActivatieIndicatorAnalyse(FttXIndicatorAnalyse):
     """Main class to run indicator analyse for KPN activatie indicatoren"""
 
     def analyse(self):
-        super().analyse()
         df_FC = self.transformed_data.df
         df_BPFC = self.transformed_data.df_bouwportaal
 
@@ -535,8 +534,14 @@ class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAn
     ...
 
 
-class KPNActivatieIndicatorETL(FttXIndicatorETL, KPNActivatieIndicatorAnalyse):
-    ...
+class KPNActivatieIndicatorETL(
+    ETL, FttXExtract, FttXIndicatorTransform, KPNActivatieIndicatorAnalyse, FttXLoad
+):
+    def perform(self):
+        self.extract()
+        self.transform()
+        self.analyse()
+        self.load()
 
 
 class FttXIndicatorTestETL(PickleExtract, FttXIndicatorETL):

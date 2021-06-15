@@ -604,8 +604,8 @@ def fetch_data_productionstatus(project, client, freq, phase_name, unit_type="")
     timeseries = {}
     name_indicator = {
         "target": "Target",
-        "poc_verwacht": "Verwacht verloop",
-        "poc_ideal": "Ideaal verloop",
+        "poc_verwacht": "Gerealiseerd & verwacht verloop",
+        "poc_ideal": "Gerealiseerd & ideaal verloop",
         "work_stock": "Werkvoorraad (totale productie)",
         "work_stock_amount": "Hoeveelheid Werkvoorraad",
     }

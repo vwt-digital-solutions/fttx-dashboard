@@ -4,8 +4,8 @@ from config import colors_vwt as colors
 def get_fig(data, unit_type):
     color_key = {
         "Target": "vwt_blue",
-        "Ideaal verloop": "lightgray",
-        "Verwacht verloop": "darkgray",
+        "Gerealiseerd & ideaal verloop": "lightgray",
+        "Gerealiseerd & verwacht verloop": "darkgray",
         "Werkvoorraad (totale productie)": "black",
     }
     fig = {"data": [], "layout": {}}
