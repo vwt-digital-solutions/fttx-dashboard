@@ -170,7 +170,7 @@ def clickbar_hb(drop_selectie, mask_all):
     return fig
 
 
-def update_date():
+def update_date():  # noqa: C901
     try:
         date_an_kpn_1 = api.get("/Graphs?id=update_date_kpn_1")[0]["date"][
             0:-4
@@ -217,4 +217,23 @@ def update_date():
         ].replace("T", " ")
     except IndexError:
         date_con = "[niet beschikbaar]"
-    return [date_an, date_con, date_finance_analyse, date_update_baan]
+
+    try:
+        date_bouwportaal_analyse = api.get("/Graphs?id=update_date_kpn_bouwportaal")[0]["date"][
+            0:-4
+        ].replace("T", " ")
+    except IndexError:
+        date_bouwportaal_analyse = "[niet beschikbaar]"
+
+    try:
+        date_bouwportaal_updated = api.get("/Graphs?id=update_date_bouwportaal_orders")[0]["date"][
+            0:-4
+        ].replace("T", " ")
+    except IndexError:
+        date_bouwportaal_updated = "[niet beschikbaar]"
+
+    return [date_an, date_con,
+            date_finance_analyse,
+            date_update_baan,
+            date_bouwportaal_analyse,
+            date_bouwportaal_updated]

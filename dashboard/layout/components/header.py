@@ -11,6 +11,9 @@ def header(header_text=""):
     data_updated_operational = update_dates[1]
     data_process_finance = update_dates[2]
     data_updated_finance = update_dates[3]
+    date_process_bouwportaal = update_dates[4]
+    date_updated_bouwportaal = update_dates[5]
+
     data_update_text_1 = f"""
 Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational}
     , en voor het laatst meegenomen in de analyse op {data_processed_operational}.
@@ -18,6 +21,10 @@ Operationele data (Fiberconnect) is binnengekomen op {data_updated_operational}
     data_update_text_2 = f"""
 Financiele data (BAAN) is binnengekomen op {data_updated_finance},
 en voor het laatst meegenomen in de analyse op {data_process_finance}.
+"""
+    data_update_text_3 = f"""
+Bouwportaal data is binnengekomen op {date_updated_bouwportaal},
+en voor het laats meegenomen in de analyse op {date_process_bouwportaal}
 """
 
     return html.Div(
@@ -57,6 +64,8 @@ en voor het laatst meegenomen in de analyse op {data_process_finance}.
                                     html.P(data_update_text_1),
                                     html.Br(),
                                     html.P(data_update_text_2),
+                                    html.Br(),
+                                    html.P(data_update_text_3)
                                 ],
                                 id="hover",
                                 target="date_update",
