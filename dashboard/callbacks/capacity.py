@@ -1,13 +1,12 @@
-import pandas as pd
-import plotly.graph_objects as go
 from dash import callback_context
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 
 import config
 from app import app
-from data.collection import get_document
+from data.data import fetch_data_productionstatus
 from layout.components.capacity.capacity_summary import capacity_summary
+from layout.components.graphs import productionstatus
 from layout.components.graphs.no_graph import no_graph
 
 colors = config.colors_vwt
@@ -46,6 +45,7 @@ for client in config.client_config.keys():  # noqa: C901
         + [
             Input(f"frequency-selector-{client}", "value"),
             Input(f"project-dropdown-{client}", "value"),
+            Input(f"unit-selector-{client}", "value"),
         ],
         [State(f"memory_phase_{client}", "data")],
     )
@@ -80,72 +80,24 @@ for client in config.client_config.keys():  # noqa: C901
 
         freq = callback_context.inputs[f"frequency-selector-{client}.value"]
 
-        selection_settings = dict(client=client, project=project, phase=phase_name)
+        unit_type = callback_context.inputs[f"unit-selector-{client}.value"]
 
-        indicator_values = dict(
-            target=0, work_stock=0, poc_verwacht=0, poc_ideal=0, work_stock_amount=0
+        indicator_values, timeseries, line_graph_bool = fetch_data_productionstatus(
+            project, client, freq, phase_name, unit_type=unit_type
         )
-        timeseries = dict(
-            target=pd.Series(),
-            work_stock=pd.Series(),
-            poc_verwacht=pd.Series(),
-            poc_ideal=pd.Series(),
-            work_stock_amount=pd.Series(),
-        )
-        line_graph_bool = False
-        for key in indicator_values:
-            indicator_dict = get_document(
-                "Lines", line=key + "_indicator", **selection_settings
-            )
-            if indicator_dict:
-                line_graph_bool = True
-                indicator_values[key] = int(indicator_dict["next_" + freq])
-                timeseries[key] = pd.Series(indicator_dict["series_" + freq])
-        work_stock_amount = indicator_values.pop("work_stock_amount")
-        if work_stock_amount < 0:
-            work_stock_amount = 0
-        if phase == "geulen":
-            work_stock_amount = None
-        del timeseries["work_stock_amount"]
-        timeseries["internal_target"] = timeseries.pop("target")
-        timeseries["werkvoorraad"] = timeseries.pop("work_stock")
 
         if line_graph_bool:
-            color_count = 0
-            color_selection = [
-                colors["darkgray"],
-                colors["lightgray"],
-                colors["vwt_blue"],
-                colors["black"],
-            ]
-            line_graph = go.Figure()
-            for k, v in timeseries.items():
-                line_graph.add_trace(
-                    go.Scatter(
-                        x=v.index,
-                        y=v,
-                        mode="lines+markers",
-                        name=k,
-                        marker=dict(color=color_selection[color_count]),
-                    )
-                )
-                color_count += 1
-
-            line_graph.update_layout(
-                height=500,
-                paper_bgcolor=colors["paper_bgcolor"],
-                plot_bgcolor=colors["plot_bgcolor"],
-            )
+            line_graph = productionstatus.get_fig(timeseries, unit_type)
         else:
             line_graph = no_graph("No data")
 
         return [
             capacity_summary(
                 phase_name=phase_name,
-                target=indicator_values["target"],
-                work_stock=work_stock_amount,
-                capacity=indicator_values["poc_verwacht"],
-                poc=indicator_values["poc_ideal"],
+                target=indicator_values["Target"],
+                work_stock=indicator_values["Hoeveelheid Werkvoorraad"],
+                capacity=indicator_values["Gerealiseerd & verwacht verloop"],
+                poc=indicator_values["Gerealiseerd & ideaal verloop"],
                 unit=config.capacity_phases[phase].get("unit"),
             ),
             line_graph,

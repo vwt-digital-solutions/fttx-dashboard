@@ -16,21 +16,13 @@ def get_html(client):
     return [
         html.Div(
             children=html.Div(
-                children=[
-                    dcc.Dropdown(
-                        id=f"year-dropdown-{client}",
-                        placeholder="Select a year",
-                        clearable=False,
-                    ),
-                ],
-                className="column",
-                style={"width": "77px"},
-            ),
-            className="container-display",
+                id=f"info-container-year-{client}", className="container-display"
+            )
         ),
         html.Div(
-            children=[],
-            id=f"info-container-year-{client}",
+            children=html.Div(
+                id=f"info-container2-year-{client}", className="container-display"
+            )
         ),
         html.Div(
             className="container-display",
@@ -85,6 +77,20 @@ def get_search_bar(client, project):
                 )
             ],
             className="two-third column",
+        ),
+        html.Div(
+            children=html.Div(
+                children=[
+                    dcc.Dropdown(
+                        id=f"year-dropdown-{client}",
+                        placeholder="Select a year",
+                        clearable=False,
+                    ),
+                ],
+                className="column",
+                style={"width": "77px"},
+            ),
+            className="container-display",
         ),
         html.Div(
             [

@@ -176,23 +176,22 @@ for client in config.client_config.keys():  # noqa: C901
         ],
         [State(f"status-count-filter-{client}", "data")],
     )
-    def set_status_click_filter(
-        laagbouw_click, hoogbouw_click, reset_button, click_filter
-    ):
-        ctx = dash.callback_context
-        if not click_filter:
-            click_filter = {}
-        if isinstance(click_filter, list):
-            click_filter = click_filter[0]
-        if ctx.triggered:
-            for trigger in ctx.triggered:
-                if trigger["prop_id"] == list(ctx.inputs.keys())[2]:
-                    return [None]
+    def set_status_click_filter(_, __, ___, click_filter):
 
-                for point in trigger["value"]["points"]:
-                    category, _, cat_filter = point["customdata"].partition(";")
-                    click_filter[category] = cat_filter
-                    return [click_filter]
+        button_name = list(dash.callback_context.inputs.keys())[2]
+        trigger = dash.callback_context.triggered[0]
+        if not trigger["value"]:
+            raise PreventUpdate
+
+        if trigger["prop_id"] == button_name:  # indicates that reset button is used
+            click_filter = {}
+        else:
+            category, _, cat_filter = trigger["value"]["points"][0][
+                "customdata"
+            ].partition(";")
+            click_filter[category] = cat_filter
+
+        return [click_filter]
 
     @app.callback(
         [
@@ -255,7 +254,10 @@ for client in config.client_config.keys():  # noqa: C901
         return [fig]
 
     @app.callback(
-        Output(f"info-container-year-{client}", "children"),
+        [
+            Output(f"info-container-year-{client}", "children"),
+            Output(f"info-container2-year-{client}", "children"),
+        ],
         [Input(f"year-dropdown-{client}", "value")],
     )
     def load_global_info_per_year(year, client=client):
@@ -263,8 +265,7 @@ for client in config.client_config.keys():  # noqa: C901
             raise PreventUpdate
 
         output = global_info_list(
-            className="container-display",
-            items=fetch_data_for_overview_boxes(client, year),
+            items=fetch_data_for_overview_boxes(client, year) + [{}]
         )
 
-        return [output]
+        return [output[0:7], output[7:]]

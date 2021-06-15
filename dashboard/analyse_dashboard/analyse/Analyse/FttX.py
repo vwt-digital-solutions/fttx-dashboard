@@ -63,6 +63,7 @@ class FttXExtract(Extract):
         """
         logger.info("Extracting the aansluitingen")
         self._extract_from_sql()
+        self._extract_bouwportaal_info(get_database_engine())
         self._append_history()
         self.extract_project_info()
 
@@ -84,6 +85,21 @@ where project in :projects
         projects_category = pd.CategoricalDtype(categories=self.projects)
         df["project"] = df.project.astype(projects_category)
         self.extracted_data.df = df
+
+    def _extract_bouwportaal_info(self, sql_engine):
+        """Function to extract info from bouwportaal in the database"""
+
+        logger.info("Extracting bouwportaal info from sql database")
+
+        sql = text(
+            """
+SELECT *
+FROM bouwportaal_orders where nt_type = 'KPN-GNTCUF'
+"""
+        )
+        df = pd.read_sql(sql, sql_engine.connect())
+
+        self.extracted_data.df_bouwportaal = df
 
     def _append_history(self):
         """
@@ -313,6 +329,7 @@ class FttXTransform(Transform):
         logger.info("Transforming the data following the FttX protocol")
         self._fix_dates()
         self._cluster_reden_na()
+        self._transform_bouwportaal_data()
 
     # TODO: Documentation by Erik van Egmond
     def _fix_dates(self):
@@ -365,6 +382,48 @@ class FttXTransform(Transform):
             "cluster_redenna"
         ].astype(cluster_types)
 
+    def _transform_bouwportaal_data(self):
+        """
+        Matches bouwportaal data on fiberconnect data using:
+            - postcode
+            - huisnummer
+            - huisnummer extensie
+        Returns:
+
+        """
+        df = self.extracted_data.df_bouwportaal
+
+        unique_fc_data = self.transformed_data.df.drop_duplicates(
+            ["postcode", "huisnummer", "huisext"]
+        )
+
+        df["huisnummer"] = df["huisnummer"].astype(str)
+        unique_fc_data.loc[:, "huisnummer"] = unique_fc_data["huisnummer"].astype(str)
+        combined_df = df.merge(
+            unique_fc_data,
+            how="left",
+            left_on=["postcode", "huisnummer", "extensie"],
+            right_on=["postcode", "huisnummer", "huisext"],
+            suffixes=("_bp", "_fc"),
+        )
+        combined_df["plandatum"] = combined_df["plandatum_bp"].fillna(
+            combined_df["plandatum_fc"]
+        )
+        combined_df["plandatum"] = self._transform_timestamp_to_datetime(
+            combined_df["plandatum"]
+        )
+        combined_df["afsluitdatum"] = self._transform_timestamp_to_datetime(
+            combined_df["afsluitdatum"]
+        )
+        combined_df.drop(["plandatum_bp", "plandatum_fc"], axis=1, inplace=True)
+        self.transformed_data.df_bouwportaal = combined_df
+
+    def _transform_timestamp_to_datetime(self, column):
+        return pd.to_datetime(column.dt.date)
+
+    def fillna_bp_with_fc_data(self, df, column):
+        return df[column + "_bp"].fillna(df[column + "_fc"])
+
 
 class FttXLoad(Load, FttXBase):
     def __init__(self, **kwargs):
@@ -374,8 +433,6 @@ class FttXLoad(Load, FttXBase):
     def load(self):
         logger.info("Loading documents...")
         self.records.to_firestore()
-
-    # TODO: Documentation by Erik van Egmond
 
 
 class FttXTestLoad(FttXLoad):
@@ -388,5 +445,3 @@ class FttXTestLoad(FttXLoad):
         logger.info("The following documents would have been updated/set:")
         for document in self.records:
             logger.info(document.document_name())
-
-    # TODO: Documentation by Erik van Egmond

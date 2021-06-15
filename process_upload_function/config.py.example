@@ -1,31 +1,17 @@
-# Dict with relevant projects
-FINANCE_PROJECT_LIST = {
-    'project_abbrivation': {
-        'client': '',
-        'project_nr': '',
-        'project_name': '',
-        'remark': ''
-    },
-    'project_abbrivation': {
-        'client': '',
-        'project_nr': '',
-        'project_name': '',
-        'remark': ''
+bouwportaal_orders_column_mapping = {
+    OLD_COLUMN_NAME1: new_column_name1,
+    OLD_COLUMN_NAME2: new_column_name2,
+    OLD_COLUMN_NAME3: new_column_name3,
+    ...
+}
+
+upload_config = {
+    "bouwportaal_orders": {
+        "name": "Xxxx xxx",
+        "path": "/xxxxx",
+        "database_table": '',
+        "validator": "",
+        "expected_number_of_sheets": 1,
+        "columns": bouwportaal_orders_column_mapping
     }
 }
-
-# Column mapping for realisation baan
-BAAN_REALISATION_MAPPING = {
-    'OLD_NAME': 'new_name',
-    'OLD_NAME': 'new_name'
-}
-
-# Column mapping for budget baan
-BAAN_BUDGET_MAPPING = {
-    'OLD_NAME': 'new_name',
-    'OLD_NAME': 'new_name'
-}
-
-# sheet_names
-BAAN_SHEET_REALISATION = 'sheet_name_realisation'
-BAAN_SHEET_BUDGET = 'sheet_name_budget'

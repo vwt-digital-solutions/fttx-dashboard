@@ -42,13 +42,26 @@ def fetch_data_for_overview_boxes(client, year):
             "InternalTargetHPendLine",
         ],
         "Client Target": ["ClientTarget", "ClientTarget"],
-        "Realisatie": ["RealisationHPcivielIndicator", "RealisationHPendIndicator"],
-        "Planning": [
+        "Realisatie Connectie": [
+            "RealisationHPcivielIndicator",
+            "RealisationHPendIndicator",
+        ],
+        "Realisatie Activatie": ["linenotavailable", "AfsluitIndicator"],
+        "Planning Connectie": [
             "PlanningHPcivielIndicator",
             "PlanningHPendIndicator",
         ],
-        "Voorspelling": ["linenotavailable", "PrognoseHPendIndicator"],
-        "Werkvoorraad": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+        "Planning Activatie": [
+            "linenotavailable",
+            "PlannedActivationIndicator",
+        ],
+        "Voorspelling Connectie": ["linenotavailable", "PrognoseHPendIndicator"],
+        "Werkvoorraad Connectie": ["linenotavailable", "WerkvoorraadHPendIndicator"],
+        "Werkvoorraad Activatie": [
+            "linenotavailable",
+            "WerkvoorraadLBIndicator",
+            "WerkvoorraadHBIndicator",
+        ],
         "HC / HPend": [
             "linenotavailable",
             "RealisationHCIndicator",
@@ -58,6 +71,10 @@ def fetch_data_for_overview_boxes(client, year):
             "linenotavailable",
             "RealisationHCOnTimeIndicator",
             "RealisationHCIndicator",
+        ],
+        "Open aanvragen - te laat": [
+            "linenotavailable",
+            "OpenstaandeAanvragenTeLaatIndicator",
         ],
         "Leverbetrouwbaarheid": [
             "linenotavailable",
@@ -82,11 +99,15 @@ def fetch_data_for_overview_boxes(client, year):
             )
 
         # exception for calculation of ratio's
-        if (len(values) == 3) & (values[1] != "n.v.t."):
+        if (title in ["HC / HPend", "Ratio <12 weken"]) & (values[1] != "n.v.t."):
             if values[2] != "n.v.t.":
                 values[1] = str(round(int(values[1]) / int(values[2]), 2))
                 if (title == "HC / HPend") and (client == "tmobile"):
                     values[1] = "n.v.t."
+
+        # exception for activation indicators
+        if title in ["Werkvoorraad Activatie"]:
+            values[1] = str(int(float(values[1]) + float(values[2])))
 
         parameters_global_info_list.append(
             dict(
@@ -172,6 +193,8 @@ def fetch_data_for_redenna_overview(ctx, year, client):
             "dec",
         ]
         period, _, _ = ctx.triggered[0]["prop_id"].partition("-")
+        if period == "overview":  # this happens when the reset button is used.
+            period = "year"
 
         if period == "year":
             date = f"{year}-01-01"
@@ -574,3 +597,99 @@ def fetch_data_for_status_barchart(project_name, client, click_filter=None):
         data_hoogbouw = pd.DataFrame()
 
     return data_laagbouw, data_hoogbouw
+
+
+def fetch_data_productionstatus(project, client, freq, phase_name, unit_type=""):
+    indicator_values = {}
+    timeseries = {}
+    name_indicator = {
+        "target": "Target",
+        "poc_verwacht": "Gerealiseerd & verwacht verloop",
+        "poc_ideal": "Gerealiseerd & ideaal verloop",
+        "work_stock": "Werkvoorraad (totale productie)",
+        "work_stock_amount": "Hoeveelheid Werkvoorraad",
+    }
+    line_graph_bool = False
+    for key in [
+        "target",
+        "work_stock",
+        "poc_verwacht",
+        "poc_ideal",
+        "work_stock_amount",
+    ]:
+        indicator_dict = collection.get_document(
+            collection="Lines",
+            line=key + "_indicator" + unit_type,
+            project=project,
+            client=client,
+            phase=phase_name,
+        )
+        if indicator_dict:
+            line_graph_bool = True
+            indicator_values[name_indicator[key]] = int(indicator_dict["next_" + freq])
+            timeseries[name_indicator[key]] = pd.Series(
+                indicator_dict["series_" + freq]
+            )
+        else:
+            indicator_values[name_indicator[key]] = 0
+            timeseries[name_indicator[key]] = pd.Series()
+
+    if indicator_values["Hoeveelheid Werkvoorraad"] < 0:
+        indicator_values["Hoeveelheid Werkvoorraad"] = 0
+    if phase_name == "geulen":
+        indicator_values["Hoeveelheid Werkvoorraad"] = None
+
+    del timeseries["Hoeveelheid Werkvoorraad"]
+
+    return indicator_values, timeseries, line_graph_bool
+
+
+def fetch_data_for_project_boxes_activatie(client, project):
+    lines_for_in_boxes = {
+        "Werkvoorraad in FC": [
+            "WerkvoorraadHBIndicator",
+            "WerkvoorraadLBIndicator",
+        ],
+        "Aanvragen voor activatie ingelegd in BP": [
+            "WerkvoorraadHBAssignedIndicator",
+            "WerkvoorraadLBAssignedIndicator",
+        ],
+        "Openstaande aanvragen": ["OpenstaandeAanvragenIndicator"],
+        "Openstaande aanvragen - te laat": ["OpenstaandeAanvragenTeLaatIndicator"],
+    }
+
+    which_week = "current_week"
+
+    parameters_global_info_list = []
+    for title, lines in lines_for_in_boxes.items():
+        values = []
+        for line in lines:
+            values.append(
+                str(
+                    collection.get_week_value_from_document(
+                        collection="Indicators",
+                        which_week=which_week,
+                        line=line,
+                        client=client,
+                        project=project,
+                    )
+                )
+            )
+
+        if len(values) > 1:
+            parameters_global_info_list.append(
+                dict(
+                    id_="",
+                    title=title,
+                    text1="HB: ",
+                    text2="LB: ",
+                    value1=values[0],
+                    value2=values[1],
+                )
+            )
+        else:
+            parameters_global_info_list.append(
+                dict(id_="", title=title, value1=values[0])
+            )
+
+    return parameters_global_info_list

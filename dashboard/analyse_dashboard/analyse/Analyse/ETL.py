@@ -1,8 +1,9 @@
-from Analyse.Data import Data
-import logging
 import copy
+import logging
 
-logger = logging.getLogger('ETL')
+from Analyse.Data import Data
+
+logger = logging.getLogger("ETL")
 
 
 class ETLBase:
@@ -14,7 +15,7 @@ class ETLBase:
     """
 
     def __init__(self, **kwargs):
-        if not hasattr(self, 'config'):
+        if not hasattr(self, "config"):
             self.config = kwargs.get("config")
         if not self.config:
             raise ValueError("No config provided in init")
@@ -37,11 +38,14 @@ class Transform(ETLBase):
 
     def transform(self):
         if not self.transformed_data:
-            logger.info("Transforming by using the extracted data directly. There was no previous tranformed data")
-            # TODO make a copy. Now transformed_data and extracted_data point to the same object
+            logger.info(
+                "Transforming by using the extracted data directly. There was no previous tranformed data"
+            )
             self.transformed_data = copy.deepcopy(self.extracted_data)
         else:
-            logger.info("No tranformation in the base class as there was already transformed data")
+            logger.info(
+                "No tranformation in the base class as there was already transformed data"
+            )
 
 
 class Load(ETLBase):

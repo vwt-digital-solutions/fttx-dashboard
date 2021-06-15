@@ -1,4 +1,5 @@
 import datetime
+import math
 
 import dash
 import dash_html_components as html
@@ -8,11 +9,15 @@ from flask_dance.contrib.azure import azure
 
 from app import app
 from config import upload_config, upload_url
-from upload.Validators import *  # noqa: F403, F401
 from upload.Validators import ValidationError, Validator
+from upload.Validators import XLSColumnValidator  # noqa: F401
 
 import json
 import logging
+import io
+import pandas as pd
+
+import traceback
 
 logger = logging.getLogger("Upload Callbacks")
 
@@ -62,7 +67,6 @@ def submit_files(n_clicks, close_clicks, validator, content, name, date):
             if validator_class.validate():
                 try:
                     send_file(file_content=validator_class.file_content,
-                              content_type=validator_class.content_type,
                               path=upload_config[validator]['path'])
                 except Exception as e:
                     logger.warning(f"Sending a file failed: {e}")
@@ -73,14 +77,39 @@ def submit_files(n_clicks, close_clicks, validator, content, name, date):
     return [f"{validator}"]
 
 
-def send_file(file_content, content_type, path):
+def send_file(file_content, path):
     url = upload_url + path
     logger.info(url)
     headers = {'Authorization': 'Bearer ' + azure.access_token,
-               'Content-Type': content_type}
-    r = requests.post(url, data=file_content, headers=headers)
-    if r.status_code != 201:
-        message = f"❌ Status: {r.status_code}"
-        if "json" in r.headers.get("Content-Type"):
-            message += json.loads(r.content).get('detail')
-        raise RuntimeError(message)
+               'Content-Type': "application/json"}
+
+    df = pd.ExcelFile(io.BytesIO(file_content))
+    df = df.parse()
+    limit = 4_000
+    count = 0
+
+    number_of_files = math.ceil(len(df) / limit)
+    file = 1
+
+    while count <= len(df):
+        df_to_send = df[count: count + limit]
+
+        json_to_send = {
+            'number_of_files': number_of_files,
+            'file': file,
+            'data': df_to_send.astype(str).to_dict(orient='records')
+        }
+
+        r = requests.post(url,
+                          data=json.dumps(json_to_send),
+                          headers=headers)
+
+        if r.status_code != 201:
+            traceback.print_exc()
+            message = f"❌ Status: {r.status_code}"
+            if "json" in r.headers.get("Content-Type"):
+                message += json.loads(r.content).get('detail')
+            raise RuntimeError(message)
+
+        count += limit
+        file += 1

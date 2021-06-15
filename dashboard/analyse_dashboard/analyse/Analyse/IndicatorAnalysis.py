@@ -22,8 +22,12 @@ from Analyse.Indicators.ActualRedenNAPatchOnlyTooLateIndicator import \
     ActualRedenNAPatchOnlyTooLateIndicator
 from Analyse.Indicators.ActualStatusBarChartIndicator import \
     ActualStatusBarChartIndicator
+from Analyse.Indicators.AfsluitIndicator import AfsluitIndicator
+from Analyse.Indicators.AfsluitIntegratedIndicator import \
+    AfsluitIntegratedIndicator
 from Analyse.Indicators.ClientTargetKPNIndicator import \
     ClientTargetKPNIndicator
+from Analyse.Indicators.ConnectionTypeIndicator import ConnectionTypeIndicator
 from Analyse.Indicators.HCOpen import HCOpen
 from Analyse.Indicators.HCPatchOnly import HCPatchOnly
 from Analyse.Indicators.InternalTargetHPcivielIndicator import \
@@ -34,8 +38,16 @@ from Analyse.Indicators.InternalTargetHPendIntegratedIndicator import \
     InternalTargetHPendIntegratedIndicator
 from Analyse.Indicators.LeverbetrouwbaarheidsIndicator import \
     LeverbetrouwbaarheidIndicator
+from Analyse.Indicators.OpenstaandeAanvragenIndicator import \
+    OpenstaandeAanvragenIndicator
+from Analyse.Indicators.OpenstaandeAanvragenTeLaatIndicator import \
+    OpenstaandeAanvragenTeLaatIndicator
 from Analyse.Indicators.PerformanceGraphIndicator import \
     PerformanceGraphIndicator
+from Analyse.Indicators.PlannedActivationIndicator import \
+    PlannedActivationIndicator
+from Analyse.Indicators.PlannedActivationIntegratedIndicator import \
+    PlannedActivationIntegratedIndicator
 from Analyse.Indicators.PlanningHPCivielIndicatorKPN import \
     PlanningHPCivielIndicatorKPN
 from Analyse.Indicators.PlanningHPEndIndicatorKPN import \
@@ -66,7 +78,13 @@ from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
 from Analyse.Indicators.RealisationHPendTmobileIndicator import \
     RealisationHPendTmobileIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
+from Analyse.Indicators.WerkvoorraadHBAssignedIndicator import \
+    WerkvoorraadHBAssignedIndicator
+from Analyse.Indicators.WerkvoorraadHBIndicator import WerkvoorraadHBIndicator
 from Analyse.Indicators.WerkvoorraadIndicator import WerkvoorraadIndicator
+from Analyse.Indicators.WerkvoorraadLBAssignedIndicator import \
+    WerkvoorraadLBAssignedIndicator
+from Analyse.Indicators.WerkvoorraadLBIndicator import WerkvoorraadLBIndicator
 from Analyse.KPNDFN import KPNDFNExtract, KPNDFNTransform
 from Analyse.Record.DocumentListRecord import DocumentListRecord
 from Analyse.Record.ListRecord import ListRecord
@@ -424,6 +442,50 @@ class DFNIndicatorAnalyse(KPNDFNIndicatorAnalyse):
         self.records.append(PlanningIndicatorDFN(df=df, client=self.client).perform())
 
 
+class KPNActivatieIndicatorAnalyse(FttXIndicatorAnalyse):
+    """Main class to run indicator analyse for KPN activatie indicatoren"""
+
+    def analyse(self):
+        df_FC = self.transformed_data.df
+        df_BPFC = self.transformed_data.df_bouwportaal
+
+        self.records.append(
+            ConnectionTypeIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            OpenstaandeAanvragenIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            OpenstaandeAanvragenTeLaatIndicator(
+                df=df_BPFC, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            WerkvoorraadHBAssignedIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            WerkvoorraadLBAssignedIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            WerkvoorraadLBIndicator(df=df_FC, client=self.client).perform()
+        )
+        self.records.append(
+            WerkvoorraadHBIndicator(df=df_FC, client=self.client).perform()
+        )
+        self.records.append(AfsluitIndicator(df=df_BPFC, client=self.client).perform())
+        self.records.append(
+            AfsluitIntegratedIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            PlannedActivationIndicator(df=df_BPFC, client=self.client).perform()
+        )
+        self.records.append(
+            PlannedActivationIntegratedIndicator(
+                df=df_BPFC, client=self.client
+            ).perform()
+        )
+
+
 class FttXIndicatorETL(
     ETL, FttXExtract, FttXIndicatorAnalyse, FttXIndicatorTransform, FttXLoad
 ):
@@ -470,6 +532,16 @@ class DFNIndicatorETL(
 
 class TmobileIndicatorETL(FttXIndicatorETL, TMobileTransform, TmobileIndicatorAnalyse):
     ...
+
+
+class KPNActivatieIndicatorETL(
+    ETL, FttXExtract, FttXIndicatorTransform, KPNActivatieIndicatorAnalyse, FttXLoad
+):
+    def perform(self):
+        self.extract()
+        self.transform()
+        self.analyse()
+        self.load()
 
 
 class FttXIndicatorTestETL(PickleExtract, FttXIndicatorETL):

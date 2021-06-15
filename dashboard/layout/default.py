@@ -8,7 +8,6 @@ import dash_html_components as html
 
 from layout.components import overview
 from layout.components.header import header
-from layout.components.nav_bar import nav_bar
 from layout.pages import error, main_page
 from utils import get_client_name
 
@@ -204,7 +203,7 @@ def get_page_body(client, project):
     )
 
 
-def get_layout(pathname="/", brand=""):
+def get_layout(pathname="/"):
     """
     Returns the layout dependent on current url.
 
@@ -220,5 +219,4 @@ def get_layout(pathname="/", brand=""):
     project = parse.unquote_plus(remainder)
     page_body = get_page_body(client, project)
 
-    layout = html.Div([nav_bar(client, brand), html.Div(page_body)])
-    return layout
+    return html.Div([html.Div(page_body)])

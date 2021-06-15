@@ -390,6 +390,14 @@ def error_check_FCBC(df: pd.DataFrame):
 
 # TODO: Documentation by Casper van Houten
 def linear_regression(data):
+    """
+    Make a linear regression
+    Args:
+        data: Data to be fit by numpy polyfit
+
+    Returns: a and b from equation y = ax + b
+
+    """
     fit_range = data.day_count.to_list()
     slope, intersect = np.polyfit(fit_range, data, 1)
     return slope[0], intersect[0]

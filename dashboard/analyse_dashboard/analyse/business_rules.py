@@ -303,3 +303,114 @@ def leverbetrouwbaar(df: pd.DataFrame):
     )
 
     return mask
+
+
+def mask_werkvoorraad_activatie_lb_FC(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in werkvoorraad for LB.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects in LB werkvoorraad or not.
+
+    """
+    return (df.opleverstatus == "16") & (df.opleverdatum.isna())
+
+
+def mask_werkvoorraad_activatie_hb_FC(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in werkvoorraad for HB.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects in HB werkvoorraad or not.
+
+    """
+    return ((df.opleverstatus == "2") | (df.opleverstatus == "32")) & (
+        df.opleverdatum.isna()
+    )
+
+
+def mask_werkvoorraad_activatie_lb_assigned(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in werkvoorraad assigned for LB.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects in LB werkvoorraad or not.
+
+    """
+    return (
+        (df.nt_type == "KPN-GNTCUF")
+        & (df.orderdatum.notna())
+        & (df.soort_bouw == "Laag")
+    )
+
+
+def mask_werkvoorraad_activatie_hb_assigned(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is in werkvoorraad assigned for HB.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects in HB werkvoorraad or not.
+
+    """
+    return (
+        (df.nt_type == "KPN-GNTCUF")
+        & (df.orderdatum.notna())
+        & (df.soort_bouw != "Laag")
+    )
+
+
+def mask_openstaande_aanvragen(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object is openstaande aanvraag.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return (df.nt_type == "KPN-GNTCUF") & (
+        ~df.order_status.isin(["CLOSED", "CANCELLED", "TO_BE_CANCELLED"])
+    )
+
+
+def mask_openstaande_aanvragen_ndagen_te_laat(df: pd.DataFrame, ndays=2):
+    """
+    Dataframe mask returning a column if object is openstaande aanvraag is ndays
+    too late according to planning.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return mask_openstaande_aanvragen(df) & (
+        df.plandatum < pd.Timestamp.now() - pd.Timedelta(days=ndays)
+    )
+
+
+def mask_afsluitdatum_notna(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object afsluitdatum notna.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return (df.nt_type == "KPN-GNTCUF") & (df.afsluitdatum.notna())
+
+
+def mask_plandatum_notna(df: pd.DataFrame):
+    """
+    Dataframe mask returning a column if object plandatum notna.
+    Args:
+        df: Dataframe of combined FC and Bouwportaal data.
+
+    Returns: boolean mask of objects.
+
+    """
+    return (df.nt_type == "KPN-GNTCUF") & (df.plandatum.notna())
