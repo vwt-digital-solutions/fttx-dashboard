@@ -378,7 +378,7 @@ class FttXTransform(Transform):
             br.hc_opgeleverd(self.transformed_data.df), ["cluster_redenna"]
         ] = "HC"
         cluster_types = CategoricalDtype(categories=list(clus.keys()), ordered=True)
-        self.transformed_data.df["cluster_redenna"] = self.transformed_data.df[
+        self.transformed_data.df.loc[:, "cluster_redenna"] = self.transformed_data.df[
             "cluster_redenna"
         ].astype(cluster_types)
 
@@ -391,14 +391,15 @@ class FttXTransform(Transform):
         Returns:
 
         """
-        df = self.extracted_data.df_bouwportaal
+        logger.info("Transforming bouwportaal dataframe")
+        df = self.extracted_data.df_bouwportaal.copy()
 
         unique_fc_data = self.transformed_data.df.drop_duplicates(
             ["postcode", "huisnummer", "huisext"]
-        )
+        ).copy()
 
         df["huisnummer"] = df["huisnummer"].astype(str)
-        unique_fc_data.loc[:, "huisnummer"] = unique_fc_data["huisnummer"].astype(str)
+        unique_fc_data["huisnummer"] = unique_fc_data["huisnummer"].astype(str)
         combined_df = df.merge(
             unique_fc_data,
             how="left",
