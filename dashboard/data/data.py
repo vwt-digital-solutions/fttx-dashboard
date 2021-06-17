@@ -106,7 +106,7 @@ def fetch_data_for_overview_boxes(client, year):
                     values[1] = "n.v.t."
 
         # exception for activation indicators
-        if title in ["Werkvoorraad Activatie"]:
+        if (title in ["Werkvoorraad Activatie"]) & (values[1] != "n.v.t."):
             values[1] = str(int(float(values[1]) + float(values[2])))
 
         parameters_global_info_list.append(
@@ -409,60 +409,6 @@ def fetch_df_aggregate(project, client, indicator_type, wait_category):
     return pd.DataFrame(doc["df_aggregate"])
 
 
-def fetch_data_for_overview_graphs(year: str, freq: str, period: str, client: str):
-    opgeleverd_data_dict = collection.get_document(
-        collection="Data",
-        graph_name="realisatie_hpend",
-        client=client,
-        year=year,
-        frequency=freq,
-    )
-
-    planning_data_dict = collection.get_document(
-        collection="Data",
-        graph_name="planning",
-        client=client,
-        year=year,
-        frequency=freq,
-    )
-    planning_data_dict = {key: int(value) for key, value in planning_data_dict.items()}
-
-    target_data_dict = collection.get_document(
-        collection="Data", graph_name="target", client=client, year=year, frequency=freq
-    )
-    target_data_dict = {key: int(value) for key, value in target_data_dict.items()}
-
-    voorspelling_data_dict = collection.get_document(
-        collection="Data",
-        graph_name="voorspelling",
-        client=client,
-        year=year,
-        frequency=freq,
-    )
-    voorspelling_data_dict = {
-        key: int(value) for key, value in voorspelling_data_dict.items()
-    }
-
-    df = (
-        pd.DataFrame(
-            {
-                "count_hasdatum": planning_data_dict,
-                "count_opleverdatum": opgeleverd_data_dict,
-                "count_outlookdatum": target_data_dict,
-                "count_voorspellingdatum": voorspelling_data_dict,
-            }
-        )
-        .reset_index()
-        .rename(columns={"index": "date"})
-    )
-    df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
-    df["period"] = period
-    start_date = pd.to_datetime(year + "-01-01", format="%Y-%m-%d")
-    end_date = pd.to_datetime(year + "-12-31", format="%Y-%m-%d")
-    mask = (df["date"] >= start_date) & (df["date"] <= end_date)
-    return df[mask]
-
-
 def fetch_data_for_status_redenna_piechart(project_name, client, click_filter=None):
 
     counts = pd.DataFrame(
@@ -693,3 +639,81 @@ def fetch_data_for_project_boxes_activatie(client, project):
             )
 
     return parameters_global_info_list
+
+
+def fetch_data_for_barchart_voortgang_activatie(project, client):
+    data = dict()
+
+    data["afsluit_indicator"] = collection.get_month_series_from_document(
+        collection="Indicators",
+        project=project,
+        client=client,
+        line="AfsluitIndicator",
+    )
+
+    data["planned_indicator"] = collection.get_month_series_from_document(
+        collection="Indicators",
+        project=project,
+        client=client,
+        line="PlannedActivationIndicator",
+    )
+
+    return data
+
+
+def fetch_data_for_timeseries_voortgang_activatie(project, client):
+    data = dict()
+    data["afsluit_indicator"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        project=project,
+        client=client,
+        line="AfsluitIntegratedIndicator",
+    )
+
+    data["planned_indicator"] = collection.get_week_series_from_document(
+        collection="Indicators",
+        project=project,
+        client=client,
+        line="PlannedActivationIntegratedIndicator",
+    )
+
+    return data
+
+
+def fetch_data_for_barchart_ActualConnectionTypes(
+    project, client, start_date, end_date
+):
+    data = collection.get_documents(
+        collection="Indicators",
+        project=project,
+        client=client,
+        line="ConnectionTypeIndicator",
+    )
+
+    if data:
+        unpacked_data = {}
+        for line in data:
+            phase = line.get("phase")
+            series = line.get("record").get("series_week")
+
+            if start_date and end_date:
+                category_size = sum(
+                    [
+                        v
+                        for k, v in series.items()
+                        if ((k >= start_date) & (k <= end_date))
+                    ]
+                )
+            else:
+                category_size = sum(list(series.values()))
+
+            unpacked_data[phase] = category_size
+
+        ordered_dict = {
+            int(float(k)): v
+            for k, v in sorted(unpacked_data.items(), key=lambda item: item[1])
+        }
+    else:
+        ordered_dict = {}
+
+    return ordered_dict
