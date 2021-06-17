@@ -106,7 +106,7 @@ def fetch_data_for_overview_boxes(client, year):
                     values[1] = "n.v.t."
 
         # exception for activation indicators
-        if title in ["Werkvoorraad Activatie"]:
+        if (title in ["Werkvoorraad Activatie"]) & (values[1] != "n.v.t."):
             values[1] = str(int(float(values[1]) + float(values[2])))
 
         parameters_global_info_list.append(
