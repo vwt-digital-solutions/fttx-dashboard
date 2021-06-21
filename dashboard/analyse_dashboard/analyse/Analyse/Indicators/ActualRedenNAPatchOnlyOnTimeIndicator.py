@@ -8,7 +8,7 @@ class ActualRedenNAPatchOnlyOnTimeIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
         """
         Indicator that creates cluster reden na's for on time patch only connections.
-
+        Used for modal download gegevens redenna.
         Args:
             **kwargs:
         """

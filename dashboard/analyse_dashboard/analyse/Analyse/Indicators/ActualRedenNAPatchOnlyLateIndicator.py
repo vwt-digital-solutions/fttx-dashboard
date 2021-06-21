@@ -8,7 +8,7 @@ class ActualRedenNAPatchOnlyLateIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
         """
         Indicator that creates cluster reden na's for late patch only connections.
-
+        Used for modal download gegevens redenna.
         Args:
             **kwargs:
         """

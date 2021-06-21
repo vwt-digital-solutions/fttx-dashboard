@@ -11,6 +11,9 @@ from Analyse.Record.RecordList import RecordList
 
 class ConnectionTypeIndicator(TimeseriesIndicator):
     def __init__(self, **kwargs):
+        """
+        Used for indicator Actual connection type barchart.
+        """
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = "ConnectionTypeIndicator"

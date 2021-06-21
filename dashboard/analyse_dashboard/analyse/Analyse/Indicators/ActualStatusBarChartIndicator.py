@@ -9,9 +9,10 @@ class ActualStatusBarChartIndicator(DataIndicator):
     def __init__(self, **kwargs):
         """
         Indicator that creates a matrix to be used in the status bar chart indicator.
+        used for indicators:
+        - barcharts + redennagrafiek (tmobile)
+        - barcharts + redennagrafiek (kpn/dfn)
 
-        Args:
-            **kwargs:
         """
         super().__init__(**kwargs)
         self.collection = "Indicators"

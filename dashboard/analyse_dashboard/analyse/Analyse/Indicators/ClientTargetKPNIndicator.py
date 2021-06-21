@@ -8,6 +8,7 @@ class ClientTargetKPNIndicator(ActualIndicator, Aggregator):
         Indicator to calculate current client target.
         Client target is a static value per year that is not saved in a centralized location.
         When this number is saved in a centralised location, this indicator should be updated.
+        Used for indicator Client Target.
         """
         super().__init__(**kwargs)
         self.graph_name = "ClientTarget"
