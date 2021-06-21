@@ -8,6 +8,7 @@ class WerkvoorraadLBAssignedIndicator(ActualIndicator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad for LB
+        used for indicator Aanvragen voor activatie ingelegd in BP LB
         """
         super().__init__(**kwargs)
         self.graph_name = "WerkvoorraadLBAssignedIndicator"

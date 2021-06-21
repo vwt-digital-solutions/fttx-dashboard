@@ -5,7 +5,8 @@ from Analyse.Indicators.PlanningIndicatorKPN import PlanningIndicatorKPN
 
 class PlanningHPCivielIndicatorKPN(PlanningIndicatorKPN):
     """
-    Calculates the HPCiviel planning for KPN projects
+    calculates the number of houses per day that are planned for
+    hpciviel over the complete period of the project.
     """
 
     def __init__(self, **kwargs):

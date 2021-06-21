@@ -75,8 +75,6 @@ from Analyse.Indicators.RealisationHPendIndicator import \
     RealisationHPendIndicator
 from Analyse.Indicators.RealisationHPendIntegratedIndicator import \
     RealisationHPendIntegratedIndicator
-from Analyse.Indicators.RealisationHPendTmobileIndicator import \
-    RealisationHPendTmobileIndicator
 from Analyse.Indicators.RedenNaIndicator import RedenNaIndicator
 from Analyse.Indicators.WerkvoorraadHBAssignedIndicator import \
     WerkvoorraadHBAssignedIndicator
@@ -151,6 +149,11 @@ class FttXIndicatorAnalyse(FttXBase):
         self.records.append(
             InternalTargetHPendIndicator(
                 project_info=project_info, client=self.client
+            ).perform()
+        )
+        self.records.append(
+            RealisationHPendIndicator(
+                df=df, project_info=project_info, client=self.client
             ).perform()
         )
 
@@ -308,11 +311,11 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
     """Main class to for running the indicator analysis for KPN and DFN"""
 
     def analyse_1(self):
-        """First part of the analyse that runs the general indicators inheritted from the FttXIndicatorAnalyse"""
+        """First part of the analyse that runs the general indicators inherited from the FttXIndicatorAnalyse"""
         super().analyse()
 
     def analyse_2(self):
-        """Second part of the analyse that runs the speficiec indicators for KPN and DFN"""
+        """Second part of the analyse that runs the specific indicators for KPN and DFN"""
         df = self.transformed_data.df
         project_info = self.transformed_data.project_info
 
@@ -334,11 +337,6 @@ class KPNDFNIndicatorAnalyse(FttXIndicatorAnalyse):
         self.records.append(
             InternalTargetHPendIntegratedIndicator(
                 project_info=project_info, client=self.client
-            ).perform()
-        )
-        self.records.append(
-            RealisationHPendIndicator(
-                df=df, project_info=project_info, client=self.client
             ).perform()
         )
         self.records.append(
@@ -389,11 +387,7 @@ class TmobileIndicatorAnalyse(FttXIndicatorAnalyse):
         self.records.append(
             PlanningIndicatorTMobile(df=df, client=self.client).perform()
         )
-        self.records.append(
-            RealisationHPendTmobileIndicator(
-                df=df, project_info=project_info, client=self.client
-            ).perform()
-        )
+
         self.records.append(
             RealisationHCTmobileIndicator(
                 df=df, project_info=project_info, client=self.client

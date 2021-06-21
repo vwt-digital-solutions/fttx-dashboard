@@ -5,7 +5,11 @@ from Analyse.Indicators.PlanningIndicatorKPN import PlanningIndicatorKPN
 
 class PlanningHPEndIndicatorKPN(PlanningIndicatorKPN):
     """
-    Calculates the HPEnd planning for KPN projects
+    calculates the number of houses per day that are planned for
+    hpend over the complete period of the project.
+    used for indicators:
+    - planning connectie hpend
+    - jaaroverzicht
     """
 
     def __init__(self, **kwargs):

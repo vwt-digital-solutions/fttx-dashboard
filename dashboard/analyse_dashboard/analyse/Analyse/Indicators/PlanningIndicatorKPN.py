@@ -6,7 +6,8 @@ from Analyse.Record.RecordList import RecordList
 
 class PlanningIndicatorKPN(TimeseriesIndicator):
     """
-    Base class for the planning indicator
+    calculates the number of houses per day that are planned over the complete period of the project.
+    used in jaaroverzicht and maandoverzicht indicator.
     """
 
     def __init__(self, **kwargs):

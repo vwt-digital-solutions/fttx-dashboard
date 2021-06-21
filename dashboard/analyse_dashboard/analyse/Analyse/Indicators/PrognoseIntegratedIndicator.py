@@ -5,6 +5,7 @@ from Analyse.Record.LineRecord import LineRecord
 class PrognoseIntegratedIndicator(PrognoseIndicator):
     """
     Extension of Prognose indicator, as the integrated line is also needed in the front-end.
+    Used in voortgang tijdseries indicator.
     """
 
     def __init__(self, **kwargs):

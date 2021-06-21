@@ -8,7 +8,7 @@ class ActualRedenNAHCopenOnTimeIndicator(ActualRedenNAIndicator):
     def __init__(self, **kwargs):
         """
         Indicator that creates cluster reden na's for on time open connections.
-
+        Used for modal download gegevens redenna.
         Args:
             **kwargs:
         """

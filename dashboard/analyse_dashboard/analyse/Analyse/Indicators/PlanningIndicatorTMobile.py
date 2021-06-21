@@ -9,7 +9,8 @@ from Analyse.Record.RecordList import RecordList
 
 class PlanningIndicatorTMobile(TimeseriesIndicator):
     """
-    Calculates TMobile planning
+    Calculates the amount of houses planned over the entire period of the project for Tmobile projects.
+    used in jaaroverzicht and maandoverzicht indicator.
     """
 
     def __init__(self, **kwargs):

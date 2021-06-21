@@ -6,9 +6,14 @@ from Analyse.Indicators.RealisationIndicator import RealisationIndicator
 
 class AfsluitIndicator(RealisationIndicator):
     """
-    Indicator to calculate number of houses realised over days per project.
+    Indicator to calculate number of activated houses realised over days per project,
+    based on the afsluitdatum in bouwportaal.
     Makes LineRecords per project, where all relevant details can be calculated.
-    Also makes a LineRecords for the aggregate of the project lines for a given client
+    Also makes a LineRecords for the aggregate of the project lines for a given client.
+    Used for indicator:
+    - Realisatie Activatie.
+    - Voortgang barchart
+
     """
 
     def __init__(self, project_info=None, return_lines=False, **kwargs):

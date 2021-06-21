@@ -5,6 +5,11 @@ from Analyse.Record.DictRecord import DictRecord
 
 class ActualRedenNAIndicator(DataIndicator, Aggregator):
     def __init__(self, **kwargs):
+        """
+        Used for modal download gegevens redenna.
+        Args:
+            **kwargs:
+        """
         super().__init__(**kwargs)
         self.collection = "Indicators"
         self.graph_name = None

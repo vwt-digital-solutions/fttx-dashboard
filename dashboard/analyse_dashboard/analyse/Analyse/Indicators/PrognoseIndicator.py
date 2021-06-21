@@ -10,6 +10,14 @@ from Analyse.Indicators.RealisationHPendIndicator import \
 
 class PrognoseIndicator(LineIndicator):
     def __init__(self, df, **kwargs):
+        """
+        Indicator used to calculate projected amount of houses that can be
+        finished in the future of the project per day.
+        Used in indicators:
+        - Jaaroverizcht
+        - Maandoverizcht
+        - Planning activatie
+        """
         super().__init__(**kwargs)
         self.type_start_date = "FTU0"
         self.type_total_amount = "huisaansluitingen"

@@ -9,6 +9,10 @@ class HCOpen(TimeConstraintIndicator, Aggregator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad
+        used for indicator:
+        - HC open op tijd
+        - HC open laat
+        - HC open te laat
         """
         super().__init__(**kwargs)
         self.graph_name = "HCopen"

@@ -9,6 +9,7 @@ class PlannedActivationIndicator(RealisationIndicator):
     Indicator to calculate number of houses realised over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
     Also makes a LineRecords for the aggregate of the project lines for a given client
+    used for indicator: voortgang barchart
     """
 
     def __init__(self, project_info=None, return_lines=False, **kwargs):

@@ -8,6 +8,7 @@ class PlannedActivationIntegratedIndicator(PlannedActivationIndicator):
     Indicator to calculate number of houses realised over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
     Also makes a LineRecords for the aggregate of the project lines for a given client
+    used for indicators: voortgang tijdseries
     """
 
     def __init__(self, project_info=None, return_lines=False, **kwargs):

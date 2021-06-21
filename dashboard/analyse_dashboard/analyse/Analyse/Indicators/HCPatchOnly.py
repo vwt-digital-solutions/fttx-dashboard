@@ -9,6 +9,10 @@ class HCPatchOnly(TimeConstraintIndicator, Aggregator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current Patch only amount.
+        Used for indicators:
+        - patch only open op tijd
+        - patch only open laat
+        - patch only open te laat
         """
         super().__init__(**kwargs)
         self.graph_name = "PatchOnly"

@@ -116,6 +116,7 @@ class CapacityTransform(FttXTransform):
         """
         Main loop to fill phase config from source data. Results in a dictionary of phase specific properties per
         project, based on extracted data.
+        phase config keys definition:
         """
         phases_projectspecific = {}
         # Temporarily hard-coded values
