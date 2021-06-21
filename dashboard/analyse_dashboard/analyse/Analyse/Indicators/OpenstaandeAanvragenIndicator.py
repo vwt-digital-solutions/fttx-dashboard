@@ -8,6 +8,7 @@ class OpenstaandeAanvragenIndicator(ActualIndicator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad
+        used for indicator Openstaande Aanvragen
         """
         super().__init__(**kwargs)
         self.graph_name = "OpenstaandeAanvragenIndicator"

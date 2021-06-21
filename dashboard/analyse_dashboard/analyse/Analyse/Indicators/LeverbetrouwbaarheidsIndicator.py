@@ -13,16 +13,23 @@ from Analyse.Record.RecordList import RecordList
 
 class LeverbetrouwbaarheidIndicator(BusinessRule, Aggregator):
     """
-    Class for leverbetrouwbaarheids indicator
+    Class for leverbetrouwbaarheids indicator.
     """
 
     def __init__(self, **kwargs):
+        """
+        Calculates the actual number of houses that are have been reliably deliverd,
+        reliably being no more than 14 days after the opleverdatum.
+        Used in indicators:
+        - leverbetrouwbaarheid (kpn/dfn)
+        - leverbetrouwbaarheid (tmobile)
+        """
         super().__init__(**kwargs)
         self.graph_name = "leverbetrouwbaarheid"
 
     def apply_business_rules(self):
         """
-        Business rule to calculate the ratio of houses that is connect in the last two weeks and is 'leverbetrouwbaar'
+        Business rule to calculate the ratio of houses that is connected in the last two weeks and is 'leverbetrouwbaar'
         according to the business rule.
 
         Returns: calculated ratio

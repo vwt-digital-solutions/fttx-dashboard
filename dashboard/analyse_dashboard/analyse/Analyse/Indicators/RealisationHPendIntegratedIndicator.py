@@ -6,6 +6,9 @@ from Analyse.Record.LineRecord import LineRecord
 class RealisationHPendIntegratedIndicator(RealisationHPendIndicator):
     """
     Extension of RealisationHPend indicator, as the integrated line is also needed in the front-end.
+    used for:
+    - HC/HPend (project)
+    - voortgang tijdseries
     """
 
     def __init__(self, project_info, return_lines=False, **kwargs):

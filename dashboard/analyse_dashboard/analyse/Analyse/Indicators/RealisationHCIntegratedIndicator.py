@@ -5,6 +5,7 @@ from Analyse.Record.LineRecord import LineRecord
 class RealisationHCIntegratedIndicator(RealisationHCIndicator):
     """
     Extension of RealisationHPend indicator, as the integrated line is also needed in the front-end.
+    Used for HC/HPend (project)
     """
 
     def __init__(self, project_info, return_lines=False, **kwargs):

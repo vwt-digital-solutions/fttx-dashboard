@@ -6,6 +6,7 @@ from Analyse.Record.LineRecord import LineRecord
 class InternalTargetHPendIntegratedIndicator(InternalTargetHPendIndicator):
     """
     Extension of InternalTargethpend indicator, as the integrated line is also needed in the front-end.
+    used for indicator voortgang tijdseries.
     """
 
     def __init__(self, **kwargs):

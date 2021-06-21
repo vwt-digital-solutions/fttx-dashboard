@@ -10,6 +10,9 @@ from Analyse.Indicators.LineIndicator import LineIndicator
 
 class InternalTargetIndicator(LineIndicator):
     def __init__(self, **kwargs):
+        """
+        Abstract class used for child implementations of internaltargets.
+        """
         super().__init__(**kwargs)
         self.type_start_date = "FTU0"
         self.type_end_date = "FTU1"

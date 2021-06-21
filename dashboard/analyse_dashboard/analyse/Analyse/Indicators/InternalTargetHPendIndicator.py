@@ -5,6 +5,10 @@ class InternalTargetHPendIndicator(InternalTargetIndicator):
     def __init__(self, **kwargs):
         """Creates a line which contains the required daily speed (houses / day) for the phase "HAS"
         given the targeted start date, end date and / or speed of the project.
+        Used for:
+        - indicator Internal Target HP Civiel (overview)
+        - target HPend (project)
+        - jaaroverzicht.
         """
         super().__init__(**kwargs)
         self.type_start_date = "FTU0"

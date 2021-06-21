@@ -9,6 +9,7 @@ class RealisationHCIndicator(RealisationIndicator):
     Indicator to calculate number of houses realised over days per project.
     Makes LineRecords per project, where all relevant details can be calculated.
     Also makes a LineRecords for the aggregate of the project lines for a given client
+    Used for indicator HC/HPend
     """
 
     def __init__(self, project_info, return_lines=False, **kwargs):

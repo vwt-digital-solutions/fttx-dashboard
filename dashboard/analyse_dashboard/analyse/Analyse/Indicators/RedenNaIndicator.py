@@ -7,6 +7,7 @@ from Analyse.Record.RecordList import RecordList
 class RedenNaIndicator(TimeseriesIndicator):
     """
     Calculates reden na pie chart for every project
+    Used for redennaindicator
     """
 
     def apply_business_rules(self):

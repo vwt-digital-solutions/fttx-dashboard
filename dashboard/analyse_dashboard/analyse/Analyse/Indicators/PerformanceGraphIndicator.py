@@ -16,6 +16,7 @@ class PerformanceGraphIndicator(ActualIndicator, Aggregator):
         """
         Calculates x and y coordinates for every project that has all necessary information available, and makes
         them into a record.
+        Used in indicator performancegraph
 
         Args:
             project_info: Project info from clients transformed data

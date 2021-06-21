@@ -5,6 +5,9 @@ class InternalTargetHPcivielIndicator(InternalTargetIndicator):
     def __init__(self, **kwargs):
         """Creates a line which contains the required daily speed (houses / day) for the phase "Civiel"
         given the targeted start date, end date and / or speed of the project.
+        Used for indicator
+        - Internal Target HP Civiel.
+        - Target HP Civiel
         """
         super().__init__(**kwargs)
         self.type_start_date = "Civiel startdatum"

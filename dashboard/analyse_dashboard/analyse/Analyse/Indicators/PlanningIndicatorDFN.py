@@ -9,7 +9,8 @@ from Analyse.Record.RecordList import RecordList
 
 class PlanningIndicatorDFN(TimeseriesIndicator):
     """
-    Calculates TMobile planning
+    Calculates the amount of houses planned per day over the entire period of the project for DFN projects.
+    used in jaaroverzicht and maandoverzicht indicator
     """
 
     def __init__(self, **kwargs):

@@ -8,6 +8,9 @@ class WerkvoorraadHBIndicator(ActualIndicator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad for LB
+        Used for indicator:
+        - werkvoorraad Activatie
+        - werkvoorraad in FC HB
         """
         super().__init__(**kwargs)
         self.graph_name = "WerkvoorraadHBIndicator"

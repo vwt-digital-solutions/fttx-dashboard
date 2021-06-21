@@ -9,6 +9,9 @@ class WerkvoorraadIndicator(ActualIndicator, Aggregator):
     def __init__(self, **kwargs):
         """
         Indicator to calculate current werkvoorraad
+        Used for indicator
+        - werkvoorraad Connectie
+        - werkvoorraad HAS (tmobile)
         """
         super().__init__(**kwargs)
         self.graph_name = "WerkvoorraadHPendIndicator"

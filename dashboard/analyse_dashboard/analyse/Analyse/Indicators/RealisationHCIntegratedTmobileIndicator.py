@@ -5,6 +5,9 @@ from Analyse.Record.LineRecord import LineRecord
 
 class RealisationHCIntegratedTmobileIndicator(RealisationHCTmobileIndicator):
     def __init__(self, project_info, return_lines=False, **kwargs):
+        """
+        Used for indicator ratio op tijd aangesloten.
+        """
         super().__init__(project_info, return_lines, **kwargs)
         self.indicator_name = "RealisationHCIndicatorIntegrated"
 
