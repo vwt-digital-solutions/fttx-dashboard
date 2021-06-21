@@ -30,7 +30,7 @@ def financial_template(client):
                     figure=no_graph(),
                     container_id=f"budget-bar-category-{client}-container",
                     graph_id=f"budget-bar-category-{client}",
-                    title="Begroting/Prognose einde werk/Realisatie",
+                    title="Begroting/Realisatie/Operationeel",
                 ),
                 dbc.Tooltip(
                     children=[
@@ -52,7 +52,7 @@ def financial_template(client):
                     figure=no_graph(text="Geen selectie"),
                     container_id=f"budget-bar-sub-category-{client}-container",
                     graph_id=f"budget-bar-sub-category-{client}",
-                    title="Begroting/Prognose einde werk/Realisatie",
+                    title="Begroting/Realisatie/Operationeel",
                 ),
                 figure(
                     figure=no_graph(text="Geen selectie"),
