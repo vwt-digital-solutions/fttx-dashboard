@@ -6,7 +6,7 @@ def get_fig(data, unit_type):
         "Target": "vwt_blue",
         "Gerealiseerd & ideaal verloop": "lightgray",
         "Gerealiseerd & verwacht verloop": "darkgray",
-        "Werkvoorraad (totale productie)": "black",
+        "Totale productie voorafgaande fase": "black",
     }
     fig = {"data": [], "layout": {}}
 
