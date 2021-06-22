@@ -552,7 +552,7 @@ def fetch_data_productionstatus(project, client, freq, phase_name, unit_type="")
         "target": "Target",
         "poc_verwacht": "Gerealiseerd & verwacht verloop",
         "poc_ideal": "Gerealiseerd & ideaal verloop",
-        "work_stock": "Werkvoorraad (totale productie)",
+        "work_stock": "Totale productie voorafgaande fase",
         "work_stock_amount": "Hoeveelheid Werkvoorraad",
     }
     line_graph_bool = False
