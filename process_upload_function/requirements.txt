@@ -6,7 +6,7 @@ google-cloud-firestore==1.6.0
 google-cloud-secret-manager==1.0.0
 google-cloud-storage==1.38.0
 xlrd==1.0.0
-gcsfs==0.6.2
+gcsfs==2021.6.0
 SQLAlchemy==1.4.17
 PyMySQL==1.0.2
 gobits==1.0.8
