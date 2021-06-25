@@ -14,9 +14,8 @@ class ValidationError(Exception):
 
 
 class Validator:
-
     def __init__(self, file_content, file_name, modified_date, **kwargs):
-        self.maybe_content_type, self.content_string = file_content.split(',')
+        self.maybe_content_type, self.content_string = file_content.split(",")
         self.file_content = base64.b64decode(self.content_string)
         self.file_name = file_name
         self.modified_date = modified_date
@@ -46,10 +45,16 @@ class XLSValidator(Validator):
         except ValidationError as e:
             raise e
         except XLRDError:
-            raise ValidationError("Bestand kan niet worden ingelezen. Het is mogelijk geen geldig excel bestand.")
+            raise ValidationError(
+                "Bestand kan niet worden ingelezen. Het is mogelijk geen geldig excel bestand."
+            )
         except Exception as e:
-            logger.warning(f"An unexpected exception occured during reading of an excel file: {e}")
-            raise ValidationError("Er is een probleem opgetreden bij het inlezen van het bestand.")
+            logger.warning(
+                f"An unexpected exception occured during reading of an excel file: {e}"
+            )
+            raise ValidationError(
+                "Er is een probleem opgetreden bij het inlezen van het bestand."
+            )
 
 
 class XLSSheetCount(XLSValidator):
@@ -64,8 +69,10 @@ class XLSSheetCount(XLSValidator):
             if len(self.parsed_file.sheet_names) == self.expected_number_of_sheets:
                 return True
             else:
-                error_message = f"Er zijn {len(self.parsed_file.sheet_names)} sheet(s) verwacht" + \
-                                f"maar {self.expected_number_of_sheets} sheet(s) aanwezig"
+                error_message = (
+                    f"Er zijn {self.expected_number_of_sheets} sheet(s) verwacht"
+                    + f"maar {len(self.parsed_file.sheet_names)} sheet(s) aanwezig"
+                )
                 raise ValidationError(error_message)
 
 
@@ -83,7 +90,9 @@ class XLSColumnValidator(XLSSheetCount):
                 missing = set(self.columns.keys()) - set(self.parsed_file.columns)
                 error_message = "De kolommen in het bestand zijn niet juist."
                 if unexpected:
-                    error_message += f"\nOnverwacht aangetroffen in het bestand: {unexpected}"
+                    error_message += (
+                        f"\nOnverwacht aangetroffen in het bestand: {unexpected}"
+                    )
                 if missing:
                     error_message += f"\nNiet aangetroffen in het bestand: {missing}"
                 raise ValidationError(error_message)
@@ -117,5 +126,7 @@ class FileNameValidator(XLSSheetValidator):
             for pattern in self.patterns:
                 match = re.findall(list(pattern.values())[0], self.file_name)
                 if not match:
-                    raise ValidationError(f"Ontbreekt in de filenaam: {list(pattern.keys())[0]}")
+                    raise ValidationError(
+                        f"Ontbreekt in de filenaam: {list(pattern.keys())[0]}"
+                    )
             return True
