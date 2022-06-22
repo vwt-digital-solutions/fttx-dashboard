@@ -36,7 +36,7 @@ matplotlib==3.2.1
 msgpack==1.0.2
 multidict==5.1.0
 mysql-connector-python==8.0.22
-numpy==1.16.4
+numpy==1.22.0
 oauthlib==3.1.1
 packaging==20.9
 pandas==0.24.2
