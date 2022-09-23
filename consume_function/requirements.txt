@@ -18,7 +18,7 @@ importlib-metadata==4.5.0
 mysql-connector-python==8.0.22
 numpy==1.16.4
 pandas==0.24.2
-protobuf==3.11.3
+protobuf==3.18.3
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 PyMySQL==0.10.1
